@@ -22,36 +22,29 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class SalesUiState(
-    val salesRep: String = "Farhan Ahmed",
-    val availableReps: List<String> = listOf(
-        "Farhan Ahmed",
-        "Tariq Mahmood",
-        "Zainab Malik",
-        "Bilal Khan",
-        "Ayesha Siddiqui",
-        "Hamza Raza"
-    ),
+    val salesRep: String = "",
+    val availableReps: List<String> = emptyList(),
     val dateMillis: Long = System.currentTimeMillis(),
-    val totalSoldQtyText: String = "480",
-    val returnedQtyText: String = "20",
-    val expiredQtyText: String = "10",
-    val creditSalesQtyText: String = "50",
-    val recoveredCreditText: String = "25000.00",
-    val physicalCashText: String = "200000.00",
-    val expenseText: String = "9000.00",
-    val unitSalePriceText: String = "460.00",
+    val totalSoldQtyText: String = "",
+    val returnedQtyText: String = "",
+    val expiredQtyText: String = "",
+    val creditSalesQtyText: String = "",
+    val recoveredCreditText: String = "",
+    val physicalCashText: String = "",
+    val expenseText: String = "",
+    val unitSalePriceText: String = "",
     val reconciliationResult: SalesReconciliationResult = SalesReconciliationCalculator.calculate(
         SalesReconciliationInput(
-            salesRep = "Farhan Ahmed",
+            salesRep = "",
             dateMillis = System.currentTimeMillis(),
-            totalSoldQty = 480.0,
-            returnedQty = 20.0,
-            expiredQty = 10.0,
-            creditSalesQty = 50.0,
-            recoveredCredit = 25000.0,
-            physicalCashInHand = 200000.0,
-            expense = 9000.0,
-            unitSalePrice = 460.0
+            totalSoldQty = 0.0,
+            returnedQty = 0.0,
+            expiredQty = 0.0,
+            creditSalesQty = 0.0,
+            recoveredCredit = 0.0,
+            physicalCashInHand = 0.0,
+            expense = 0.0,
+            unitSalePrice = 0.0
         )
     ),
     val isSavedSuccess: Boolean = false,
@@ -74,6 +67,19 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
         salesRepository = SalesRepository(database.salesTransactionDao())
         savedTransactions = salesRepository.allTransactions
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+        viewModelScope.launch {
+            savedTransactions.collect { list ->
+                val distinctReps = list.map { it.salesRep }.filter { it.isNotBlank() }.distinct()
+                _uiState.update { current ->
+                    val merged = (current.availableReps + distinctReps).distinct()
+                    current.copy(
+                        availableReps = merged,
+                        salesRep = if (current.salesRep.isEmpty() && merged.isNotEmpty()) merged.first() else current.salesRep
+                    )
+                }
+            }
+        }
     }
 
     fun setSalesRep(rep: String) {
@@ -179,29 +185,13 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun populateSampleData() {
-        _uiState.update { current ->
-            val populated = current.copy(
-                totalSoldQtyText = "480",
-                returnedQtyText = "20",
-                expiredQtyText = "10",
-                creditSalesQtyText = "50",
-                recoveredCreditText = "25000.00",
-                physicalCashText = "200000.00",
-                expenseText = "9000.00",
-                unitSalePriceText = "460.00",
-                isSavedSuccess = false
-            )
-            recalculate(populated)
-        }
-    }
-
     fun saveTransaction() {
         val state = _uiState.value
+        val repName = state.salesRep.trim().ifEmpty { "General Sales" }
         val result = state.reconciliationResult
 
         val entity = SalesTransactionEntity(
-            salesRep = state.salesRep,
+            salesRep = repName,
             dateMillis = state.dateMillis,
             totalSoldQty = state.totalSoldQtyText.toDoubleOrNull() ?: 0.0,
             returnedQty = state.returnedQtyText.toDoubleOrNull() ?: 0.0,
@@ -228,7 +218,7 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
                 ReconciliationStatus.OVER -> "Surplus of ${result.formattedDiscrepancy}"
                 ReconciliationStatus.SHORT -> "Deficit of ${result.formattedDiscrepancy}"
             }
-            _userMessage.emit("Transaction saved for ${state.salesRep}! Status: $statusDescription")
+            _userMessage.emit("Transaction saved for $repName! Status: $statusDescription")
         }
     }
 

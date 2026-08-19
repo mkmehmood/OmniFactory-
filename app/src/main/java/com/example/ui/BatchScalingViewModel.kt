@@ -22,32 +22,30 @@ data class ComponentInput(
 )
 
 data class BatchScalingUiState(
-    val components: List<ComponentInput> = defaultBreadComponents(),
+    val components: List<ComponentInput> = initialComponents(),
     val scalingMode: ScalingMode = ScalingMode.TARGET_TOTAL,
     val batchSubMode: BatchSubMode = BatchSubMode.BY_BATCH_COUNT,
-    val targetTotalText: String = "2000",
-    val batchSizeText: String = "500",
-    val batchCountText: String = "4",
-    val availableAmountText: String = "2500",
+    val targetTotalText: String = "",
+    val batchSizeText: String = "",
+    val batchCountText: String = "1",
+    val availableAmountText: String = "",
     val roundingOption: RoundingOption = RoundingOption.ONE_DECIMAL,
     val calculationOutput: BatchScalingOutput = calculateState(
-        components = defaultBreadComponents(),
+        components = initialComponents(),
         scalingMode = ScalingMode.TARGET_TOTAL,
         batchSubMode = BatchSubMode.BY_BATCH_COUNT,
-        targetTotalText = "2000",
-        batchSizeText = "500",
-        batchCountText = "4",
-        availableAmountText = "2500",
+        targetTotalText = "",
+        batchSizeText = "",
+        batchCountText = "1",
+        availableAmountText = "",
         roundingOption = RoundingOption.ONE_DECIMAL
     ),
     val isFormulaSectionExpanded: Boolean = true
 )
 
-private fun defaultBreadComponents() = listOf(
-    ComponentInput(name = "Bread Flour", amountText = "1000", isLocked = false),
-    ComponentInput(name = "Water (Hydration)", amountText = "720", isLocked = false),
-    ComponentInput(name = "Sourdough Starter", amountText = "200", isLocked = false),
-    ComponentInput(name = "Sea Salt", amountText = "20", isLocked = true)
+private fun initialComponents() = listOf(
+    ComponentInput(name = "Component 1", amountText = "", isLocked = false),
+    ComponentInput(name = "Component 2", amountText = "", isLocked = false)
 )
 
 data class ScalingPreset(
@@ -250,13 +248,13 @@ class BatchScalingViewModel : ViewModel() {
         _uiState.update { current ->
             val updated = current.copy(
                 components = listOf(
-                    ComponentInput(name = "Component A", amountText = "100", isLocked = false),
-                    ComponentInput(name = "Component B", amountText = "100", isLocked = false)
+                    ComponentInput(name = "Component 1", amountText = "", isLocked = false),
+                    ComponentInput(name = "Component 2", amountText = "", isLocked = false)
                 ),
-                targetTotalText = "500",
-                batchSizeText = "250",
-                batchCountText = "2",
-                availableAmountText = "1000"
+                targetTotalText = "",
+                batchSizeText = "",
+                batchCountText = "1",
+                availableAmountText = ""
             )
             recalculate(updated)
         }

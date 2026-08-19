@@ -498,12 +498,6 @@ private fun Step1EnterTargetIngredients(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 0.8.sp
             )
-
-            if (ingredients.isEmpty()) {
-                TextButton(onClick = onLoadSample) {
-                    Text("Load Sample Recipe", fontSize = 11.sp, color = primaryColor)
-                }
-            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -535,7 +529,7 @@ private fun Step1EnterTargetIngredients(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Use the form below or tap 'Load Sample Recipe'",
+                        text = "Use the form below to add components",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
@@ -621,7 +615,7 @@ private fun Step1EnterTargetIngredients(
                     value = nameInput,
                     onValueChange = onNameChange,
                     label = { Text("Ingredient Name") },
-                    placeholder = { Text("e.g. Flour, Resin Part A, Cement...") },
+                    placeholder = { Text("Enter ingredient name") },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()

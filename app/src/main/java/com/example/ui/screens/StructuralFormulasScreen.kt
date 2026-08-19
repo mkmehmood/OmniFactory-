@@ -152,7 +152,7 @@ fun StructuralFormulasScreen(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 label = { Text("Search Structural Formulas & Laws") },
-                placeholder = { Text("e.g. Beam Bending, Euler Buckling, Hooke's Law") },
+                placeholder = { Text("Search by name, equation, or category...") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,

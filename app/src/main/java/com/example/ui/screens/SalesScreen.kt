@@ -99,7 +99,7 @@ fun SalesScreen(
     onSetUnitSalePrice: (String) -> Unit,
     onSaveTransaction: () -> Unit,
     onClearInputs: () -> Unit,
-    onPopulateSample: () -> Unit,
+    onPopulateSample: () -> Unit = {},
     onCopySummary: (String) -> Unit,
     onOpenHistorySheet: () -> Unit,
     onCloseHistorySheet: () -> Unit,
@@ -269,7 +269,7 @@ fun SalesScreen(
                     value = customName,
                     onValueChange = { customName = it },
                     label = { Text("Representative Name") },
-                    placeholder = { Text("e.g. Farhan Ahmed, Tariq Mahmood") },
+                    placeholder = { Text("Enter representative name") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
@@ -464,10 +464,10 @@ private fun SalesRepAndDateCard(
                             )
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = selectedRep,
+                                text = if (selectedRep.isBlank()) "Select or Add Representative..." else selectedRep,
                                 fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                fontWeight = if (selectedRep.isBlank()) FontWeight.Normal else FontWeight.SemiBold,
+                                color = if (selectedRep.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                             )
                         }
 

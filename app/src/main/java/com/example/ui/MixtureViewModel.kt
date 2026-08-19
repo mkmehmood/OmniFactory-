@@ -27,74 +27,22 @@ import java.util.UUID
 
 data class MixtureUiState(
     val currentStep: Int = 1,
-    val targetIngredients: List<TargetIngredient> = listOf(
-        TargetIngredient(id = "ing_c35_1", name = "Portland Cement (CEM I 52.5N)", targetQuantity = 400.0, unit = "kg"),
-        TargetIngredient(id = "ing_c35_2", name = "Fine Silica Sand (0-4mm)", targetQuantity = 720.0, unit = "kg"),
-        TargetIngredient(id = "ing_c35_3", name = "Crushed Basalt Aggregate (10-20mm)", targetQuantity = 1150.0, unit = "kg"),
-        TargetIngredient(id = "ing_c35_4", name = "Batching Water", targetQuantity = 160.0, unit = "kg"),
-        TargetIngredient(id = "ing_c35_5", name = "Superplasticizer Admixture", targetQuantity = 20.0, unit = "kg")
-    ),
-    val anchorIngredientId: String = "ing_c35_1",
-    val actualAddedTexts: Map<String, String> = mapOf(
-        "ing_c35_1" to "480",
-        "ing_c35_2" to "800",
-        "ing_c35_3" to "1300",
-        "ing_c35_4" to "180",
-        "ing_c35_5" to "22"
-    ),
+    val targetIngredients: List<TargetIngredient> = emptyList(),
+    val anchorIngredientId: String = "",
+    val actualAddedTexts: Map<String, String> = emptyMap(),
     val newIngredientName: String = "",
     val newIngredientQty: String = "",
     val newIngredientUnit: String = "kg",
-    val batchCountText: String = "4",
-    val batchCount: Int = 4,
-    val currentRecipeTitle: String = "High-Strength Structural Concrete (C35/45)",
+    val batchCountText: String = "1",
+    val batchCount: Int = 1,
+    val currentRecipeTitle: String = "Custom Formulation",
     val showDatabaseBrowserSheet: Boolean = false,
     val showSaveRecipeDialog: Boolean = false,
-    val simplifiedRatio: RatioCalculationResult = MixtureCalculatorEngine.calculateSimplifiedRatio(
-        listOf(
-            TargetIngredient(id = "ing_c35_1", name = "Portland Cement (CEM I 52.5N)", targetQuantity = 400.0, unit = "kg"),
-            TargetIngredient(id = "ing_c35_2", name = "Fine Silica Sand (0-4mm)", targetQuantity = 720.0, unit = "kg"),
-            TargetIngredient(id = "ing_c35_3", name = "Crushed Basalt Aggregate (10-20mm)", targetQuantity = 1150.0, unit = "kg"),
-            TargetIngredient(id = "ing_c35_4", name = "Batching Water", targetQuantity = 160.0, unit = "kg"),
-            TargetIngredient(id = "ing_c35_5", name = "Superplasticizer Admixture", targetQuantity = 20.0, unit = "kg")
-        )
-    ),
-    val recalibrationResult: RecalibrationResult = MixtureCalculatorEngine.recalibrate(
-        ingredients = listOf(
-            TargetIngredient(id = "ing_c35_1", name = "Portland Cement (CEM I 52.5N)", targetQuantity = 400.0, unit = "kg"),
-            TargetIngredient(id = "ing_c35_2", name = "Fine Silica Sand (0-4mm)", targetQuantity = 720.0, unit = "kg"),
-            TargetIngredient(id = "ing_c35_3", name = "Crushed Basalt Aggregate (10-20mm)", targetQuantity = 1150.0, unit = "kg"),
-            TargetIngredient(id = "ing_c35_4", name = "Batching Water", targetQuantity = 160.0, unit = "kg"),
-            TargetIngredient(id = "ing_c35_5", name = "Superplasticizer Admixture", targetQuantity = 20.0, unit = "kg")
-        ),
-        anchorId = "ing_c35_1",
-        actualAddedMap = mapOf(
-            "ing_c35_1" to 480.0,
-            "ing_c35_2" to 800.0,
-            "ing_c35_3" to 1300.0,
-            "ing_c35_4" to 180.0,
-            "ing_c35_5" to 22.0
-        )
-    ),
+    val simplifiedRatio: RatioCalculationResult = MixtureCalculatorEngine.calculateSimplifiedRatio(emptyList()),
+    val recalibrationResult: RecalibrationResult = MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap()),
     val batchDivisionResult: BatchDivisionResult = MixtureCalculatorEngine.divideBatches(
-        recalibrationResult = MixtureCalculatorEngine.recalibrate(
-            ingredients = listOf(
-                TargetIngredient(id = "ing_c35_1", name = "Portland Cement (CEM I 52.5N)", targetQuantity = 400.0, unit = "kg"),
-                TargetIngredient(id = "ing_c35_2", name = "Fine Silica Sand (0-4mm)", targetQuantity = 720.0, unit = "kg"),
-                TargetIngredient(id = "ing_c35_3", name = "Crushed Basalt Aggregate (10-20mm)", targetQuantity = 1150.0, unit = "kg"),
-                TargetIngredient(id = "ing_c35_4", name = "Batching Water", targetQuantity = 160.0, unit = "kg"),
-                TargetIngredient(id = "ing_c35_5", name = "Superplasticizer Admixture", targetQuantity = 20.0, unit = "kg")
-            ),
-            anchorId = "ing_c35_1",
-            actualAddedMap = mapOf(
-                "ing_c35_1" to 480.0,
-                "ing_c35_2" to 800.0,
-                "ing_c35_3" to 1300.0,
-                "ing_c35_4" to 180.0,
-                "ing_c35_5" to 22.0
-            )
-        ),
-        batchCount = 4
+        MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap()),
+        1
     )
 )
 
@@ -155,7 +103,7 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun loadDefaultSample() {
-        loadPreset("concrete")
+        // Kept for backward compatibility
     }
 
     fun resetAll() {
@@ -167,14 +115,14 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
             newIngredientName = "",
             newIngredientQty = "",
             newIngredientUnit = "kg",
-            batchCountText = "2",
-            batchCount = 2,
+            batchCountText = "1",
+            batchCount = 1,
             currentRecipeTitle = "Custom Formulation",
             simplifiedRatio = MixtureCalculatorEngine.calculateSimplifiedRatio(emptyList()),
             recalibrationResult = MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap()),
             batchDivisionResult = MixtureCalculatorEngine.divideBatches(
                 MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap()),
-                2
+                1
             )
         )
     }

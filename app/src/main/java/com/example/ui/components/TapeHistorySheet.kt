@@ -379,7 +379,7 @@ fun TapeHistorySheet(
                         value = noteText,
                         onValueChange = { noteText = it },
                         label = { Text("Note / Description") },
-                        placeholder = { Text("e.g. Total rent, Groceries") },
+                        placeholder = { Text("Enter calculation note...") },
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth()
                     )

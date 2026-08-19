@@ -276,7 +276,6 @@ class MainActivity : ComponentActivity() {
                                             onSetUnitSalePrice = { salesViewModel.setUnitSalePrice(it) },
                                             onSaveTransaction = { salesViewModel.saveTransaction() },
                                             onClearInputs = { salesViewModel.clearInputs() },
-                                            onPopulateSample = { salesViewModel.populateSampleData() },
                                             onCopySummary = { copyToClipboard(it, "Sales reconciliation audit") },
                                             onOpenHistorySheet = { salesViewModel.setSavedHistorySheetOpen(true) },
                                             onCloseHistorySheet = { salesViewModel.setSavedHistorySheetOpen(false) },

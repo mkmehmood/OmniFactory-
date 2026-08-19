@@ -593,7 +593,7 @@ private fun ScalingParametersCard(
                     value = targetTotalText,
                     onValueChange = onSetTargetTotal,
                     label = { Text("Target Grand Total") },
-                    placeholder = { Text("e.g. 1000") },
+                    placeholder = { Text("0") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier
@@ -616,7 +616,7 @@ private fun ScalingParametersCard(
                     value = batchSizeText,
                     onValueChange = onSetBatchSize,
                     label = { Text("Batch Size (weight/quantity per unit)") },
-                    placeholder = { Text("e.g. 500") },
+                    placeholder = { Text("0") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier
@@ -681,7 +681,7 @@ private fun ScalingParametersCard(
                         value = batchCountText,
                         onValueChange = onSetBatchCount,
                         label = { Text("Number of Batches") },
-                        placeholder = { Text("e.g. 4") },
+                        placeholder = { Text("1") },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier
@@ -703,7 +703,7 @@ private fun ScalingParametersCard(
                         value = availableAmountText,
                         onValueChange = onSetAvailableAmount,
                         label = { Text("Total Available Amount") },
-                        placeholder = { Text("e.g. 2500") },
+                        placeholder = { Text("0") },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier

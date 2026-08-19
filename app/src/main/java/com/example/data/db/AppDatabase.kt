@@ -159,68 +159,6 @@ abstract class AppDatabase : RoomDatabase() {
                 )
             )
             database.mixtureRecipeDao().insertAll(recipes)
-
-            // 3. Prepopulate Authentic Sales Audit Records in PKR
-            val initialAudits = listOf(
-                SalesTransactionEntity(
-                    salesRep = "Tariq Mahmood",
-                    dateMillis = System.currentTimeMillis() - 86400000L * 2,
-                    totalSoldQty = 520.0,
-                    returnedQty = 15.0,
-                    expiredQty = 5.0,
-                    creditSalesQty = 60.0,
-                    recoveredCredit = 18500.0,
-                    physicalCashInHand = 145000.0,
-                    expense = 6500.0,
-                    unitSalePrice = 300.0,
-                    netSoldUnits = 500.0,
-                    cashQtyUnits = 440.0,
-                    expectedCash = 150500.0, // (440 * 300) + 18500 = 132000 + 18500 = 150500
-                    reconciledCash = 151500.0, // 145000 + 6500 = 151500
-                    discrepancy = 1000.0,
-                    status = "OVER",
-                    note = "Lahore South Industrial Hub Audit"
-                ),
-                SalesTransactionEntity(
-                    salesRep = "Zainab Malik",
-                    dateMillis = System.currentTimeMillis() - 86400000L,
-                    totalSoldQty = 350.0,
-                    returnedQty = 10.0,
-                    expiredQty = 0.0,
-                    creditSalesQty = 40.0,
-                    recoveredCredit = 12000.0,
-                    physicalCashInHand = 72000.0,
-                    expense = 3000.0,
-                    unitSalePrice = 250.0,
-                    netSoldUnits = 340.0,
-                    cashQtyUnits = 300.0,
-                    expectedCash = 87000.0, // (300 * 250) + 12000 = 75000 + 12000 = 87000
-                    reconciledCash = 75000.0, // 72000 + 3000 = 75000
-                    discrepancy = -12000.0,
-                    status = "SHORT",
-                    note = "Islamabad Sector F-10 Distribution"
-                ),
-                SalesTransactionEntity(
-                    salesRep = "Farhan Ahmed",
-                    dateMillis = System.currentTimeMillis() - 3600000L * 4,
-                    totalSoldQty = 480.0,
-                    returnedQty = 20.0,
-                    expiredQty = 10.0,
-                    creditSalesQty = 50.0,
-                    recoveredCredit = 25000.0,
-                    physicalCashInHand = 200000.0,
-                    expense = 9000.0,
-                    unitSalePrice = 460.0,
-                    netSoldUnits = 450.0,
-                    cashQtyUnits = 400.0,
-                    expectedCash = 209000.0, // (400 * 460) + 25000 = 184000 + 25000 = 209000
-                    reconciledCash = 209000.0, // 200000 + 9000 = 209000
-                    discrepancy = 0.0,
-                    status = "BALANCED",
-                    note = "Karachi Port Wholesale Terminal"
-                )
-            )
-            database.salesTransactionDao().insertAll(initialAudits)
         }
     }
 }
