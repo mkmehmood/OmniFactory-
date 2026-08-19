@@ -27,10 +27,16 @@ jobs:
       # releases (e.g. 9.7.x) can break the Compose compiler plugin
       # ("ComposePluginRegistrar is incompatible with the current version
       # of the compiler").
+      # The repo doesn't include a Gradle wrapper (gradlew), so we install
+      # Gradle directly instead of relying on one.
+      # AGP 9.1.1 itself reports "Minimum supported Gradle version is
+      # 9.3.1" — and Gradle 9.7.0 (too new) broke the Compose compiler
+      # plugin loading. 9.3.1 is the sweet spot: new enough for AGP,
+      # old enough to still be validated against it.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.1.0'
+          gradle-version: '9.3.1'
           cache-disabled: true
 
       # Optional: provide a placeholder .env so the "secrets" gradle plugin
