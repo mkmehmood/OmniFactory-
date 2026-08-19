@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.HorizontalDivider
@@ -48,6 +49,7 @@ import com.example.ui.theme.DigitalMonospaceFont
 enum class DrawerDestination {
     CALCULATOR,
     SALES,
+    MIXTURE_CALCULATOR,
     BATCH_SCALING,
     HISTORY,
     SETTINGS
@@ -178,7 +180,21 @@ fun AppNavigationDrawer(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 3. Batch Scaling & Proportional Ratio Scaler
+                // 3. Mixture Calculator (Ratio Recalibration Tool)
+                DrawerNavItem(
+                    label = "Mixture Calculator",
+                    subtitle = "6-step ratio recalibration wizard",
+                    icon = Icons.Default.Science,
+                    isSelected = currentDestination == DrawerDestination.MIXTURE_CALCULATOR,
+                    onClick = { onSelectDestination(DrawerDestination.MIXTURE_CALCULATOR) },
+                    testTag = "drawer_item_mixture_calculator",
+                    primaryColor = primaryColor,
+                    isDark = isDark
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 4. Batch Scaling & Proportional Ratio Scaler
                 DrawerNavItem(
                     label = "Batch & Ratio Scaler",
                     subtitle = "Proportional recipes & locking",

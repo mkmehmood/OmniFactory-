@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerValue
@@ -61,6 +62,7 @@ import com.example.ui.BatchScalingUiState
 import com.example.ui.BatchScalingViewModel
 import com.example.ui.CalculatorUiState
 import com.example.ui.CalculatorViewModel
+import com.example.ui.MixtureViewModel
 import com.example.ui.SalesViewModel
 import com.example.ui.components.AppNavigationDrawer
 import com.example.ui.components.DrawerDestination
@@ -68,6 +70,7 @@ import com.example.ui.components.SettingsDialog
 import com.example.ui.components.TapeHistorySheet
 import com.example.ui.screens.BasicCalculatorScreen
 import com.example.ui.screens.BatchScalingScreen
+import com.example.ui.screens.MixtureCalculatorScreen
 import com.example.ui.screens.SalesScreen
 import com.example.ui.theme.DigitalMonospaceFont
 import com.example.ui.theme.MyApplicationTheme
@@ -77,6 +80,7 @@ class MainActivity : ComponentActivity() {
     private val calculatorViewModel: CalculatorViewModel by viewModels()
     private val batchScalingViewModel: BatchScalingViewModel by viewModels()
     private val salesViewModel: SalesViewModel by viewModels()
+    private val mixtureViewModel: MixtureViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -156,6 +160,11 @@ class MainActivity : ComponentActivity() {
                                         calculatorViewModel.setTapeOpen(false)
                                         calculatorViewModel.setSettingsOpen(false)
                                     }
+                                    DrawerDestination.MIXTURE_CALCULATOR -> {
+                                        currentDestination = DrawerDestination.MIXTURE_CALCULATOR
+                                        calculatorViewModel.setTapeOpen(false)
+                                        calculatorViewModel.setSettingsOpen(false)
+                                    }
                                     DrawerDestination.BATCH_SCALING -> {
                                         currentDestination = DrawerDestination.BATCH_SCALING
                                         calculatorViewModel.setTapeOpen(false)
@@ -181,12 +190,14 @@ class MainActivity : ComponentActivity() {
                             val topBarTitle = when (currentDestination) {
                                 DrawerDestination.CALCULATOR -> "Calculator"
                                 DrawerDestination.SALES -> "Sales Reconciliation"
+                                DrawerDestination.MIXTURE_CALCULATOR -> "Mixture Ratio Recalibrator"
                                 DrawerDestination.BATCH_SCALING -> "Batch Scaler"
                                 else -> "CALCULATOR"
                             }
                             val topBarIcon = when (currentDestination) {
                                 DrawerDestination.CALCULATOR -> Icons.Default.WaterDrop
                                 DrawerDestination.SALES -> Icons.Default.ReceiptLong
+                                DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Science
                                 DrawerDestination.BATCH_SCALING -> Icons.Default.Scale
                                 else -> Icons.Default.WaterDrop
                             }
@@ -261,6 +272,11 @@ class MainActivity : ComponentActivity() {
                                             onCloseHistorySheet = { salesViewModel.setSavedHistorySheetOpen(false) },
                                             onLoadTransaction = { salesViewModel.loadTransactionIntoForm(it) },
                                             onDeleteTransaction = { salesViewModel.deleteTransaction(it) }
+                                        )
+                                    }
+                                    DrawerDestination.MIXTURE_CALCULATOR -> {
+                                        MixtureCalculatorScreen(
+                                            viewModel = mixtureViewModel
                                         )
                                     }
                                     DrawerDestination.BATCH_SCALING -> {
