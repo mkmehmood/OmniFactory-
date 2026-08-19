@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.WaterDrop
@@ -46,6 +47,7 @@ import com.example.ui.theme.DigitalMonospaceFont
 
 enum class DrawerDestination {
     CALCULATOR,
+    SALES,
     BATCH_SCALING,
     HISTORY,
     SETTINGS
@@ -101,14 +103,14 @@ fun AppNavigationDrawer(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "OmniCalc Pro",
+                                text = "CALCULATOR",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 17.sp,
                                 fontFamily = DigitalMonospaceFont,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Liquid Glass Edition",
+                                text = "Pro Edition",
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -162,7 +164,21 @@ fun AppNavigationDrawer(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 2. Batch Scaling & Proportional Ratio Scaler
+                // 2. Sales Reconciliation Option
+                DrawerNavItem(
+                    label = "Sales",
+                    subtitle = "Reconciliation & cash audit",
+                    icon = Icons.Default.ReceiptLong,
+                    isSelected = currentDestination == DrawerDestination.SALES,
+                    onClick = { onSelectDestination(DrawerDestination.SALES) },
+                    testTag = "drawer_item_sales",
+                    primaryColor = primaryColor,
+                    isDark = isDark
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 3. Batch Scaling & Proportional Ratio Scaler
                 DrawerNavItem(
                     label = "Batch & Ratio Scaler",
                     subtitle = "Proportional recipes & locking",

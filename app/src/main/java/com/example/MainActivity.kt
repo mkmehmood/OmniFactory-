@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -60,12 +61,14 @@ import com.example.ui.BatchScalingUiState
 import com.example.ui.BatchScalingViewModel
 import com.example.ui.CalculatorUiState
 import com.example.ui.CalculatorViewModel
+import com.example.ui.SalesViewModel
 import com.example.ui.components.AppNavigationDrawer
 import com.example.ui.components.DrawerDestination
 import com.example.ui.components.SettingsDialog
 import com.example.ui.components.TapeHistorySheet
 import com.example.ui.screens.BasicCalculatorScreen
 import com.example.ui.screens.BatchScalingScreen
+import com.example.ui.screens.SalesScreen
 import com.example.ui.theme.DigitalMonospaceFont
 import com.example.ui.theme.MyApplicationTheme
 import kotlinx.coroutines.launch
@@ -73,6 +76,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private val calculatorViewModel: CalculatorViewModel by viewModels()
     private val batchScalingViewModel: BatchScalingViewModel by viewModels()
+    private val salesViewModel: SalesViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,6 +84,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             val uiState by calculatorViewModel.uiState.collectAsStateWithLifecycle()
             val batchUiState by batchScalingViewModel.uiState.collectAsStateWithLifecycle()
+            val salesUiState by salesViewModel.uiState.collectAsStateWithLifecycle()
+            val savedSalesTransactions by salesViewModel.savedTransactions.collectAsStateWithLifecycle()
             val historyList by calculatorViewModel.historyList.collectAsStateWithLifecycle()
             val snackbarHostState = remember { SnackbarHostState() }
             val context = LocalContext.current
@@ -93,6 +99,15 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(Unit) {
                 calculatorViewModel.userMessage.collect { message ->
+                    snackbarHostState.showSnackbar(
+                        message = message,
+                        duration = SnackbarDuration.Short
+                    )
+                }
+            }
+
+            LaunchedEffect(Unit) {
+                salesViewModel.userMessage.collect { message ->
                     snackbarHostState.showSnackbar(
                         message = message,
                         duration = SnackbarDuration.Short
@@ -136,6 +151,11 @@ class MainActivity : ComponentActivity() {
                                         calculatorViewModel.setTapeOpen(false)
                                         calculatorViewModel.setSettingsOpen(false)
                                     }
+                                    DrawerDestination.SALES -> {
+                                        currentDestination = DrawerDestination.SALES
+                                        calculatorViewModel.setTapeOpen(false)
+                                        calculatorViewModel.setSettingsOpen(false)
+                                    }
                                     DrawerDestination.BATCH_SCALING -> {
                                         currentDestination = DrawerDestination.BATCH_SCALING
                                         calculatorViewModel.setTapeOpen(false)
@@ -158,9 +178,21 @@ class MainActivity : ComponentActivity() {
                     Scaffold(
                         modifier = Modifier.fillMaxSize(),
                         topBar = {
+                            val topBarTitle = when (currentDestination) {
+                                DrawerDestination.CALCULATOR -> "Calculator"
+                                DrawerDestination.SALES -> "Sales Reconciliation"
+                                DrawerDestination.BATCH_SCALING -> "Batch Scaler"
+                                else -> "CALCULATOR"
+                            }
+                            val topBarIcon = when (currentDestination) {
+                                DrawerDestination.CALCULATOR -> Icons.Default.WaterDrop
+                                DrawerDestination.SALES -> Icons.Default.ReceiptLong
+                                DrawerDestination.BATCH_SCALING -> Icons.Default.Scale
+                                else -> Icons.Default.WaterDrop
+                            }
                             LiquidGlassTopBar(
-                                title = if (currentDestination == DrawerDestination.BATCH_SCALING) "Batch Scaler" else "Calculator",
-                                icon = if (currentDestination == DrawerDestination.BATCH_SCALING) Icons.Default.Scale else Icons.Default.WaterDrop,
+                                title = topBarTitle,
+                                icon = topBarIcon,
                                 onOpenDrawer = {
                                     scope.launch { drawerState.open() }
                                 }
@@ -206,6 +238,31 @@ class MainActivity : ComponentActivity() {
                                             onPaste = { pasteFromClipboard() }
                                         )
                                     }
+                                    DrawerDestination.SALES -> {
+                                        SalesScreen(
+                                            uiState = salesUiState,
+                                            savedTransactions = savedSalesTransactions,
+                                            onSetSalesRep = { salesViewModel.setSalesRep(it) },
+                                            onAddCustomSalesRep = { salesViewModel.addCustomSalesRep(it) },
+                                            onSetDateMillis = { salesViewModel.setDateMillis(it) },
+                                            onSetTotalSoldQty = { salesViewModel.setTotalSoldQty(it) },
+                                            onSetReturnedQty = { salesViewModel.setReturnedQty(it) },
+                                            onSetExpiredQty = { salesViewModel.setExpiredQty(it) },
+                                            onSetCreditSalesQty = { salesViewModel.setCreditSalesQty(it) },
+                                            onSetRecoveredCredit = { salesViewModel.setRecoveredCredit(it) },
+                                            onSetPhysicalCash = { salesViewModel.setPhysicalCash(it) },
+                                            onSetExpense = { salesViewModel.setExpense(it) },
+                                            onSetUnitSalePrice = { salesViewModel.setUnitSalePrice(it) },
+                                            onSaveTransaction = { salesViewModel.saveTransaction() },
+                                            onClearInputs = { salesViewModel.clearInputs() },
+                                            onPopulateSample = { salesViewModel.populateSampleData() },
+                                            onCopySummary = { copyToClipboard(it, "Sales reconciliation audit") },
+                                            onOpenHistorySheet = { salesViewModel.setSavedHistorySheetOpen(true) },
+                                            onCloseHistorySheet = { salesViewModel.setSavedHistorySheetOpen(false) },
+                                            onLoadTransaction = { salesViewModel.loadTransactionIntoForm(it) },
+                                            onDeleteTransaction = { salesViewModel.deleteTransaction(it) }
+                                        )
+                                    }
                                     DrawerDestination.BATCH_SCALING -> {
                                         BatchScalingScreen(
                                             uiState = batchUiState,
@@ -229,7 +286,6 @@ class MainActivity : ComponentActivity() {
                                         )
                                     }
                                     else -> {
-                                        // Default fallback to calculator
                                         BasicCalculatorScreen(
                                             expression = uiState.expression,
                                             liveResult = uiState.liveResult,

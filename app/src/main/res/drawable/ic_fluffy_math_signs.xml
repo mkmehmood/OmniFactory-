@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Subtle Ambient Cloud/Fluffy Bubble Background Glow -->
+    <path
+        android:fillColor="#15FFFFFF"
+        android:pathData="M54,12 C74,12 90,26 90,46 C94,50 96,56 96,62 C96,76 84,88 70,88 C66,92 60,94 54,94 C46,94 38,90 34,84 C20,84 10,74 10,60 C10,50 16,42 24,38 C26,24 38,12 54,12 Z" />
+
+    <!-- Fluffy Quadrant 1: PLUS (+) - Soft Vibrant Cyan Bubble -->
+    <!-- Shadow -->
+    <path
+        android:fillColor="#1A0284C7"
+        android:pathData="M23,23 m-17,0 a17,17 0 1,1 34,0 a17,17 0 1,1 -34,0" />
+    <!-- Fluffy Body -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M35,21 C41,21 46,26 46,32 C46,38 41,43 35,43 L27,43 C21,43 16,38 16,32 C16,26 21,21 27,21 Z" />
+    <path
+        android:fillColor="#0EA5E9"
+        android:pathData="M31,17 C37,17 42,22 42,28 C42,34 37,39 31,39 L31,47 C31,53 26,58 20,58 C14,58 9,53 9,47 L9,28 C9,22 14,17 20,17 Z" />
+    <!-- Plus symbol in rounded fluffy style -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M27.5,23 C28.9,23 30,24.1 30,25.5 L30,30 L34.5,30 C35.9,30 37,31.1 37,32.5 C37,33.9 35.9,35 34.5,35 L30,35 L30,39.5 C30,40.9 28.9,42 27.5,42 C26.1,42 25,40.9 25,39.5 L25,35 L20.5,35 C19.1,35 18,33.9 18,32.5 C18,31.1 19.1,30 20.5,30 L25,30 L25,25.5 C25,24.1 26.1,23 27.5,23 Z" />
+
+    <!-- Fluffy Quadrant 2: MINUS (-) - Soft Puffy Rose/Coral Bubble -->
+    <path
+        android:fillColor="#FB7185"
+        android:pathData="M77,21 C83,21 88,26 88,32 C88,38 83,43 77,43 L69,43 C63,43 58,38 58,32 C58,26 63,21 69,21 Z" />
+    <!-- Minus sign in rounded pill style -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M65.5,30 C64.1,30 63,31.1 63,32.5 C63,33.9 64.1,35 65.5,35 L80.5,35 C81.9,35 83,33.9 83,32.5 C83,31.1 81.9,30 80.5,30 Z" />
+
+    <!-- Fluffy Quadrant 3: MULTIPLY (×) - Soft Puffy Amber/Orange Bubble -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M35,65 C41,65 46,70 46,76 C46,82 41,87 35,87 L27,87 C21,87 16,82 16,76 C16,70 21,65 27,65 Z" />
+    <!-- Multiply × symbol in rounded cross style -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M23.2,71.2 C24.2,70.2 25.8,70.2 26.8,71.2 L28.5,72.9 L30.2,71.2 C31.2,70.2 32.8,70.2 33.8,71.2 C34.8,72.2 34.8,73.8 33.8,74.8 L32.1,76.5 L33.8,78.2 C34.8,79.2 34.8,80.8 33.8,81.8 C32.8,82.8 31.2,82.8 30.2,81.8 L28.5,80.1 L26.8,81.8 C25.8,82.8 24.2,82.8 23.2,81.8 C22.2,80.8 22.2,79.2 23.2,78.2 L24.9,76.5 L23.2,74.8 C22.2,73.8 22.2,72.2 23.2,71.2 Z" />
+
+    <!-- Fluffy Quadrant 4: DIVIDE (÷) - Soft Puffy Emerald Bubble -->
+    <path
+        android:fillColor="#34D399"
+        android:pathData="M77,65 C83,65 88,70 88,76 C88,82 83,87 77,87 L69,87 C63,87 58,82 58,76 C58,70 63,65 69,65 Z" />
+    <!-- Divide ÷ top dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M73,69.5 C73,68.4 73.9,67.5 75,67.5 C76.1,67.5 77,68.4 77,69.5 C77,70.6 76.1,71.5 75,71.5 C73.9,71.5 73,70.6 73,69.5 Z" />
+    <!-- Divide ÷ bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M66.5,75 C65.1,75 64,76.1 64,77.5 C64,78.9 65.1,80 66.5,80 L83.5,80 C84.9,80 86,78.9 86,77.5 C86,76.1 84.9,75 83.5,75 Z" />
+    <!-- Divide ÷ bottom dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M73,85.5 C73,84.4 73.9,83.5 75,83.5 C76.1,83.5 77,84.4 77,85.5 C77,86.6 76.1,87.5 75,87.5 C73.9,87.5 73,86.6 73,85.5 Z" />
+
+    <!-- Soft highlight gloss accents for 3D fluffy look -->
+    <path
+        android:fillColor="#4DFFFFFF"
+        android:pathData="M23,24 C27,24 30,26 31,28 C28,28 25,27 22,26 Z" />
+    <path
+        android:fillColor="#4DFFFFFF"
+        android:pathData="M71,24 C75,24 78,26 79,28 C76,28 73,27 70,26 Z" />
+</vector>

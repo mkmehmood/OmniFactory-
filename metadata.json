@@ -1,6 +1,6 @@
 {
-  "name": "OmniCalc Pro",
-  "description": "Premium & basic grade productivity calculator with dark mode, 00 key, work & billing tracker, tax & margin tools, tip splitting, tape history, and unit math.",
+  "name": "CALCULATOR",
+  "description": "Modern productivity calculator with liquid glass styling, sales reconciliation, and batch scaling.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
