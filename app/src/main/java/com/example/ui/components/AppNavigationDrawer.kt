@@ -1,0 +1,336 @@
+package com.example.ui.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Scale
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.ui.theme.DigitalMonospaceFont
+
+enum class DrawerDestination {
+    CALCULATOR,
+    BATCH_SCALING,
+    HISTORY,
+    SETTINGS
+}
+
+@Composable
+fun AppNavigationDrawer(
+    currentDestination: DrawerDestination,
+    historyCount: Int,
+    onSelectDestination: (DrawerDestination) -> Unit,
+    onCloseDrawer: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val primaryColor = MaterialTheme.colorScheme.primary
+
+    ModalDrawerSheet(
+        drawerContainerColor = if (isDark) Color(0xFF090E17) else Color(0xFFF1F5F9),
+        drawerShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp),
+        modifier = modifier
+            .width(300.dp)
+            .fillMaxHeight()
+            .testTag("app_navigation_drawer")
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                // Header with App Title and Close button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(primaryColor.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.WaterDrop,
+                                contentDescription = null,
+                                tint = primaryColor,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "OmniCalc Pro",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 17.sp,
+                                fontFamily = DigitalMonospaceFont,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Liquid Glass Edition",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = onCloseDrawer,
+                        modifier = Modifier.testTag("close_drawer_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close Menu",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                HorizontalDivider(
+                    thickness = 1.dp,
+                    color = if (isDark) Color(0x22FFFFFF) else Color(0x22000000)
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "CALCULATORS & TOOLS",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.2.sp,
+                    fontFamily = DigitalMonospaceFont,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // 1. Calculator Option
+                DrawerNavItem(
+                    label = "Standard Calculator",
+                    subtitle = "Sequential series math",
+                    icon = Icons.Default.Calculate,
+                    isSelected = currentDestination == DrawerDestination.CALCULATOR,
+                    onClick = { onSelectDestination(DrawerDestination.CALCULATOR) },
+                    testTag = "drawer_item_calculator",
+                    primaryColor = primaryColor,
+                    isDark = isDark
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 2. Batch Scaling & Proportional Ratio Scaler
+                DrawerNavItem(
+                    label = "Batch & Ratio Scaler",
+                    subtitle = "Proportional recipes & locking",
+                    icon = Icons.Default.Scale,
+                    isSelected = currentDestination == DrawerDestination.BATCH_SCALING,
+                    onClick = { onSelectDestination(DrawerDestination.BATCH_SCALING) },
+                    testTag = "drawer_item_batch_scaling",
+                    primaryColor = primaryColor,
+                    isDark = isDark
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 3. History Option
+                DrawerNavItem(
+                    label = "History Tape",
+                    subtitle = if (historyCount > 0) "$historyCount saved calculations" else "View past calculations",
+                    icon = Icons.Default.History,
+                    badgeCount = historyCount,
+                    isSelected = currentDestination == DrawerDestination.HISTORY,
+                    onClick = { onSelectDestination(DrawerDestination.HISTORY) },
+                    testTag = "drawer_item_history",
+                    primaryColor = primaryColor,
+                    isDark = isDark
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 4. Settings Option
+                DrawerNavItem(
+                    label = "Settings",
+                    subtitle = "Theme, accents & haptics",
+                    icon = Icons.Default.Settings,
+                    isSelected = currentDestination == DrawerDestination.SETTINGS,
+                    onClick = { onSelectDestination(DrawerDestination.SETTINGS) },
+                    testTag = "drawer_item_settings",
+                    primaryColor = primaryColor,
+                    isDark = isDark
+                )
+            }
+
+            // Footer Panel
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(
+                        1.dp,
+                        if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
+                        RoundedCornerShape(16.dp)
+                    ),
+                color = if (isDark) Color(0x14FFFFFF) else Color(0x10000000),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Palette,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Liquid Glass Pro v1.2",
+                        fontFamily = DigitalMonospaceFont,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DrawerNavItem(
+    label: String,
+    subtitle: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    testTag: String,
+    primaryColor: Color,
+    isDark: Boolean,
+    badgeCount: Int = 0
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .border(
+                width = 1.dp,
+                brush = Brush.horizontalGradient(
+                    listOf(
+                        if (isSelected) primaryColor else Color.Transparent,
+                        Color.Transparent
+                    )
+                ),
+                shape = RoundedCornerShape(18.dp)
+            )
+            .clickable { onClick() }
+            .testTag(testTag),
+        shape = RoundedCornerShape(18.dp),
+        color = if (isSelected) {
+            primaryColor.copy(alpha = 0.18f)
+        } else {
+            if (isDark) Color(0x10FFFFFF) else Color(0x0A000000)
+        }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(if (isSelected) primaryColor else primaryColor.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = label,
+                        tint = if (isSelected) (if (isDark) Color.Black else Color.White) else primaryColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = label,
+                        fontSize = 14.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = subtitle,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            if (badgeCount > 0) {
+                Surface(
+                    shape = CircleShape,
+                    color = primaryColor
+                ) {
+                    Text(
+                        text = if (badgeCount > 99) "99+" else "$badgeCount",
+                        fontFamily = DigitalMonospaceFont,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDark) Color.Black else Color.White,
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                    )
+                }
+            }
+        }
+    }
+}
