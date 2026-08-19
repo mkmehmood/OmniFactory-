@@ -22,12 +22,16 @@ jobs:
           java-version: '17'
 
       # The repo doesn't include a Gradle wrapper (gradlew), so we install
-      # Gradle directly instead of relying on one. "current" resolves the
-      # latest stable Gradle, which is needed for AGP 9.1.1.
+      # Gradle directly instead of relying on one. Pinned to 9.1.0 because
+      # that's what AGP 9.1.1 was built/tested against — newer Gradle
+      # releases (e.g. 9.7.x) can break the Compose compiler plugin
+      # ("ComposePluginRegistrar is incompatible with the current version
+      # of the compiler").
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: current
+          gradle-version: '9.1.0'
+          cache-disabled: true
 
       # Optional: provide a placeholder .env so the "secrets" gradle plugin
       # has something to read (keeps GEMINI_API_KEY out of the APK unless set).
@@ -53,8 +57,11 @@ jobs:
               -dname "CN=Android Debug,O=Android,C=US"
           fi
 
+      # --no-configuration-cache / --no-build-cache: force Gradle to resolve
+      # everything fresh. Rules out a stale cached dependency resolution
+      # from earlier runs (with a different Gradle version) being reused.
       - name: Build debug APK
-        run: gradle assembleDebug --stacktrace
+        run: gradle assembleDebug --stacktrace --no-configuration-cache --no-build-cache --refresh-dependencies
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
