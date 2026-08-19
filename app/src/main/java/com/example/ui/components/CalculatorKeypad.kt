@@ -49,6 +49,8 @@ import com.example.ui.theme.PureLightGlassBorder
 import com.example.ui.theme.PureLightGlassSurface
 import com.example.ui.theme.PureLightGlassSurfacePressed
 import com.example.ui.theme.PureLightTextPrimary
+import com.example.ui.theme.ShapeStructureStyle
+import com.example.ui.theme.toButtonShape
 
 enum class KeyType {
     NUMBER,
@@ -72,6 +74,7 @@ fun CalculatorKeypad(
     showDoubleZeroKey: Boolean = true,
     enableAnimations: Boolean = true,
     hapticEnabled: Boolean = true,
+    shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
@@ -119,6 +122,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onClear() },
                     testTag = "key_clear",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
                 LiquidGlassKey(
@@ -128,6 +132,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onBackspace() },
                     testTag = "key_backspace",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
                 LiquidGlassKey(
@@ -137,6 +142,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onPercent() },
                     testTag = "key_percent",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
                 LiquidGlassKey(
@@ -145,6 +151,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onOperator("÷") },
                     testTag = "key_divide",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -160,6 +167,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onDigit("7") },
                     testTag = "key_7",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
                 LiquidGlassKey(
@@ -168,6 +176,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onDigit("8") },
                     testTag = "key_8",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
                 LiquidGlassKey(
@@ -176,6 +185,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onDigit("9") },
                     testTag = "key_9",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
                 LiquidGlassKey(
@@ -184,6 +194,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onOperator("×") },
                     testTag = "key_multiply",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -199,6 +210,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onDigit("4") },
                     testTag = "key_4",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
                 LiquidGlassKey(
@@ -207,6 +219,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onDigit("5") },
                     testTag = "key_5",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
                 LiquidGlassKey(
@@ -215,6 +228,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onDigit("6") },
                     testTag = "key_6",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
                 LiquidGlassKey(
@@ -223,6 +237,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onOperator("−") },
                     testTag = "key_subtract",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -238,6 +253,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onDigit("1") },
                     testTag = "key_1",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
                 LiquidGlassKey(
@@ -246,6 +262,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onDigit("2") },
                     testTag = "key_2",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
                 LiquidGlassKey(
@@ -254,6 +271,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onDigit("3") },
                     testTag = "key_3",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
                 LiquidGlassKey(
@@ -262,6 +280,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onOperator("+") },
                     testTag = "key_add",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -277,6 +296,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onDigit("0") },
                     testTag = "key_0",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
                 if (showDoubleZeroKey) {
@@ -286,6 +306,7 @@ fun CalculatorKeypad(
                         onClick = { performHaptic(); onDoubleZero() },
                         testTag = "key_double_zero",
                         enableAnimations = enableAnimations,
+                        shapeStructureStyle = shapeStructureStyle,
                         modifier = Modifier.weight(1f)
                     )
                 } else {
@@ -295,6 +316,7 @@ fun CalculatorKeypad(
                         onClick = { performHaptic(); onNegate() },
                         testTag = "key_negate",
                         enableAnimations = enableAnimations,
+                        shapeStructureStyle = shapeStructureStyle,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -304,6 +326,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onDigit(".") },
                     testTag = "key_decimal",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
                 LiquidGlassKey(
@@ -312,6 +335,7 @@ fun CalculatorKeypad(
                     onClick = { performHaptic(); onEquals() },
                     testTag = "key_equals",
                     enableAnimations = enableAnimations,
+                    shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -328,6 +352,7 @@ private fun LiquidGlassKey(
     onClick: () -> Unit,
     testTag: String,
     enableAnimations: Boolean,
+    shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     modifier: Modifier = Modifier
 ) {
     val isDark = MaterialTheme.colorScheme.background.red < 0.2f
@@ -395,7 +420,8 @@ private fun LiquidGlassKey(
         }
     }
 
-    val shape = RoundedCornerShape(20.dp)
+    val shape = shapeStructureStyle.toButtonShape()
+    val borderWidth = if (shapeStructureStyle == ShapeStructureStyle.LINE_BORDER) 1.5.dp else 1.dp
 
     Box(
         modifier = modifier
@@ -407,7 +433,7 @@ private fun LiquidGlassKey(
             .clip(shape)
             .background(glassBg)
             .border(
-                width = 1.dp,
+                width = borderWidth,
                 color = glassBorder,
                 shape = shape
             )

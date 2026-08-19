@@ -269,7 +269,7 @@ fun SalesScreen(
                     value = customName,
                     onValueChange = { customName = it },
                     label = { Text("Representative Name") },
-                    placeholder = { Text("e.g. John Doe") },
+                    placeholder = { Text("e.g. Farhan Ahmed, Tariq Mahmood") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier

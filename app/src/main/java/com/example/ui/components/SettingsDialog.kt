@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -18,8 +19,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.LinearScale
+import androidx.compose.material.icons.filled.PanoramaFishEye
+import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.AlertDialog
@@ -43,17 +48,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.AccentTheme
+import com.example.ui.theme.ShapeStructureStyle
 import com.example.ui.theme.ThemeMode
 
 @Composable
 fun SettingsDialog(
     currentThemeMode: ThemeMode,
     currentAccent: AccentTheme,
+    currentShapeStructure: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     showDoubleZeroKey: Boolean,
     enableAnimations: Boolean,
     hapticEnabled: Boolean,
     onThemeModeChange: (ThemeMode) -> Unit,
     onAccentChange: (AccentTheme) -> Unit,
+    onShapeStructureChange: (ShapeStructureStyle) -> Unit = {},
     onToggleDoubleZero: (Boolean) -> Unit,
     onToggleAnimations: (Boolean) -> Unit,
     onHapticToggle: (Boolean) -> Unit,
@@ -83,7 +91,7 @@ fun SettingsDialog(
                     )
                 }
                 Spacer(modifier = Modifier.width(10.dp))
-                Text("Liquid Glass Settings", fontWeight = FontWeight.Bold)
+                Text("Calculator Settings", fontWeight = FontWeight.Bold)
             }
         },
         text = {
@@ -129,9 +137,57 @@ fun SettingsDialog(
 
                 HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
 
+                // Button & Input Fields Geometry / Structure
+                Text(
+                    text = "Button & Input Field Structure",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Choose the shape style for keypad keys, cards, and input fields",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ShapeStructureCard(
+                        title = "Rounded Squircle",
+                        subtitle = "Smooth 18dp rounded corners",
+                        icon = Icons.Default.RoundedCorner,
+                        isSelected = currentShapeStructure == ShapeStructureStyle.ROUNDED,
+                        onClick = { onShapeStructureChange(ShapeStructureStyle.ROUNDED) }
+                    )
+                    ShapeStructureCard(
+                        title = "Pill / Capsule",
+                        subtitle = "Continuous pill oval geometry",
+                        icon = Icons.Default.PanoramaFishEye,
+                        isSelected = currentShapeStructure == ShapeStructureStyle.PILL,
+                        onClick = { onShapeStructureChange(ShapeStructureStyle.PILL) }
+                    )
+                    ShapeStructureCard(
+                        title = "Line / Minimal Border",
+                        subtitle = "Architectural line borders with subtle radius",
+                        icon = Icons.Default.LinearScale,
+                        isSelected = currentShapeStructure == ShapeStructureStyle.LINE_BORDER,
+                        onClick = { onShapeStructureChange(ShapeStructureStyle.LINE_BORDER) }
+                    )
+                    ShapeStructureCard(
+                        title = "Geometric Modern",
+                        subtitle = "Sharp crisp beveled rectangular keys",
+                        icon = Icons.Default.CropSquare,
+                        isSelected = currentShapeStructure == ShapeStructureStyle.SHARP,
+                        onClick = { onShapeStructureChange(ShapeStructureStyle.SHARP) }
+                    )
+                }
+
+                HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
+
                 // Liquid Accent Themes
                 Text(
-                    text = "Liquid Accent Color",
+                    text = "Accent Color",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -232,6 +288,69 @@ fun SettingsDialog(
             }
         }
     )
+}
+
+@Composable
+private fun ShapeStructureCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable { onClick() }
+            .border(
+                width = if (isSelected) 1.5.dp else 1.dp,
+                color = if (isSelected) primaryColor else (if (isDark) Color(0x33FFFFFF) else Color(0x20000000)),
+                shape = RoundedCornerShape(14.dp)
+            )
+            .testTag("shape_option_${title.lowercase().replace(" ", "_").replace("/", "_")}"),
+        shape = RoundedCornerShape(14.dp),
+        color = if (isSelected) primaryColor.copy(alpha = 0.18f) else if (isDark) Color(0x1AFFFFFF) else Color(0x10000000)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    fontSize = 14.sp,
+                    color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = subtitle,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (isSelected) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Selected",
+                    tint = primaryColor,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
 }
 
 @Composable

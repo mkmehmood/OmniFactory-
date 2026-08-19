@@ -5,10 +5,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,10 +15,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.ContentCopy
@@ -58,13 +58,13 @@ fun CalculatorDisplay(
     onPaste: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val scrollState = rememberScrollState()
+    val exprScrollState = rememberScrollState()
     val isDark = MaterialTheme.colorScheme.background.red < 0.2f
     val primaryColor = MaterialTheme.colorScheme.primary
     var isClipboardActionsVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(expression) {
-        scrollState.animateScrollTo(scrollState.maxValue)
+        exprScrollState.animateScrollTo(exprScrollState.maxValue)
     }
 
     Column(
@@ -74,15 +74,15 @@ fun CalculatorDisplay(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) {
-                // Tapping anywhere on the display reveals / hides the 3 clipboard action sections
+                // Tapping anywhere on the display reveals / hides clipboard actions
                 isClipboardActionsVisible = !isClipboardActionsVisible
             }
-            .padding(horizontal = 20.dp, vertical = 12.dp)
+            .padding(horizontal = 20.dp, vertical = 8.dp)
             .testTag("calculator_display"),
         verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = Alignment.End
     ) {
-        // Floating 3 Clipboard Action Sections (Copy Expr, Copy Result, Paste) revealed directly on tap
+        // Floating Clipboard Action Sections (Copy Expr, Copy Result, Paste)
         AnimatedVisibility(
             visible = isClipboardActionsVisible,
             enter = fadeIn() + scaleIn(initialScale = 0.92f),
@@ -91,7 +91,7 @@ fun CalculatorDisplay(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp)
+                    .padding(bottom = 10.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .border(
                         width = 1.dp,
@@ -114,7 +114,6 @@ fun CalculatorDisplay(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Section 1: Copy Expression
                     ClipboardSectionButton(
                         label = "Copy Expr",
                         icon = Icons.Default.ContentCopy,
@@ -126,7 +125,6 @@ fun CalculatorDisplay(
                         primaryColor = primaryColor
                     )
 
-                    // Section 2: Copy Result
                     ClipboardSectionButton(
                         label = "Copy Result",
                         icon = Icons.Default.Calculate,
@@ -138,7 +136,6 @@ fun CalculatorDisplay(
                         primaryColor = primaryColor
                     )
 
-                    // Section 3: Paste
                     ClipboardSectionButton(
                         label = "Paste",
                         icon = Icons.Default.ContentPaste,
@@ -153,28 +150,39 @@ fun CalculatorDisplay(
             }
         }
 
-        // Secondary / Expression Input Line (Monospace Digital Style)
-        Row(
+        // Multi-Line Expression Box (Shows line-by-line wrapping for long expressions instead of disappearing)
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(scrollState),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
+                .heightIn(min = 28.dp, max = 110.dp)
+                .verticalScroll(exprScrollState),
+            contentAlignment = Alignment.BottomEnd
         ) {
             Text(
                 text = if (expression.isEmpty()) "0" else expression,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = if (expression.length > 18) 20.sp else 24.sp,
+                fontSize = when {
+                    expression.length > 40 -> 16.sp
+                    expression.length > 20 -> 19.sp
+                    else -> 23.sp
+                },
                 fontFamily = DigitalMonospaceFont,
                 fontWeight = FontWeight.Medium,
-                letterSpacing = 1.sp,
+                letterSpacing = 0.8.sp,
+                lineHeight = when {
+                    expression.length > 40 -> 21.sp
+                    expression.length > 20 -> 25.sp
+                    else -> 30.sp
+                },
+                softWrap = true,
                 textAlign = TextAlign.End,
-                maxLines = 1,
-                modifier = Modifier.testTag("expression_text")
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("expression_text")
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         // Large Primary Evaluation / Monospaced Result Display
         val displayText = liveResult ?: if (expression.isEmpty()) "0" else expression
@@ -188,9 +196,13 @@ fun CalculatorDisplay(
             Text(
                 text = parts[0],
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = if (displayText.length > 10) 40.sp else 54.sp,
+                fontSize = when {
+                    displayText.length > 14 -> 32.sp
+                    displayText.length > 9 -> 40.sp
+                    else -> 52.sp
+                },
                 fontWeight = FontWeight.Light,
-                letterSpacing = 1.5.sp,
+                letterSpacing = 1.2.sp,
                 fontFamily = DigitalMonospaceFont,
                 textAlign = TextAlign.End
             )
@@ -198,16 +210,20 @@ fun CalculatorDisplay(
                 Text(
                     text = "." + parts[1],
                     color = primaryColor,
-                    fontSize = if (displayText.length > 10) 40.sp else 54.sp,
+                    fontSize = when {
+                        displayText.length > 14 -> 32.sp
+                        displayText.length > 9 -> 40.sp
+                        else -> 52.sp
+                    },
                     fontWeight = FontWeight.Normal,
-                    letterSpacing = 1.5.sp,
+                    letterSpacing = 1.2.sp,
                     fontFamily = DigitalMonospaceFont,
                     textAlign = TextAlign.End
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Clean Hairline Glass Divider
         HorizontalDivider(

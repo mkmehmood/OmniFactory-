@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.example.ui.components.HistoryTimeSplit
 import com.example.ui.theme.AccentTheme
+import com.example.ui.theme.ShapeStructureStyle
 import com.example.ui.theme.ThemeMode
 
 class UserPreferencesManager(context: Context) {
@@ -12,6 +13,20 @@ class UserPreferencesManager(context: Context) {
         PREFS_NAME,
         Context.MODE_PRIVATE
     )
+
+    var shapeStructureStyle: ShapeStructureStyle
+        get() {
+            val name = prefs.getString(KEY_SHAPE_STRUCTURE, ShapeStructureStyle.ROUNDED.name)
+                ?: ShapeStructureStyle.ROUNDED.name
+            return try {
+                ShapeStructureStyle.valueOf(name)
+            } catch (e: Exception) {
+                ShapeStructureStyle.ROUNDED
+            }
+        }
+        set(value) {
+            prefs.edit().putString(KEY_SHAPE_STRUCTURE, value.name).apply()
+        }
 
     var themeMode: ThemeMode
         get() {
@@ -67,6 +82,7 @@ class UserPreferencesManager(context: Context) {
 
     companion object {
         private const val PREFS_NAME = "calculator_user_prefs"
+        private const val KEY_SHAPE_STRUCTURE = "pref_shape_structure"
         private const val KEY_THEME_MODE = "pref_theme_mode"
         private const val KEY_ACCENT_THEME = "pref_accent_theme"
         private const val KEY_HISTORY_TIME_SPLIT = "pref_history_time_split"

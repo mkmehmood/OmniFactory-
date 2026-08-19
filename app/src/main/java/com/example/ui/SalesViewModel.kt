@@ -22,36 +22,36 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class SalesUiState(
-    val salesRep: String = "Alex Morgan",
+    val salesRep: String = "Farhan Ahmed",
     val availableReps: List<String> = listOf(
-        "Alex Morgan",
-        "Sarah Chen",
-        "Marcus Vance",
-        "Elena Rostova",
-        "David Kim",
-        "Jordan Lee"
+        "Farhan Ahmed",
+        "Tariq Mahmood",
+        "Zainab Malik",
+        "Bilal Khan",
+        "Ayesha Siddiqui",
+        "Hamza Raza"
     ),
     val dateMillis: Long = System.currentTimeMillis(),
-    val totalSoldQtyText: String = "150",
-    val returnedQtyText: String = "10",
-    val expiredQtyText: String = "5",
-    val creditSalesQtyText: String = "20",
-    val recoveredCreditText: String = "150.00",
-    val physicalCashText: String = "2975.00",
-    val expenseText: String = "50.00",
-    val unitSalePriceText: String = "25.00",
+    val totalSoldQtyText: String = "480",
+    val returnedQtyText: String = "20",
+    val expiredQtyText: String = "10",
+    val creditSalesQtyText: String = "50",
+    val recoveredCreditText: String = "25000.00",
+    val physicalCashText: String = "200000.00",
+    val expenseText: String = "9000.00",
+    val unitSalePriceText: String = "460.00",
     val reconciliationResult: SalesReconciliationResult = SalesReconciliationCalculator.calculate(
         SalesReconciliationInput(
-            salesRep = "Alex Morgan",
+            salesRep = "Farhan Ahmed",
             dateMillis = System.currentTimeMillis(),
-            totalSoldQty = 150.0,
-            returnedQty = 10.0,
-            expiredQty = 5.0,
-            creditSalesQty = 20.0,
-            recoveredCredit = 150.0,
-            physicalCashInHand = 2975.0,
-            expense = 50.0,
-            unitSalePrice = 25.0
+            totalSoldQty = 480.0,
+            returnedQty = 20.0,
+            expiredQty = 10.0,
+            creditSalesQty = 50.0,
+            recoveredCredit = 25000.0,
+            physicalCashInHand = 200000.0,
+            expense = 9000.0,
+            unitSalePrice = 460.0
         )
     ),
     val isSavedSuccess: Boolean = false,
@@ -182,14 +182,14 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
     fun populateSampleData() {
         _uiState.update { current ->
             val populated = current.copy(
-                totalSoldQtyText = "150",
-                returnedQtyText = "10",
-                expiredQtyText = "5",
-                creditSalesQtyText = "20",
-                recoveredCreditText = "150.00",
-                physicalCashText = "2975.00",
-                expenseText = "50.00",
-                unitSalePriceText = "25.00",
+                totalSoldQtyText = "480",
+                returnedQtyText = "20",
+                expiredQtyText = "10",
+                creditSalesQtyText = "50",
+                recoveredCreditText = "25000.00",
+                physicalCashText = "200000.00",
+                expenseText = "9000.00",
+                unitSalePriceText = "460.00",
                 isSavedSuccess = false
             )
             recalculate(populated)

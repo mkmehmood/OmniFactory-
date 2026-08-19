@@ -2,6 +2,8 @@ package com.example.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -10,6 +12,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 
 enum class ThemeMode {
     SYSTEM,
@@ -27,6 +30,30 @@ enum class AccentTheme(
     AMBER("Amber Glass", GlassAccents.AmberGlassPrimary, GlassAccents.AmberGlassLight),
     EMERALD("Emerald Glass", GlassAccents.EmeraldGlassPrimary, GlassAccents.EmeraldGlassLight),
     ICE("Ice Glass", GlassAccents.IceGlassPrimary, GlassAccents.IceGlassLight)
+}
+
+enum class ShapeStructureStyle(
+    val displayName: String,
+    val description: String
+) {
+    ROUNDED("Rounded Squircle", "Smooth 18dp rounded corners"),
+    PILL("Pill / Capsule", "Continuous 50% capsule geometry"),
+    LINE_BORDER("Line / Minimalist", "Crisp architectural line frame"),
+    SHARP("Geometric Modern", "Sleek sharp 4dp beveled edges")
+}
+
+fun ShapeStructureStyle.toButtonShape(): androidx.compose.foundation.shape.CornerBasedShape = when (this) {
+    ShapeStructureStyle.ROUNDED -> androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+    ShapeStructureStyle.PILL -> androidx.compose.foundation.shape.RoundedCornerShape(50)
+    ShapeStructureStyle.LINE_BORDER -> androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+    ShapeStructureStyle.SHARP -> androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+}
+
+fun ShapeStructureStyle.toInputShape(): androidx.compose.foundation.shape.CornerBasedShape = when (this) {
+    ShapeStructureStyle.ROUNDED -> androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
+    ShapeStructureStyle.PILL -> androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
+    ShapeStructureStyle.LINE_BORDER -> androidx.compose.foundation.shape.RoundedCornerShape(6.dp)
+    ShapeStructureStyle.SHARP -> androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
 }
 
 @Composable

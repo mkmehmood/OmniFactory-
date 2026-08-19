@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.example.ui.components.CalculatorDisplay
 import com.example.ui.components.CalculatorKeypad
+import com.example.ui.theme.ShapeStructureStyle
 
 @Composable
 fun BasicCalculatorScreen(
@@ -18,6 +19,7 @@ fun BasicCalculatorScreen(
     showDoubleZeroKey: Boolean = true,
     enableAnimations: Boolean = true,
     hapticEnabled: Boolean = true,
+    shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     onDigit: (String) -> Unit = {},
     onDoubleZero: () -> Unit = {},
     onOperator: (String) -> Unit = {},
@@ -63,6 +65,7 @@ fun BasicCalculatorScreen(
             showDoubleZeroKey = showDoubleZeroKey,
             enableAnimations = enableAnimations,
             hapticEnabled = hapticEnabled,
+            shapeStructureStyle = shapeStructureStyle,
             modifier = Modifier.fillMaxWidth()
         )
     }

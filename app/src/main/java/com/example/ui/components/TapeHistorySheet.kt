@@ -79,6 +79,7 @@ fun TapeHistorySheet(
     onTimeSplitChange: (HistoryTimeSplit) -> Unit,
     onDismiss: () -> Unit,
     onRestoreItem: (CalculationEntity) -> Unit,
+    onReuseExpression: (String) -> Unit = {},
     onDeleteItem: (CalculationEntity) -> Unit,
     onTogglePin: (CalculationEntity) -> Unit,
     onUpdateNote: (CalculationEntity, String) -> Unit,
@@ -343,6 +344,10 @@ fun TapeHistorySheet(
                                 onRestoreItem(item)
                                 onDismiss()
                             },
+                            onReuseExpr = {
+                                onReuseExpression(item.expression)
+                                onDismiss()
+                            },
                             onDelete = { onDeleteItem(item) },
                             onTogglePin = { onTogglePin(item) },
                             onEditNote = { editingEntity = item }
@@ -436,6 +441,7 @@ private fun TapeItemCard(
     isDark: Boolean,
     onToggleSelect: () -> Unit,
     onRestore: () -> Unit,
+    onReuseExpr: () -> Unit = {},
     onDelete: () -> Unit,
     onTogglePin: () -> Unit,
     onEditNote: () -> Unit
@@ -526,7 +532,7 @@ private fun TapeItemCard(
                 fontFamily = DigitalMonospaceFont,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -540,19 +546,41 @@ private fun TapeItemCard(
                     color = primaryColor
                 )
 
-                Button(
-                    onClick = onRestore,
-                    shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-                    modifier = Modifier.height(32.dp)
-                ) {
-                    Text(
-                        "Re-use",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isDark) Color.Black else Color.White
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Surface(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { onReuseExpr() }
+                            .border(1.dp, primaryColor.copy(alpha = 0.5f), CircleShape)
+                            .testTag("reuse_expr_btn_${entity.id}"),
+                        shape = CircleShape,
+                        color = primaryColor.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            "+ Expr",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = primaryColor,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
+
+                    Button(
+                        onClick = onRestore,
+                        shape = CircleShape,
+                        colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        modifier = Modifier
+                            .height(32.dp)
+                            .testTag("reuse_result_btn_${entity.id}")
+                    ) {
+                        Text(
+                            "+ Result",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDark) Color.Black else Color.White
+                        )
+                    }
                 }
             }
 

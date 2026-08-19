@@ -1,5 +1,5 @@
 {
-  "name": "CALCULATOR",
+  "name": "Calculator",
   "description": "Modern productivity calculator with liquid glass styling, sales reconciliation, and batch scaling.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

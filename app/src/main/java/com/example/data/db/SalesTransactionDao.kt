@@ -15,6 +15,9 @@ interface SalesTransactionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(entity: SalesTransactionEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(entities: List<SalesTransactionEntity>)
+
     @Delete
     suspend fun deleteTransaction(entity: SalesTransactionEntity)
 

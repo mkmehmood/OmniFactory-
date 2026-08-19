@@ -11,6 +11,7 @@ import com.example.domain.calculator.CalculationResult
 import com.example.domain.calculator.CalculatorEngine
 import com.example.ui.components.HistoryTimeSplit
 import com.example.ui.theme.AccentTheme
+import com.example.ui.theme.ShapeStructureStyle
 import com.example.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +31,7 @@ data class CalculatorUiState(
     val showDoubleZeroKey: Boolean = true,
     val enableAnimations: Boolean = true,
     val hapticEnabled: Boolean = true,
+    val shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     val themeMode: ThemeMode = ThemeMode.DARK,
     val accentTheme: AccentTheme = AccentTheme.AQUA,
     val historyTimeSplit: HistoryTimeSplit = HistoryTimeSplit.ALL_TIME,
@@ -48,6 +50,7 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
 
     private val _uiState = MutableStateFlow(
         CalculatorUiState(
+            shapeStructureStyle = userPreferencesManager.shapeStructureStyle,
             themeMode = userPreferencesManager.themeMode,
             accentTheme = userPreferencesManager.accentTheme,
             historyTimeSplit = userPreferencesManager.lastHistoryTimeSplit,
@@ -239,8 +242,35 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun restoreCalculation(entity: CalculationEntity) {
-        updateExpression(entity.result, isEvaluated = true)
-        showToast("Restored: ${entity.result}")
+        val current = _uiState.value.expression
+        val toInsert = entity.result.replace(",", "").trim()
+        val isNew = _uiState.value.isEvaluated
+
+        val newExpr = if (isNew || current.isEmpty() || current == "0") {
+            toInsert
+        } else if (current.last() in listOf('+', '−', '-', '×', '*', '÷', '/', '(')) {
+            current + toInsert
+        } else {
+            current + "+" + toInsert
+        }
+        updateExpression(newExpr, isEvaluated = false)
+        showToast("Appended: $toInsert")
+    }
+
+    fun reuseExpression(expressionToReuse: String) {
+        val current = _uiState.value.expression
+        val clean = expressionToReuse.trim()
+        val isNew = _uiState.value.isEvaluated
+
+        val newExpr = if (isNew || current.isEmpty() || current == "0") {
+            clean
+        } else if (current.last() in listOf('+', '−', '-', '×', '*', '÷', '/', '(')) {
+            "$current($clean)"
+        } else {
+            "$current+($clean)"
+        }
+        updateExpression(newExpr, isEvaluated = false)
+        showToast("Appended expression: $clean")
     }
 
     fun deleteCalculation(entity: CalculationEntity) {
@@ -274,6 +304,11 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     // UI Configuration & Persistence Actions
+    fun setShapeStructureStyle(style: ShapeStructureStyle) {
+        userPreferencesManager.shapeStructureStyle = style
+        _uiState.update { it.copy(shapeStructureStyle = style) }
+    }
+
     fun setThemeMode(mode: ThemeMode) {
         userPreferencesManager.themeMode = mode
         _uiState.update { it.copy(themeMode = mode) }

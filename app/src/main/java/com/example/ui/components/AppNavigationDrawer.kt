@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -51,6 +52,7 @@ enum class DrawerDestination {
     SALES,
     MIXTURE_CALCULATOR,
     BATCH_SCALING,
+    FORMULAS_DATABASE,
     HISTORY,
     SETTINGS
 }
@@ -202,6 +204,20 @@ fun AppNavigationDrawer(
                     isSelected = currentDestination == DrawerDestination.BATCH_SCALING,
                     onClick = { onSelectDestination(DrawerDestination.BATCH_SCALING) },
                     testTag = "drawer_item_batch_scaling",
+                    primaryColor = primaryColor,
+                    isDark = isDark
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 5. Structural Math & Formulas Database
+                DrawerNavItem(
+                    label = "Math & Structural DB",
+                    subtitle = "Persistent formulas & recipes",
+                    icon = Icons.Default.Storage,
+                    isSelected = currentDestination == DrawerDestination.FORMULAS_DATABASE,
+                    onClick = { onSelectDestination(DrawerDestination.FORMULAS_DATABASE) },
+                    testTag = "drawer_item_formulas_db",
                     primaryColor = primaryColor,
                     isDark = isDark
                 )

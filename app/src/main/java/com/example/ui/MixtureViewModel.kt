@@ -1,69 +1,120 @@
 package com.example.ui
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.data.db.AppDatabase
+import com.example.data.db.MathematicalFormulaEntity
+import com.example.data.db.MixtureRecipeEntity
 import com.example.domain.mixture.BatchDivisionResult
 import com.example.domain.mixture.MixtureCalculatorEngine
 import com.example.domain.mixture.RatioCalculationResult
 import com.example.domain.mixture.RecalibrationResult
 import com.example.domain.mixture.TargetIngredient
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.UUID
 
 data class MixtureUiState(
     val currentStep: Int = 1,
     val targetIngredients: List<TargetIngredient> = listOf(
-        TargetIngredient(id = "ing_1", name = "Resin (Part A)", targetQuantity = 100.0, unit = "kg"),
-        TargetIngredient(id = "ing_2", name = "Hardener (Part B)", targetQuantity = 50.0, unit = "kg"),
-        TargetIngredient(id = "ing_3", name = "Pigment Paste", targetQuantity = 10.0, unit = "kg")
+        TargetIngredient(id = "ing_c35_1", name = "Portland Cement (CEM I 52.5N)", targetQuantity = 400.0, unit = "kg"),
+        TargetIngredient(id = "ing_c35_2", name = "Fine Silica Sand (0-4mm)", targetQuantity = 720.0, unit = "kg"),
+        TargetIngredient(id = "ing_c35_3", name = "Crushed Basalt Aggregate (10-20mm)", targetQuantity = 1150.0, unit = "kg"),
+        TargetIngredient(id = "ing_c35_4", name = "Batching Water", targetQuantity = 160.0, unit = "kg"),
+        TargetIngredient(id = "ing_c35_5", name = "Superplasticizer Admixture", targetQuantity = 20.0, unit = "kg")
     ),
-    val anchorIngredientId: String = "ing_1",
+    val anchorIngredientId: String = "ing_c35_1",
     val actualAddedTexts: Map<String, String> = mapOf(
-        "ing_1" to "120",
-        "ing_2" to "40",
-        "ing_3" to "8"
+        "ing_c35_1" to "480",
+        "ing_c35_2" to "800",
+        "ing_c35_3" to "1300",
+        "ing_c35_4" to "180",
+        "ing_c35_5" to "22"
     ),
     val newIngredientName: String = "",
     val newIngredientQty: String = "",
     val newIngredientUnit: String = "kg",
-    val batchCountText: String = "3",
-    val batchCount: Int = 3,
+    val batchCountText: String = "4",
+    val batchCount: Int = 4,
+    val currentRecipeTitle: String = "High-Strength Structural Concrete (C35/45)",
+    val showDatabaseBrowserSheet: Boolean = false,
+    val showSaveRecipeDialog: Boolean = false,
     val simplifiedRatio: RatioCalculationResult = MixtureCalculatorEngine.calculateSimplifiedRatio(
         listOf(
-            TargetIngredient(id = "ing_1", name = "Resin (Part A)", targetQuantity = 100.0, unit = "kg"),
-            TargetIngredient(id = "ing_2", name = "Hardener (Part B)", targetQuantity = 50.0, unit = "kg"),
-            TargetIngredient(id = "ing_3", name = "Pigment Paste", targetQuantity = 10.0, unit = "kg")
+            TargetIngredient(id = "ing_c35_1", name = "Portland Cement (CEM I 52.5N)", targetQuantity = 400.0, unit = "kg"),
+            TargetIngredient(id = "ing_c35_2", name = "Fine Silica Sand (0-4mm)", targetQuantity = 720.0, unit = "kg"),
+            TargetIngredient(id = "ing_c35_3", name = "Crushed Basalt Aggregate (10-20mm)", targetQuantity = 1150.0, unit = "kg"),
+            TargetIngredient(id = "ing_c35_4", name = "Batching Water", targetQuantity = 160.0, unit = "kg"),
+            TargetIngredient(id = "ing_c35_5", name = "Superplasticizer Admixture", targetQuantity = 20.0, unit = "kg")
         )
     ),
     val recalibrationResult: RecalibrationResult = MixtureCalculatorEngine.recalibrate(
         ingredients = listOf(
-            TargetIngredient(id = "ing_1", name = "Resin (Part A)", targetQuantity = 100.0, unit = "kg"),
-            TargetIngredient(id = "ing_2", name = "Hardener (Part B)", targetQuantity = 50.0, unit = "kg"),
-            TargetIngredient(id = "ing_3", name = "Pigment Paste", targetQuantity = 10.0, unit = "kg")
+            TargetIngredient(id = "ing_c35_1", name = "Portland Cement (CEM I 52.5N)", targetQuantity = 400.0, unit = "kg"),
+            TargetIngredient(id = "ing_c35_2", name = "Fine Silica Sand (0-4mm)", targetQuantity = 720.0, unit = "kg"),
+            TargetIngredient(id = "ing_c35_3", name = "Crushed Basalt Aggregate (10-20mm)", targetQuantity = 1150.0, unit = "kg"),
+            TargetIngredient(id = "ing_c35_4", name = "Batching Water", targetQuantity = 160.0, unit = "kg"),
+            TargetIngredient(id = "ing_c35_5", name = "Superplasticizer Admixture", targetQuantity = 20.0, unit = "kg")
         ),
-        anchorId = "ing_1",
-        actualAddedMap = mapOf("ing_1" to 120.0, "ing_2" to 40.0, "ing_3" to 8.0)
+        anchorId = "ing_c35_1",
+        actualAddedMap = mapOf(
+            "ing_c35_1" to 480.0,
+            "ing_c35_2" to 800.0,
+            "ing_c35_3" to 1300.0,
+            "ing_c35_4" to 180.0,
+            "ing_c35_5" to 22.0
+        )
     ),
     val batchDivisionResult: BatchDivisionResult = MixtureCalculatorEngine.divideBatches(
         recalibrationResult = MixtureCalculatorEngine.recalibrate(
             ingredients = listOf(
-                TargetIngredient(id = "ing_1", name = "Resin (Part A)", targetQuantity = 100.0, unit = "kg"),
-                TargetIngredient(id = "ing_2", name = "Hardener (Part B)", targetQuantity = 50.0, unit = "kg"),
-                TargetIngredient(id = "ing_3", name = "Pigment Paste", targetQuantity = 10.0, unit = "kg")
+                TargetIngredient(id = "ing_c35_1", name = "Portland Cement (CEM I 52.5N)", targetQuantity = 400.0, unit = "kg"),
+                TargetIngredient(id = "ing_c35_2", name = "Fine Silica Sand (0-4mm)", targetQuantity = 720.0, unit = "kg"),
+                TargetIngredient(id = "ing_c35_3", name = "Crushed Basalt Aggregate (10-20mm)", targetQuantity = 1150.0, unit = "kg"),
+                TargetIngredient(id = "ing_c35_4", name = "Batching Water", targetQuantity = 160.0, unit = "kg"),
+                TargetIngredient(id = "ing_c35_5", name = "Superplasticizer Admixture", targetQuantity = 20.0, unit = "kg")
             ),
-            anchorId = "ing_1",
-            actualAddedMap = mapOf("ing_1" to 120.0, "ing_2" to 40.0, "ing_3" to 8.0)
+            anchorId = "ing_c35_1",
+            actualAddedMap = mapOf(
+                "ing_c35_1" to 480.0,
+                "ing_c35_2" to 800.0,
+                "ing_c35_3" to 1300.0,
+                "ing_c35_4" to 180.0,
+                "ing_c35_5" to 22.0
+            )
         ),
-        batchCount = 3
+        batchCount = 4
     )
 )
 
-class MixtureViewModel : ViewModel() {
+class MixtureViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val database = AppDatabase.getDatabase(application)
+    private val mixtureDao = database.mixtureRecipeDao()
+    private val formulaDao = database.mathematicalFormulaDao()
 
     private val _uiState = MutableStateFlow(MixtureUiState())
     val uiState: StateFlow<MixtureUiState> = _uiState.asStateFlow()
+
+    private val _userMessage = MutableSharedFlow<String>()
+    val userMessage: SharedFlow<String> = _userMessage.asSharedFlow()
+
+    val persistentRecipes: StateFlow<List<MixtureRecipeEntity>> = mixtureDao.getAllRecipes()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val persistentFormulas: StateFlow<List<MathematicalFormulaEntity>> = formulaDao.getAllFormulas()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun nextStep() {
         _uiState.update { current ->
@@ -95,6 +146,18 @@ class MixtureViewModel : ViewModel() {
         }
     }
 
+    fun setDatabaseBrowserSheetOpen(isOpen: Boolean) {
+        _uiState.update { it.copy(showDatabaseBrowserSheet = isOpen) }
+    }
+
+    fun setSaveRecipeDialogOpen(isOpen: Boolean) {
+        _uiState.update { it.copy(showSaveRecipeDialog = isOpen) }
+    }
+
+    fun loadDefaultSample() {
+        loadPreset("concrete")
+    }
+
     fun resetAll() {
         _uiState.value = MixtureUiState(
             currentStep = 1,
@@ -106,6 +169,7 @@ class MixtureViewModel : ViewModel() {
             newIngredientUnit = "kg",
             batchCountText = "2",
             batchCount = 2,
+            currentRecipeTitle = "Custom Formulation",
             simplifiedRatio = MixtureCalculatorEngine.calculateSimplifiedRatio(emptyList()),
             recalibrationResult = MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap()),
             batchDivisionResult = MixtureCalculatorEngine.divideBatches(
@@ -115,21 +179,159 @@ class MixtureViewModel : ViewModel() {
         )
     }
 
-    fun loadDefaultSample() {
-        val sample = listOf(
-            TargetIngredient(id = "ing_1", name = "Resin (Part A)", targetQuantity = 100.0, unit = "kg"),
-            TargetIngredient(id = "ing_2", name = "Hardener (Part B)", targetQuantity = 50.0, unit = "kg"),
-            TargetIngredient(id = "ing_3", name = "Pigment Paste", targetQuantity = 10.0, unit = "kg")
-        )
+    fun loadPreset(recipeType: String) {
+        val (title, ingredients, anchorIdx, actuals, batchCount) = when (recipeType) {
+            "concrete" -> {
+                val items = listOf(
+                    TargetIngredient(id = "ing_c35_1", name = "Portland Cement (CEM I 52.5N)", targetQuantity = 400.0, unit = "kg"),
+                    TargetIngredient(id = "ing_c35_2", name = "Fine Silica Sand (0-4mm)", targetQuantity = 720.0, unit = "kg"),
+                    TargetIngredient(id = "ing_c35_3", name = "Crushed Basalt Aggregate (10-20mm)", targetQuantity = 1150.0, unit = "kg"),
+                    TargetIngredient(id = "ing_c35_4", name = "Batching Water", targetQuantity = 160.0, unit = "kg"),
+                    TargetIngredient(id = "ing_c35_5", name = "Superplasticizer Admixture", targetQuantity = 20.0, unit = "kg")
+                )
+                Tuple5("High-Strength Structural Concrete (C35/45)", items, "ing_c35_1", mapOf(
+                    "ing_c35_1" to "480",
+                    "ing_c35_2" to "800",
+                    "ing_c35_3" to "1300",
+                    "ing_c35_4" to "180",
+                    "ing_c35_5" to "22"
+                ), 4)
+            }
+            "epoxy" -> {
+                val items = listOf(
+                    TargetIngredient(id = "ing_epx_1", name = "Epoxy Base Resin (Part A)", targetQuantity = 100.0, unit = "kg"),
+                    TargetIngredient(id = "ing_epx_2", name = "Amine Hardener (Part B)", targetQuantity = 50.0, unit = "kg"),
+                    TargetIngredient(id = "ing_epx_3", name = "Silica Fume Toughener", targetQuantity = 10.0, unit = "kg")
+                )
+                Tuple5("Aerospace Structural Epoxy Matrix (2:1)", items, "ing_epx_1", mapOf(
+                    "ing_epx_1" to "120",
+                    "ing_epx_2" to "50",
+                    "ing_epx_3" to "8"
+                ), 3)
+            }
+            "mortar" -> {
+                val items = listOf(
+                    TargetIngredient(id = "ing_mor_1", name = "Portland Cement", targetQuantity = 50.0, unit = "kg"),
+                    TargetIngredient(id = "ing_mor_2", name = "Hydrated Lime Type S", targetQuantity = 15.0, unit = "kg"),
+                    TargetIngredient(id = "ing_mor_3", name = "Washed River Sand", targetQuantity = 135.0, unit = "kg")
+                )
+                Tuple5("Structural Masonry Mortar (M10)", items, "ing_mor_1", mapOf(
+                    "ing_mor_1" to "60",
+                    "ing_mor_2" to "16",
+                    "ing_mor_3" to "150"
+                ), 2)
+            }
+            else -> {
+                val items = listOf(
+                    TargetIngredient(id = "ing_c35_1", name = "Portland Cement (CEM I 52.5N)", targetQuantity = 400.0, unit = "kg"),
+                    TargetIngredient(id = "ing_c35_2", name = "Fine Silica Sand (0-4mm)", targetQuantity = 720.0, unit = "kg"),
+                    TargetIngredient(id = "ing_c35_3", name = "Crushed Basalt Aggregate (10-20mm)", targetQuantity = 1150.0, unit = "kg"),
+                    TargetIngredient(id = "ing_c35_4", name = "Batching Water", targetQuantity = 160.0, unit = "kg"),
+                    TargetIngredient(id = "ing_c35_5", name = "Superplasticizer Admixture", targetQuantity = 20.0, unit = "kg")
+                )
+                Tuple5("High-Strength Structural Concrete (C35/45)", items, "ing_c35_1", mapOf(
+                    "ing_c35_1" to "480",
+                    "ing_c35_2" to "800",
+                    "ing_c35_3" to "1300",
+                    "ing_c35_4" to "180",
+                    "ing_c35_5" to "22"
+                ), 4)
+            }
+        }
+
         _uiState.update { current ->
             val updated = current.copy(
-                targetIngredients = sample,
-                anchorIngredientId = "ing_1",
-                actualAddedTexts = mapOf("ing_1" to "120", "ing_2" to "40", "ing_3" to "8"),
-                batchCountText = "3",
-                batchCount = 3
+                currentRecipeTitle = title,
+                targetIngredients = ingredients,
+                anchorIngredientId = anchorIdx,
+                actualAddedTexts = actuals,
+                batchCountText = batchCount.toString(),
+                batchCount = batchCount
             )
             recalculate(updated)
+        }
+    }
+
+    fun loadRecipeFromDb(entity: MixtureRecipeEntity) {
+        val parsedIngredients = mutableListOf<TargetIngredient>()
+        val actualsMap = mutableMapOf<String, String>()
+        try {
+            val array = JSONArray(entity.ingredientsJson)
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                val id = "ing_db_${entity.id}_$i"
+                val name = obj.optString("name", "Component ${i + 1}")
+                val qty = obj.optDouble("quantity", 100.0)
+                val unit = obj.optString("unit", entity.unit)
+                val ingredient = TargetIngredient(id = id, name = name, targetQuantity = qty, unit = unit)
+                parsedIngredients.add(ingredient)
+                actualsMap[id] = qty.toString()
+            }
+        } catch (e: Exception) {
+            // Fallback
+        }
+
+        if (parsedIngredients.isNotEmpty()) {
+            val anchorId = parsedIngredients.find { it.name.contains(entity.anchorIngredientName, ignoreCase = true) }?.id
+                ?: parsedIngredients.first().id
+
+            _uiState.update { current ->
+                val updated = current.copy(
+                    currentRecipeTitle = entity.title,
+                    targetIngredients = parsedIngredients,
+                    anchorIngredientId = anchorId,
+                    actualAddedTexts = actualsMap,
+                    batchCountText = entity.batchCount.toString(),
+                    batchCount = entity.batchCount,
+                    showDatabaseBrowserSheet = false
+                )
+                recalculate(updated)
+            }
+            viewModelScope.launch {
+                _userMessage.emit("Loaded '${entity.title}' from database")
+            }
+        }
+    }
+
+    fun saveCurrentRecipeToDb(title: String, category: String, description: String) {
+        val state = _uiState.value
+        if (state.targetIngredients.isEmpty()) return
+
+        val array = JSONArray()
+        for (item in state.targetIngredients) {
+            val obj = JSONObject()
+            obj.put("name", item.name)
+            obj.put("quantity", item.targetQuantity)
+            obj.put("unit", item.unit)
+            array.put(obj)
+        }
+
+        val anchorName = state.targetIngredients.find { it.id == state.anchorIngredientId }?.name ?: "Primary"
+        val totalWeight = state.targetIngredients.sumOf { it.targetQuantity }
+
+        val entity = MixtureRecipeEntity(
+            title = title.ifEmpty { state.currentRecipeTitle },
+            category = category.ifEmpty { "Structural" },
+            description = description.ifEmpty { "Persistent calibrated formulation" },
+            anchorIngredientName = anchorName,
+            scaleFactor = state.recalibrationResult.scaleFactor,
+            totalTargetWeight = totalWeight,
+            unit = state.targetIngredients.firstOrNull()?.unit ?: "kg",
+            ingredientsJson = array.toString(),
+            batchCount = state.batchCount
+        )
+
+        viewModelScope.launch {
+            mixtureDao.insert(entity)
+            _uiState.update { it.copy(showSaveRecipeDialog = false) }
+            _userMessage.emit("Formulation '$title' permanently saved to database")
+        }
+    }
+
+    fun deleteRecipeFromDb(entity: MixtureRecipeEntity) {
+        viewModelScope.launch {
+            mixtureDao.delete(entity)
+            _userMessage.emit("Removed formulation from database")
         }
     }
 
@@ -259,4 +461,12 @@ class MixtureViewModel : ViewModel() {
             batchDivisionResult = batchResult
         )
     }
+
+    private data class Tuple5<A, B, C, D, E>(
+        val first: A,
+        val second: B,
+        val third: C,
+        val fourth: D,
+        val fifth: E
+    )
 }
