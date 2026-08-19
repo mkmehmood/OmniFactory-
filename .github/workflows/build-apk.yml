@@ -34,6 +34,25 @@ jobs:
       - name: Ensure .env exists
         run: cp -n .env.example .env || true
 
+      # debug.keystore is in .gitignore, so it never exists on a fresh
+      # checkout. app/build.gradle.kts points the "debugConfig" signing
+      # config at ${rootDir}/debug.keystore with password/alias "android" /
+      # "androiddebugkey" / "android" — generate one that matches, or
+      # assembleDebug fails at :app:validateSigningDebug.
+      - name: Generate debug keystore
+        run: |
+          if [ ! -f "./debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore debug.keystore \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
       - name: Build debug APK
         run: gradle assembleDebug --stacktrace
 
