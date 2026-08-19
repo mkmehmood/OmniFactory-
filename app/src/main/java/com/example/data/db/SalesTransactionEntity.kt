@@ -20,6 +20,7 @@ data class SalesTransactionEntity(
     val netSoldUnits: Double,
     val cashQtyUnits: Double,
     val expectedCash: Double,
+    val reconciledCash: Double = physicalCashInHand + expense,
     val discrepancy: Double,
     val status: String,
     val timestamp: Long = System.currentTimeMillis(),

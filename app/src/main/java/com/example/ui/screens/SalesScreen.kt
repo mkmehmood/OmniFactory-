@@ -1,15 +1,12 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,15 +25,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ReceiptLong
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.AlertDialog
@@ -48,7 +44,6 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -68,10 +63,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -114,204 +107,149 @@ fun SalesScreen(
     onDeleteTransaction: (SalesTransactionEntity) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    var showDatePickerDialog by remember { mutableStateOf(false) }
+    var showCustomRepDialog by remember { mutableStateOf(false) }
+
     val isDark = MaterialTheme.colorScheme.background.red < 0.2f
     val primaryColor = MaterialTheme.colorScheme.primary
-    val scrollState = rememberScrollState()
+    val surfaceBg = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
+    val cardBorderColor = if (isDark) Color(0x28FFFFFF) else Color(0x1E000000)
 
-    val surfaceBg = if (isDark) Color(0x14FFFFFF) else Color(0x0A000000)
-    val cardBorderColor = if (isDark) Color(0x22FFFFFF) else Color(0x22000000)
-
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showCustomRepDialog by remember { mutableStateOf(false) }
-    var customRepText by remember { mutableStateOf("") }
-
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .testTag("sales_reconciliation_screen")
+            .testTag("sales_screen_container")
     ) {
-        // Screen Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(primaryColor.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ReceiptLong,
-                        contentDescription = null,
-                        tint = primaryColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Text(
-                        text = "Sales Reconciliation",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Cash & sales ledger balancing",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // History Button
-                IconButton(
-                    onClick = onOpenHistorySheet,
-                    modifier = Modifier.testTag("sales_history_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.History,
-                        contentDescription = "Saved Transactions",
-                        tint = primaryColor
-                    )
-                }
-
-                // Reset Button
-                IconButton(
-                    onClick = onClearInputs,
-                    modifier = Modifier.testTag("reset_sales_form_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Reset Inputs",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // 1. Sales Representative & Date Selector Card
-        SalesRepAndDateCard(
-            selectedRep = uiState.salesRep,
-            availableReps = uiState.availableReps,
-            dateMillis = uiState.dateMillis,
-            onSelectRep = onSetSalesRep,
-            onOpenCustomRepDialog = { showCustomRepDialog = true },
-            onOpenDatePicker = { showDatePicker = true },
-            primaryColor = primaryColor,
-            surfaceBg = surfaceBg,
-            borderColor = cardBorderColor,
-            isDark = isDark
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // 2. Two-Column Numeric Input Grid
-        NumericInputGridCard(
-            totalSoldQty = uiState.totalSoldQtyText,
-            returnedQty = uiState.returnedQtyText,
-            expiredQty = uiState.expiredQtyText,
-            creditSalesQty = uiState.creditSalesQtyText,
-            recoveredCredit = uiState.recoveredCreditText,
-            physicalCash = uiState.physicalCashText,
-            expense = uiState.expenseText,
-            unitSalePrice = uiState.unitSalePriceText,
-            onSetTotalSoldQty = onSetTotalSoldQty,
-            onSetReturnedQty = onSetReturnedQty,
-            onSetExpiredQty = onSetExpiredQty,
-            onSetCreditSalesQty = onSetCreditSalesQty,
-            onSetRecoveredCredit = onSetRecoveredCredit,
-            onSetPhysicalCash = onSetPhysicalCash,
-            onSetExpense = onSetExpense,
-            onSetUnitSalePrice = onSetUnitSalePrice,
-            primaryColor = primaryColor,
-            surfaceBg = surfaceBg,
-            borderColor = cardBorderColor,
-            isDark = isDark
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // 3. Calculated Reconciliation Result Panel
-        ReconciliationResultCard(
-            result = uiState.reconciliationResult,
-            onCopySummary = {
-                val summary = buildReconciliationSummaryText(uiState)
-                onCopySummary(summary)
-            },
-            primaryColor = primaryColor,
-            surfaceBg = surfaceBg,
-            borderColor = cardBorderColor,
-            isDark = isDark
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 4. Full-width Primary Action Button: "Save This Transaction"
-        Button(
-            onClick = onSaveTransaction,
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .shadow(6.dp, RoundedCornerShape(14.dp), ambientColor = primaryColor, spotColor = primaryColor)
-                .testTag("save_sales_transaction_button"),
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = primaryColor,
-                contentColor = if (isDark) Color.Black else Color.White
-            )
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+            // Header Bar with Quick Action Buttons
+            SalesScreenHeader(
+                savedCount = savedTransactions.size,
+                onOpenSavedSheet = onOpenHistorySheet,
+                onClearAll = onClearInputs,
+                primaryColor = primaryColor
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 1. Sales Representative Selector & Date Picker Card
+            SalesRepAndDateCard(
+                selectedRep = uiState.salesRep,
+                availableReps = uiState.availableReps,
+                dateMillis = uiState.dateMillis,
+                onSelectRep = onSetSalesRep,
+                onOpenCustomRepDialog = { showCustomRepDialog = true },
+                onOpenDatePicker = { showDatePickerDialog = true },
+                primaryColor = primaryColor,
+                surfaceBg = surfaceBg,
+                borderColor = cardBorderColor,
+                isDark = isDark
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 2. Two-Column Numeric Input Grid
+            NumericInputGridCard(
+                totalSoldQty = uiState.totalSoldQtyText,
+                returnedQty = uiState.returnedQtyText,
+                expiredQty = uiState.expiredQtyText,
+                creditSalesQty = uiState.creditSalesQtyText,
+                recoveredCredit = uiState.recoveredCreditText,
+                physicalCash = uiState.physicalCashText,
+                expense = uiState.expenseText,
+                unitSalePrice = uiState.unitSalePriceText,
+                onSetTotalSoldQty = onSetTotalSoldQty,
+                onSetReturnedQty = onSetReturnedQty,
+                onSetExpiredQty = onSetExpiredQty,
+                onSetCreditSalesQty = onSetCreditSalesQty,
+                onSetRecoveredCredit = onSetRecoveredCredit,
+                onSetPhysicalCash = onSetPhysicalCash,
+                onSetExpense = onSetExpense,
+                onSetUnitSalePrice = onSetUnitSalePrice,
+                primaryColor = primaryColor,
+                surfaceBg = surfaceBg,
+                borderColor = cardBorderColor,
+                isDark = isDark
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 3. Calculated Reconciliation Result Panel
+            CalculatedReconciliationResultPanel(
+                result = uiState.reconciliationResult,
+                onCopySummary = {
+                    val summaryText = buildReconciliationSummaryText(uiState)
+                    onCopySummary(summaryText)
+                    Toast.makeText(context, "Reconciliation summary copied to clipboard!", Toast.LENGTH_SHORT).show()
+                },
+                primaryColor = primaryColor,
+                surfaceBg = surfaceBg,
+                borderColor = cardBorderColor,
+                isDark = isDark
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 4. Full-Width Primary Action Button: "Save This Transaction"
+            Button(
+                onClick = onSaveTransaction,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+                    .testTag("save_transaction_button"),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = primaryColor,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp, pressedElevation = 6.dp)
             ) {
                 Icon(
-                    imageVector = if (uiState.isSavedSuccess) Icons.Default.Check else Icons.Default.Save,
+                    imageVector = Icons.Default.ReceiptLong,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = if (uiState.isSavedSuccess) "Transaction Saved!" else "Save This Transaction",
+                    text = "Save This Transaction",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    fontFamily = DigitalMonospaceFont
+                    fontFamily = DigitalMonospaceFont,
+                    letterSpacing = 0.5.sp
                 )
             }
-        }
 
-        Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
+        }
     }
 
-    // Material 3 Date Picker Dialog
-    if (showDatePicker) {
+    // Date Picker Dialog
+    if (showDatePickerDialog) {
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = uiState.dateMillis
         )
         DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
+            onDismissRequest = { showDatePickerDialog = false },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        datePickerState.selectedDateMillis?.let { onSetDateMillis(it) }
-                        showDatePicker = false
+                        datePickerState.selectedDateMillis?.let {
+                            onSetDateMillis(it)
+                        }
+                        showDatePickerDialog = false
                     },
-                    modifier = Modifier.testTag("confirm_date_picker_button")
+                    modifier = Modifier.testTag("date_picker_confirm_button")
                 ) {
                     Text("OK", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
+                TextButton(onClick = { showDatePickerDialog = false }) {
                     Text("Cancel")
                 }
             }
@@ -320,34 +258,37 @@ fun SalesScreen(
         }
     }
 
-    // Add Custom Sales Rep Dialog
+    // Custom Sales Rep Input Dialog
     if (showCustomRepDialog) {
+        var customName by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showCustomRepDialog = false },
             title = { Text("Add Sales Representative", fontWeight = FontWeight.Bold) },
             text = {
                 OutlinedTextField(
-                    value = customRepText,
-                    onValueChange = { customRepText = it },
-                    placeholder = { Text("e.g. Johnathan Doe") },
+                    value = customName,
+                    onValueChange = { customName = it },
+                    label = { Text("Representative Name") },
+                    placeholder = { Text("e.g. John Doe") },
                     singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("custom_sales_rep_input")
+                        .testTag("custom_rep_name_input")
                 )
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        if (customRepText.isNotBlank()) {
-                            onAddCustomSalesRep(customRepText)
-                            customRepText = ""
-                            showCustomRepDialog = false
+                        if (customName.isNotBlank()) {
+                            onAddCustomSalesRep(customName)
                         }
+                        showCustomRepDialog = false
                     },
-                    modifier = Modifier.testTag("submit_custom_sales_rep")
+                    shape = CircleShape,
+                    modifier = Modifier.testTag("save_custom_rep_button")
                 ) {
-                    Text("Add & Select")
+                    Text("Add")
                 }
             },
             dismissButton = {
@@ -358,22 +299,101 @@ fun SalesScreen(
         )
     }
 
-    // Saved Transactions Sheet
+    // Saved Transactions Bottom Sheet
     if (uiState.showSavedHistorySheet) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
         ModalBottomSheet(
             onDismissRequest = onCloseHistorySheet,
             sheetState = sheetState,
             containerColor = if (isDark) Color(0xFF0F172A) else Color(0xFFF8FAFC)
         ) {
-            SavedTransactionsSheetContent(
+            SavedTransactionsBottomSheet(
                 transactions = savedTransactions,
-                onLoadTransaction = onLoadTransaction,
+                onLoadTransaction = {
+                    onLoadTransaction(it)
+                    Toast.makeText(context, "Loaded ${it.salesRep}'s transaction", Toast.LENGTH_SHORT).show()
+                },
                 onDeleteTransaction = onDeleteTransaction,
                 onClose = onCloseHistorySheet,
                 primaryColor = primaryColor,
                 isDark = isDark
             )
+        }
+    }
+}
+
+@Composable
+private fun SalesScreenHeader(
+    savedCount: Int,
+    onOpenSavedSheet: () -> Unit,
+    onClearAll: () -> Unit,
+    primaryColor: Color
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text(
+                text = "SALES AUDIT",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = primaryColor,
+                letterSpacing = 1.sp
+            )
+            Text(
+                text = "Reconciliation & Cash Audit",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onOpenSavedSheet() }
+                    .testTag("saved_audits_badge_button"),
+                shape = RoundedCornerShape(12.dp),
+                color = primaryColor.copy(alpha = 0.15f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.History,
+                        contentDescription = "Saved Audits",
+                        tint = primaryColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "$savedCount Saved",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = primaryColor
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(6.dp))
+
+            IconButton(
+                onClick = onClearAll,
+                modifier = Modifier.size(34.dp).testTag("clear_sales_form_button")
+            ) {
+                Icon(
+                    imageVector = Icons.Default.RestartAlt,
+                    contentDescription = "Reset Form",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
     }
 }
@@ -453,9 +473,9 @@ private fun SalesRepAndDateCard(
 
                         Icon(
                             imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Select Sales Representative",
+                            contentDescription = "Dropdown Chevron",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -463,7 +483,7 @@ private fun SalesRepAndDateCard(
                 DropdownMenu(
                     expanded = dropdownExpanded,
                     onDismissRequest = { dropdownExpanded = false },
-                    modifier = Modifier.background(if (isDark) Color(0xFF1E293B) else Color(0xFFFFFFFF))
+                    modifier = Modifier.testTag("sales_rep_dropdown_menu")
                 ) {
                     availableReps.forEach { rep ->
                         DropdownMenuItem(
@@ -474,6 +494,10 @@ private fun SalesRepAndDateCard(
                                     color = if (rep == selectedRep) primaryColor else MaterialTheme.colorScheme.onSurface
                                 )
                             },
+                            onClick = {
+                                onSelectRep(rep)
+                                dropdownExpanded = false
+                            },
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.Person,
@@ -481,27 +505,21 @@ private fun SalesRepAndDateCard(
                                     tint = if (rep == selectedRep) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp)
                                 )
-                            },
-                            trailingIcon = if (rep == selectedRep) {
-                                { Icon(Icons.Default.Check, null, tint = primaryColor, modifier = Modifier.size(16.dp)) }
-                            } else null,
-                            onClick = {
-                                onSelectRep(rep)
-                                dropdownExpanded = false
-                            },
-                            modifier = Modifier.testTag("rep_option_$rep")
+                            }
                         )
                     }
-
-                    HorizontalDivider(color = if (isDark) Color(0x22FFFFFF) else Color(0x22000000))
 
                     DropdownMenuItem(
                         text = {
                             Text(
-                                text = "+ Add Custom Rep...",
-                                fontWeight = FontWeight.SemiBold,
+                                text = "+ Add Representative...",
+                                fontWeight = FontWeight.Bold,
                                 color = primaryColor
                             )
+                        },
+                        onClick = {
+                            dropdownExpanded = false
+                            onOpenCustomRepDialog()
                         },
                         leadingIcon = {
                             Icon(
@@ -510,12 +528,7 @@ private fun SalesRepAndDateCard(
                                 tint = primaryColor,
                                 modifier = Modifier.size(16.dp)
                             )
-                        },
-                        onClick = {
-                            dropdownExpanded = false
-                            onOpenCustomRepDialog()
-                        },
-                        modifier = Modifier.testTag("add_custom_rep_option")
+                        }
                     )
                 }
             }
@@ -614,14 +627,13 @@ private fun NumericInputGridCard(
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
-                text = "SALES & QUANTITY DATA",
+                text = "QUANTITIES & CASH AUDIT",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 0.8.sp
             )
-
             Spacer(modifier = Modifier.height(10.dp))
 
             // Row 1: Total Sold Qty | Returned Qty
@@ -690,7 +702,7 @@ private fun NumericInputGridCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 NumericGridInputField(
-                    label = "Recovered Credit ($)",
+                    label = "Recovered Credit (PKR)",
                     placeholder = "0.00",
                     value = recoveredCredit,
                     onValueChange = onSetRecoveredCredit,
@@ -701,7 +713,7 @@ private fun NumericInputGridCard(
                 )
 
                 NumericGridInputField(
-                    label = "Physical Cash In Hand ($)",
+                    label = "Physical Cash In Hand (PKR)",
                     placeholder = "0.00",
                     value = physicalCash,
                     onValueChange = onSetPhysicalCash,
@@ -720,7 +732,7 @@ private fun NumericInputGridCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 NumericGridInputField(
-                    label = "Expense ($)",
+                    label = "Expense (PKR)",
                     placeholder = "0.00",
                     value = expense,
                     onValueChange = onSetExpense,
@@ -732,7 +744,7 @@ private fun NumericInputGridCard(
 
                 // Unit Sale Price — visually emphasized with special highlight & focus glow
                 EmphasizedUnitPriceInputField(
-                    label = "Unit Sale Price ($)",
+                    label = "Unit Sale Price (PKR)",
                     placeholder = "0.00",
                     value = unitSalePrice,
                     onValueChange = onSetUnitSalePrice,
@@ -798,45 +810,46 @@ private fun EmphasizedUnitPriceInputField(
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
-    var isFocused by remember { mutableStateOf(false) }
-
+    val highlightAmber = Color(0xFFF59E0B)
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = {
-            Text(
-                text = label,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (isFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = label,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = highlightAmber,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         },
         placeholder = { Text(placeholder, fontSize = 12.sp) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         modifier = modifier
-            .onFocusChanged { isFocused = it.isFocused }
-            .testTag(testTag),
+            .testTag(testTag)
+            .border(1.5.dp, highlightAmber.copy(alpha = 0.6f), RoundedCornerShape(10.dp)),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = primaryColor,
-            unfocusedBorderColor = primaryColor.copy(alpha = 0.5f),
-            focusedContainerColor = primaryColor.copy(alpha = 0.12f),
-            unfocusedContainerColor = primaryColor.copy(alpha = 0.06f)
+            focusedBorderColor = highlightAmber,
+            unfocusedBorderColor = highlightAmber.copy(alpha = 0.4f),
+            focusedContainerColor = highlightAmber.copy(alpha = 0.12f),
+            unfocusedContainerColor = highlightAmber.copy(alpha = 0.06f)
         ),
         shape = RoundedCornerShape(10.dp),
         textStyle = androidx.compose.ui.text.TextStyle(
             fontSize = 14.sp,
             fontFamily = DigitalMonospaceFont,
             fontWeight = FontWeight.Bold,
-            color = if (isFocused) primaryColor else MaterialTheme.colorScheme.onSurface
+            color = if (isDark) Color(0xFFFDE68A) else Color(0xFFB45309)
         )
     )
 }
 
 @Composable
-private fun ReconciliationResultCard(
+private fun CalculatedReconciliationResultPanel(
     result: SalesReconciliationResult,
     onCopySummary: () -> Unit,
     primaryColor: Color,
@@ -845,13 +858,14 @@ private fun ReconciliationResultCard(
     isDark: Boolean
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("calculated_reconciliation_result_panel"),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = surfaceBg),
         border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            // Header with copy action
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -931,9 +945,19 @@ private fun ReconciliationResultCard(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Sales Cash: ${result.formattedCashFromSales} + Credit Rec: ${result.formattedRecoveredCredit} - Exp: ${result.formattedExpense}",
+                        text = "Expected: (${result.formattedCashQty} units × ${result.formattedUnitPrice}) + Rec Credit: ${result.formattedRecoveredCredit}",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontFamily = DigitalMonospaceFont
+                    )
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Text(
+                        text = "Reconciled Cash: Physical (${result.formattedPhysicalCash}) + Expense (${result.formattedExpense}) = ${result.formattedReconciledCash}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = primaryColor,
                         fontFamily = DigitalMonospaceFont
                     )
                 }
@@ -945,7 +969,8 @@ private fun ReconciliationResultCard(
             ReconciliationStatusBadge(
                 status = result.status,
                 discrepancyFormatted = result.formattedDiscrepancy,
-                physicalCashFormatted = result.formattedPhysicalCash,
+                reconciledCashFormatted = result.formattedReconciledCash,
+                expectedCashFormatted = result.formattedExpectedCash,
                 isDark = isDark
             )
 
@@ -994,7 +1019,8 @@ private fun ReconciliationResultCard(
 private fun ReconciliationStatusBadge(
     status: ReconciliationStatus,
     discrepancyFormatted: String,
-    physicalCashFormatted: String,
+    reconciledCashFormatted: String,
+    expectedCashFormatted: String,
     isDark: Boolean
 ) {
     val (badgeBgColor, badgeBorderColor, contentColor, statusTitle, statusSubtitle, statusIcon) = when (status) {
@@ -1004,7 +1030,7 @@ private fun ReconciliationStatusBadge(
                 Color(0xFF10B981).copy(alpha = 0.45f),
                 Color(0xFF10B981),
                 "BALANCED (EXACT MATCH)",
-                "Physical cash ($physicalCashFormatted) matches expected cash exactly",
+                "Reconciled cash ($reconciledCashFormatted) matches expected cash ($expectedCashFormatted) exactly",
                 Icons.Default.CheckCircle
             )
         }
@@ -1014,7 +1040,7 @@ private fun ReconciliationStatusBadge(
                 Color(0xFF0284C7).copy(alpha = 0.45f),
                 Color(0xFF38BDF8),
                 "SURPLUS (OVER / EXCESS)",
-                "Physical cash is over by $discrepancyFormatted surplus",
+                "Reconciled cash exceeds expected cash by $discrepancyFormatted surplus",
                 Icons.Default.TrendingUp
             )
         }
@@ -1024,7 +1050,7 @@ private fun ReconciliationStatusBadge(
                 Color(0xFFEF4444).copy(alpha = 0.45f),
                 Color(0xFFF87171),
                 "DEFICIT (SHORTAGE)",
-                "Physical cash is short by $discrepancyFormatted deficit",
+                "Reconciled cash is short of expected cash by $discrepancyFormatted deficit",
                 Icons.Default.TrendingDown
             )
         }
@@ -1103,14 +1129,16 @@ private fun SummaryStatBox(
         color = tintColor.copy(alpha = 0.08f)
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+            modifier = Modifier.padding(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = label,
                 fontSize = 10.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1119,12 +1147,11 @@ private fun SummaryStatBox(
 
             Text(
                 text = value,
-                fontSize = 15.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
                 color = tintColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(2.dp))
@@ -1133,6 +1160,7 @@ private fun SummaryStatBox(
                 text = subtext,
                 fontSize = 9.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1141,7 +1169,7 @@ private fun SummaryStatBox(
 }
 
 @Composable
-private fun SavedTransactionsSheetContent(
+private fun SavedTransactionsBottomSheet(
     transactions: List<SalesTransactionEntity>,
     onLoadTransaction: (SalesTransactionEntity) -> Unit,
     onDeleteTransaction: (SalesTransactionEntity) -> Unit,
@@ -1149,7 +1177,7 @@ private fun SavedTransactionsSheetContent(
     primaryColor: Color,
     isDark: Boolean
 ) {
-    val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy", Locale.US) }
+    val dateFormat = remember { SimpleDateFormat("MMM dd, yyyy • h:mm a", Locale.US) }
 
     Column(
         modifier = Modifier
@@ -1189,7 +1217,7 @@ private fun SavedTransactionsSheetContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 32.dp),
+                    .padding(vertical = 36.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1208,100 +1236,348 @@ private fun SavedTransactionsSheetContent(
                 }
             }
         } else {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(480.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                transactions.forEach { tx ->
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(
-                                1.dp,
-                                if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
-                                RoundedCornerShape(12.dp)
-                            )
-                            .clickable { onLoadTransaction(tx) },
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isDark) Color(0x10FFFFFF) else Color(0x06000000)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = tx.salesRep,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "• ${dateFormat.format(Date(tx.dateMillis))}",
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(3.dp))
-
-                                Text(
-                                    text = "Expected: $${String.format(Locale.US, "%.2f", tx.expectedCash)} | Cash: $${String.format(Locale.US, "%.2f", tx.physicalCashInHand)} | Net: ${tx.netSoldUnits.toInt()} units",
-                                    fontSize = 11.sp,
-                                    fontFamily = DigitalMonospaceFont,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = when (tx.status) {
-                                        "BALANCED" -> Color(0xFF10B981).copy(alpha = 0.2f)
-                                        "OVER" -> Color(0xFF0284C7).copy(alpha = 0.2f)
-                                        else -> Color(0xFFEF4444).copy(alpha = 0.2f)
-                                    }
-                                ) {
-                                    Text(
-                                        text = tx.status,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        fontFamily = DigitalMonospaceFont,
-                                        color = when (tx.status) {
-                                            "BALANCED" -> Color(0xFF10B981)
-                                            "OVER" -> Color(0xFF38BDF8)
-                                            else -> Color(0xFFF87171)
-                                        },
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                    )
-                                }
-
-                                IconButton(
-                                    onClick = { onDeleteTransaction(tx) },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = "Delete",
-                                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
+                items(transactions.size, key = { transactions[it].id }) { index ->
+                    val tx = transactions[index]
+                    SalesRecordCard(
+                        tx = tx,
+                        dateFormat = dateFormat,
+                        onLoad = { onLoadTransaction(tx) },
+                        onDelete = { onDeleteTransaction(tx) },
+                        primaryColor = primaryColor,
+                        isDark = isDark
+                    )
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
     }
+}
+
+/**
+ * Detailed Sales Record Card:
+ * Representative tag + date, delete action, then a labeled key-value field grid covering:
+ * Sold, Returned, Expired, Credit Sales, Recovered, Price, Expected Cash, Physical Cash, Expense, Reconciled Cash
+ * Capped with a full-width status banner showing balanced/short/over.
+ */
+@Composable
+private fun SalesRecordCard(
+    tx: SalesTransactionEntity,
+    dateFormat: SimpleDateFormat,
+    onLoad: () -> Unit,
+    onDelete: () -> Unit,
+    primaryColor: Color,
+    isDark: Boolean
+) {
+    val reconciledCash = if (tx.reconciledCash > 0) tx.reconciledCash else (tx.physicalCashInHand + tx.expense)
+    val discrepancy = reconciledCash - tx.expectedCash
+
+    val (statusBg, statusFg, statusText, statusIcon) = when {
+        tx.status == "BALANCED" || kotlin.math.abs(discrepancy) < 0.005 -> {
+            Tuple4(
+                Color(0xFF10B981),
+                Color(0xFFFFFFFF),
+                "BALANCED • Exact Match (PKR 0.00 Difference)",
+                Icons.Default.CheckCircle
+            )
+        }
+        tx.status == "OVER" || discrepancy > 0.005 -> {
+            Tuple4(
+                Color(0xFF0284C7),
+                Color(0xFFFFFFFF),
+                "SURPLUS • Excess of +PKR ${String.format(Locale.US, "%,.2f", discrepancy)}",
+                Icons.Default.TrendingUp
+            )
+        }
+        else -> {
+            Tuple4(
+                Color(0xFFEF4444),
+                Color(0xFFFFFFFF),
+                "DEFICIT • Shortage of -PKR ${String.format(Locale.US, "%,.2f", kotlin.math.abs(discrepancy))}",
+                Icons.Default.TrendingDown
+            )
+        }
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .border(
+                1.dp,
+                if (isDark) Color(0x2AFFFFFF) else Color(0x20000000),
+                RoundedCornerShape(16.dp)
+            )
+            .clickable { onLoad() }
+            .testTag("sales_record_card_${tx.id}"),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 1. Top Bar: Representative Tag + Date + Delete Action
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    // Representative Tag
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = primaryColor.copy(alpha = 0.15f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = primaryColor,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = tx.salesRep,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = primaryColor
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // Date & Time (12-hour format)
+                    Text(
+                        text = dateFormat.format(Date(tx.dateMillis)),
+                        fontSize = 11.sp,
+                        fontFamily = DigitalMonospaceFont,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                // Delete Action Button
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(32.dp).testTag("delete_transaction_button_${tx.id}")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                        modifier = Modifier.size(17.dp)
+                    )
+                }
+            }
+
+            // 2. Labeled Key-Value Field Grid (10 Fields)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Row 1: Sold | Returned | Expired
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    GridKeyValueBox(
+                        label = "Sold",
+                        value = formatQuantity(tx.totalSoldQty),
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                    GridKeyValueBox(
+                        label = "Returned",
+                        value = formatQuantity(tx.returnedQty),
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                    GridKeyValueBox(
+                        label = "Expired",
+                        value = formatQuantity(tx.expiredQty),
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                // Row 2: Credit Sales | Recovered | Price
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    GridKeyValueBox(
+                        label = "Credit Sales",
+                        value = formatQuantity(tx.creditSalesQty),
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                    GridKeyValueBox(
+                        label = "Recovered",
+                        value = "PKR ${formatCurrencyNum(tx.recoveredCredit)}",
+                        isDark = isDark,
+                        modifier = Modifier.weight(1.2f)
+                    )
+                    GridKeyValueBox(
+                        label = "Price",
+                        value = "PKR ${formatCurrencyNum(tx.unitSalePrice)}",
+                        isDark = isDark,
+                        modifier = Modifier.weight(1.1f)
+                    )
+                }
+
+                // Row 3: Expected Cash | Physical Cash
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    GridKeyValueBox(
+                        label = "Expected Cash",
+                        value = "PKR ${formatCurrencyNum(tx.expectedCash)}",
+                        highlightColor = primaryColor,
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                    GridKeyValueBox(
+                        label = "Physical Cash",
+                        value = "PKR ${formatCurrencyNum(tx.physicalCashInHand)}",
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                // Row 4: Expense | Reconciled Cash
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    GridKeyValueBox(
+                        label = "Expense",
+                        value = "PKR ${formatCurrencyNum(tx.expense)}",
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                    GridKeyValueBox(
+                        label = "Reconciled Cash",
+                        value = "PKR ${formatCurrencyNum(reconciledCash)}",
+                        highlightColor = Color(0xFF10B981),
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // 3. Full-Width Status Banner Capping the Card Bottom
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("status_banner_${tx.id}"),
+                color = statusBg
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = statusIcon,
+                        contentDescription = null,
+                        tint = statusFg,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = statusText,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = statusFg,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GridKeyValueBox(
+    label: String,
+    value: String,
+    isDark: Boolean,
+    modifier: Modifier = Modifier,
+    highlightColor: Color? = null
+) {
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .border(
+                1.dp,
+                highlightColor?.copy(alpha = 0.4f) ?: if (isDark) Color(0x1CFFFFFF) else Color(0x14000000),
+                RoundedCornerShape(8.dp)
+            ),
+        shape = RoundedCornerShape(8.dp),
+        color = highlightColor?.copy(alpha = 0.08f) ?: if (isDark) Color(0x10FFFFFF) else Color(0x06000000)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+        ) {
+            Text(
+                text = label,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = value,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = highlightColor ?: MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+private fun formatQuantity(qty: Double): String {
+    return if (qty % 1.0 == 0.0) {
+        String.format(Locale.US, "%,.0f", qty)
+    } else {
+        String.format(Locale.US, "%,.2f", qty)
+    }
+}
+
+private fun formatCurrencyNum(value: Double): String {
+    return String.format(Locale.US, "%,.2f", value)
 }
 
 private fun buildReconciliationSummaryText(uiState: SalesUiState): String {
@@ -1325,10 +1601,11 @@ private fun buildReconciliationSummaryText(uiState: SalesUiState): String {
         appendLine("• Unit Sale Price: ${res.formattedUnitPrice}")
         appendLine("• Sales Cash Revenue: ${res.formattedCashFromSales}")
         appendLine("• Recovered Credit: ${res.formattedRecoveredCredit}")
+        appendLine("• Expected Cash: ${res.formattedExpectedCash}")
+        appendLine("• Physical Cash: ${res.formattedPhysicalCash}")
         appendLine("• Expense: ${res.formattedExpense}")
-        appendLine("• EXPECTED CASH: ${res.formattedExpectedCash}")
-        appendLine("• PHYSICAL CASH: ${res.formattedPhysicalCash}")
-        appendLine("• DISCREPANCY: ${res.formattedDiscrepancy}")
+        appendLine("• Reconciled Cash: ${res.formattedReconciledCash}")
+        appendLine("• Difference (Status): ${res.formattedDiscrepancy}")
     }
 }
 
@@ -1339,4 +1616,11 @@ private data class Tuple6<A, B, C, D, E, F>(
     val d: D,
     val e: E,
     val f: F
+)
+
+private data class Tuple4<A, B, C, D>(
+    val a: A,
+    val b: B,
+    val c: C,
+    val d: D
 )

@@ -3,6 +3,6 @@
     <item
         android:width="72dp"
         android:height="72dp"
-        android:drawable="@drawable/ic_fluffy_math_signs"
+        android:drawable="@drawable/ic_math_signs"
         android:gravity="center" />
 </layer-list>

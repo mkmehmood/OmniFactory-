@@ -4,8 +4,8 @@ import java.util.Locale
 
 enum class ReconciliationStatus {
     BALANCED,
-    OVER,   // Surplus: Physical cash > Expected cash
-    SHORT   // Deficit: Physical cash < Expected cash
+    OVER,   // Surplus: Reconciled cash > Expected cash
+    SHORT   // Deficit: Reconciled cash < Expected cash
 }
 
 data class SalesReconciliationInput(
@@ -28,9 +28,9 @@ data class SalesReconciliationResult(
     val cashFromSales: Double,
     val recoveredCredit: Double,
     val expense: Double,
-    val totalGrossCash: Double,
     val expectedCash: Double,
     val physicalCashInHand: Double,
+    val reconciledCash: Double,
     val discrepancy: Double,
     val status: ReconciliationStatus,
     val formattedNetSold: String,
@@ -38,6 +38,7 @@ data class SalesReconciliationResult(
     val formattedUnitPrice: String,
     val formattedExpectedCash: String,
     val formattedPhysicalCash: String,
+    val formattedReconciledCash: String,
     val formattedDiscrepancy: String,
     val formattedExpense: String,
     val formattedRecoveredCredit: String,
@@ -56,23 +57,23 @@ object SalesReconciliationCalculator {
         val expense = maxOf(0.0, input.expense)
         val unitPrice = maxOf(0.0, input.unitSalePrice)
 
-        // Net Sold Units = Total Sold Qty - Returned Qty - Expired Qty
+        // NetSoldUnits = max(0, TotalSoldQty − ReturnedQty − ExpiredQty)
         val netSoldUnits = maxOf(0.0, totalSold - returned - expired)
 
-        // Cash Qty Units = Net Sold Units - Credit Sales Qty
+        // CashQtyUnits = max(0, NetSoldUnits − CreditSalesQty)
         val cashQtyUnits = maxOf(0.0, netSoldUnits - creditSales)
 
-        // Cash from sales
+        // Cash from sales = CashQtyUnits * UnitSalePrice
         val cashFromSales = cashQtyUnits * unitPrice
 
-        // Total Gross Cash before expenses = Cash from Sales + Recovered Credit
-        val totalGrossCash = cashFromSales + recoveredCredit
+        // ExpectedCash = (CashQtyUnits × UnitSalePrice) + RecoveredCredit
+        val expectedCash = cashFromSales + recoveredCredit
 
-        // Expected Cash = Total Gross Cash - Expense
-        val expectedCash = totalGrossCash - expense
+        // ReconciledCash = PhysicalCashInHand + Expense
+        val reconciledCash = physicalCash + expense
 
-        // Discrepancy = Physical Cash In Hand - Expected Cash
-        val discrepancy = physicalCash - expectedCash
+        // Status / Discrepancy = ReconciledCash − ExpectedCash
+        val discrepancy = reconciledCash - expectedCash
 
         val status = when {
             kotlin.math.abs(discrepancy) < 0.005 -> ReconciliationStatus.BALANCED
@@ -87,9 +88,9 @@ object SalesReconciliationCalculator {
             cashFromSales = cashFromSales,
             recoveredCredit = recoveredCredit,
             expense = expense,
-            totalGrossCash = totalGrossCash,
             expectedCash = expectedCash,
             physicalCashInHand = physicalCash,
+            reconciledCash = reconciledCash,
             discrepancy = discrepancy,
             status = status,
             formattedNetSold = formatNumber(netSoldUnits),
@@ -97,6 +98,7 @@ object SalesReconciliationCalculator {
             formattedUnitPrice = formatCurrency(unitPrice),
             formattedExpectedCash = formatCurrency(expectedCash),
             formattedPhysicalCash = formatCurrency(physicalCash),
+            formattedReconciledCash = formatCurrency(reconciledCash),
             formattedDiscrepancy = formatCurrencyWithSign(discrepancy),
             formattedExpense = formatCurrency(expense),
             formattedRecoveredCredit = formatCurrency(recoveredCredit),
@@ -113,14 +115,14 @@ object SalesReconciliationCalculator {
     }
 
     private fun formatCurrency(value: Double): String {
-        return String.format(Locale.US, "$%,.2f", value)
+        return String.format(Locale.US, "PKR %,.2f", value)
     }
 
     private fun formatCurrencyWithSign(value: Double): String {
         return when {
-            kotlin.math.abs(value) < 0.005 -> "$0.00"
-            value > 0 -> String.format(Locale.US, "+$%,.2f", value)
-            else -> String.format(Locale.US, "-$%,.2f", kotlin.math.abs(value))
+            kotlin.math.abs(value) < 0.005 -> "PKR 0.00"
+            value > 0 -> String.format(Locale.US, "+PKR %,.2f", value)
+            else -> String.format(Locale.US, "-PKR %,.2f", kotlin.math.abs(value))
         }
     }
 }

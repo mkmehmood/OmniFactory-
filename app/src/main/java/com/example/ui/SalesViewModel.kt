@@ -37,7 +37,7 @@ data class SalesUiState(
     val expiredQtyText: String = "5",
     val creditSalesQtyText: String = "20",
     val recoveredCreditText: String = "150.00",
-    val physicalCashText: String = "2900.00",
+    val physicalCashText: String = "2975.00",
     val expenseText: String = "50.00",
     val unitSalePriceText: String = "25.00",
     val reconciliationResult: SalesReconciliationResult = SalesReconciliationCalculator.calculate(
@@ -49,7 +49,7 @@ data class SalesUiState(
             expiredQty = 5.0,
             creditSalesQty = 20.0,
             recoveredCredit = 150.0,
-            physicalCashInHand = 2900.0,
+            physicalCashInHand = 2975.0,
             expense = 50.0,
             unitSalePrice = 25.0
         )
@@ -214,6 +214,7 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
             netSoldUnits = result.netSoldUnits,
             cashQtyUnits = result.cashQtyUnits,
             expectedCash = result.expectedCash,
+            reconciledCash = result.reconciledCash,
             discrepancy = result.discrepancy,
             status = result.status.name,
             timestamp = System.currentTimeMillis()
