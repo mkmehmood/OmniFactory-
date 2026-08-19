@@ -66,28 +66,21 @@ jobs:
       - name: Build debug APK
         run: gradle assembleDebug --stacktrace --no-configuration-cache --no-build-cache --refresh-dependencies
 
-      - name: Upload APK as workflow artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
-
-      # Copies the freshly built APK into the repo itself and pushes it, so
-      # it shows up as a normal file in the Code tab (app/release/app-debug.apk)
-      # instead of only being reachable through the Actions artifact download.
+      # Copies the freshly built APK straight into the repo root and pushes
+      # it, so it's a normal file in the Code tab (app-debug.apk) — no need
+      # to dig through the Actions artifact list.
       # Skipped on pull_request events, since GITHUB_TOKEN generally can't
       # push to PR branches (especially from forks).
       - name: Commit APK to repo
         if: github.event_name != 'pull_request'
         run: |
           set -e
-          mkdir -p app/release
-          cp app/build/outputs/apk/debug/*.apk app/release/app-debug.apk
+          cp app/build/outputs/apk/debug/*.apk app-debug.apk
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add app/release/app-debug.apk
+          git add app-debug.apk
 
           if git diff --cached --quiet; then
             echo "APK unchanged, nothing to commit."
