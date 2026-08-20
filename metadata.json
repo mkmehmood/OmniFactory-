@@ -1,6 +1,6 @@
 {
-  "name": "Calculator",
-  "description": "Modern productivity calculator with liquid glass styling, sales reconciliation, and batch scaling.",
+  "name": "Sarim",
+  "description": "Sarim Calculator & Sales Audit Suite developed by Mahmood Khan.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
