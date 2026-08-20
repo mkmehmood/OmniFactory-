@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.RestartAlt
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.AlertDialog
@@ -107,6 +108,7 @@ fun SalesScreen(
     onCloseHistorySheet: () -> Unit,
     onLoadTransaction: (SalesTransactionEntity) -> Unit,
     onDeleteTransaction: (SalesTransactionEntity) -> Unit,
+    onExportCsv: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -311,6 +313,7 @@ fun SalesScreen(
                 transactions = savedTransactions,
                 onLoadTransaction = onLoadTransaction,
                 onDeleteTransaction = onDeleteTransaction,
+                onExportCsv = onExportCsv,
                 onClose = onCloseHistorySheet,
                 primaryColor = primaryColor,
                 isDark = isDark
@@ -714,7 +717,7 @@ private fun NumericInputGridCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 NumericGridInputField(
-                    label = "Recovered Credit (₹)",
+                    label = "Recovered Credit (Rs.)",
                     placeholder = "0.00",
                     value = recoveredCredit,
                     onValueChange = onSetRecoveredCredit,
@@ -725,7 +728,7 @@ private fun NumericInputGridCard(
                 )
 
                 NumericGridInputField(
-                    label = "Physical Cash (₹)",
+                    label = "Physical Cash (Rs.)",
                     placeholder = "0.00",
                     value = physicalCash,
                     onValueChange = onSetPhysicalCash,
@@ -738,13 +741,13 @@ private fun NumericInputGridCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Row 4: Expense (₹) | Unit Sale Price (₹)
+            // Row 4: Expense (Rs.) | Unit Sale Price (Rs.)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 NumericGridInputField(
-                    label = "Expense (₹)",
+                    label = "Expense (Rs.)",
                     placeholder = "0.00",
                     value = expense,
                     onValueChange = onSetExpense,
@@ -755,7 +758,7 @@ private fun NumericInputGridCard(
                 )
 
                 EmphasizedUnitPriceInputField(
-                    label = "Unit Sale Price (₹)",
+                    label = "Unit Sale Price (Rs.)",
                     placeholder = "0.00",
                     value = unitSalePrice,
                     onValueChange = onSetUnitSalePrice,
@@ -768,9 +771,9 @@ private fun NumericInputGridCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Row 5: Commission Per Unit (₹)
+            // Row 5: Commission Per Unit (Rs.)
             EmphasizedCommissionInputField(
-                label = "Commission Per Unit (₹)",
+                label = "Commission Per Unit (Rs.)",
                 placeholder = "0.00",
                 value = commissionPerUnit,
                 onValueChange = onSetCommissionPerUnit,
@@ -1323,6 +1326,7 @@ private fun SavedTransactionsBottomSheet(
     transactions: List<SalesTransactionEntity>,
     onLoadTransaction: (SalesTransactionEntity) -> Unit,
     onDeleteTransaction: (SalesTransactionEntity) -> Unit,
+    onExportCsv: () -> Unit = {},
     onClose: () -> Unit,
     primaryColor: Color,
     isDark: Boolean
@@ -1356,8 +1360,23 @@ private fun SavedTransactionsBottomSheet(
                 )
             }
 
-            TextButton(onClick = onClose) {
-                Text("Done")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (transactions.isNotEmpty()) {
+                    IconButton(
+                        onClick = onExportCsv,
+                        modifier = Modifier.testTag("export_saved_sales_csv_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Export to CSV",
+                            tint = primaryColor
+                        )
+                    }
+                }
+
+                TextButton(onClick = onClose) {
+                    Text("Done")
+                }
             }
         }
 
@@ -1427,7 +1446,7 @@ private fun SalesRecordCard(
             Tuple4(
                 Color(0xFF10B981),
                 Color(0xFFFFFFFF),
-                "BALANCED • Exact Match (₹ 0.00 Difference)",
+                "BALANCED • Exact Match (Rs. 0.00 Difference)",
                 Icons.Default.CheckCircle
             )
         }
@@ -1435,7 +1454,7 @@ private fun SalesRecordCard(
             Tuple4(
                 Color(0xFF0284C7),
                 Color(0xFFFFFFFF),
-                "SURPLUS • Excess of +₹ ${IndianNumberFormatter.formatIndianDouble(discrepancy, 2)}",
+                "SURPLUS • Excess of +Rs. ${IndianNumberFormatter.formatIndianDouble(discrepancy, 2)}",
                 Icons.Default.TrendingUp
             )
         }
@@ -1443,7 +1462,7 @@ private fun SalesRecordCard(
             Tuple4(
                 Color(0xFFEF4444),
                 Color(0xFFFFFFFF),
-                "DEFICIT • Shortage of -₹ ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(discrepancy), 2)}",
+                "DEFICIT • Shortage of -Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(discrepancy), 2)}",
                 Icons.Default.TrendingDown
             )
         }
@@ -1577,13 +1596,13 @@ private fun SalesRecordCard(
                     )
                     GridKeyValueBox(
                         label = "Recovered",
-                        value = "₹ ${IndianNumberFormatter.formatIndianDouble(tx.recoveredCredit, 2)}",
+                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.recoveredCredit, 2)}",
                         isDark = isDark,
                         modifier = Modifier.weight(1.2f)
                     )
                     GridKeyValueBox(
                         label = "Price",
-                        value = "₹ ${IndianNumberFormatter.formatIndianDouble(tx.unitSalePrice, 2)}",
+                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.unitSalePrice, 2)}",
                         isDark = isDark,
                         modifier = Modifier.weight(1.1f)
                     )
@@ -1597,13 +1616,13 @@ private fun SalesRecordCard(
                     ) {
                         GridKeyValueBox(
                             label = "Commission Rate",
-                            value = "₹ ${IndianNumberFormatter.formatIndianDouble(tx.commissionPerUnit, 2)}/unit",
+                            value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.commissionPerUnit, 2)}/unit",
                             isDark = isDark,
                             modifier = Modifier.weight(1f)
                         )
                         GridKeyValueBox(
                             label = "Total Commission",
-                            value = "₹ ${IndianNumberFormatter.formatIndianDouble(tx.totalCommission, 2)}",
+                            value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.totalCommission, 2)}",
                             highlightColor = Color(0xFF10B981),
                             isDark = isDark,
                             modifier = Modifier.weight(1f)
@@ -1618,14 +1637,14 @@ private fun SalesRecordCard(
                 ) {
                     GridKeyValueBox(
                         label = "Expected Cash",
-                        value = "₹ ${IndianNumberFormatter.formatIndianDouble(tx.expectedCash, 2)}",
+                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.expectedCash, 2)}",
                         highlightColor = primaryColor,
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
                     )
                     GridKeyValueBox(
                         label = "Physical Cash",
-                        value = "₹ ${IndianNumberFormatter.formatIndianDouble(tx.physicalCashInHand, 2)}",
+                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.physicalCashInHand, 2)}",
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
                     )
@@ -1638,13 +1657,13 @@ private fun SalesRecordCard(
                 ) {
                     GridKeyValueBox(
                         label = "Expense",
-                        value = "₹ ${IndianNumberFormatter.formatIndianDouble(tx.expense, 2)}",
+                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.expense, 2)}",
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
                     )
                     GridKeyValueBox(
                         label = "Reconciled Cash",
-                        value = "₹ ${IndianNumberFormatter.formatIndianDouble(reconciledCash, 2)}",
+                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(reconciledCash, 2)}",
                         highlightColor = Color(0xFF10B981),
                         isDark = isDark,
                         modifier = Modifier.weight(1f)

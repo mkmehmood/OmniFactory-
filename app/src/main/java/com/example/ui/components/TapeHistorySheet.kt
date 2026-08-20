@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -84,7 +85,8 @@ fun TapeHistorySheet(
     onTogglePin: (CalculationEntity) -> Unit,
     onUpdateNote: (CalculationEntity, String) -> Unit,
     onClearAll: () -> Unit,
-    onCopyTape: (String) -> Unit
+    onCopyTape: (String) -> Unit,
+    onExportCsv: () -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedIds by remember { mutableStateOf(setOf<Long>()) }
@@ -187,6 +189,17 @@ fun TapeHistorySheet(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (filteredList.isNotEmpty()) {
+                        IconButton(
+                            onClick = onExportCsv,
+                            modifier = Modifier.testTag("share_csv_tape_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Export History to CSV",
+                                tint = primaryColor
+                            )
+                        }
+
                         IconButton(
                             onClick = {
                                 val tapeText = filteredList.joinToString("\n") {

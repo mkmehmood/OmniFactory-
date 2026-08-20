@@ -10,7 +10,7 @@ object IndianNumberFormatter {
 
     /**
      * Formats a BigDecimal number using the Indian numbering system.
-     * Groups: Last 3 digits, then groups of 2 digits (e.g. 10,50,345 or 1,00,00,000).
+     * Groups: Last 3 digits, then groups of 2 digits (e.g. 10,70,500 or 1,00,00,000).
      */
     fun formatIndian(value: BigDecimal, maxDecimals: Int = 8, useGrouping: Boolean = true): String {
         val absVal = value.abs()
@@ -45,7 +45,7 @@ object IndianNumberFormatter {
     }
 
     /**
-     * Formats a Double value to Indian numbering format with specified decimal places.
+     * Formats a Double value to Indian numbering format with specified decimal places (e.g. 10,70,500.00).
      */
     fun formatIndianDouble(value: Double, decimals: Int = 2): String {
         if (value.isNaN() || value.isInfinite()) return "0"
@@ -70,24 +70,35 @@ object IndianNumberFormatter {
     }
 
     /**
-     * Formats a Double as an Indian Rupee currency string (e.g. ₹ 10,50,345.00).
+     * Formats a Double as Pakistani Rupee in Indian number grouping format (e.g. Rs. 10,70,500.00).
      */
-    fun formatIndianCurrency(value: Double, showSign: Boolean = false): String {
-        if (value.isNaN() || value.isInfinite()) return "₹ 0.00"
+    fun formatIndianCurrency(
+        value: Double,
+        showSign: Boolean = false,
+        symbol: String = "Rs."
+    ): String {
+        if (value.isNaN() || value.isInfinite()) return "$symbol 0.00"
         val absFormatted = formatIndianDouble(kotlin.math.abs(value), 2)
         return when {
-            kotlin.math.abs(value) < 0.005 -> "₹ 0.00"
-            value < 0 -> "-₹ $absFormatted"
-            showSign -> "+₹ $absFormatted"
-            else -> "₹ $absFormatted"
+            kotlin.math.abs(value) < 0.005 -> "$symbol 0.00"
+            value < 0 -> "-$symbol $absFormatted"
+            showSign -> "+$symbol $absFormatted"
+            else -> "$symbol $absFormatted"
         }
+    }
+
+    /**
+     * Alias for Pakistani Rupee formatting with Indian grouping format.
+     */
+    fun formatPakistaniRupees(value: Double, showSign: Boolean = false): String {
+        return formatIndianCurrency(value, showSign = showSign, symbol = "Rs.")
     }
 
     /**
      * Splits integer string from right to left:
      * - First group of 3 digits
      * - Then groups of 2 digits (Lakhs, Crores, etc.)
-     * Example: 1050345 -> 10,50,345
+     * Example: 1070500 -> 10,70,500
      */
     fun formatIntegerIndian(intStr: String): String {
         if (intStr.length <= 3) return intStr

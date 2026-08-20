@@ -3,6 +3,7 @@ package com.example
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -58,6 +59,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.domain.export.CsvExporter
 import com.example.ui.BatchScalingUiState
 import com.example.ui.BatchScalingViewModel
 import com.example.ui.CalculatorUiState
@@ -272,7 +274,17 @@ class MainActivity : ComponentActivity() {
                                             onOpenHistorySheet = { salesViewModel.setSavedHistorySheetOpen(true) },
                                             onCloseHistorySheet = { salesViewModel.setSavedHistorySheetOpen(false) },
                                             onLoadTransaction = { salesViewModel.loadTransactionIntoForm(it) },
-                                            onDeleteTransaction = { salesViewModel.deleteTransaction(it) }
+                                            onDeleteTransaction = { salesViewModel.deleteTransaction(it) },
+                                            onExportCsv = {
+                                                try {
+                                                    val csv = CsvExporter.exportSalesTransactionsToCsv(savedSalesTransactions)
+                                                    val file = CsvExporter.saveCsvToCacheFile(context, "sales_reconciliation_audit.csv", csv)
+                                                    val shareIntent = CsvExporter.createShareCsvIntent(context, file, "Sales Reconciliation Audit CSV")
+                                                    context.startActivity(Intent.createChooser(shareIntent, "Share Sales Reconciliation CSV"))
+                                                } catch (e: Exception) {
+                                                    scope.launch { snackbarHostState.showSnackbar("Export failed: ${e.message}") }
+                                                }
+                                            }
                                         )
                                     }
                                     DrawerDestination.MIXTURE_CALCULATOR -> {
@@ -358,7 +370,17 @@ class MainActivity : ComponentActivity() {
                                 calculatorViewModel.updateCalculationNote(entity, note)
                             },
                             onClearAll = { calculatorViewModel.clearAllHistory() },
-                            onCopyTape = { tapeText -> copyToClipboard(tapeText, "History tape") }
+                            onCopyTape = { tapeText -> copyToClipboard(tapeText, "History tape") },
+                            onExportCsv = {
+                                try {
+                                    val csv = CsvExporter.exportCalculationHistoryToCsv(historyList)
+                                    val file = CsvExporter.saveCsvToCacheFile(context, "calculator_tape_history.csv", csv)
+                                    val shareIntent = CsvExporter.createShareCsvIntent(context, file, "Calculation Tape History CSV")
+                                    context.startActivity(Intent.createChooser(shareIntent, "Share Tape History CSV"))
+                                } catch (e: Exception) {
+                                    scope.launch { snackbarHostState.showSnackbar("Export failed: ${e.message}") }
+                                }
+                            }
                         )
                     }
 
@@ -371,12 +393,54 @@ class MainActivity : ComponentActivity() {
                             showDoubleZeroKey = uiState.showDoubleZeroKey,
                             enableAnimations = uiState.enableAnimations,
                             hapticEnabled = uiState.hapticEnabled,
+                            historyList = historyList,
+                            salesTransactions = savedSalesTransactions,
                             onThemeModeChange = { calculatorViewModel.setThemeMode(it) },
                             onAccentChange = { calculatorViewModel.setAccentTheme(it) },
                             onShapeStructureChange = { calculatorViewModel.setShapeStructureStyle(it) },
                             onToggleDoubleZero = { calculatorViewModel.setShowDoubleZeroKey(it) },
                             onToggleAnimations = { calculatorViewModel.setEnableAnimations(it) },
                             onHapticToggle = { calculatorViewModel.setHapticEnabled(it) },
+                            onExportTapeCsv = {
+                                try {
+                                    val csv = CsvExporter.exportCalculationHistoryToCsv(historyList)
+                                    val file = CsvExporter.saveCsvToCacheFile(context, "calculator_tape_history.csv", csv)
+                                    val shareIntent = CsvExporter.createShareCsvIntent(context, file, "Calculation Tape History CSV")
+                                    context.startActivity(Intent.createChooser(shareIntent, "Share Tape History CSV"))
+                                } catch (e: Exception) {
+                                    scope.launch { snackbarHostState.showSnackbar("Export failed: ${e.message}") }
+                                }
+                            },
+                            onExportSalesCsv = {
+                                try {
+                                    val csv = CsvExporter.exportSalesTransactionsToCsv(savedSalesTransactions)
+                                    val file = CsvExporter.saveCsvToCacheFile(context, "sales_reconciliation_audit.csv", csv)
+                                    val shareIntent = CsvExporter.createShareCsvIntent(context, file, "Sales Reconciliation Audit CSV")
+                                    context.startActivity(Intent.createChooser(shareIntent, "Share Sales Reconciliation CSV"))
+                                } catch (e: Exception) {
+                                    scope.launch { snackbarHostState.showSnackbar("Export failed: ${e.message}") }
+                                }
+                            },
+                            onExportAllCsv = {
+                                try {
+                                    val tapeCsv = CsvExporter.exportCalculationHistoryToCsv(historyList)
+                                    val salesCsv = CsvExporter.exportSalesTransactionsToCsv(savedSalesTransactions)
+                                    val combined = "=== CALCULATION HISTORY ===\r\n$tapeCsv\r\n\r\n=== SALES RECONCILIATION AUDIT ===\r\n$salesCsv"
+                                    val file = CsvExporter.saveCsvToCacheFile(context, "complete_calculator_backup.csv", combined)
+                                    val shareIntent = CsvExporter.createShareCsvIntent(context, file, "Complete Calculator & Sales CSV Export")
+                                    context.startActivity(Intent.createChooser(shareIntent, "Share All Data CSV"))
+                                } catch (e: Exception) {
+                                    scope.launch { snackbarHostState.showSnackbar("Export failed: ${e.message}") }
+                                }
+                            },
+                            onCopyTapeCsv = {
+                                val csv = CsvExporter.exportCalculationHistoryToCsv(historyList)
+                                copyToClipboard(csv, "Calculation History CSV")
+                            },
+                            onCopySalesCsv = {
+                                val csv = CsvExporter.exportSalesTransactionsToCsv(savedSalesTransactions)
+                                copyToClipboard(csv, "Sales Reconciliation CSV")
+                            },
                             onDismiss = {
                                 calculatorViewModel.setSettingsOpen(false)
                             }
