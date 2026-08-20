@@ -265,11 +265,11 @@ class MainActivity : ComponentActivity() {
                                     modifier = Modifier.fillMaxSize(),
                                     topBar = {
                                         val topBarTitle = when (currentDestination) {
-                                            DrawerDestination.CALCULATOR -> "Sarim Calculator"
+                                            DrawerDestination.CALCULATOR -> "Calculator"
                                             DrawerDestination.SALES -> "Sales Reconciliation"
                                             DrawerDestination.MIXTURE_CALCULATOR -> "Mixture Ratio Recalibrator"
                                             DrawerDestination.BATCH_SCALING -> "Batch Scaler"
-                                            else -> "Sarim"
+                                            else -> "Calculator"
                                         }
                                         val topBarIcon = when (currentDestination) {
                                             DrawerDestination.CALCULATOR -> Icons.Default.WaterDrop

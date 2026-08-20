@@ -490,9 +490,9 @@ fun SettingsScreen(
 
             HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
 
-            // Section 6: About & Developer Info
+            // Section 6: About Calculator
             Text(
-                text = "About & Developer",
+                text = "About Calculator",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -532,15 +532,14 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(14.dp))
                         Column {
                             Text(
-                                text = "Sarim Calculator",
+                                text = "Calculator",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Package: com.sarim.app • v1.0",
-                                fontSize = 11.sp,
-                                fontFamily = DigitalMonospaceFont,
+                                text = "Precision & Sales Audit Suite • v1.0",
+                                fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -554,15 +553,34 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Developer",
+                            text = "Package ID",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "Mahmood Khan (محمود خان)",
-                            fontSize = 14.sp,
+                            text = "com.sarim.app",
+                            fontSize = 13.sp,
+                            fontFamily = DigitalMonospaceFont,
                             fontWeight = FontWeight.Bold,
                             color = primaryColor
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Data Persistence",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Room SQLite (Local & Offline)",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
 
@@ -577,7 +595,7 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "Kotlin • Jetpack Compose • Room M3",
+                            text = "Kotlin • Jetpack Compose • Material 3",
                             fontSize = 11.sp,
                             fontFamily = DigitalMonospaceFont,
                             color = MaterialTheme.colorScheme.onSurface

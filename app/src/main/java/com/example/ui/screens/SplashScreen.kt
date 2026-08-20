@@ -1,12 +1,8 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,18 +10,13 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,7 +33,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,21 +45,21 @@ fun SplashScreen(
     onSplashFinished: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val scale = remember { Animatable(0.85f) }
+    val scale = remember { Animatable(0.88f) }
     val alpha = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
         // Animate artwork in
         scale.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing)
+            animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing)
         )
         alpha.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 600)
+            animationSpec = tween(durationMillis = 500)
         )
-        // Keep on screen for total ~2.2s before launching calculator
-        delay(1400)
+        // Keep on screen for ~1.8s before launching calculator
+        delay(1300)
         onSplashFinished()
     }
 
@@ -79,10 +69,9 @@ fun SplashScreen(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF5CAFF6),
-                        Color(0xFF4A90E2),
-                        Color(0xFF357ABD),
-                        Color(0xFF1E3A8A)
+                        Color(0xFF0F172A),
+                        Color(0xFF0A1128),
+                        Color(0xFF030712)
                     )
                 )
             )
@@ -104,18 +93,18 @@ fun SplashScreen(
                 .scale(scale.value)
                 .alpha(alpha.value)
         ) {
-            // Main Splash Artwork (Feather Pen & Mahmood Khan Calligraphy)
+            // Main Splash Artwork
             Surface(
                 modifier = Modifier
-                    .size(220.dp)
+                    .size(190.dp)
                     .clip(RoundedCornerShape(32.dp))
-                    .shadow(elevation = 20.dp, shape = RoundedCornerShape(32.dp)),
+                    .shadow(elevation = 24.dp, shape = RoundedCornerShape(32.dp)),
                 shape = RoundedCornerShape(32.dp),
-                color = Color(0xFF5CAFF6)
+                color = Color(0xFF1E293B)
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.splash_art),
-                    contentDescription = "Mahmood Khan Splash Art",
+                    painter = painterResource(id = R.drawable.calculator_splash_art),
+                    contentDescription = "Calculator Icon",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
@@ -125,8 +114,8 @@ fun SplashScreen(
 
             // App Name
             Text(
-                text = "SARIM",
-                fontSize = 32.sp,
+                text = "CALCULATOR",
+                fontSize = 30.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 4.sp,
                 fontFamily = DigitalMonospaceFont,
@@ -135,38 +124,29 @@ fun SplashScreen(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Calligraphy / Urdu credit badge
+            // Subtitle badge
             Surface(
                 shape = RoundedCornerShape(20.dp),
-                color = Color.White.copy(alpha = 0.20f),
+                color = Color(0xFF38BDF8).copy(alpha = 0.15f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.35f)),
                 modifier = Modifier.padding(horizontal = 8.dp)
             ) {
                 Text(
-                    text = "محمود خان",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    text = "Precision & Business Audit Suite",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF38BDF8),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Developer Name
-            Text(
-                text = "Developed by Mahmood Khan",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.White.copy(alpha = 0.9f)
-            )
-
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // Small loader
             CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = Color.White.copy(alpha = 0.8f),
-                strokeWidth = 2.5.dp
+                modifier = Modifier.size(22.dp),
+                color = Color(0xFF38BDF8),
+                strokeWidth = 2.dp
             )
         }
 
@@ -175,10 +155,10 @@ fun SplashScreen(
             text = "com.sarim.app • v1.0",
             fontSize = 11.sp,
             fontFamily = DigitalMonospaceFont,
-            color = Color.White.copy(alpha = 0.6f),
+            color = Color.White.copy(alpha = 0.45f),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 32.dp)
+                .padding(bottom = 28.dp)
         )
     }
 }

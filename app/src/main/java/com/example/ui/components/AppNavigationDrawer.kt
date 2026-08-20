@@ -104,14 +104,14 @@ fun AppNavigationDrawer(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "SARIM",
+                                text = "CALCULATOR",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
                                 fontFamily = DigitalMonospaceFont,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "By Mahmood Khan",
+                                text = "Precision & Audit Suite",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = primaryColor
@@ -261,7 +261,7 @@ fun AppNavigationDrawer(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Sarim • Mahmood Khan",
+                        text = "Calculator • Offline & Secure",
                         fontFamily = DigitalMonospaceFont,
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant

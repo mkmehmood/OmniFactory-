@@ -1,6 +1,6 @@
 {
-  "name": "Sarim",
-  "description": "Sarim Calculator & Sales Audit Suite developed by Mahmood Khan.",
+  "name": "Calculator",
+  "description": "High-precision financial calculator, sales reconciliation audits, and batch scaling suite.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
