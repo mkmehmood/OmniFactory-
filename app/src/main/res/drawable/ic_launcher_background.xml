@@ -15,8 +15,14 @@
                 android:endY="108"
                 android:type="linear">
                 <item android:offset="0.0" android:color="#FF0F172A" />
-                <item android:offset="1.0" android:color="#FF1E293B" />
+                <item android:offset="0.5" android:color="#FF1E293B" />
+                <item android:offset="1.0" android:color="#FF0B1120" />
             </gradient>
         </aapt:attr>
     </path>
+    <!-- Subtle concentric ambient glow ring -->
+    <path
+        android:strokeWidth="1.2"
+        android:strokeColor="#2238BDF8"
+        android:pathData="M54,18 A36,36 0 1,0 54,90 A36,36 0 1,0 54,18 Z" />
 </vector>

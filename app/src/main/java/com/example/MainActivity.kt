@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Science
-import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerValue
@@ -73,7 +72,6 @@ import com.example.ui.screens.BasicCalculatorScreen
 import com.example.ui.screens.BatchScalingScreen
 import com.example.ui.screens.MixtureCalculatorScreen
 import com.example.ui.screens.SalesScreen
-import com.example.ui.screens.StructuralFormulasScreen
 import com.example.ui.theme.DigitalMonospaceFont
 import com.example.ui.theme.MyApplicationTheme
 import kotlinx.coroutines.launch
@@ -172,11 +170,6 @@ class MainActivity : ComponentActivity() {
                                         calculatorViewModel.setTapeOpen(false)
                                         calculatorViewModel.setSettingsOpen(false)
                                     }
-                                    DrawerDestination.FORMULAS_DATABASE -> {
-                                        currentDestination = DrawerDestination.FORMULAS_DATABASE
-                                        calculatorViewModel.setTapeOpen(false)
-                                        calculatorViewModel.setSettingsOpen(false)
-                                    }
                                     DrawerDestination.HISTORY -> {
                                         calculatorViewModel.setTapeOpen(true)
                                     }
@@ -199,7 +192,6 @@ class MainActivity : ComponentActivity() {
                                 DrawerDestination.SALES -> "Sales Reconciliation"
                                 DrawerDestination.MIXTURE_CALCULATOR -> "Mixture Ratio Recalibrator"
                                 DrawerDestination.BATCH_SCALING -> "Batch Scaler"
-                                DrawerDestination.FORMULAS_DATABASE -> "Math & Structural DB"
                                 else -> "Calculator"
                             }
                             val topBarIcon = when (currentDestination) {
@@ -207,7 +199,6 @@ class MainActivity : ComponentActivity() {
                                 DrawerDestination.SALES -> Icons.Default.ReceiptLong
                                 DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Science
                                 DrawerDestination.BATCH_SCALING -> Icons.Default.Scale
-                                DrawerDestination.FORMULAS_DATABASE -> Icons.Default.Storage
                                 else -> Icons.Default.WaterDrop
                             }
                             LiquidGlassTopBar(
@@ -274,6 +265,7 @@ class MainActivity : ComponentActivity() {
                                             onSetPhysicalCash = { salesViewModel.setPhysicalCash(it) },
                                             onSetExpense = { salesViewModel.setExpense(it) },
                                             onSetUnitSalePrice = { salesViewModel.setUnitSalePrice(it) },
+                                            onSetCommissionPerUnit = { salesViewModel.setCommissionPerUnit(it) },
                                             onSaveTransaction = { salesViewModel.saveTransaction() },
                                             onClearInputs = { salesViewModel.clearInputs() },
                                             onCopySummary = { copyToClipboard(it, "Sales reconciliation audit") },
@@ -310,11 +302,6 @@ class MainActivity : ComponentActivity() {
                                             onCopyResults = { copyToClipboard(it, "Batch scaling report") }
                                         )
                                     }
-                                    DrawerDestination.FORMULAS_DATABASE -> {
-                                        StructuralFormulasScreen(
-                                            viewModel = mixtureViewModel
-                                        )
-                                    }
                                     else -> {
                                         BasicCalculatorScreen(
                                             expression = uiState.expression,
@@ -323,6 +310,7 @@ class MainActivity : ComponentActivity() {
                                             showDoubleZeroKey = uiState.showDoubleZeroKey,
                                             enableAnimations = uiState.enableAnimations,
                                             hapticEnabled = uiState.hapticEnabled,
+                                            shapeStructureStyle = uiState.shapeStructureStyle,
                                             onDigit = { calculatorViewModel.onDigit(it) },
                                             onDoubleZero = { calculatorViewModel.onDoubleZero() },
                                             onOperator = { calculatorViewModel.onOperator(it) },

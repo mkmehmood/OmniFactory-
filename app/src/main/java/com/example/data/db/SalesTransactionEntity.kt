@@ -17,6 +17,8 @@ data class SalesTransactionEntity(
     val physicalCashInHand: Double,
     val expense: Double,
     val unitSalePrice: Double,
+    val commissionPerUnit: Double = 0.0,
+    val totalCommission: Double = 0.0,
     val netSoldUnits: Double,
     val cashQtyUnits: Double,
     val expectedCash: Double,

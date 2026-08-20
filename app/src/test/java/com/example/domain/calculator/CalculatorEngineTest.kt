@@ -31,6 +31,40 @@ class CalculatorEngineTest {
     }
 
     @Test
+    fun testIndianNumberFormattingInResults() {
+        val r = CalculatorEngine.evaluate("1000000 + 50345")
+        assertTrue(r is CalculationResult.Success)
+        assertEquals("10,50,345", CalculatorEngine.formatNumber((r as CalculationResult.Success).value))
+    }
+
+    @Test
+    fun testChainedCalculationsWithCommas() {
+        val r = CalculatorEngine.evaluate("10,50,345 + 5")
+        assertTrue(r is CalculationResult.Success)
+        assertEquals("10,50,350", CalculatorEngine.formatNumber((r as CalculationResult.Success).value))
+    }
+
+    @Test
+    fun testPercentCommercialCalculations() {
+        // 100 + 10% = 110
+        val r1 = CalculatorEngine.evaluate("100 + 10%")
+        assertTrue(r1 is CalculationResult.Success)
+        assertEquals("110", CalculatorEngine.formatNumber((r1 as CalculationResult.Success).value))
+
+        // 100 - 10% = 90
+        val r2 = CalculatorEngine.evaluate("100 - 10%")
+        assertTrue(r2 is CalculationResult.Success)
+        assertEquals("90", CalculatorEngine.formatNumber((r2 as CalculationResult.Success).value))
+    }
+
+    @Test
+    fun testDivideByZeroHandling() {
+        val r = CalculatorEngine.evaluate("50 ÷ 0")
+        assertTrue(r is CalculationResult.Error)
+        assertEquals("Cannot divide by 0", (r as CalculationResult.Error).message)
+    }
+
+    @Test
     fun testQuickEvaluatePreview() {
         val preview = CalculatorEngine.quickEvaluatePreview("10+5×3")
         assertEquals("45", preview)

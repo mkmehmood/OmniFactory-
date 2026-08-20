@@ -33,6 +33,7 @@ data class SalesUiState(
     val physicalCashText: String = "",
     val expenseText: String = "",
     val unitSalePriceText: String = "",
+    val commissionPerUnitText: String = "",
     val reconciliationResult: SalesReconciliationResult = SalesReconciliationCalculator.calculate(
         SalesReconciliationInput(
             salesRep = "",
@@ -44,7 +45,8 @@ data class SalesUiState(
             recoveredCredit = 0.0,
             physicalCashInHand = 0.0,
             expense = 0.0,
-            unitSalePrice = 0.0
+            unitSalePrice = 0.0,
+            commissionPerUnit = 0.0
         )
     ),
     val isSavedSuccess: Boolean = false,
@@ -164,6 +166,13 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun setCommissionPerUnit(text: String) {
+        _uiState.update { current ->
+            val updated = current.copy(commissionPerUnitText = text, isSavedSuccess = false)
+            recalculate(updated)
+        }
+    }
+
     fun setSavedHistorySheetOpen(isOpen: Boolean) {
         _uiState.update { it.copy(showSavedHistorySheet = isOpen) }
     }
@@ -179,6 +188,7 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
                 physicalCashText = "",
                 expenseText = "",
                 unitSalePriceText = "",
+                commissionPerUnitText = "",
                 isSavedSuccess = false
             )
             recalculate(cleared)
@@ -201,6 +211,8 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
             physicalCashInHand = state.physicalCashText.toDoubleOrNull() ?: 0.0,
             expense = state.expenseText.toDoubleOrNull() ?: 0.0,
             unitSalePrice = state.unitSalePriceText.toDoubleOrNull() ?: 0.0,
+            commissionPerUnit = state.commissionPerUnitText.toDoubleOrNull() ?: 0.0,
+            totalCommission = result.totalCommission,
             netSoldUnits = result.netSoldUnits,
             cashQtyUnits = result.cashQtyUnits,
             expectedCash = result.expectedCash,
@@ -214,7 +226,7 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
             salesRepository.insertTransaction(entity)
             _uiState.update { it.copy(isSavedSuccess = true) }
             val statusDescription = when (result.status) {
-                ReconciliationStatus.BALANCED -> "Balanced ($0.00 discrepancy)"
+                ReconciliationStatus.BALANCED -> "Balanced (₹ 0.00 discrepancy)"
                 ReconciliationStatus.OVER -> "Surplus of ${result.formattedDiscrepancy}"
                 ReconciliationStatus.SHORT -> "Deficit of ${result.formattedDiscrepancy}"
             }
@@ -242,6 +254,7 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
                 physicalCashText = formatNumberInput(entity.physicalCashInHand),
                 expenseText = formatNumberInput(entity.expense),
                 unitSalePriceText = formatNumberInput(entity.unitSalePrice),
+                commissionPerUnitText = formatNumberInput(entity.commissionPerUnit),
                 showSavedHistorySheet = false,
                 isSavedSuccess = false
             )
@@ -260,14 +273,17 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
             recoveredCredit = state.recoveredCreditText.toDoubleOrNull() ?: 0.0,
             physicalCashInHand = state.physicalCashText.toDoubleOrNull() ?: 0.0,
             expense = state.expenseText.toDoubleOrNull() ?: 0.0,
-            unitSalePrice = state.unitSalePriceText.toDoubleOrNull() ?: 0.0
+            unitSalePrice = state.unitSalePriceText.toDoubleOrNull() ?: 0.0,
+            commissionPerUnit = state.commissionPerUnitText.toDoubleOrNull() ?: 0.0
         )
         val result = SalesReconciliationCalculator.calculate(input)
         return state.copy(reconciliationResult = result)
     }
 
     private fun formatNumberInput(value: Double): String {
-        return if (value % 1.0 == 0.0) {
+        return if (value == 0.0) {
+            ""
+        } else if (value % 1.0 == 0.0) {
             String.format(java.util.Locale.US, "%.0f", value)
         } else {
             String.format(java.util.Locale.US, "%.2f", value)

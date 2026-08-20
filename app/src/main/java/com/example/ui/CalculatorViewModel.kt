@@ -44,9 +44,8 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
 
     private val userPreferencesManager = UserPreferencesManager(application)
 
-    private val repository: HistoryRepository = HistoryRepository(
-        AppDatabase.getDatabase(application).calculationDao()
-    )
+    private val db = AppDatabase.getDatabase(application)
+    private val repository: HistoryRepository = HistoryRepository(db.calculationDao())
 
     private val _uiState = MutableStateFlow(
         CalculatorUiState(
@@ -85,12 +84,48 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
         val current = _uiState.value.expression
         val isNew = _uiState.value.isEvaluated
 
+        if (digit == ".") {
+            onDecimal()
+            return
+        }
+
         val newExpr = if (isNew || current == "0") {
             digit
         } else {
-            current + digit
+            // Check if current active token is just "0" and we are typing another digit -> replace the "0"
+            val lastToken = current.split('+', '−', '-', '×', '*', '÷', '/', '(', ')').lastOrNull() ?: ""
+            if (lastToken == "0") {
+                current.dropLast(1) + digit
+            } else {
+                current + digit
+            }
         }
         updateExpression(newExpr, isEvaluated = false)
+    }
+
+    private fun onDecimal() {
+        val current = _uiState.value.expression
+        val isNew = _uiState.value.isEvaluated
+
+        if (isNew || current.isEmpty()) {
+            updateExpression("0.", isEvaluated = false)
+            return
+        }
+
+        val lastChar = current.last()
+        if (lastChar in listOf('+', '−', '-', '×', '*', '÷', '/', '(')) {
+            updateExpression(current + "0.", isEvaluated = false)
+            return
+        }
+
+        // Check if the current number already contains a decimal point
+        val lastToken = current.split('+', '−', '-', '×', '*', '÷', '/', '(', ')').lastOrNull() ?: ""
+        if (lastToken.contains('.')) {
+            // Already has decimal point in active token, ignore
+            return
+        }
+
+        updateExpression(current + ".", isEvaluated = false)
     }
 
     fun onDoubleZero() {
@@ -122,6 +157,12 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
             current = "0"
         }
 
+        // If trailing decimal, drop it before appending operator
+        if (current.endsWith('.')) {
+            current = current.dropLast(1)
+        }
+
+        // If ends with another operator, replace it
         if (current.isNotEmpty() && current.last() in listOf('+', '−', '×', '÷')) {
             current = current.dropLast(1)
         }
@@ -147,7 +188,7 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
 
     fun onPercent() {
         val current = _uiState.value.expression
-        if (current.isEmpty() || current.last() in listOf('+', '−', '×', '÷', '(')) return
+        if (current.isEmpty() || current.last() in listOf('+', '−', '×', '÷', '(', '%', '.')) return
 
         updateExpression(current + "%", isEvaluated = false)
     }
@@ -158,7 +199,10 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
 
     fun onBackspace() {
         val current = _uiState.value.expression
-        if (current.isNotEmpty()) {
+        val isNew = _uiState.value.isEvaluated
+        if (isNew) {
+            updateExpression("", isEvaluated = false)
+        } else if (current.isNotEmpty()) {
             updateExpression(current.dropLast(1), isEvaluated = false)
         }
     }
@@ -167,7 +211,8 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
         val current = _uiState.value.expression
         if (current.isEmpty() || current == "0") return
 
-        val num = current.toBigDecimalOrNull()
+        val cleanCurrent = current.replace(",", "").trim()
+        val num = cleanCurrent.toBigDecimalOrNull()
         if (num != null) {
             val negated = num.negate()
             updateExpression(CalculatorEngine.formatNumber(negated), isEvaluated = false)
@@ -182,6 +227,7 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
             return
         }
         val clean = pasted.trim()
+            .replace(",", "")
             .replace("*", "×")
             .replace("/", "÷")
             .replace("-", "−")
@@ -254,23 +300,22 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
             current + "+" + toInsert
         }
         updateExpression(newExpr, isEvaluated = false)
-        showToast("Appended: $toInsert")
+        showToast("Restored: $toInsert")
     }
 
-    fun reuseExpression(expressionToReuse: String) {
-        val current = _uiState.value.expression
-        val clean = expressionToReuse.trim()
-        val isNew = _uiState.value.isEvaluated
-
-        val newExpr = if (isNew || current.isEmpty() || current == "0") {
-            clean
-        } else if (current.last() in listOf('+', '−', '-', '×', '*', '÷', '/', '(')) {
-            "$current($clean)"
-        } else {
-            "$current+($clean)"
+    fun togglePin(entity: CalculationEntity) {
+        viewModelScope.launch {
+            repository.updateCalculation(entity.copy(isPinned = !entity.isPinned))
         }
-        updateExpression(newExpr, isEvaluated = false)
-        showToast("Appended expression: $clean")
+    }
+
+    fun reuseExpression(expression: String) {
+        val clean = expression
+            .replace("×", "*")
+            .replace("÷", "/")
+            .replace("−", "-")
+            .replace(" ", "")
+        updateExpression(clean, isEvaluated = false)
     }
 
     fun deleteCalculation(entity: CalculationEntity) {
@@ -279,9 +324,9 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun togglePin(entity: CalculationEntity) {
+    fun updateCalculationTag(entity: CalculationEntity, tag: String) {
         viewModelScope.launch {
-            repository.updateCalculation(entity.copy(isPinned = !entity.isPinned))
+            repository.updateCalculation(entity.copy(tag = tag))
         }
     }
 

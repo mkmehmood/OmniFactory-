@@ -1,11 +1,9 @@
 package com.example.domain.calculator
 
+import com.example.domain.util.IndianNumberFormatter
 import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode
-import java.text.DecimalFormat
-import java.text.DecimalFormatSymbols
-import java.util.Locale
 
 object CalculatorEngine {
 
@@ -18,8 +16,8 @@ object CalculatorEngine {
      * - 2 + 5 = 7
      * - 2 + 3 - 2 = (2 + 3) - 2 = 5 - 2 = 3
      * - 10 + 5 ÷ 2 = (10 + 5) ÷ 2 = 15 ÷ 2 = 7.5
-     * - 10 + 5 × 3 ÷ 5 = ((10 + 5) × 3) ÷ 5 = (15 × 3) ÷ 5 = 45 ÷ 5 = 9
-     * (or if (10 + 5) × 3 ÷ 5 = 45 / 5 = 9, note: 10+5=15, 15*3=45, 45/5=9)
+     * - 100 + 10% = 110
+     * - 100 - 10% = 90
      */
     fun evaluate(expression: String): CalculationResult {
         if (expression.isBlank()) {
@@ -27,8 +25,20 @@ object CalculatorEngine {
         }
 
         try {
-            val sanitized = sanitizeExpression(expression)
+            var sanitized = sanitizeExpression(expression)
             if (sanitized.isBlank()) return CalculationResult.Empty
+
+            // Trim trailing operators for calculation
+            sanitized = sanitized.trimEnd('+', '-', '*', '/', '^')
+
+            if (sanitized.isBlank()) return CalculationResult.Empty
+
+            // Auto-close open parentheses
+            val openCount = sanitized.count { it == '(' }
+            val closeCount = sanitized.count { it == ')' }
+            if (openCount > closeCount) {
+                sanitized += ")".repeat(openCount - closeCount)
+            }
 
             val tokens = tokenize(sanitized)
             if (tokens.isEmpty()) return CalculationResult.Empty
@@ -44,14 +54,8 @@ object CalculatorEngine {
 
     fun quickEvaluatePreview(expression: String): String? {
         if (expression.isBlank()) return null
-        var expr = expression.trimEnd { it == '+' || it == '−' || it == '-' || it == '×' || it == '*' || it == '÷' || it == '/' || it == '%' }
+        var expr = expression.trimEnd { it == '+' || it == '−' || it == '-' || it == '×' || it == '*' || it == '÷' || it == '/' }
         if (expr.isBlank()) return null
-
-        val openCount = expr.count { it == '(' }
-        val closeCount = expr.count { it == ')' }
-        if (openCount > closeCount) {
-            expr += ")".repeat(openCount - closeCount)
-        }
 
         val result = evaluate(expr)
         return when (result) {
@@ -62,10 +66,11 @@ object CalculatorEngine {
 
     private fun sanitizeExpression(expr: String): String {
         return expr
+            .replace(",", "")
+            .replace(" ", "")
             .replace("×", "*")
             .replace("÷", "/")
             .replace("−", "-")
-            .replace(" ", "")
     }
 
     private fun tokenize(expr: String): List<String> {
@@ -166,23 +171,52 @@ object CalculatorEngine {
                 ?: throw IllegalArgumentException("Invalid operand: $nextToken")
 
             var consumedSteps = 2
-            // Check if next number has an immediate percent attached (e.g. 500 * 15%)
+            var isPercent = false
+            // Check if next number has an immediate percent attached (e.g. 100 + 10%)
             if (idx + 2 < resolvedTokens.size && resolvedTokens[idx + 2] == "%") {
-                nextNum = nextNum.divide(BigDecimal(100), mathContext)
+                isPercent = true
                 consumedSteps = 3
             }
 
             acc = when (op) {
-                "+" -> acc.add(nextNum, mathContext)
-                "-" -> acc.subtract(nextNum, mathContext)
-                "*" -> acc.multiply(nextNum, mathContext)
+                "+" -> {
+                    if (isPercent) {
+                        // 100 + 10% = 100 + (100 * 0.10) = 110
+                        val percentValue = acc.multiply(nextNum.divide(BigDecimal(100), mathContext), mathContext)
+                        acc.add(percentValue, mathContext)
+                    } else {
+                        acc.add(nextNum, mathContext)
+                    }
+                }
+                "-" -> {
+                    if (isPercent) {
+                        // 100 - 10% = 100 - (100 * 0.10) = 90
+                        val percentValue = acc.multiply(nextNum.divide(BigDecimal(100), mathContext), mathContext)
+                        acc.subtract(percentValue, mathContext)
+                    } else {
+                        acc.subtract(nextNum, mathContext)
+                    }
+                }
+                "*" -> {
+                    val multiplier = if (isPercent) nextNum.divide(BigDecimal(100), mathContext) else nextNum
+                    acc.multiply(multiplier, mathContext)
+                }
                 "/" -> {
-                    if (nextNum.compareTo(BigDecimal.ZERO) == 0) {
+                    val divisor = if (isPercent) nextNum.divide(BigDecimal(100), mathContext) else nextNum
+                    if (divisor.compareTo(BigDecimal.ZERO) == 0) {
                         throw ArithmeticException("Cannot divide by 0")
                     }
-                    acc.divide(nextNum, mathContext)
+                    acc.divide(divisor, mathContext)
                 }
-                "^" -> BigDecimal(Math.pow(acc.toDouble(), nextNum.toDouble()), mathContext)
+                "^" -> {
+                    val doubleBase = acc.toDouble()
+                    val doubleExp = nextNum.toDouble()
+                    val power = Math.pow(doubleBase, doubleExp)
+                    if (power.isInfinite() || power.isNaN()) {
+                        throw ArithmeticException("Result out of range")
+                    }
+                    BigDecimal(power, mathContext)
+                }
                 else -> throw IllegalArgumentException("Unknown operator: $op")
             }
             idx += consumedSteps
@@ -191,27 +225,11 @@ object CalculatorEngine {
         return acc.stripTrailingZeros()
     }
 
+    /**
+     * Formats number in Indian numbering format: 10,50,345
+     */
     fun formatNumber(value: BigDecimal, maxDecimals: Int = 8, useGrouping: Boolean = true): String {
-        val symbols = DecimalFormatSymbols(Locale.US).apply {
-            groupingSeparator = ','
-            decimalSeparator = '.'
-        }
-        val pattern = if (useGrouping) {
-            "#,##0.########"
-        } else {
-            "0.########"
-        }
-        val df = DecimalFormat(pattern, symbols)
-        df.maximumFractionDigits = maxDecimals
-        df.isGroupingUsed = useGrouping
-
-        val absVal = value.abs()
-        if (absVal > BigDecimal("1000000000000") || (absVal > BigDecimal.ZERO && absVal < BigDecimal("0.000001"))) {
-            val sciDf = DecimalFormat("0.######E0", symbols)
-            return sciDf.format(value)
-        }
-
-        return df.format(value)
+        return IndianNumberFormatter.formatIndian(value, maxDecimals = maxDecimals, useGrouping = useGrouping)
     }
 
     fun formatExpressionForDisplay(expr: String): String {

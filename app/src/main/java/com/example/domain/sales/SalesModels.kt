@@ -1,6 +1,6 @@
 package com.example.domain.sales
 
-import java.util.Locale
+import com.example.domain.util.IndianNumberFormatter
 
 enum class ReconciliationStatus {
     BALANCED,
@@ -18,13 +18,16 @@ data class SalesReconciliationInput(
     val recoveredCredit: Double = 0.0,
     val physicalCashInHand: Double = 0.0,
     val expense: Double = 0.0,
-    val unitSalePrice: Double = 0.0
+    val unitSalePrice: Double = 0.0,
+    val commissionPerUnit: Double = 0.0
 )
 
 data class SalesReconciliationResult(
     val netSoldUnits: Double,
     val cashQtyUnits: Double,
     val unitSalePrice: Double,
+    val commissionPerUnit: Double,
+    val totalCommission: Double,
     val cashFromSales: Double,
     val recoveredCredit: Double,
     val expense: Double,
@@ -36,6 +39,8 @@ data class SalesReconciliationResult(
     val formattedNetSold: String,
     val formattedCashQty: String,
     val formattedUnitPrice: String,
+    val formattedCommissionPerUnit: String,
+    val formattedTotalCommission: String,
     val formattedExpectedCash: String,
     val formattedPhysicalCash: String,
     val formattedReconciledCash: String,
@@ -56,6 +61,7 @@ object SalesReconciliationCalculator {
         val physicalCash = maxOf(0.0, input.physicalCashInHand)
         val expense = maxOf(0.0, input.expense)
         val unitPrice = maxOf(0.0, input.unitSalePrice)
+        val commissionPerUnit = maxOf(0.0, input.commissionPerUnit)
 
         // NetSoldUnits = max(0, TotalSoldQty − ReturnedQty − ExpiredQty)
         val netSoldUnits = maxOf(0.0, totalSold - returned - expired)
@@ -65,6 +71,9 @@ object SalesReconciliationCalculator {
 
         // Cash from sales = CashQtyUnits * UnitSalePrice
         val cashFromSales = cashQtyUnits * unitPrice
+
+        // Total commission = NetSoldUnits * CommissionPerUnit
+        val totalCommission = netSoldUnits * commissionPerUnit
 
         // ExpectedCash = (CashQtyUnits × UnitSalePrice) + RecoveredCredit
         val expectedCash = cashFromSales + recoveredCredit
@@ -85,6 +94,8 @@ object SalesReconciliationCalculator {
             netSoldUnits = netSoldUnits,
             cashQtyUnits = cashQtyUnits,
             unitSalePrice = unitPrice,
+            commissionPerUnit = commissionPerUnit,
+            totalCommission = totalCommission,
             cashFromSales = cashFromSales,
             recoveredCredit = recoveredCredit,
             expense = expense,
@@ -93,36 +104,26 @@ object SalesReconciliationCalculator {
             reconciledCash = reconciledCash,
             discrepancy = discrepancy,
             status = status,
-            formattedNetSold = formatNumber(netSoldUnits),
-            formattedCashQty = formatNumber(cashQtyUnits),
-            formattedUnitPrice = formatCurrency(unitPrice),
-            formattedExpectedCash = formatCurrency(expectedCash),
-            formattedPhysicalCash = formatCurrency(physicalCash),
-            formattedReconciledCash = formatCurrency(reconciledCash),
-            formattedDiscrepancy = formatCurrencyWithSign(discrepancy),
-            formattedExpense = formatCurrency(expense),
-            formattedRecoveredCredit = formatCurrency(recoveredCredit),
-            formattedCashFromSales = formatCurrency(cashFromSales)
+            formattedNetSold = formatIndianNumber(netSoldUnits),
+            formattedCashQty = formatIndianNumber(cashQtyUnits),
+            formattedUnitPrice = IndianNumberFormatter.formatIndianCurrency(unitPrice),
+            formattedCommissionPerUnit = IndianNumberFormatter.formatIndianCurrency(commissionPerUnit),
+            formattedTotalCommission = IndianNumberFormatter.formatIndianCurrency(totalCommission),
+            formattedExpectedCash = IndianNumberFormatter.formatIndianCurrency(expectedCash),
+            formattedPhysicalCash = IndianNumberFormatter.formatIndianCurrency(physicalCash),
+            formattedReconciledCash = IndianNumberFormatter.formatIndianCurrency(reconciledCash),
+            formattedDiscrepancy = IndianNumberFormatter.formatIndianCurrency(discrepancy, showSign = true),
+            formattedExpense = IndianNumberFormatter.formatIndianCurrency(expense),
+            formattedRecoveredCredit = IndianNumberFormatter.formatIndianCurrency(recoveredCredit),
+            formattedCashFromSales = IndianNumberFormatter.formatIndianCurrency(cashFromSales)
         )
     }
 
-    private fun formatNumber(value: Double): String {
+    private fun formatIndianNumber(value: Double): String {
         return if (value % 1.0 == 0.0) {
-            String.format(Locale.US, "%,.0f", value)
+            IndianNumberFormatter.formatIndianDouble(value, 0)
         } else {
-            String.format(Locale.US, "%,.2f", value)
-        }
-    }
-
-    private fun formatCurrency(value: Double): String {
-        return String.format(Locale.US, "PKR %,.2f", value)
-    }
-
-    private fun formatCurrencyWithSign(value: Double): String {
-        return when {
-            kotlin.math.abs(value) < 0.005 -> "PKR 0.00"
-            value > 0 -> String.format(Locale.US, "+PKR %,.2f", value)
-            else -> String.format(Locale.US, "-PKR %,.2f", kotlin.math.abs(value))
+            IndianNumberFormatter.formatIndianDouble(value, 2)
         }
     }
 }

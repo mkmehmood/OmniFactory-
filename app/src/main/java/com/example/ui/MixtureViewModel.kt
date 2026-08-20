@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.db.AppDatabase
-import com.example.data.db.MathematicalFormulaEntity
 import com.example.data.db.MixtureRecipeEntity
 import com.example.domain.mixture.BatchDivisionResult
 import com.example.domain.mixture.MixtureCalculatorEngine
@@ -50,7 +49,6 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
 
     private val database = AppDatabase.getDatabase(application)
     private val mixtureDao = database.mixtureRecipeDao()
-    private val formulaDao = database.mathematicalFormulaDao()
 
     private val _uiState = MutableStateFlow(MixtureUiState())
     val uiState: StateFlow<MixtureUiState> = _uiState.asStateFlow()
@@ -59,9 +57,6 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
     val userMessage: SharedFlow<String> = _userMessage.asSharedFlow()
 
     val persistentRecipes: StateFlow<List<MixtureRecipeEntity>> = mixtureDao.getAllRecipes()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val persistentFormulas: StateFlow<List<MathematicalFormulaEntity>> = formulaDao.getAllFormulas()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun nextStep() {

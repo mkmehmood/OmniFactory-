@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.RestartAlt
@@ -75,6 +76,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.db.SalesTransactionEntity
 import com.example.domain.sales.ReconciliationStatus
 import com.example.domain.sales.SalesReconciliationResult
+import com.example.domain.util.IndianNumberFormatter
 import com.example.ui.SalesUiState
 import com.example.ui.theme.DigitalMonospaceFont
 import java.text.SimpleDateFormat
@@ -97,9 +99,9 @@ fun SalesScreen(
     onSetPhysicalCash: (String) -> Unit,
     onSetExpense: (String) -> Unit,
     onSetUnitSalePrice: (String) -> Unit,
+    onSetCommissionPerUnit: (String) -> Unit,
     onSaveTransaction: () -> Unit,
     onClearInputs: () -> Unit,
-    onPopulateSample: () -> Unit = {},
     onCopySummary: (String) -> Unit,
     onOpenHistorySheet: () -> Unit,
     onCloseHistorySheet: () -> Unit,
@@ -153,7 +155,7 @@ fun SalesScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 2. Two-Column Numeric Input Grid
+            // 2. Numeric Input Grid (Quantities, Cash, Unit Price & Commission per Unit)
             NumericInputGridCard(
                 totalSoldQty = uiState.totalSoldQtyText,
                 returnedQty = uiState.returnedQtyText,
@@ -163,6 +165,7 @@ fun SalesScreen(
                 physicalCash = uiState.physicalCashText,
                 expense = uiState.expenseText,
                 unitSalePrice = uiState.unitSalePriceText,
+                commissionPerUnit = uiState.commissionPerUnitText,
                 onSetTotalSoldQty = onSetTotalSoldQty,
                 onSetReturnedQty = onSetReturnedQty,
                 onSetExpiredQty = onSetExpiredQty,
@@ -171,6 +174,7 @@ fun SalesScreen(
                 onSetPhysicalCash = onSetPhysicalCash,
                 onSetExpense = onSetExpense,
                 onSetUnitSalePrice = onSetUnitSalePrice,
+                onSetCommissionPerUnit = onSetCommissionPerUnit,
                 primaryColor = primaryColor,
                 surfaceBg = surfaceBg,
                 borderColor = cardBorderColor,
@@ -249,7 +253,9 @@ fun SalesScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePickerDialog = false }) {
+                TextButton(
+                    onClick = { showDatePickerDialog = false }
+                ) {
                     Text("Cancel")
                 }
             }
@@ -258,35 +264,31 @@ fun SalesScreen(
         }
     }
 
-    // Custom Sales Rep Input Dialog
+    // Custom Representative Dialog
     if (showCustomRepDialog) {
-        var customName by remember { mutableStateOf("") }
+        var customRepInput by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showCustomRepDialog = false },
             title = { Text("Add Sales Representative", fontWeight = FontWeight.Bold) },
             text = {
                 OutlinedTextField(
-                    value = customName,
-                    onValueChange = { customName = it },
+                    value = customRepInput,
+                    onValueChange = { customRepInput = it },
                     label = { Text("Representative Name") },
-                    placeholder = { Text("Enter representative name") },
+                    placeholder = { Text("e.g. Rahul Sharma") },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("custom_rep_name_input")
+                    modifier = Modifier.fillMaxWidth().testTag("custom_rep_input")
                 )
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        if (customName.isNotBlank()) {
-                            onAddCustomSalesRep(customName)
+                        if (customRepInput.isNotBlank()) {
+                            onAddCustomSalesRep(customRepInput)
+                            showCustomRepDialog = false
                         }
-                        showCustomRepDialog = false
                     },
-                    shape = CircleShape,
-                    modifier = Modifier.testTag("save_custom_rep_button")
+                    modifier = Modifier.testTag("custom_rep_confirm_button")
                 ) {
                     Text("Add")
                 }
@@ -301,18 +303,13 @@ fun SalesScreen(
 
     // Saved Transactions Bottom Sheet
     if (uiState.showSavedHistorySheet) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
         ModalBottomSheet(
             onDismissRequest = onCloseHistorySheet,
-            sheetState = sheetState,
-            containerColor = if (isDark) Color(0xFF0F172A) else Color(0xFFF8FAFC)
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ) {
             SavedTransactionsBottomSheet(
                 transactions = savedTransactions,
-                onLoadTransaction = {
-                    onLoadTransaction(it)
-                    Toast.makeText(context, "Loaded ${it.salesRep}'s transaction", Toast.LENGTH_SHORT).show()
-                },
+                onLoadTransaction = onLoadTransaction,
                 onDeleteTransaction = onDeleteTransaction,
                 onClose = onCloseHistorySheet,
                 primaryColor = primaryColor,
@@ -336,63 +333,76 @@ private fun SalesScreenHeader(
     ) {
         Column {
             Text(
-                text = "SALES AUDIT",
-                fontSize = 12.sp,
+                text = "Sales Audit & Reconciliation",
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
-                color = primaryColor,
-                letterSpacing = 1.sp
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "Reconciliation & Cash Audit",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                text = "Live dynamic balance calculation",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            // Saved History Button
             Surface(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(10.dp))
                     .clickable { onOpenSavedSheet() }
-                    .testTag("saved_audits_badge_button"),
-                shape = RoundedCornerShape(12.dp),
-                color = primaryColor.copy(alpha = 0.15f)
+                    .testTag("open_saved_sales_button"),
+                shape = RoundedCornerShape(10.dp),
+                color = primaryColor.copy(alpha = 0.12f)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.History,
-                        contentDescription = "Saved Audits",
+                        contentDescription = "Saved Sales Records",
                         tint = primaryColor,
                         modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(5.dp))
                     Text(
-                        text = "$savedCount Saved",
-                        fontSize = 11.sp,
+                        text = "Saved ($savedCount)",
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
                         color = primaryColor
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(6.dp))
-
-            IconButton(
-                onClick = onClearAll,
-                modifier = Modifier.size(34.dp).testTag("clear_sales_form_button")
+            // Clear Button
+            Surface(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable { onClearAll() }
+                    .testTag("clear_sales_inputs_button"),
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
             ) {
-                Icon(
-                    imageVector = Icons.Default.RestartAlt,
-                    contentDescription = "Reset Form",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp)
-                )
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.RestartAlt,
+                        contentDescription = "Clear Form Inputs",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "Reset",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }
@@ -606,6 +616,7 @@ private fun NumericInputGridCard(
     physicalCash: String,
     expense: String,
     unitSalePrice: String,
+    commissionPerUnit: String,
     onSetTotalSoldQty: (String) -> Unit,
     onSetReturnedQty: (String) -> Unit,
     onSetExpiredQty: (String) -> Unit,
@@ -614,6 +625,7 @@ private fun NumericInputGridCard(
     onSetPhysicalCash: (String) -> Unit,
     onSetExpense: (String) -> Unit,
     onSetUnitSalePrice: (String) -> Unit,
+    onSetCommissionPerUnit: (String) -> Unit,
     primaryColor: Color,
     surfaceBg: Color,
     borderColor: Color,
@@ -627,7 +639,7 @@ private fun NumericInputGridCard(
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
-                text = "QUANTITIES & CASH AUDIT",
+                text = "QUANTITIES, CASH & COMMISSION AUDIT",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
@@ -702,7 +714,7 @@ private fun NumericInputGridCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 NumericGridInputField(
-                    label = "Recovered Credit (PKR)",
+                    label = "Recovered Credit (₹)",
                     placeholder = "0.00",
                     value = recoveredCredit,
                     onValueChange = onSetRecoveredCredit,
@@ -713,7 +725,7 @@ private fun NumericInputGridCard(
                 )
 
                 NumericGridInputField(
-                    label = "Physical Cash In Hand (PKR)",
+                    label = "Physical Cash (₹)",
                     placeholder = "0.00",
                     value = physicalCash,
                     onValueChange = onSetPhysicalCash,
@@ -726,13 +738,13 @@ private fun NumericInputGridCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Row 4: Expense | Unit Sale Price (Visually emphasized when focused / single column structure)
+            // Row 4: Expense (₹) | Unit Sale Price (₹)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 NumericGridInputField(
-                    label = "Expense (PKR)",
+                    label = "Expense (₹)",
                     placeholder = "0.00",
                     value = expense,
                     onValueChange = onSetExpense,
@@ -742,9 +754,8 @@ private fun NumericInputGridCard(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Unit Sale Price — visually emphasized with special highlight & focus glow
                 EmphasizedUnitPriceInputField(
-                    label = "Unit Sale Price (PKR)",
+                    label = "Unit Sale Price (₹)",
                     placeholder = "0.00",
                     value = unitSalePrice,
                     onValueChange = onSetUnitSalePrice,
@@ -754,6 +765,20 @@ private fun NumericInputGridCard(
                     modifier = Modifier.weight(1f)
                 )
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Row 5: Commission Per Unit (₹)
+            EmphasizedCommissionInputField(
+                label = "Commission Per Unit (₹)",
+                placeholder = "0.00",
+                value = commissionPerUnit,
+                onValueChange = onSetCommissionPerUnit,
+                testTag = "commission_per_unit_input",
+                primaryColor = primaryColor,
+                isDark = isDark,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -815,16 +840,14 @@ private fun EmphasizedUnitPriceInputField(
         value = value,
         onValueChange = onValueChange,
         label = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = label,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = highlightAmber,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = highlightAmber,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         },
         placeholder = { Text(placeholder, fontSize = 12.sp) },
         singleLine = true,
@@ -844,6 +867,62 @@ private fun EmphasizedUnitPriceInputField(
             fontFamily = DigitalMonospaceFont,
             fontWeight = FontWeight.Bold,
             color = if (isDark) Color(0xFFFDE68A) else Color(0xFFB45309)
+        )
+    )
+}
+
+@Composable
+private fun EmphasizedCommissionInputField(
+    label: String,
+    placeholder: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    testTag: String,
+    primaryColor: Color,
+    isDark: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val highlightGreen = Color(0xFF10B981)
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Payments,
+                    contentDescription = null,
+                    tint = highlightGreen,
+                    modifier = Modifier.size(13.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = label,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = highlightGreen,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        },
+        placeholder = { Text(placeholder, fontSize = 12.sp) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        modifier = modifier
+            .testTag(testTag)
+            .border(1.5.dp, highlightGreen.copy(alpha = 0.6f), RoundedCornerShape(10.dp)),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = highlightGreen,
+            unfocusedBorderColor = highlightGreen.copy(alpha = 0.4f),
+            focusedContainerColor = highlightGreen.copy(alpha = 0.12f),
+            unfocusedContainerColor = highlightGreen.copy(alpha = 0.06f)
+        ),
+        shape = RoundedCornerShape(10.dp),
+        textStyle = androidx.compose.ui.text.TextStyle(
+            fontSize = 14.sp,
+            fontFamily = DigitalMonospaceFont,
+            fontWeight = FontWeight.Bold,
+            color = if (isDark) Color(0xFFA7F3D0) else Color(0xFF047857)
         )
     )
 }
@@ -925,7 +1004,7 @@ private fun CalculatedReconciliationResultPanel(
                         )
 
                         Text(
-                            text = "Read-Only",
+                            text = "Live Calculation",
                             fontSize = 10.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -963,6 +1042,65 @@ private fun CalculatedReconciliationResultPanel(
                 }
             }
 
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Commission Summary Card (if commission is set)
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .border(
+                        1.dp,
+                        Color(0xFF10B981).copy(alpha = 0.35f),
+                        RoundedCornerShape(14.dp)
+                    ),
+                shape = RoundedCornerShape(14.dp),
+                color = Color(0xFF10B981).copy(alpha = 0.08f)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Payments,
+                                contentDescription = null,
+                                tint = Color(0xFF10B981),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "TOTAL COMMISSION EARNED",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = Color(0xFF10B981)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "${result.formattedNetSold} net units × ${result.formattedCommissionPerUnit}/unit",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontFamily = DigitalMonospaceFont
+                        )
+                    }
+
+                    Text(
+                        text = result.formattedTotalCommission,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = if (isDark) Color(0xFFA7F3D0) else Color(0xFF047857),
+                        modifier = Modifier.testTag("total_commission_display")
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
             // 2. Reconciliation Status Badge — Three States: Balanced, Over (Surplus), Short (Deficit)
@@ -976,15 +1114,15 @@ private fun CalculatedReconciliationResultPanel(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 3. Three small stat / summary boxes: Net Sold Units, Cash Qty Units, Unit Sale Price
+            // 3. Four summary stat boxes: Net Sold Units, Cash Qty Units, Unit Price, Commission
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SummaryStatBox(
-                    label = "Net Sold Units",
+                    label = "Net Units",
                     value = result.formattedNetSold,
-                    subtext = "Sold - Ret - Exp",
+                    subtext = "Sold-Ret-Exp",
                     tintColor = Color(0xFF38BDF8),
                     isDark = isDark,
                     modifier = Modifier.weight(1f),
@@ -992,7 +1130,7 @@ private fun CalculatedReconciliationResultPanel(
                 )
 
                 SummaryStatBox(
-                    label = "Cash Qty Units",
+                    label = "Cash Qty",
                     value = result.formattedCashQty,
                     subtext = "Net - Credit",
                     tintColor = Color(0xFF10B981),
@@ -1002,13 +1140,23 @@ private fun CalculatedReconciliationResultPanel(
                 )
 
                 SummaryStatBox(
-                    label = "Unit Sale Price",
+                    label = "Unit Price",
                     value = result.formattedUnitPrice,
                     subtext = "Per Unit",
                     tintColor = Color(0xFFF59E0B),
                     isDark = isDark,
                     modifier = Modifier.weight(1f),
                     testTag = "stat_unit_sale_price"
+                )
+
+                SummaryStatBox(
+                    label = "Commission",
+                    value = result.formattedCommissionPerUnit,
+                    subtext = "Per Unit",
+                    tintColor = Color(0xFF10B981),
+                    isDark = isDark,
+                    modifier = Modifier.weight(1f),
+                    testTag = "stat_commission_rate"
                 )
             }
         }
@@ -1129,7 +1277,7 @@ private fun SummaryStatBox(
         color = tintColor.copy(alpha = 0.08f)
     ) {
         Column(
-            modifier = Modifier.padding(10.dp),
+            modifier = Modifier.padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -1147,11 +1295,13 @@ private fun SummaryStatBox(
 
             Text(
                 text = value,
-                fontSize = 14.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
                 color = tintColor,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(2.dp))
@@ -1260,12 +1410,6 @@ private fun SavedTransactionsBottomSheet(
     }
 }
 
-/**
- * Detailed Sales Record Card:
- * Representative tag + date, delete action, then a labeled key-value field grid covering:
- * Sold, Returned, Expired, Credit Sales, Recovered, Price, Expected Cash, Physical Cash, Expense, Reconciled Cash
- * Capped with a full-width status banner showing balanced/short/over.
- */
 @Composable
 private fun SalesRecordCard(
     tx: SalesTransactionEntity,
@@ -1283,7 +1427,7 @@ private fun SalesRecordCard(
             Tuple4(
                 Color(0xFF10B981),
                 Color(0xFFFFFFFF),
-                "BALANCED • Exact Match (PKR 0.00 Difference)",
+                "BALANCED • Exact Match (₹ 0.00 Difference)",
                 Icons.Default.CheckCircle
             )
         }
@@ -1291,7 +1435,7 @@ private fun SalesRecordCard(
             Tuple4(
                 Color(0xFF0284C7),
                 Color(0xFFFFFFFF),
-                "SURPLUS • Excess of +PKR ${String.format(Locale.US, "%,.2f", discrepancy)}",
+                "SURPLUS • Excess of +₹ ${IndianNumberFormatter.formatIndianDouble(discrepancy, 2)}",
                 Icons.Default.TrendingUp
             )
         }
@@ -1299,7 +1443,7 @@ private fun SalesRecordCard(
             Tuple4(
                 Color(0xFFEF4444),
                 Color(0xFFFFFFFF),
-                "DEFICIT • Shortage of -PKR ${String.format(Locale.US, "%,.2f", kotlin.math.abs(discrepancy))}",
+                "DEFICIT • Shortage of -₹ ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(discrepancy), 2)}",
                 Icons.Default.TrendingDown
             )
         }
@@ -1388,7 +1532,7 @@ private fun SalesRecordCard(
                 }
             }
 
-            // 2. Labeled Key-Value Field Grid (10 Fields)
+            // 2. Labeled Key-Value Field Grid
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1433,52 +1577,74 @@ private fun SalesRecordCard(
                     )
                     GridKeyValueBox(
                         label = "Recovered",
-                        value = "PKR ${formatCurrencyNum(tx.recoveredCredit)}",
+                        value = "₹ ${IndianNumberFormatter.formatIndianDouble(tx.recoveredCredit, 2)}",
                         isDark = isDark,
                         modifier = Modifier.weight(1.2f)
                     )
                     GridKeyValueBox(
                         label = "Price",
-                        value = "PKR ${formatCurrencyNum(tx.unitSalePrice)}",
+                        value = "₹ ${IndianNumberFormatter.formatIndianDouble(tx.unitSalePrice, 2)}",
                         isDark = isDark,
                         modifier = Modifier.weight(1.1f)
                     )
                 }
 
-                // Row 3: Expected Cash | Physical Cash
+                // Row 3: Commission Rate | Total Commission
+                if (tx.commissionPerUnit > 0 || tx.totalCommission > 0) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        GridKeyValueBox(
+                            label = "Commission Rate",
+                            value = "₹ ${IndianNumberFormatter.formatIndianDouble(tx.commissionPerUnit, 2)}/unit",
+                            isDark = isDark,
+                            modifier = Modifier.weight(1f)
+                        )
+                        GridKeyValueBox(
+                            label = "Total Commission",
+                            value = "₹ ${IndianNumberFormatter.formatIndianDouble(tx.totalCommission, 2)}",
+                            highlightColor = Color(0xFF10B981),
+                            isDark = isDark,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                // Row 4: Expected Cash | Physical Cash
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     GridKeyValueBox(
                         label = "Expected Cash",
-                        value = "PKR ${formatCurrencyNum(tx.expectedCash)}",
+                        value = "₹ ${IndianNumberFormatter.formatIndianDouble(tx.expectedCash, 2)}",
                         highlightColor = primaryColor,
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
                     )
                     GridKeyValueBox(
                         label = "Physical Cash",
-                        value = "PKR ${formatCurrencyNum(tx.physicalCashInHand)}",
+                        value = "₹ ${IndianNumberFormatter.formatIndianDouble(tx.physicalCashInHand, 2)}",
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
                     )
                 }
 
-                // Row 4: Expense | Reconciled Cash
+                // Row 5: Expense | Reconciled Cash
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     GridKeyValueBox(
                         label = "Expense",
-                        value = "PKR ${formatCurrencyNum(tx.expense)}",
+                        value = "₹ ${IndianNumberFormatter.formatIndianDouble(tx.expense, 2)}",
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
                     )
                     GridKeyValueBox(
                         label = "Reconciled Cash",
-                        value = "PKR ${formatCurrencyNum(reconciledCash)}",
+                        value = "₹ ${IndianNumberFormatter.formatIndianDouble(reconciledCash, 2)}",
                         highlightColor = Color(0xFF10B981),
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
@@ -1570,14 +1736,10 @@ private fun GridKeyValueBox(
 
 private fun formatQuantity(qty: Double): String {
     return if (qty % 1.0 == 0.0) {
-        String.format(Locale.US, "%,.0f", qty)
+        IndianNumberFormatter.formatIndianDouble(qty, 0)
     } else {
-        String.format(Locale.US, "%,.2f", qty)
+        IndianNumberFormatter.formatIndianDouble(qty, 2)
     }
-}
-
-private fun formatCurrencyNum(value: Double): String {
-    return String.format(Locale.US, "%,.2f", value)
 }
 
 private fun buildReconciliationSummaryText(uiState: SalesUiState): String {
@@ -1597,8 +1759,10 @@ private fun buildReconciliationSummaryText(uiState: SalesUiState): String {
         appendLine("• Credit Sales Qty: ${uiState.creditSalesQtyText}")
         appendLine("• Net Sold Units: ${res.formattedNetSold}")
         appendLine("• Cash Qty Units: ${res.formattedCashQty}")
-        appendLine("\n--- CASH & RECONCILIATION ---")
+        appendLine("\n--- CASH, COMMISSION & RECONCILIATION ---")
         appendLine("• Unit Sale Price: ${res.formattedUnitPrice}")
+        appendLine("• Commission / Unit: ${res.formattedCommissionPerUnit}")
+        appendLine("• Total Commission Earned: ${res.formattedTotalCommission}")
         appendLine("• Sales Cash Revenue: ${res.formattedCashFromSales}")
         appendLine("• Recovered Credit: ${res.formattedRecoveredCredit}")
         appendLine("• Expected Cash: ${res.formattedExpectedCash}")

@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -38,7 +37,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -52,7 +50,6 @@ enum class DrawerDestination {
     SALES,
     MIXTURE_CALCULATOR,
     BATCH_SCALING,
-    FORMULAS_DATABASE,
     HISTORY,
     SETTINGS
 }
@@ -170,8 +167,8 @@ fun AppNavigationDrawer(
 
                 // 2. Sales Reconciliation Option
                 DrawerNavItem(
-                    label = "Sales",
-                    subtitle = "Reconciliation & cash audit",
+                    label = "Sales Audit",
+                    subtitle = "Reconciliation & commission audit",
                     icon = Icons.Default.ReceiptLong,
                     isSelected = currentDestination == DrawerDestination.SALES,
                     onClick = { onSelectDestination(DrawerDestination.SALES) },
@@ -210,21 +207,7 @@ fun AppNavigationDrawer(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 5. Structural Math & Formulas Database
-                DrawerNavItem(
-                    label = "Math & Structural DB",
-                    subtitle = "Persistent formulas & recipes",
-                    icon = Icons.Default.Storage,
-                    isSelected = currentDestination == DrawerDestination.FORMULAS_DATABASE,
-                    onClick = { onSelectDestination(DrawerDestination.FORMULAS_DATABASE) },
-                    testTag = "drawer_item_formulas_db",
-                    primaryColor = primaryColor,
-                    isDark = isDark
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 3. History Option
+                // 5. History Option
                 DrawerNavItem(
                     label = "History Tape",
                     subtitle = if (historyCount > 0) "$historyCount saved calculations" else "View past calculations",
@@ -239,7 +222,7 @@ fun AppNavigationDrawer(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 4. Settings Option
+                // 6. Settings Option
                 DrawerNavItem(
                     label = "Settings",
                     subtitle = "Theme, accents & haptics",
@@ -277,7 +260,7 @@ fun AppNavigationDrawer(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Liquid Glass Pro v1.2",
+                        text = "Precision Calculator",
                         fontFamily = DigitalMonospaceFont,
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -300,33 +283,31 @@ private fun DrawerNavItem(
     isDark: Boolean,
     badgeCount: Int = 0
 ) {
+    val containerBg = if (isSelected) {
+        primaryColor.copy(alpha = 0.16f)
+    } else {
+        if (isDark) Color(0x0EFFFFFF) else Color(0x08000000)
+    }
+    val borderColor = if (isSelected) {
+        primaryColor.copy(alpha = 0.45f)
+    } else {
+        if (isDark) Color(0x14FFFFFF) else Color(0x10000000)
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .border(
-                width = 1.dp,
-                brush = Brush.horizontalGradient(
-                    listOf(
-                        if (isSelected) primaryColor else Color.Transparent,
-                        Color.Transparent
-                    )
-                ),
-                shape = RoundedCornerShape(18.dp)
-            )
+            .clip(RoundedCornerShape(14.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(14.dp))
             .clickable { onClick() }
             .testTag(testTag),
-        shape = RoundedCornerShape(18.dp),
-        color = if (isSelected) {
-            primaryColor.copy(alpha = 0.18f)
-        } else {
-            if (isDark) Color(0x10FFFFFF) else Color(0x0A000000)
-        }
+        shape = RoundedCornerShape(14.dp),
+        color = containerBg
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -336,19 +317,21 @@ private fun DrawerNavItem(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(if (isSelected) primaryColor else primaryColor.copy(alpha = 0.15f)),
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (isSelected) primaryColor.copy(alpha = 0.25f) else (if (isDark) Color(0x18FFFFFF) else Color(0x12000000))),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
-                        contentDescription = label,
-                        tint = if (isSelected) (if (isDark) Color.Black else Color.White) else primaryColor,
+                        contentDescription = null,
+                        tint = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
                 }
+
                 Spacer(modifier = Modifier.width(12.dp))
+
                 Column {
                     Text(
                         text = label,
@@ -358,7 +341,7 @@ private fun DrawerNavItem(
                     )
                     Text(
                         text = subtitle,
-                        fontSize = 11.sp,
+                        fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -367,14 +350,15 @@ private fun DrawerNavItem(
             if (badgeCount > 0) {
                 Surface(
                     shape = CircleShape,
-                    color = primaryColor
+                    color = primaryColor.copy(alpha = 0.2f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.4f))
                 ) {
                     Text(
-                        text = if (badgeCount > 99) "99+" else "$badgeCount",
-                        fontFamily = DigitalMonospaceFont,
-                        fontSize = 10.sp,
+                        text = "$badgeCount",
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isDark) Color.Black else Color.White,
+                        fontFamily = DigitalMonospaceFont,
+                        color = primaryColor,
                         modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
                     )
                 }

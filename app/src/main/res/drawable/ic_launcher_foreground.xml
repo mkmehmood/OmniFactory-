@@ -1,8 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:width="66dp"
-        android:height="66dp"
-        android:drawable="@drawable/app_launcher_calculator_1787130654034"
-        android:gravity="center" />
-</layer-list>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Translucent Glassmorphic Square Plate -->
+    <path
+        android:pathData="M24,24 h60 a12,12 0 0,1 12,12 v36 a12,12 0 0,1 -12,12 h-60 a12,12 0 0,1 -12,-12 v-36 a12,12 0 0,1 12,-12 z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="24"
+                android:startY="24"
+                android:endX="84"
+                android:endY="84"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#2EFFFFFF" />
+                <item android:offset="1.0" android:color="#0DFFFFFF" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Glass Plate Border Highlight -->
+    <path
+        android:strokeWidth="1.5"
+        android:pathData="M24,24 h60 a12,12 0 0,1 12,12 v36 a12,12 0 0,1 -12,12 h-60 a12,12 0 0,1 -12,-12 v-36 a12,12 0 0,1 12,-12 z">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:startX="24"
+                android:startY="24"
+                android:endX="84"
+                android:endY="84"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#8038BDF8" />
+                <item android:offset="0.5" android:color="#33FFFFFF" />
+                <item android:offset="1.0" android:color="#40818CF8" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Subtle Quadrant Divider Grid -->
+    <path
+        android:strokeColor="#25FFFFFF"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:pathData="M54,26 L54,82 M26,54 L82,54" />
+
+    <!-- TOP-LEFT: PLUS (+) with Vibrant Aqua Glow -->
+    <path
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M38,28 L38,46 M29,37 L47,37" />
+
+    <!-- TOP-RIGHT: MINUS (−) with Vivid Coral/Rose -->
+    <path
+        android:strokeColor="#FB7185"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round"
+        android:pathData="M61,37 L79,37" />
+
+    <!-- BOTTOM-LEFT: MULTIPLY (×) with Warm Amber -->
+    <path
+        android:strokeColor="#FBBF24"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round"
+        android:pathData="M31,65 L45,79 M45,65 L31,79" />
+
+    <!-- BOTTOM-RIGHT: DIVIDE (÷) with Fresh Emerald -->
+    <path
+        android:fillColor="#34D399"
+        android:pathData="M70,64.5 A 2.2,2.2 0 1,1 70,64.49 Z" />
+    <path
+        android:strokeColor="#34D399"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round"
+        android:pathData="M61,72 L79,72" />
+    <path
+        android:fillColor="#34D399"
+        android:pathData="M70,79.5 A 2.2,2.2 0 1,1 70,79.49 Z" />
+
+</vector>
