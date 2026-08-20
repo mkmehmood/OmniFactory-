@@ -42,14 +42,16 @@ jobs:
       - name: Ensure .env exists
         run: cp -n .env.example .env || true
 
-      # debug.keystore is in .gitignore, so it never exists on a fresh
-      # checkout. app/build.gradle.kts points the "debugConfig" signing
-      # config at ${rootDir}/debug.keystore with password/alias "android" /
-      # "androiddebugkey" / "android" — generate one that matches, or
-      # assembleDebug fails at :app:validateSigningDebug.
-      - name: Generate debug keystore
+      # debug.keystore should be committed to the repo root (see below) so
+      # every build is signed with the SAME key — otherwise each CI run
+      # generates a new random one, and Android refuses to install over an
+      # existing copy signed with a different key ("package conflicts with
+      # an existing package"). This step only generates a fallback keystore
+      # if you haven't committed one yet.
+      - name: Ensure debug keystore exists
         run: |
           if [ ! -f "./debug.keystore" ]; then
+            echo "No committed debug.keystore found — generating a fallback (builds won't be reinstallable over older ones)."
             keytool -genkeypair -v \
               -keystore debug.keystore \
               -storepass android \
