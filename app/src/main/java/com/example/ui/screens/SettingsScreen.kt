@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,33 +21,38 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Animation
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.DensityMedium
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LinearScale
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PanoramaFishEye
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -64,17 +70,26 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.domain.util.HapticFeedbackHelper
+import com.example.domain.util.SoundFeedbackHelper
 import com.example.ui.theme.AccentTheme
+import com.example.ui.theme.AnimationIntensity
+import com.example.ui.theme.ComponentSizeStyle
 import com.example.ui.theme.DigitalMonospaceFont
+import com.example.ui.theme.HapticIntensity
 import com.example.ui.theme.LocalShapeStructure
 import com.example.ui.theme.ShapeStructureStyle
+import com.example.ui.theme.SoundIntensity
 import com.example.ui.theme.ThemeMode
 import com.example.ui.theme.toCardShape
 import com.example.ui.theme.toInputShape
+import com.example.ui.theme.toSmallShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,26 +97,34 @@ fun SettingsScreen(
     currentThemeMode: ThemeMode,
     currentAccent: AccentTheme,
     currentShapeStructure: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
+    currentComponentSize: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
+    currentAnimationIntensity: AnimationIntensity = AnimationIntensity.BALANCED,
+    currentHapticIntensity: HapticIntensity = HapticIntensity.MEDIUM,
+    currentSoundIntensity: SoundIntensity = SoundIntensity.STANDARD,
     showDoubleZeroKey: Boolean,
-    enableAnimations: Boolean,
-    hapticEnabled: Boolean,
-    soundEnabled: Boolean = true,
     onThemeModeChange: (ThemeMode) -> Unit,
     onAccentChange: (AccentTheme) -> Unit,
     onShapeStructureChange: (ShapeStructureStyle) -> Unit = {},
+    onComponentSizeChange: (ComponentSizeStyle) -> Unit = {},
+    onAnimationIntensityChange: (AnimationIntensity) -> Unit = {},
+    onHapticIntensityChange: (HapticIntensity) -> Unit = {},
+    onSoundIntensityChange: (SoundIntensity) -> Unit = {},
     onToggleDoubleZero: (Boolean) -> Unit,
-    onToggleAnimations: (Boolean) -> Unit,
-    onHapticToggle: (Boolean) -> Unit,
-    onSoundToggle: (Boolean) -> Unit = {},
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val view = LocalView.current
     val isDark = MaterialTheme.colorScheme.background.red < 0.2f
     val primaryColor = MaterialTheme.colorScheme.primary
     val shapeStructure = LocalShapeStructure.current
 
     var colorDropdownExpanded by remember { mutableStateOf(false) }
     var shapeDropdownExpanded by remember { mutableStateOf(false) }
+    var sizeDropdownExpanded by remember { mutableStateOf(false) }
+    var animDropdownExpanded by remember { mutableStateOf(false) }
+    var hapticDropdownExpanded by remember { mutableStateOf(false) }
+    var soundDropdownExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier.fillMaxSize().testTag("settings_screen"),
@@ -159,7 +182,9 @@ fun SettingsScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Section 1: Color Scheme Dropdown
+            // ==========================================
+            // SECTION 1: Color Palette Scheme Dropdown
+            // ==========================================
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = "Color Palette Scheme",
@@ -167,80 +192,36 @@ fun SettingsScreen(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "Select your accent color palette from the dropdown below",
+                    text = "Select accent glowing glass colors from the dropdown",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                // Simple Dropdown Selector for Color Scheme
-                ExposedDropdownMenuBox(
-                    expanded = colorDropdownExpanded,
-                    onExpandedChange = { colorDropdownExpanded = it },
-                    modifier = Modifier.fillMaxWidth().testTag("color_scheme_dropdown_box")
-                ) {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor()
-                            .clip(shapeStructure.toInputShape())
-                            .border(
-                                width = 1.dp,
-                                color = if (colorDropdownExpanded) primaryColor else (if (isDark) Color(0x33FFFFFF) else Color(0x20000000)),
-                                shape = shapeStructure.toInputShape()
+                Box(modifier = Modifier.fillMaxWidth().testTag("color_scheme_dropdown_box")) {
+                    GlassDropdownTrigger(
+                        isExpanded = colorDropdownExpanded,
+                        onClick = { colorDropdownExpanded = !colorDropdownExpanded },
+                        testTag = "color_scheme_dropdown_trigger",
+                        leadingContent = {
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(CircleShape)
+                                    .background(Brush.linearGradient(currentAccent.previewGradient))
+                                    .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
                             )
-                            .clickable { colorDropdownExpanded = !colorDropdownExpanded }
-                            .testTag("color_scheme_dropdown_trigger"),
-                        shape = shapeStructure.toInputShape(),
-                        color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .clip(CircleShape)
-                                        .background(Brush.linearGradient(currentAccent.previewGradient))
-                                        .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        text = currentAccent.displayName,
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = currentAccent.description,
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
+                        },
+                        title = currentAccent.displayName,
+                        subtitle = currentAccent.description
+                    )
 
-                            Icon(
-                                imageVector = if (colorDropdownExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                                contentDescription = "Toggle Color Dropdown",
-                                tint = primaryColor,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-
-                    ExposedDropdownMenu(
+                    DropdownMenu(
                         expanded = colorDropdownExpanded,
                         onDismissRequest = { colorDropdownExpanded = false },
                         modifier = Modifier
+                            .fillMaxWidth(0.92f)
                             .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
+                            .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
                             .testTag("color_scheme_dropdown_menu")
                     ) {
                         AccentTheme.entries.forEach { accent ->
@@ -297,7 +278,9 @@ fun SettingsScreen(
 
             HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
 
-            // Section 2: Shapes & Geometry Dropdown
+            // ==========================================
+            // SECTION 2: Keypad & Shapes Dropdown
+            // ==========================================
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = "Keypad & Component Shapes",
@@ -305,96 +288,42 @@ fun SettingsScreen(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "Select corner geometry for buttons, keypad keys, and input fields",
+                    text = "Choose from 8 distinct geometric shapes for buttons, cards, and input fields",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                // Simple Dropdown Selector for Shapes
-                ExposedDropdownMenuBox(
-                    expanded = shapeDropdownExpanded,
-                    onExpandedChange = { shapeDropdownExpanded = it },
-                    modifier = Modifier.fillMaxWidth().testTag("shape_structure_dropdown_box")
-                ) {
-                    val currentShapeIcon = when (currentShapeStructure) {
-                        ShapeStructureStyle.ROUNDED -> Icons.Default.RoundedCorner
-                        ShapeStructureStyle.PILL -> Icons.Default.PanoramaFishEye
-                        ShapeStructureStyle.LINE_BORDER -> Icons.Default.LinearScale
-                        ShapeStructureStyle.SHARP -> Icons.Default.CropSquare
-                    }
+                Box(modifier = Modifier.fillMaxWidth().testTag("shape_structure_dropdown_box")) {
+                    val currentShapeIcon = getShapeIcon(currentShapeStructure)
 
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor()
-                            .clip(shapeStructure.toInputShape())
-                            .border(
-                                width = 1.dp,
-                                color = if (shapeDropdownExpanded) primaryColor else (if (isDark) Color(0x33FFFFFF) else Color(0x20000000)),
-                                shape = shapeStructure.toInputShape()
-                            )
-                            .clickable { shapeDropdownExpanded = !shapeDropdownExpanded }
-                            .testTag("shape_structure_dropdown_trigger"),
-                        shape = shapeStructure.toInputShape(),
-                        color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(
-                                    imageVector = currentShapeIcon,
-                                    contentDescription = null,
-                                    tint = primaryColor,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        text = currentShapeStructure.displayName,
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = currentShapeStructure.description,
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-
+                    GlassDropdownTrigger(
+                        isExpanded = shapeDropdownExpanded,
+                        onClick = { shapeDropdownExpanded = !shapeDropdownExpanded },
+                        testTag = "shape_structure_dropdown_trigger",
+                        leadingContent = {
                             Icon(
-                                imageVector = if (shapeDropdownExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
-                                contentDescription = "Toggle Shape Dropdown",
+                                imageVector = currentShapeIcon,
+                                contentDescription = null,
                                 tint = primaryColor,
                                 modifier = Modifier.size(24.dp)
                             )
-                        }
-                    }
+                        },
+                        title = currentShapeStructure.displayName,
+                        subtitle = currentShapeStructure.description
+                    )
 
-                    ExposedDropdownMenu(
+                    DropdownMenu(
                         expanded = shapeDropdownExpanded,
                         onDismissRequest = { shapeDropdownExpanded = false },
                         modifier = Modifier
+                            .fillMaxWidth(0.92f)
                             .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
+                            .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
                             .testTag("shape_structure_dropdown_menu")
                     ) {
                         ShapeStructureStyle.entries.forEach { shapeStyle ->
                             val isSelected = currentShapeStructure == shapeStyle
-                            val icon = when (shapeStyle) {
-                                ShapeStructureStyle.ROUNDED -> Icons.Default.RoundedCorner
-                                ShapeStructureStyle.PILL -> Icons.Default.PanoramaFishEye
-                                ShapeStructureStyle.LINE_BORDER -> Icons.Default.LinearScale
-                                ShapeStructureStyle.SHARP -> Icons.Default.CropSquare
-                            }
+                            val icon = getShapeIcon(shapeStyle)
 
                             DropdownMenuItem(
                                 text = {
@@ -445,7 +374,102 @@ fun SettingsScreen(
 
             HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
 
-            // Section 3: Appearance & Theme Mode (Dark Liquid / Light Frosted / System)
+            // ==========================================
+            // SECTION 3: Component & Button Sizing Dropdown
+            // ==========================================
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "App Sizing & Touch Target Scale",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Scale keypad buttons, cards, spacing, and input fields to your comfort",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Box(modifier = Modifier.fillMaxWidth().testTag("size_dropdown_box")) {
+                    GlassDropdownTrigger(
+                        isExpanded = sizeDropdownExpanded,
+                        onClick = { sizeDropdownExpanded = !sizeDropdownExpanded },
+                        testTag = "size_dropdown_trigger",
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Default.DensityMedium,
+                                contentDescription = null,
+                                tint = primaryColor,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        },
+                        title = currentComponentSize.displayName,
+                        subtitle = currentComponentSize.description
+                    )
+
+                    DropdownMenu(
+                        expanded = sizeDropdownExpanded,
+                        onDismissRequest = { sizeDropdownExpanded = false },
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
+                            .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                            .testTag("size_dropdown_menu")
+                    ) {
+                        ComponentSizeStyle.entries.forEach { sizeStyle ->
+                            val isSelected = currentComponentSize == sizeStyle
+
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.AspectRatio,
+                                            contentDescription = null,
+                                            tint = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = sizeStyle.displayName,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                fontSize = 13.sp,
+                                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = sizeStyle.description,
+                                                fontSize = 10.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        if (isSelected) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Selected",
+                                                tint = primaryColor,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    onComponentSizeChange(sizeStyle)
+                                    sizeDropdownExpanded = false
+                                },
+                                modifier = Modifier.testTag("size_item_${sizeStyle.name.lowercase()}")
+                            )
+                        }
+                    }
+                }
+            }
+
+            HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
+
+            // ==========================================
+            // SECTION 4: Appearance & Theme Mode
+            // ==========================================
             Text(
                 text = "Appearance & Surface Mode",
                 style = MaterialTheme.typography.titleMedium,
@@ -481,9 +505,316 @@ fun SettingsScreen(
 
             HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
 
-            // Section 4: Keypad & Sound / Haptic Controls
+            // ==========================================
+            // SECTION 5: Intensity Controllers (Physics, Haptics, Audio)
+            // ==========================================
             Text(
-                text = "Keypad, Sound & Feedback Controls",
+                text = "Intensity & Feedback Controllers",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            // Controller 1: Fluid Tap Physics Intensity Dropdown
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Fluid Tap Physics Intensity", fontWeight = FontWeight.Medium)
+                        Text(
+                            "Spring elasticity & compression recoil on keypress",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Box(modifier = Modifier.fillMaxWidth().testTag("anim_dropdown_box")) {
+                    GlassDropdownTrigger(
+                        isExpanded = animDropdownExpanded,
+                        onClick = { animDropdownExpanded = !animDropdownExpanded },
+                        testTag = "anim_dropdown_trigger",
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Default.Animation,
+                                contentDescription = null,
+                                tint = primaryColor,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        },
+                        title = currentAnimationIntensity.displayName,
+                        subtitle = currentAnimationIntensity.description
+                    )
+
+                    DropdownMenu(
+                        expanded = animDropdownExpanded,
+                        onDismissRequest = { animDropdownExpanded = false },
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
+                            .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                            .testTag("anim_dropdown_menu")
+                    ) {
+                        AnimationIntensity.entries.forEach { anim ->
+                            val isSelected = currentAnimationIntensity == anim
+
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = anim.displayName,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                fontSize = 13.sp,
+                                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = anim.description,
+                                                fontSize = 10.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        if (isSelected) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Selected",
+                                                tint = primaryColor,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    onAnimationIntensityChange(anim)
+                                    animDropdownExpanded = false
+                                },
+                                modifier = Modifier.testTag("anim_item_${anim.name.lowercase()}")
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Controller 2: Haptic Feedback Intensity Dropdown + Test Pulse Button
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Haptic Feedback Intensity", fontWeight = FontWeight.Medium)
+                        Text(
+                            "Hardware vibrator pulse strength and crisp tactile clicks",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            HapticFeedbackHelper.performKeypadTap(context, view, currentHapticIntensity)
+                        },
+                        shape = shapeStructure.toSmallShape(),
+                        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.5f)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = primaryColor),
+                        modifier = Modifier.testTag("test_haptic_button")
+                    ) {
+                        Icon(imageVector = Icons.Default.TouchApp, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Test", fontSize = 12.sp)
+                    }
+                }
+
+                Box(modifier = Modifier.fillMaxWidth().testTag("haptic_dropdown_box")) {
+                    GlassDropdownTrigger(
+                        isExpanded = hapticDropdownExpanded,
+                        onClick = { hapticDropdownExpanded = !hapticDropdownExpanded },
+                        testTag = "haptic_dropdown_trigger",
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Default.Vibration,
+                                contentDescription = null,
+                                tint = primaryColor,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        },
+                        title = currentHapticIntensity.displayName,
+                        subtitle = currentHapticIntensity.description
+                    )
+
+                    DropdownMenu(
+                        expanded = hapticDropdownExpanded,
+                        onDismissRequest = { hapticDropdownExpanded = false },
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
+                            .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                            .testTag("haptic_dropdown_menu")
+                    ) {
+                        HapticIntensity.entries.forEach { haptic ->
+                            val isSelected = currentHapticIntensity == haptic
+
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = haptic.displayName,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                fontSize = 13.sp,
+                                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = haptic.description,
+                                                fontSize = 10.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        if (isSelected) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Selected",
+                                                tint = primaryColor,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    onHapticIntensityChange(haptic)
+                                    hapticDropdownExpanded = false
+                                    // Trigger immediate sample feedback
+                                    HapticFeedbackHelper.performKeypadTap(context, view, haptic)
+                                },
+                                modifier = Modifier.testTag("haptic_item_${haptic.name.lowercase()}")
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Controller 3: Sound Feedback Intensity Dropdown + Test Play Button (with Extreme Boost)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Sound Feedback Intensity", fontWeight = FontWeight.Medium)
+                        Text(
+                            "Audible acoustic key click volume (Extreme Boost clears freely & loudly)",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            SoundFeedbackHelper.playClickSound(context, view, currentSoundIntensity)
+                        },
+                        shape = shapeStructure.toSmallShape(),
+                        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.5f)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = primaryColor),
+                        modifier = Modifier.testTag("test_sound_button")
+                    ) {
+                        Icon(imageVector = Icons.Default.GraphicEq, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Play", fontSize = 12.sp)
+                    }
+                }
+
+                Box(modifier = Modifier.fillMaxWidth().testTag("sound_dropdown_box")) {
+                    GlassDropdownTrigger(
+                        isExpanded = soundDropdownExpanded,
+                        onClick = { soundDropdownExpanded = !soundDropdownExpanded },
+                        testTag = "sound_dropdown_trigger",
+                        leadingContent = {
+                            Icon(
+                                imageVector = Icons.Default.VolumeUp,
+                                contentDescription = null,
+                                tint = primaryColor,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        },
+                        title = currentSoundIntensity.displayName,
+                        subtitle = currentSoundIntensity.description
+                    )
+
+                    DropdownMenu(
+                        expanded = soundDropdownExpanded,
+                        onDismissRequest = { soundDropdownExpanded = false },
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
+                            .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                            .testTag("sound_dropdown_menu")
+                    ) {
+                        SoundIntensity.entries.forEach { sound ->
+                            val isSelected = currentSoundIntensity == sound
+
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = sound.displayName,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                fontSize = 13.sp,
+                                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = sound.description,
+                                                fontSize = 10.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        if (isSelected) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Selected",
+                                                tint = primaryColor,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    onSoundIntensityChange(sound)
+                                    soundDropdownExpanded = false
+                                    // Trigger immediate sample audio burst
+                                    SoundFeedbackHelper.playClickSound(context, view, sound)
+                                },
+                                modifier = Modifier.testTag("sound_item_${sound.name.lowercase()}")
+                            )
+                        }
+                    }
+                }
+            }
+
+            HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
+
+            // ==========================================
+            // SECTION 6: Keypad Extra Options
+            // ==========================================
+            Text(
+                text = "Keypad Extra Options",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -494,7 +825,7 @@ fun SettingsScreen(
                 colors = CardDefaults.cardColors(
                     containerColor = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
                 ),
-                border = androidx.compose.foundation.BorderStroke(
+                border = BorderStroke(
                     1.dp,
                     if (isDark) Color(0x28FFFFFF) else Color(0x18000000)
                 )
@@ -503,102 +834,6 @@ fun SettingsScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    // Click Sound Option
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.VolumeUp,
-                                contentDescription = null,
-                                tint = primaryColor,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text("Keypad Click Sound", fontWeight = FontWeight.Medium)
-                                Text(
-                                    "Play crisp tactile audio clicks on calculator key presses",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        Switch(
-                            checked = soundEnabled,
-                            onCheckedChange = onSoundToggle,
-                            colors = SwitchDefaults.colors(checkedThumbColor = primaryColor),
-                            modifier = Modifier.testTag("sound_switch")
-                        )
-                    }
-
-                    HorizontalDivider(color = if (isDark) Color(0x1AFFFFFF) else Color(0x10000000))
-
-                    // Haptic Vibration Feedback
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Vibration,
-                                contentDescription = null,
-                                tint = primaryColor,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text("Tactile Haptic Vibration", fontWeight = FontWeight.Medium)
-                                Text(
-                                    "Direct hardware vibrator click and touch feedback on every tap",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        Switch(
-                            checked = hapticEnabled,
-                            onCheckedChange = onHapticToggle,
-                            colors = SwitchDefaults.colors(checkedThumbColor = primaryColor),
-                            modifier = Modifier.testTag("haptic_switch")
-                        )
-                    }
-
-                    HorizontalDivider(color = if (isDark) Color(0x1AFFFFFF) else Color(0x10000000))
-
-                    // Fluid Tap Animations
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Fluid Tap Physics & Movement", fontWeight = FontWeight.Medium)
-                            Text(
-                                "Responsive spring compression and bouncy physics on key press",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = enableAnimations,
-                            onCheckedChange = onToggleAnimations,
-                            colors = SwitchDefaults.colors(checkedThumbColor = primaryColor),
-                            modifier = Modifier.testTag("animations_switch")
-                        )
-                    }
-
-                    HorizontalDivider(color = if (isDark) Color(0x1AFFFFFF) else Color(0x10000000))
-
                     // Dedicated '00' Key
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -606,9 +841,9 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Dedicated '00' Key", fontWeight = FontWeight.Medium)
+                            Text("Dedicated '00' Double Zero Key", fontWeight = FontWeight.Medium)
                             Text(
-                                "Fast double-zero entry for currency & calculations",
+                                "Fast double-zero entry for currency & calculations (replaces +/- key)",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -623,8 +858,86 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(28.dp))
         }
+    }
+}
+
+@Composable
+private fun GlassDropdownTrigger(
+    isExpanded: Boolean,
+    onClick: () -> Unit,
+    testTag: String,
+    leadingContent: @Composable () -> Unit,
+    title: String,
+    subtitle: String
+) {
+    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val shapeStructure = LocalShapeStructure.current
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shapeStructure.toInputShape())
+            .border(
+                width = if (isExpanded) 1.5.dp else 1.dp,
+                color = if (isExpanded) primaryColor else (if (isDark) Color(0x33FFFFFF) else Color(0x20000000)),
+                shape = shapeStructure.toInputShape()
+            )
+            .clickable { onClick() }
+            .testTag(testTag),
+        shape = shapeStructure.toInputShape(),
+        color = if (isDark) Color(0x1CFFFFFF) else Color(0x0C000000)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                leadingContent()
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = title,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = subtitle,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                contentDescription = "Toggle Dropdown",
+                tint = primaryColor,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+}
+
+private fun getShapeIcon(shape: ShapeStructureStyle): ImageVector {
+    return when (shape) {
+        ShapeStructureStyle.ROUNDED -> Icons.Default.RoundedCorner
+        ShapeStructureStyle.PILL -> Icons.Default.PanoramaFishEye
+        ShapeStructureStyle.LINE_BORDER -> Icons.Default.LinearScale
+        ShapeStructureStyle.SHARP -> Icons.Default.CropSquare
+        ShapeStructureStyle.CHAMFER_CUT -> Icons.Default.CropSquare
+        ShapeStructureStyle.TEARDROP -> Icons.Default.PanoramaFishEye
+        ShapeStructureStyle.OVAL_STADIUM -> Icons.Default.PanoramaFishEye
+        ShapeStructureStyle.SOFT_BUBBLE -> Icons.Default.RoundedCorner
     }
 }
 

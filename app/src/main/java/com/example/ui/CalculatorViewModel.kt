@@ -11,7 +11,11 @@ import com.example.domain.calculator.CalculationResult
 import com.example.domain.calculator.CalculatorEngine
 import com.example.ui.components.HistoryTimeSplit
 import com.example.ui.theme.AccentTheme
+import com.example.ui.theme.AnimationIntensity
+import com.example.ui.theme.ComponentSizeStyle
+import com.example.ui.theme.HapticIntensity
 import com.example.ui.theme.ShapeStructureStyle
+import com.example.ui.theme.SoundIntensity
 import com.example.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,9 +33,10 @@ data class CalculatorUiState(
     val isEvaluated: Boolean = false,
     val memory: BigDecimal = BigDecimal.ZERO,
     val showDoubleZeroKey: Boolean = true,
-    val enableAnimations: Boolean = true,
-    val hapticEnabled: Boolean = true,
-    val soundEnabled: Boolean = true,
+    val animationIntensity: AnimationIntensity = AnimationIntensity.BALANCED,
+    val hapticIntensity: HapticIntensity = HapticIntensity.MEDIUM,
+    val soundIntensity: SoundIntensity = SoundIntensity.STANDARD,
+    val componentSizeStyle: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
     val shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     val themeMode: ThemeMode = ThemeMode.DARK,
     val accentTheme: AccentTheme = AccentTheme.AQUA,
@@ -39,7 +44,11 @@ data class CalculatorUiState(
     val isTapeOpen: Boolean = false,
     val isSettingsOpen: Boolean = false,
     val errorMessage: String? = null
-)
+) {
+    val enableAnimations: Boolean get() = animationIntensity != AnimationIntensity.OFF
+    val hapticEnabled: Boolean get() = hapticIntensity != HapticIntensity.OFF
+    val soundEnabled: Boolean get() = soundIntensity != SoundIntensity.OFF
+}
 
 class CalculatorViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -51,13 +60,14 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     private val _uiState = MutableStateFlow(
         CalculatorUiState(
             shapeStructureStyle = userPreferencesManager.shapeStructureStyle,
+            componentSizeStyle = userPreferencesManager.componentSizeStyle,
             themeMode = userPreferencesManager.themeMode,
             accentTheme = userPreferencesManager.accentTheme,
+            animationIntensity = userPreferencesManager.animationIntensity,
+            hapticIntensity = userPreferencesManager.hapticIntensity,
+            soundIntensity = userPreferencesManager.soundIntensity,
             historyTimeSplit = userPreferencesManager.lastHistoryTimeSplit,
-            showDoubleZeroKey = userPreferencesManager.showDoubleZeroKey,
-            enableAnimations = userPreferencesManager.enableAnimations,
-            hapticEnabled = userPreferencesManager.hapticEnabled,
-            soundEnabled = userPreferencesManager.soundEnabled
+            showDoubleZeroKey = userPreferencesManager.showDoubleZeroKey
         )
     )
     val uiState: StateFlow<CalculatorUiState> = _uiState.asStateFlow()
@@ -94,7 +104,6 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
         val newExpr = if (isNew || current == "0") {
             digit
         } else {
-            // Check if current active token is just "0" and we are typing another digit -> replace the "0"
             val lastToken = current.split('+', '−', '-', '×', '*', '÷', '/', '(', ')').lastOrNull() ?: ""
             if (lastToken == "0") {
                 current.dropLast(1) + digit
@@ -120,10 +129,8 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
             return
         }
 
-        // Check if the current number already contains a decimal point
         val lastToken = current.split('+', '−', '-', '×', '*', '÷', '/', '(', ')').lastOrNull() ?: ""
         if (lastToken.contains('.')) {
-            // Already has decimal point in active token, ignore
             return
         }
 
@@ -154,123 +161,108 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun onOperator(op: String) {
-        var current = _uiState.value.expression
-        if (current.isEmpty()) {
-            current = "0"
-        }
-
-        // If trailing decimal, drop it before appending operator
-        if (current.endsWith('.')) {
-            current = current.dropLast(1)
-        }
-
-        // If ends with another operator, replace it
-        if (current.isNotEmpty() && current.last() in listOf('+', '−', '×', '÷')) {
-            current = current.dropLast(1)
-        }
-
-        updateExpression(current + op, isEvaluated = false)
-    }
-
-    fun onParentheses() {
         val current = _uiState.value.expression
-        val openCount = current.count { it == '(' }
-        val closeCount = current.count { it == ')' }
-
-        val newExpr = if (current.isEmpty() || current.last() in listOf('+', '−', '×', '÷', '(')) {
-            current + "("
-        } else if (openCount > closeCount) {
-            current + ")"
-        } else {
-            current + "×("
+        val normalizedOp = when (op) {
+            "*" -> "×"
+            "/" -> "÷"
+            "-" -> "−"
+            else -> op
         }
 
-        updateExpression(newExpr, isEvaluated = false)
+        if (current.isEmpty()) {
+            if (normalizedOp == "−") {
+                updateExpression("−", isEvaluated = false)
+            }
+            return
+        }
+
+        val lastChar = current.last().toString()
+        if (lastChar in listOf("+", "−", "×", "÷")) {
+            val replaced = current.dropLast(1) + normalizedOp
+            updateExpression(replaced, isEvaluated = false)
+            return
+        }
+
+        updateExpression(current + normalizedOp, isEvaluated = false)
     }
 
     fun onPercent() {
         val current = _uiState.value.expression
-        if (current.isEmpty() || current.last() in listOf('+', '−', '×', '÷', '(', '%', '.')) return
+        if (current.isEmpty()) return
 
-        updateExpression(current + "%", isEvaluated = false)
-    }
+        val lastChar = current.last()
+        if (lastChar in listOf('+', '−', '×', '÷', '(')) return
 
-    fun onClear() {
-        updateExpression("", isEvaluated = false)
-    }
+        val tokens = current.split('+', '−', '×', '÷')
+        val lastToken = tokens.lastOrNull() ?: return
+        if (lastToken.isEmpty()) return
 
-    fun onBackspace() {
-        val current = _uiState.value.expression
-        val isNew = _uiState.value.isEvaluated
-        if (isNew) {
-            updateExpression("", isEvaluated = false)
-        } else if (current.isNotEmpty()) {
-            updateExpression(current.dropLast(1), isEvaluated = false)
+        val evalToken = CalculatorEngine.evaluate(lastToken)
+        if (evalToken is CalculationResult.Success) {
+            val percentVal = evalToken.value.divide(BigDecimal("100"), 10, java.math.RoundingMode.HALF_UP).stripTrailingZeros()
+            val formatted = CalculatorEngine.formatNumber(percentVal)
+            val prefix = current.substring(0, current.length - lastToken.length)
+            updateExpression(prefix + formatted, isEvaluated = false)
         }
     }
 
     fun onNegate() {
         val current = _uiState.value.expression
-        if (current.isEmpty() || current == "0") return
+        if (current.isEmpty()) return
 
-        val cleanCurrent = current.replace(",", "").trim()
-        val num = cleanCurrent.toBigDecimalOrNull()
-        if (num != null) {
-            val negated = num.negate()
-            updateExpression(CalculatorEngine.formatNumber(negated), isEvaluated = false)
-        } else {
-            updateExpression("-($current)", isEvaluated = false)
+        val tokens = current.split('+', '−', '×', '÷')
+        val lastToken = tokens.lastOrNull() ?: return
+        if (lastToken.isEmpty()) return
+
+        val evalToken = CalculatorEngine.evaluate(lastToken)
+        if (evalToken is CalculationResult.Success) {
+            val negated = evalToken.value.negate()
+            val formatted = CalculatorEngine.formatNumber(negated)
+            val prefix = current.substring(0, current.length - lastToken.length)
+            updateExpression(prefix + formatted, isEvaluated = false)
         }
     }
 
-    fun onPaste(pasted: String) {
-        if (pasted.isBlank()) {
-            showToast("Clipboard is empty")
-            return
-        }
-        val clean = pasted.trim()
-            .replace(",", "")
-            .replace("*", "×")
-            .replace("/", "÷")
-            .replace("-", "−")
-            .filter { it.isDigit() || it in listOf('.', '+', '−', '×', '÷', '%', '(', ')') }
-
-        if (clean.isEmpty()) {
-            showToast("No valid numbers found in clipboard")
-            return
-        }
-
+    fun onBackspace() {
         val current = _uiState.value.expression
-        val isNew = _uiState.value.isEvaluated
-
-        val newExpr = if (isNew || current.isEmpty() || current == "0") {
-            clean
-        } else {
-            current + clean
+        if (current.isNotEmpty()) {
+            val newExpr = current.dropLast(1)
+            updateExpression(newExpr, isEvaluated = false)
         }
+    }
 
-        updateExpression(newExpr, isEvaluated = false)
-        showToast("Pasted: $clean")
+    fun onClear() {
+        _uiState.update {
+            it.copy(
+                expression = "",
+                liveResult = null,
+                isEvaluated = false,
+                errorMessage = null
+            )
+        }
     }
 
     fun onEquals() {
         val current = _uiState.value.expression
-        if (current.isBlank()) return
+        if (current.isEmpty()) return
 
-        val eval = CalculatorEngine.evaluate(current)
-        when (eval) {
+        val result = CalculatorEngine.evaluate(current)
+        when (result) {
             is CalculationResult.Success -> {
-                val formatted = CalculatorEngine.formatNumber(eval.value)
+                val formattedResult = CalculatorEngine.formatNumber(result.value)
+
                 viewModelScope.launch {
                     repository.insertCalculation(
-                        expression = CalculatorEngine.formatExpressionForDisplay(current),
-                        result = formatted,
-                        tag = ""
+                        expression = current,
+                        result = formattedResult,
+                        tag = "General",
+                        note = ""
                     )
                 }
+
                 _uiState.update {
                     it.copy(
-                        expression = formatted,
+                        expression = formattedResult,
                         liveResult = null,
                         isEvaluated = true,
                         errorMessage = null
@@ -279,24 +271,33 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
             }
             is CalculationResult.Error -> {
                 _uiState.update {
-                    it.copy(
-                        errorMessage = eval.message,
-                        liveResult = "Error"
-                    )
+                    it.copy(errorMessage = result.message)
                 }
+                showToast("Error: ${result.message}")
             }
-            CalculationResult.Empty -> {}
+            is CalculationResult.Empty -> {}
+        }
+    }
+
+    fun onPaste(text: String) {
+        val sanitized = text.filter { it.isDigit() || it in listOf('.', '+', '-', '*', '/', '(', ')', '×', '÷', '−') }
+            .replace("*", "×")
+            .replace("/", "÷")
+            .replace("-", "−")
+        if (sanitized.isNotEmpty()) {
+            updateExpression(sanitized, isEvaluated = false)
+            showToast("Pasted expression")
+        } else {
+            showToast("Invalid clipboard content")
         }
     }
 
     fun restoreCalculation(entity: CalculationEntity) {
         val current = _uiState.value.expression
-        val toInsert = entity.result.replace(",", "").trim()
-        val isNew = _uiState.value.isEvaluated
-
-        val newExpr = if (isNew || current.isEmpty() || current == "0") {
+        val toInsert = entity.result
+        val newExpr = if (current.isEmpty() || _uiState.value.isEvaluated) {
             toInsert
-        } else if (current.last() in listOf('+', '−', '-', '×', '*', '÷', '/', '(')) {
+        } else if (current.last() in listOf('+', '−', '×', '÷', '(')) {
             current + toInsert
         } else {
             current + "+" + toInsert
@@ -356,6 +357,26 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
         _uiState.update { it.copy(shapeStructureStyle = style) }
     }
 
+    fun setComponentSizeStyle(style: ComponentSizeStyle) {
+        userPreferencesManager.componentSizeStyle = style
+        _uiState.update { it.copy(componentSizeStyle = style) }
+    }
+
+    fun setAnimationIntensity(intensity: AnimationIntensity) {
+        userPreferencesManager.animationIntensity = intensity
+        _uiState.update { it.copy(animationIntensity = intensity) }
+    }
+
+    fun setHapticIntensity(intensity: HapticIntensity) {
+        userPreferencesManager.hapticIntensity = intensity
+        _uiState.update { it.copy(hapticIntensity = intensity) }
+    }
+
+    fun setSoundIntensity(intensity: SoundIntensity) {
+        userPreferencesManager.soundIntensity = intensity
+        _uiState.update { it.copy(soundIntensity = intensity) }
+    }
+
     fun setThemeMode(mode: ThemeMode) {
         userPreferencesManager.themeMode = mode
         _uiState.update { it.copy(themeMode = mode) }
@@ -373,17 +394,17 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
 
     fun setEnableAnimations(enabled: Boolean) {
         userPreferencesManager.enableAnimations = enabled
-        _uiState.update { it.copy(enableAnimations = enabled) }
+        _uiState.update { it.copy(animationIntensity = userPreferencesManager.animationIntensity) }
     }
 
     fun setHapticEnabled(enabled: Boolean) {
         userPreferencesManager.hapticEnabled = enabled
-        _uiState.update { it.copy(hapticEnabled = enabled) }
+        _uiState.update { it.copy(hapticIntensity = userPreferencesManager.hapticIntensity) }
     }
 
     fun setSoundEnabled(enabled: Boolean) {
         userPreferencesManager.soundEnabled = enabled
-        _uiState.update { it.copy(soundEnabled = enabled) }
+        _uiState.update { it.copy(soundIntensity = userPreferencesManager.soundIntensity) }
     }
 
     fun setTapeOpen(open: Boolean) {

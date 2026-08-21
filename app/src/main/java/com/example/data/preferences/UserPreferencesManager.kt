@@ -4,7 +4,11 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.example.ui.components.HistoryTimeSplit
 import com.example.ui.theme.AccentTheme
+import com.example.ui.theme.AnimationIntensity
+import com.example.ui.theme.ComponentSizeStyle
+import com.example.ui.theme.HapticIntensity
 import com.example.ui.theme.ShapeStructureStyle
+import com.example.ui.theme.SoundIntensity
 import com.example.ui.theme.ThemeMode
 
 class UserPreferencesManager(context: Context) {
@@ -26,6 +30,20 @@ class UserPreferencesManager(context: Context) {
         }
         set(value) {
             prefs.edit().putString(KEY_SHAPE_STRUCTURE, value.name).apply()
+        }
+
+    var componentSizeStyle: ComponentSizeStyle
+        get() {
+            val name = prefs.getString(KEY_COMPONENT_SIZE, ComponentSizeStyle.STANDARD.name)
+                ?: ComponentSizeStyle.STANDARD.name
+            return try {
+                ComponentSizeStyle.valueOf(name)
+            } catch (e: Exception) {
+                ComponentSizeStyle.STANDARD
+            }
+        }
+        set(value) {
+            prefs.edit().putString(KEY_COMPONENT_SIZE, value.name).apply()
         }
 
     var themeMode: ThemeMode
@@ -54,6 +72,48 @@ class UserPreferencesManager(context: Context) {
             prefs.edit().putString(KEY_ACCENT_THEME, value.name).apply()
         }
 
+    var animationIntensity: AnimationIntensity
+        get() {
+            val name = prefs.getString(KEY_ANIMATION_INTENSITY, AnimationIntensity.BALANCED.name)
+                ?: AnimationIntensity.BALANCED.name
+            return try {
+                AnimationIntensity.valueOf(name)
+            } catch (e: Exception) {
+                AnimationIntensity.BALANCED
+            }
+        }
+        set(value) {
+            prefs.edit().putString(KEY_ANIMATION_INTENSITY, value.name).apply()
+        }
+
+    var hapticIntensity: HapticIntensity
+        get() {
+            val name = prefs.getString(KEY_HAPTIC_INTENSITY, HapticIntensity.MEDIUM.name)
+                ?: HapticIntensity.MEDIUM.name
+            return try {
+                HapticIntensity.valueOf(name)
+            } catch (e: Exception) {
+                HapticIntensity.MEDIUM
+            }
+        }
+        set(value) {
+            prefs.edit().putString(KEY_HAPTIC_INTENSITY, value.name).apply()
+        }
+
+    var soundIntensity: SoundIntensity
+        get() {
+            val name = prefs.getString(KEY_SOUND_INTENSITY, SoundIntensity.STANDARD.name)
+                ?: SoundIntensity.STANDARD.name
+            return try {
+                SoundIntensity.valueOf(name)
+            } catch (e: Exception) {
+                SoundIntensity.STANDARD
+            }
+        }
+        set(value) {
+            prefs.edit().putString(KEY_SOUND_INTENSITY, value.name).apply()
+        }
+
     var lastHistoryTimeSplit: HistoryTimeSplit
         get() {
             val name = prefs.getString(KEY_HISTORY_TIME_SPLIT, HistoryTimeSplit.ALL_TIME.name)
@@ -72,27 +132,35 @@ class UserPreferencesManager(context: Context) {
         get() = prefs.getBoolean(KEY_SHOW_DOUBLE_ZERO, true)
         set(value) = prefs.edit().putBoolean(KEY_SHOW_DOUBLE_ZERO, value).apply()
 
+    // Backward compatibility helpers
     var enableAnimations: Boolean
-        get() = prefs.getBoolean(KEY_ENABLE_ANIMATIONS, true)
-        set(value) = prefs.edit().putBoolean(KEY_ENABLE_ANIMATIONS, value).apply()
+        get() = animationIntensity != AnimationIntensity.OFF
+        set(value) {
+            animationIntensity = if (value) AnimationIntensity.BALANCED else AnimationIntensity.OFF
+        }
 
     var hapticEnabled: Boolean
-        get() = prefs.getBoolean(KEY_HAPTIC_ENABLED, true)
-        set(value) = prefs.edit().putBoolean(KEY_HAPTIC_ENABLED, value).apply()
+        get() = hapticIntensity != HapticIntensity.OFF
+        set(value) {
+            hapticIntensity = if (value) HapticIntensity.MEDIUM else HapticIntensity.OFF
+        }
 
     var soundEnabled: Boolean
-        get() = prefs.getBoolean(KEY_SOUND_ENABLED, true)
-        set(value) = prefs.edit().putBoolean(KEY_SOUND_ENABLED, value).apply()
+        get() = soundIntensity != SoundIntensity.OFF
+        set(value) {
+            soundIntensity = if (value) SoundIntensity.STANDARD else SoundIntensity.OFF
+        }
 
     companion object {
         private const val PREFS_NAME = "calculator_user_prefs"
         private const val KEY_SHAPE_STRUCTURE = "pref_shape_structure"
+        private const val KEY_COMPONENT_SIZE = "pref_component_size"
         private const val KEY_THEME_MODE = "pref_theme_mode"
         private const val KEY_ACCENT_THEME = "pref_accent_theme"
+        private const val KEY_ANIMATION_INTENSITY = "pref_animation_intensity"
+        private const val KEY_HAPTIC_INTENSITY = "pref_haptic_intensity"
+        private const val KEY_SOUND_INTENSITY = "pref_sound_intensity"
         private const val KEY_HISTORY_TIME_SPLIT = "pref_history_time_split"
         private const val KEY_SHOW_DOUBLE_ZERO = "pref_show_double_zero"
-        private const val KEY_ENABLE_ANIMATIONS = "pref_enable_animations"
-        private const val KEY_HAPTIC_ENABLED = "pref_haptic_enabled"
-        private const val KEY_SOUND_ENABLED = "pref_sound_enabled"
     }
 }

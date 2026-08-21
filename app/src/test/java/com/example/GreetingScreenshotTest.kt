@@ -3,7 +3,12 @@ package com.example
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import com.example.ui.screens.BasicCalculatorScreen
+import com.example.ui.theme.AnimationIntensity
+import com.example.ui.theme.ComponentSizeStyle
+import com.example.ui.theme.HapticIntensity
 import com.example.ui.theme.MyApplicationTheme
+import com.example.ui.theme.ShapeStructureStyle
+import com.example.ui.theme.SoundIntensity
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
@@ -29,8 +34,11 @@ class GreetingScreenshotTest {
           liveResult = "1,850",
           isAllClear = false,
           showDoubleZeroKey = true,
-          enableAnimations = true,
-          hapticEnabled = true,
+          animationIntensity = AnimationIntensity.BALANCED,
+          hapticIntensity = HapticIntensity.MEDIUM,
+          soundIntensity = SoundIntensity.STANDARD,
+          componentSizeStyle = ComponentSizeStyle.STANDARD,
+          shapeStructureStyle = ShapeStructureStyle.ROUNDED,
           onDigit = {},
           onDoubleZero = {},
           onOperator = {},

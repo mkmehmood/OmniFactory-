@@ -9,7 +9,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.example.ui.components.CalculatorDisplay
 import com.example.ui.components.CalculatorKeypad
+import com.example.ui.theme.AnimationIntensity
+import com.example.ui.theme.ComponentSizeStyle
+import com.example.ui.theme.HapticIntensity
 import com.example.ui.theme.ShapeStructureStyle
+import com.example.ui.theme.SoundIntensity
 
 @Composable
 fun BasicCalculatorScreen(
@@ -17,9 +21,10 @@ fun BasicCalculatorScreen(
     liveResult: String?,
     isAllClear: Boolean,
     showDoubleZeroKey: Boolean = true,
-    enableAnimations: Boolean = true,
-    hapticEnabled: Boolean = true,
-    soundEnabled: Boolean = true,
+    animationIntensity: AnimationIntensity = AnimationIntensity.BALANCED,
+    hapticIntensity: HapticIntensity = HapticIntensity.MEDIUM,
+    soundIntensity: SoundIntensity = SoundIntensity.STANDARD,
+    componentSizeStyle: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
     shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     onDigit: (String) -> Unit = {},
     onDoubleZero: () -> Unit = {},
@@ -64,9 +69,10 @@ fun BasicCalculatorScreen(
             onEquals = onEquals,
             onNegate = onNegate,
             showDoubleZeroKey = showDoubleZeroKey,
-            enableAnimations = enableAnimations,
-            hapticEnabled = hapticEnabled,
-            soundEnabled = soundEnabled,
+            animationIntensity = animationIntensity,
+            hapticIntensity = hapticIntensity,
+            soundIntensity = soundIntensity,
+            componentSizeStyle = componentSizeStyle,
             shapeStructureStyle = shapeStructureStyle,
             modifier = Modifier.fillMaxWidth()
         )

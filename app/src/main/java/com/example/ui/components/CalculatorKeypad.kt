@@ -45,6 +45,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.util.HapticFeedbackHelper
 import com.example.domain.util.SoundFeedbackHelper
+import com.example.ui.theme.AnimationIntensity
+import com.example.ui.theme.ComponentSizeStyle
+import com.example.ui.theme.HapticIntensity
+import com.example.ui.theme.LocalAnimationIntensity
+import com.example.ui.theme.LocalComponentSizing
+import com.example.ui.theme.LocalShapeStructure
 import com.example.ui.theme.PureDarkGlassBorder
 import com.example.ui.theme.PureDarkGlassSurface
 import com.example.ui.theme.PureDarkGlassSurfacePressed
@@ -54,6 +60,7 @@ import com.example.ui.theme.PureLightGlassSurface
 import com.example.ui.theme.PureLightGlassSurfacePressed
 import com.example.ui.theme.PureLightTextPrimary
 import com.example.ui.theme.ShapeStructureStyle
+import com.example.ui.theme.SoundIntensity
 import com.example.ui.theme.toButtonShape
 import kotlinx.coroutines.launch
 
@@ -77,9 +84,10 @@ fun CalculatorKeypad(
     onEquals: () -> Unit,
     onNegate: () -> Unit,
     showDoubleZeroKey: Boolean = true,
-    enableAnimations: Boolean = true,
-    hapticEnabled: Boolean = true,
-    soundEnabled: Boolean = true,
+    animationIntensity: AnimationIntensity = AnimationIntensity.BALANCED,
+    hapticIntensity: HapticIntensity = HapticIntensity.MEDIUM,
+    soundIntensity: SoundIntensity = SoundIntensity.STANDARD,
+    componentSizeStyle: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
     shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     modifier: Modifier = Modifier
 ) {
@@ -87,11 +95,14 @@ fun CalculatorKeypad(
     val view = LocalView.current
 
     val triggerFeedback = {
-        HapticFeedbackHelper.performKeypadTap(context, view, hapticEnabled)
-        SoundFeedbackHelper.playClickSound(context, view, soundEnabled)
+        HapticFeedbackHelper.performKeypadTap(context, view, hapticIntensity)
+        SoundFeedbackHelper.playClickSound(context, view, soundIntensity)
     }
 
     val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val spacing = componentSizeStyle.keypadSpacing
+    val padH = componentSizeStyle.keypadPaddingH
+    val padV = componentSizeStyle.keypadPaddingV
 
     // Frosted glass keypad container
     Box(
@@ -111,23 +122,24 @@ fun CalculatorKeypad(
                 ),
                 shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
             )
-            .padding(horizontal = 18.dp, vertical = 20.dp)
+            .padding(horizontal = padH, vertical = padV)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(spacing)
         ) {
             // Row 1: AC/C, ⌫ (Delete/Backspace SVG Icon), %, ÷
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(spacing)
             ) {
                 LiquidGlassKey(
                     text = if (isAllClear) "AC" else "C",
                     type = KeyType.ACTION,
                     onClick = { triggerFeedback(); onClear() },
                     testTag = "key_clear",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -137,7 +149,8 @@ fun CalculatorKeypad(
                     type = KeyType.ACTION,
                     onClick = { triggerFeedback(); onBackspace() },
                     testTag = "key_backspace",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -147,7 +160,8 @@ fun CalculatorKeypad(
                     type = KeyType.ACTION,
                     onClick = { triggerFeedback(); onPercent() },
                     testTag = "key_percent",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -156,7 +170,8 @@ fun CalculatorKeypad(
                     type = KeyType.OPERATOR,
                     onClick = { triggerFeedback(); onOperator("÷") },
                     testTag = "key_divide",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -165,14 +180,15 @@ fun CalculatorKeypad(
             // Row 2: 7, 8, 9, ×
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(spacing)
             ) {
                 LiquidGlassKey(
                     text = "7",
                     type = KeyType.NUMBER,
                     onClick = { triggerFeedback(); onDigit("7") },
                     testTag = "key_7",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -181,7 +197,8 @@ fun CalculatorKeypad(
                     type = KeyType.NUMBER,
                     onClick = { triggerFeedback(); onDigit("8") },
                     testTag = "key_8",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -190,7 +207,8 @@ fun CalculatorKeypad(
                     type = KeyType.NUMBER,
                     onClick = { triggerFeedback(); onDigit("9") },
                     testTag = "key_9",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -199,7 +217,8 @@ fun CalculatorKeypad(
                     type = KeyType.OPERATOR,
                     onClick = { triggerFeedback(); onOperator("×") },
                     testTag = "key_multiply",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -208,14 +227,15 @@ fun CalculatorKeypad(
             // Row 3: 4, 5, 6, −
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(spacing)
             ) {
                 LiquidGlassKey(
                     text = "4",
                     type = KeyType.NUMBER,
                     onClick = { triggerFeedback(); onDigit("4") },
                     testTag = "key_4",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -224,7 +244,8 @@ fun CalculatorKeypad(
                     type = KeyType.NUMBER,
                     onClick = { triggerFeedback(); onDigit("5") },
                     testTag = "key_5",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -233,7 +254,8 @@ fun CalculatorKeypad(
                     type = KeyType.NUMBER,
                     onClick = { triggerFeedback(); onDigit("6") },
                     testTag = "key_6",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -242,7 +264,8 @@ fun CalculatorKeypad(
                     type = KeyType.OPERATOR,
                     onClick = { triggerFeedback(); onOperator("−") },
                     testTag = "key_subtract",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -251,14 +274,15 @@ fun CalculatorKeypad(
             // Row 4: 1, 2, 3, +
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(spacing)
             ) {
                 LiquidGlassKey(
                     text = "1",
                     type = KeyType.NUMBER,
                     onClick = { triggerFeedback(); onDigit("1") },
                     testTag = "key_1",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -267,7 +291,8 @@ fun CalculatorKeypad(
                     type = KeyType.NUMBER,
                     onClick = { triggerFeedback(); onDigit("2") },
                     testTag = "key_2",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -276,7 +301,8 @@ fun CalculatorKeypad(
                     type = KeyType.NUMBER,
                     onClick = { triggerFeedback(); onDigit("3") },
                     testTag = "key_3",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -285,7 +311,8 @@ fun CalculatorKeypad(
                     type = KeyType.OPERATOR,
                     onClick = { triggerFeedback(); onOperator("+") },
                     testTag = "key_add",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -294,14 +321,15 @@ fun CalculatorKeypad(
             // Row 5: 0, 00 / +/-, ., =
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(spacing)
             ) {
                 LiquidGlassKey(
                     text = "0",
                     type = KeyType.NUMBER,
                     onClick = { triggerFeedback(); onDigit("0") },
                     testTag = "key_0",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -311,7 +339,8 @@ fun CalculatorKeypad(
                         type = KeyType.DOUBLE_ZERO,
                         onClick = { triggerFeedback(); onDoubleZero() },
                         testTag = "key_double_zero",
-                        enableAnimations = enableAnimations,
+                        animationIntensity = animationIntensity,
+                        componentSizeStyle = componentSizeStyle,
                         shapeStructureStyle = shapeStructureStyle,
                         modifier = Modifier.weight(1f)
                     )
@@ -321,7 +350,8 @@ fun CalculatorKeypad(
                         type = KeyType.ACTION,
                         onClick = { triggerFeedback(); onNegate() },
                         testTag = "key_negate",
-                        enableAnimations = enableAnimations,
+                        animationIntensity = animationIntensity,
+                        componentSizeStyle = componentSizeStyle,
                         shapeStructureStyle = shapeStructureStyle,
                         modifier = Modifier.weight(1f)
                     )
@@ -331,7 +361,8 @@ fun CalculatorKeypad(
                     type = KeyType.NUMBER,
                     onClick = { triggerFeedback(); onDigit(".") },
                     testTag = "key_decimal",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -340,7 +371,8 @@ fun CalculatorKeypad(
                     type = KeyType.EQUALS,
                     onClick = { triggerFeedback(); onEquals() },
                     testTag = "key_equals",
-                    enableAnimations = enableAnimations,
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
@@ -357,7 +389,8 @@ private fun LiquidGlassKey(
     type: KeyType,
     onClick: () -> Unit,
     testTag: String,
-    enableAnimations: Boolean,
+    animationIntensity: AnimationIntensity,
+    componentSizeStyle: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
     shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     modifier: Modifier = Modifier
 ) {
@@ -367,18 +400,26 @@ private fun LiquidGlassKey(
     val scope = rememberCoroutineScope()
     val bounceAnim = remember { Animatable(1f) }
 
+    val hasAnim = animationIntensity != AnimationIntensity.OFF
+    val targetScale = if (isPressed && hasAnim) animationIntensity.scaleFactor else 1f
+    val targetTransY = if (isPressed && hasAnim) animationIntensity.translationFactor else 0f
+
     // Fluid responsive press scale & translation physics
     val pressScale by animateFloatAsState(
-        targetValue = if (isPressed && enableAnimations) 0.88f else 1f,
+        targetValue = targetScale,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
+            stiffness = when (animationIntensity) {
+                AnimationIntensity.EXTREME_BOUNCE -> Spring.StiffnessLow
+                AnimationIntensity.HIGH_SPRING -> Spring.StiffnessMedium
+                else -> Spring.StiffnessMedium
+            }
         ),
         label = "glass_press_scale"
     )
 
     val translationY by animateFloatAsState(
-        targetValue = if (isPressed && enableAnimations) 3.5f else 0f,
+        targetValue = targetTransY,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessHigh
@@ -447,6 +488,7 @@ private fun LiquidGlassKey(
 
     val shape = shapeStructureStyle.toButtonShape()
     val borderWidth = if (shapeStructureStyle == ShapeStructureStyle.LINE_BORDER) 1.5.dp else 1.dp
+    val fontScale = componentSizeStyle.keyFontScale
 
     Box(
         modifier = modifier
@@ -471,9 +513,10 @@ private fun LiquidGlassKey(
                     color = if (type == KeyType.EQUALS) Color.White else primaryColor
                 ),
                 onClick = {
-                    if (enableAnimations) {
+                    if (hasAnim) {
                         scope.launch {
-                            bounceAnim.snapTo(0.88f)
+                            val snapVal = if (animationIntensity == AnimationIntensity.EXTREME_BOUNCE) 0.70f else 0.88f
+                            bounceAnim.snapTo(snapVal)
                             bounceAnim.animateTo(
                                 targetValue = 1f,
                                 animationSpec = spring(
@@ -494,18 +537,20 @@ private fun LiquidGlassKey(
                 imageVector = icon,
                 contentDescription = iconContentDescription,
                 tint = contentColor,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(componentSizeStyle.iconSize)
             )
         } else if (text != null) {
+            val baseFontSize = when {
+                type == KeyType.EQUALS || type == KeyType.OPERATOR -> 28f
+                type == KeyType.DOUBLE_ZERO -> 22f
+                text.length > 2 -> 16f
+                else -> 24f
+            }
+
             Text(
                 text = text,
                 color = contentColor,
-                fontSize = when {
-                    type == KeyType.EQUALS || type == KeyType.OPERATOR -> 28.sp
-                    type == KeyType.DOUBLE_ZERO -> 22.sp
-                    text.length > 2 -> 16.sp
-                    else -> 24.sp
-                },
+                fontSize = (baseFontSize * fontScale).sp,
                 fontWeight = if (type == KeyType.EQUALS || type == KeyType.OPERATOR || type == KeyType.DOUBLE_ZERO) FontWeight.Bold else FontWeight.Medium,
                 fontFamily = FontFamily.SansSerif
             )
