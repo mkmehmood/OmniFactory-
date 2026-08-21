@@ -80,6 +80,10 @@ class UserPreferencesManager(context: Context) {
         get() = prefs.getBoolean(KEY_HAPTIC_ENABLED, true)
         set(value) = prefs.edit().putBoolean(KEY_HAPTIC_ENABLED, value).apply()
 
+    var soundEnabled: Boolean
+        get() = prefs.getBoolean(KEY_SOUND_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_SOUND_ENABLED, value).apply()
+
     companion object {
         private const val PREFS_NAME = "calculator_user_prefs"
         private const val KEY_SHAPE_STRUCTURE = "pref_shape_structure"
@@ -89,5 +93,6 @@ class UserPreferencesManager(context: Context) {
         private const val KEY_SHOW_DOUBLE_ZERO = "pref_show_double_zero"
         private const val KEY_ENABLE_ANIMATIONS = "pref_enable_animations"
         private const val KEY_HAPTIC_ENABLED = "pref_haptic_enabled"
+        private const val KEY_SOUND_ENABLED = "pref_sound_enabled"
     }
 }

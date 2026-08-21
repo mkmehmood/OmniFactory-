@@ -19,6 +19,7 @@ fun BasicCalculatorScreen(
     showDoubleZeroKey: Boolean = true,
     enableAnimations: Boolean = true,
     hapticEnabled: Boolean = true,
+    soundEnabled: Boolean = true,
     shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     onDigit: (String) -> Unit = {},
     onDoubleZero: () -> Unit = {},
@@ -65,6 +66,7 @@ fun BasicCalculatorScreen(
             showDoubleZeroKey = showDoubleZeroKey,
             enableAnimations = enableAnimations,
             hapticEnabled = hapticEnabled,
+            soundEnabled = soundEnabled,
             shapeStructureStyle = shapeStructureStyle,
             modifier = Modifier.fillMaxWidth()
         )

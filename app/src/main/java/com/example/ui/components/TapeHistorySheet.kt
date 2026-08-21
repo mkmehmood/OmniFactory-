@@ -85,8 +85,7 @@ fun TapeHistorySheet(
     onTogglePin: (CalculationEntity) -> Unit,
     onUpdateNote: (CalculationEntity, String) -> Unit,
     onClearAll: () -> Unit,
-    onCopyTape: (String) -> Unit,
-    onExportCsv: () -> Unit = {}
+    onCopyTape: (String) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedIds by remember { mutableStateOf(setOf<Long>()) }
@@ -189,17 +188,6 @@ fun TapeHistorySheet(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (filteredList.isNotEmpty()) {
-                        IconButton(
-                            onClick = onExportCsv,
-                            modifier = Modifier.testTag("share_csv_tape_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Share,
-                                contentDescription = "Export History to CSV",
-                                tint = primaryColor
-                            )
-                        }
-
                         IconButton(
                             onClick = {
                                 val tapeText = filteredList.joinToString("\n") {

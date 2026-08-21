@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
@@ -50,14 +49,12 @@ enum class DrawerDestination {
     SALES,
     MIXTURE_CALCULATOR,
     BATCH_SCALING,
-    HISTORY,
     SETTINGS
 }
 
 @Composable
 fun AppNavigationDrawer(
     currentDestination: DrawerDestination,
-    historyCount: Int,
     onSelectDestination: (DrawerDestination) -> Unit,
     onCloseDrawer: () -> Unit,
     modifier: Modifier = Modifier
@@ -152,10 +149,10 @@ fun AppNavigationDrawer(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // 1. Calculator Option
+                // 1. Standard Calculator Option
                 DrawerNavItem(
                     label = "Standard Calculator",
-                    subtitle = "Sequential series math",
+                    subtitle = "Sequential math & history tape",
                     icon = Icons.Default.Calculate,
                     isSelected = currentDestination == DrawerDestination.CALCULATOR,
                     onClick = { onSelectDestination(DrawerDestination.CALCULATOR) },
@@ -208,25 +205,10 @@ fun AppNavigationDrawer(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 5. History Option
-                DrawerNavItem(
-                    label = "History Tape",
-                    subtitle = if (historyCount > 0) "$historyCount saved calculations" else "View past calculations",
-                    icon = Icons.Default.History,
-                    badgeCount = historyCount,
-                    isSelected = currentDestination == DrawerDestination.HISTORY,
-                    onClick = { onSelectDestination(DrawerDestination.HISTORY) },
-                    testTag = "drawer_item_history",
-                    primaryColor = primaryColor,
-                    isDark = isDark
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 6. Settings Option
+                // 5. Settings Option
                 DrawerNavItem(
                     label = "Settings",
-                    subtitle = "Theme, accents & haptics",
+                    subtitle = "Palettes, shapes, sounds & haptics",
                     icon = Icons.Default.Settings,
                     isSelected = currentDestination == DrawerDestination.SETTINGS,
                     onClick = { onSelectDestination(DrawerDestination.SETTINGS) },
@@ -281,8 +263,7 @@ private fun DrawerNavItem(
     onClick: () -> Unit,
     testTag: String,
     primaryColor: Color,
-    isDark: Boolean,
-    badgeCount: Int = 0
+    isDark: Boolean
 ) {
     val containerBg = if (isSelected) {
         primaryColor.copy(alpha = 0.16f)
@@ -344,23 +325,6 @@ private fun DrawerNavItem(
                         text = subtitle,
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            if (badgeCount > 0) {
-                Surface(
-                    shape = CircleShape,
-                    color = primaryColor.copy(alpha = 0.2f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.4f))
-                ) {
-                    Text(
-                        text = "$badgeCount",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = primaryColor,
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
                     )
                 }
             }

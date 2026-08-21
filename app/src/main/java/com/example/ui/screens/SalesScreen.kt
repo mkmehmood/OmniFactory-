@@ -80,6 +80,10 @@ import com.example.domain.sales.SalesReconciliationResult
 import com.example.domain.util.IndianNumberFormatter
 import com.example.ui.SalesUiState
 import com.example.ui.theme.DigitalMonospaceFont
+import com.example.ui.theme.LocalShapeStructure
+import com.example.ui.theme.toButtonShape
+import com.example.ui.theme.toCardShape
+import com.example.ui.theme.toInputShape
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -108,7 +112,6 @@ fun SalesScreen(
     onCloseHistorySheet: () -> Unit,
     onLoadTransaction: (SalesTransactionEntity) -> Unit,
     onDeleteTransaction: (SalesTransactionEntity) -> Unit,
-    onExportCsv: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -202,13 +205,14 @@ fun SalesScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // 4. Full-Width Primary Action Button: "Save This Transaction"
+            val buttonShape = LocalShapeStructure.current.toButtonShape()
             Button(
                 onClick = onSaveTransaction,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp)
                     .testTag("save_transaction_button"),
-                shape = RoundedCornerShape(16.dp),
+                shape = buttonShape,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = primaryColor,
                     contentColor = MaterialTheme.colorScheme.onPrimary
@@ -313,7 +317,6 @@ fun SalesScreen(
                 transactions = savedTransactions,
                 onLoadTransaction = onLoadTransaction,
                 onDeleteTransaction = onDeleteTransaction,
-                onExportCsv = onExportCsv,
                 onClose = onCloseHistorySheet,
                 primaryColor = primaryColor,
                 isDark = isDark
@@ -797,6 +800,7 @@ private fun NumericGridInputField(
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val inputShape = LocalShapeStructure.current.toInputShape()
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -818,7 +822,7 @@ private fun NumericGridInputField(
             focusedContainerColor = if (isDark) Color(0x1FFFFFFF) else Color(0x0E000000),
             unfocusedContainerColor = if (isDark) Color(0x10FFFFFF) else Color(0x06000000)
         ),
-        shape = RoundedCornerShape(10.dp),
+        shape = inputShape,
         textStyle = androidx.compose.ui.text.TextStyle(
             fontSize = 14.sp,
             fontFamily = DigitalMonospaceFont,
@@ -839,6 +843,7 @@ private fun EmphasizedUnitPriceInputField(
     modifier: Modifier = Modifier
 ) {
     val highlightAmber = Color(0xFFF59E0B)
+    val inputShape = LocalShapeStructure.current.toInputShape()
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -857,14 +862,14 @@ private fun EmphasizedUnitPriceInputField(
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         modifier = modifier
             .testTag(testTag)
-            .border(1.5.dp, highlightAmber.copy(alpha = 0.6f), RoundedCornerShape(10.dp)),
+            .border(1.5.dp, highlightAmber.copy(alpha = 0.6f), inputShape),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = highlightAmber,
             unfocusedBorderColor = highlightAmber.copy(alpha = 0.4f),
             focusedContainerColor = highlightAmber.copy(alpha = 0.12f),
             unfocusedContainerColor = highlightAmber.copy(alpha = 0.06f)
         ),
-        shape = RoundedCornerShape(10.dp),
+        shape = inputShape,
         textStyle = androidx.compose.ui.text.TextStyle(
             fontSize = 14.sp,
             fontFamily = DigitalMonospaceFont,
@@ -886,6 +891,7 @@ private fun EmphasizedCommissionInputField(
     modifier: Modifier = Modifier
 ) {
     val highlightGreen = Color(0xFF10B981)
+    val inputShape = LocalShapeStructure.current.toInputShape()
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -913,19 +919,19 @@ private fun EmphasizedCommissionInputField(
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         modifier = modifier
             .testTag(testTag)
-            .border(1.5.dp, highlightGreen.copy(alpha = 0.6f), RoundedCornerShape(10.dp)),
+            .border(1.5.dp, highlightGreen.copy(alpha = 0.6f), inputShape),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = highlightGreen,
             unfocusedBorderColor = highlightGreen.copy(alpha = 0.4f),
             focusedContainerColor = highlightGreen.copy(alpha = 0.12f),
             unfocusedContainerColor = highlightGreen.copy(alpha = 0.06f)
         ),
-        shape = RoundedCornerShape(10.dp),
+        shape = inputShape,
         textStyle = androidx.compose.ui.text.TextStyle(
             fontSize = 14.sp,
             fontFamily = DigitalMonospaceFont,
             fontWeight = FontWeight.Bold,
-            color = if (isDark) Color(0xFFA7F3D0) else Color(0xFF047857)
+            color = if (isDark) Color(0xFFA7F3D0) else Color(0xFF065F46)
         )
     )
 }
@@ -1326,7 +1332,6 @@ private fun SavedTransactionsBottomSheet(
     transactions: List<SalesTransactionEntity>,
     onLoadTransaction: (SalesTransactionEntity) -> Unit,
     onDeleteTransaction: (SalesTransactionEntity) -> Unit,
-    onExportCsv: () -> Unit = {},
     onClose: () -> Unit,
     primaryColor: Color,
     isDark: Boolean
@@ -1360,23 +1365,8 @@ private fun SavedTransactionsBottomSheet(
                 )
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (transactions.isNotEmpty()) {
-                    IconButton(
-                        onClick = onExportCsv,
-                        modifier = Modifier.testTag("export_saved_sales_csv_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = "Export to CSV",
-                            tint = primaryColor
-                        )
-                    }
-                }
-
-                TextButton(onClick = onClose) {
-                    Text("Done")
-                }
+            TextButton(onClick = onClose) {
+                Text("Done")
             }
         }
 

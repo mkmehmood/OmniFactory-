@@ -2,37 +2,47 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Pure Liquid Glass Accents
+// Pure Liquid Glass Accents & Color Palettes
 object GlassAccents {
     // 1. Crystal Cyan / Aqua Glass
     val AquaGlassPrimary = Color(0xFF00E5FF)
     val AquaGlassLight = Color(0xFF0091EA)
-    val AquaGlassBorderDark = Color(0x6600E5FF)
-    val AquaGlassBorderLight = Color(0x660091EA)
 
     // 2. Liquid Violet / Amethyst Glass
     val VioletGlassPrimary = Color(0xFFD500F9)
     val VioletGlassLight = Color(0xFFAA00FF)
-    val VioletGlassBorderDark = Color(0x66D500F9)
-    val VioletGlassBorderLight = Color(0x66AA00FF)
 
     // 3. Molten Amber Glass
     val AmberGlassPrimary = Color(0xFFFFB300)
     val AmberGlassLight = Color(0xFFFF8F00)
-    val AmberGlassBorderDark = Color(0x66FFB300)
-    val AmberGlassBorderLight = Color(0x66FF8F00)
 
     // 4. Emerald Crystal Glass
     val EmeraldGlassPrimary = Color(0xFF00E676)
     val EmeraldGlassLight = Color(0xFF00C853)
-    val EmeraldGlassBorderDark = Color(0x6600E676)
-    val EmeraldGlassBorderLight = Color(0x6600C853)
 
     // 5. Electric Blue / Ice Glass
-    val IceGlassPrimary = Color(0xFF40C4FF)
-    val IceGlassLight = Color(0xFF0091EA)
-    val IceGlassBorderDark = Color(0x6640C4FF)
-    val IceGlassBorderLight = Color(0x660091EA)
+    val IceGlassPrimary = Color(0xFF38BDF8)
+    val IceGlassLight = Color(0xFF0284C7)
+
+    // 6. Rose Ruby / Crimson Glass
+    val RoseGlassPrimary = Color(0xFFF43F5E)
+    val RoseGlassLight = Color(0xFFE11D48)
+
+    // 7. Royal Indigo / Sapphire Glass
+    val IndigoGlassPrimary = Color(0xFF6366F1)
+    val IndigoGlassLight = Color(0xFF4F46E5)
+
+    // 8. Sunset Coral / Orange Glass
+    val CoralGlassPrimary = Color(0xFFFB923C)
+    val CoralGlassLight = Color(0xFFEA580C)
+
+    // 9. Cyber Lime Glass
+    val LimeGlassPrimary = Color(0xFFA3E635)
+    val LimeGlassLight = Color(0xFF65A30D)
+
+    // 10. Titanium Slate / Monochrome Glass
+    val SlateGlassPrimary = Color(0xFF94A3B8)
+    val SlateGlassLight = Color(0xFF475569)
 }
 
 // Pure Dark Mode - Transparent Liquid Obsidian Glass

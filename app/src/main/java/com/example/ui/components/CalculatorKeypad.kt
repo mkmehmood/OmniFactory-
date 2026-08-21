@@ -4,7 +4,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,7 +26,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.util.HapticFeedbackHelper
+import com.example.domain.util.SoundFeedbackHelper
 import com.example.ui.theme.PureDarkGlassBorder
 import com.example.ui.theme.PureDarkGlassSurface
 import com.example.ui.theme.PureDarkGlassSurfacePressed
@@ -80,14 +79,16 @@ fun CalculatorKeypad(
     showDoubleZeroKey: Boolean = true,
     enableAnimations: Boolean = true,
     hapticEnabled: Boolean = true,
+    soundEnabled: Boolean = true,
     shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val view = LocalView.current
 
-    val triggerHaptic = {
+    val triggerFeedback = {
         HapticFeedbackHelper.performKeypadTap(context, view, hapticEnabled)
+        SoundFeedbackHelper.playClickSound(context, view, soundEnabled)
     }
 
     val isDark = MaterialTheme.colorScheme.background.red < 0.2f
@@ -124,7 +125,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = if (isAllClear) "AC" else "C",
                     type = KeyType.ACTION,
-                    onClick = { triggerHaptic(); onClear() },
+                    onClick = { triggerFeedback(); onClear() },
                     testTag = "key_clear",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -134,7 +135,7 @@ fun CalculatorKeypad(
                     icon = Icons.AutoMirrored.Filled.Backspace,
                     iconContentDescription = "Delete",
                     type = KeyType.ACTION,
-                    onClick = { triggerHaptic(); onBackspace() },
+                    onClick = { triggerFeedback(); onBackspace() },
                     testTag = "key_backspace",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -144,7 +145,7 @@ fun CalculatorKeypad(
                     icon = Icons.Default.Percent,
                     iconContentDescription = "Percent",
                     type = KeyType.ACTION,
-                    onClick = { triggerHaptic(); onPercent() },
+                    onClick = { triggerFeedback(); onPercent() },
                     testTag = "key_percent",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -153,7 +154,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = "÷",
                     type = KeyType.OPERATOR,
-                    onClick = { triggerHaptic(); onOperator("÷") },
+                    onClick = { triggerFeedback(); onOperator("÷") },
                     testTag = "key_divide",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -169,7 +170,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = "7",
                     type = KeyType.NUMBER,
-                    onClick = { triggerHaptic(); onDigit("7") },
+                    onClick = { triggerFeedback(); onDigit("7") },
                     testTag = "key_7",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -178,7 +179,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = "8",
                     type = KeyType.NUMBER,
-                    onClick = { triggerHaptic(); onDigit("8") },
+                    onClick = { triggerFeedback(); onDigit("8") },
                     testTag = "key_8",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -187,7 +188,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = "9",
                     type = KeyType.NUMBER,
-                    onClick = { triggerHaptic(); onDigit("9") },
+                    onClick = { triggerFeedback(); onDigit("9") },
                     testTag = "key_9",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -196,7 +197,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = "×",
                     type = KeyType.OPERATOR,
-                    onClick = { triggerHaptic(); onOperator("×") },
+                    onClick = { triggerFeedback(); onOperator("×") },
                     testTag = "key_multiply",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -212,7 +213,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = "4",
                     type = KeyType.NUMBER,
-                    onClick = { triggerHaptic(); onDigit("4") },
+                    onClick = { triggerFeedback(); onDigit("4") },
                     testTag = "key_4",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -221,7 +222,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = "5",
                     type = KeyType.NUMBER,
-                    onClick = { triggerHaptic(); onDigit("5") },
+                    onClick = { triggerFeedback(); onDigit("5") },
                     testTag = "key_5",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -230,7 +231,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = "6",
                     type = KeyType.NUMBER,
-                    onClick = { triggerHaptic(); onDigit("6") },
+                    onClick = { triggerFeedback(); onDigit("6") },
                     testTag = "key_6",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -239,7 +240,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = "−",
                     type = KeyType.OPERATOR,
-                    onClick = { triggerHaptic(); onOperator("−") },
+                    onClick = { triggerFeedback(); onOperator("−") },
                     testTag = "key_subtract",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -255,7 +256,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = "1",
                     type = KeyType.NUMBER,
-                    onClick = { triggerHaptic(); onDigit("1") },
+                    onClick = { triggerFeedback(); onDigit("1") },
                     testTag = "key_1",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -264,7 +265,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = "2",
                     type = KeyType.NUMBER,
-                    onClick = { triggerHaptic(); onDigit("2") },
+                    onClick = { triggerFeedback(); onDigit("2") },
                     testTag = "key_2",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -273,7 +274,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = "3",
                     type = KeyType.NUMBER,
-                    onClick = { triggerHaptic(); onDigit("3") },
+                    onClick = { triggerFeedback(); onDigit("3") },
                     testTag = "key_3",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -282,7 +283,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = "+",
                     type = KeyType.OPERATOR,
-                    onClick = { triggerHaptic(); onOperator("+") },
+                    onClick = { triggerFeedback(); onOperator("+") },
                     testTag = "key_add",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -298,7 +299,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = "0",
                     type = KeyType.NUMBER,
-                    onClick = { triggerHaptic(); onDigit("0") },
+                    onClick = { triggerFeedback(); onDigit("0") },
                     testTag = "key_0",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -308,7 +309,7 @@ fun CalculatorKeypad(
                     LiquidGlassKey(
                         text = "00",
                         type = KeyType.DOUBLE_ZERO,
-                        onClick = { triggerHaptic(); onDoubleZero() },
+                        onClick = { triggerFeedback(); onDoubleZero() },
                         testTag = "key_double_zero",
                         enableAnimations = enableAnimations,
                         shapeStructureStyle = shapeStructureStyle,
@@ -318,7 +319,7 @@ fun CalculatorKeypad(
                     LiquidGlassKey(
                         text = "+/-",
                         type = KeyType.ACTION,
-                        onClick = { triggerHaptic(); onNegate() },
+                        onClick = { triggerFeedback(); onNegate() },
                         testTag = "key_negate",
                         enableAnimations = enableAnimations,
                         shapeStructureStyle = shapeStructureStyle,
@@ -328,7 +329,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = ".",
                     type = KeyType.NUMBER,
-                    onClick = { triggerHaptic(); onDigit(".") },
+                    onClick = { triggerFeedback(); onDigit(".") },
                     testTag = "key_decimal",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,
@@ -337,7 +338,7 @@ fun CalculatorKeypad(
                 LiquidGlassKey(
                     text = "=",
                     type = KeyType.EQUALS,
-                    onClick = { triggerHaptic(); onEquals() },
+                    onClick = { triggerFeedback(); onEquals() },
                     testTag = "key_equals",
                     enableAnimations = enableAnimations,
                     shapeStructureStyle = shapeStructureStyle,

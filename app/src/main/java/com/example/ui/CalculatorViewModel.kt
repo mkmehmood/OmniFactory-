@@ -31,6 +31,7 @@ data class CalculatorUiState(
     val showDoubleZeroKey: Boolean = true,
     val enableAnimations: Boolean = true,
     val hapticEnabled: Boolean = true,
+    val soundEnabled: Boolean = true,
     val shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     val themeMode: ThemeMode = ThemeMode.DARK,
     val accentTheme: AccentTheme = AccentTheme.AQUA,
@@ -55,7 +56,8 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
             historyTimeSplit = userPreferencesManager.lastHistoryTimeSplit,
             showDoubleZeroKey = userPreferencesManager.showDoubleZeroKey,
             enableAnimations = userPreferencesManager.enableAnimations,
-            hapticEnabled = userPreferencesManager.hapticEnabled
+            hapticEnabled = userPreferencesManager.hapticEnabled,
+            soundEnabled = userPreferencesManager.soundEnabled
         )
     )
     val uiState: StateFlow<CalculatorUiState> = _uiState.asStateFlow()
@@ -377,6 +379,11 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     fun setHapticEnabled(enabled: Boolean) {
         userPreferencesManager.hapticEnabled = enabled
         _uiState.update { it.copy(hapticEnabled = enabled) }
+    }
+
+    fun setSoundEnabled(enabled: Boolean) {
+        userPreferencesManager.soundEnabled = enabled
+        _uiState.update { it.copy(soundEnabled = enabled) }
     }
 
     fun setTapeOpen(open: Boolean) {
