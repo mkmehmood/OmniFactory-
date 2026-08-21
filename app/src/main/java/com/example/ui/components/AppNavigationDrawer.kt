@@ -6,6 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -14,16 +17,22 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -40,8 +49,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.domain.converter.ConverterCategory
 import com.example.ui.theme.DigitalMonospaceFont
 
 enum class DrawerDestination {
@@ -49,13 +60,18 @@ enum class DrawerDestination {
     SALES,
     MIXTURE_CALCULATOR,
     BATCH_SCALING,
+    CONVERTER,
     SETTINGS
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AppNavigationDrawer(
     currentDestination: DrawerDestination,
+    activeConverterCategory: ConverterCategory? = null,
     onSelectDestination: (DrawerDestination) -> Unit,
+    onOpenConverterGrid: () -> Unit = {},
+    onSelectConverterCategory: (ConverterCategory) -> Unit = {},
     onCloseDrawer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -66,18 +82,19 @@ fun AppNavigationDrawer(
         drawerContainerColor = if (isDark) Color(0xFF090E17) else Color(0xFFF1F5F9),
         drawerShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp),
         modifier = modifier
-            .width(300.dp)
+            .width(320.dp)
             .fillMaxHeight()
             .testTag("app_navigation_drawer")
     ) {
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxHeight()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 16.dp, vertical = 18.dp),
+            contentPadding = PaddingValues(bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Column {
-                // Header with App Title and Close button
+            // Header with App Title and Close button
+            item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -108,7 +125,7 @@ fun AppNavigationDrawer(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Precision & Audit Suite",
+                                text = "Precision, Conversions & Audit",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = primaryColor
@@ -127,29 +144,31 @@ fun AppNavigationDrawer(
                         )
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(20.dp))
-
+            item {
                 HorizontalDivider(
                     thickness = 1.dp,
-                    color = if (isDark) Color(0x22FFFFFF) else Color(0x22000000)
+                    color = if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
+                    modifier = Modifier.padding(vertical = 4.dp)
                 )
+            }
 
-                Spacer(modifier = Modifier.height(14.dp))
-
+            // PRIMARY CALCULATORS & CONVERTER TOOLS SECTION
+            item {
                 Text(
-                    text = "CALCULATORS & TOOLS",
+                    text = "CORE TOOLS & CALCULATORS",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.2.sp,
                     fontFamily = DigitalMonospaceFont,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                 )
+            }
 
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // 1. Standard Calculator Option
+            // 1. Standard Calculator Option
+            item {
                 DrawerNavItem(
                     label = "Standard Calculator",
                     subtitle = "Sequential math & history tape",
@@ -160,10 +179,27 @@ fun AppNavigationDrawer(
                     primaryColor = primaryColor,
                     isDark = isDark
                 )
+            }
 
-                Spacer(modifier = Modifier.height(8.dp))
+            // 2. Units Converter Option (Opens Directory Grid Hub)
+            item {
+                DrawerNavItem(
+                    label = "Units Converter",
+                    subtitle = "11 unit conversion categories",
+                    icon = Icons.Default.SwapHoriz,
+                    isSelected = currentDestination == DrawerDestination.CONVERTER,
+                    onClick = {
+                        onOpenConverterGrid()
+                        onSelectDestination(DrawerDestination.CONVERTER)
+                    },
+                    testTag = "drawer_item_converter",
+                    primaryColor = primaryColor,
+                    isDark = isDark
+                )
+            }
 
-                // 2. Sales Reconciliation Option
+            // 3. Sales Audit Option
+            item {
                 DrawerNavItem(
                     label = "Sales Audit",
                     subtitle = "Reconciliation & commission audit",
@@ -174,10 +210,10 @@ fun AppNavigationDrawer(
                     primaryColor = primaryColor,
                     isDark = isDark
                 )
+            }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 3. Mixture Calculator (Ratio Recalibration Tool)
+            // 4. Mixture Calculator
+            item {
                 DrawerNavItem(
                     label = "Mixture Calculator",
                     subtitle = "6-step ratio recalibration wizard",
@@ -188,10 +224,10 @@ fun AppNavigationDrawer(
                     primaryColor = primaryColor,
                     isDark = isDark
                 )
+            }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 4. Batch Scaling & Proportional Ratio Scaler
+            // 5. Batch Scaling
+            item {
                 DrawerNavItem(
                     label = "Batch & Ratio Scaler",
                     subtitle = "Proportional recipes & locking",
@@ -202,10 +238,18 @@ fun AppNavigationDrawer(
                     primaryColor = primaryColor,
                     isDark = isDark
                 )
+            }
 
-                Spacer(modifier = Modifier.height(8.dp))
+            item {
+                HorizontalDivider(
+                    thickness = 1.dp,
+                    color = if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
 
-                // 5. Settings Option
+            // Settings Option
+            item {
                 DrawerNavItem(
                     label = "Settings",
                     subtitle = "Palettes, shapes, sounds & haptics",
@@ -219,36 +263,38 @@ fun AppNavigationDrawer(
             }
 
             // Footer Panel
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .border(
-                        1.dp,
-                        if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
-                        RoundedCornerShape(16.dp)
-                    ),
-                color = if (isDark) Color(0x14FFFFFF) else Color(0x10000000),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            item {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .border(
+                            1.dp,
+                            if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
+                            RoundedCornerShape(16.dp)
+                        ),
+                    color = if (isDark) Color(0x14FFFFFF) else Color(0x10000000),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Palette,
-                        contentDescription = null,
-                        tint = primaryColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = "Mahmood khan",
-                        fontFamily = DigitalMonospaceFont,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Palette,
+                            contentDescription = null,
+                            tint = primaryColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Mahmood khan",
+                            fontFamily = DigitalMonospaceFont,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
@@ -280,17 +326,17 @@ private fun DrawerNavItem(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .border(1.dp, borderColor, RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .testTag(testTag),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(12.dp),
         color = containerBg
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -300,8 +346,8 @@ private fun DrawerNavItem(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(34.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
                         .background(if (isSelected) primaryColor.copy(alpha = 0.25f) else (if (isDark) Color(0x18FFFFFF) else Color(0x12000000))),
                     contentAlignment = Alignment.Center
                 ) {
@@ -309,16 +355,16 @@ private fun DrawerNavItem(
                         imageVector = icon,
                         contentDescription = null,
                         tint = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(10.dp))
 
                 Column {
                     Text(
                         text = label,
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                         color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
                     )

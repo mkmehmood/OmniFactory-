@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.BatchScalingViewModel
 import com.example.ui.CalculatorViewModel
+import com.example.ui.ConverterViewModel
 import com.example.ui.MixtureViewModel
 import com.example.ui.SalesViewModel
 import com.example.ui.components.AppNavigationDrawer
@@ -68,11 +71,13 @@ import com.example.ui.components.DrawerDestination
 import com.example.ui.components.TapeHistorySheet
 import com.example.ui.screens.BasicCalculatorScreen
 import com.example.ui.screens.BatchScalingScreen
+import com.example.ui.screens.ConverterScreen
 import com.example.ui.screens.MixtureCalculatorScreen
 import com.example.ui.screens.SalesScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.theme.DigitalMonospaceFont
 import com.example.ui.theme.MyApplicationTheme
+import androidx.compose.material.icons.filled.GridView
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -80,6 +85,7 @@ class MainActivity : ComponentActivity() {
     private val batchScalingViewModel: BatchScalingViewModel by viewModels()
     private val salesViewModel: SalesViewModel by viewModels()
     private val mixtureViewModel: MixtureViewModel by viewModels()
+    private val converterViewModel: ConverterViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,6 +94,7 @@ class MainActivity : ComponentActivity() {
             val uiState by calculatorViewModel.uiState.collectAsStateWithLifecycle()
             val batchUiState by batchScalingViewModel.uiState.collectAsStateWithLifecycle()
             val salesUiState by salesViewModel.uiState.collectAsStateWithLifecycle()
+            val converterUiState by converterViewModel.uiState.collectAsStateWithLifecycle()
             val savedSalesTransactions by salesViewModel.savedTransactions.collectAsStateWithLifecycle()
             val historyList by calculatorViewModel.historyList.collectAsStateWithLifecycle()
             val snackbarHostState = remember { SnackbarHostState() }
@@ -115,6 +122,15 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(Unit) {
                 salesViewModel.userMessage.collect { message ->
+                    snackbarHostState.showSnackbar(
+                        message = message,
+                        duration = SnackbarDuration.Short
+                    )
+                }
+            }
+
+            LaunchedEffect(Unit) {
+                converterViewModel.userMessage.collect { message ->
                     snackbarHostState.showSnackbar(
                         message = message,
                         duration = SnackbarDuration.Short
@@ -152,10 +168,17 @@ class MainActivity : ComponentActivity() {
                     drawerContent = {
                         AppNavigationDrawer(
                             currentDestination = currentDestination,
+                            activeConverterCategory = converterUiState.activeCategory,
                             onSelectDestination = { destination ->
                                 scope.launch { drawerState.close() }
                                 currentDestination = destination
                                 calculatorViewModel.setTapeOpen(false)
+                            },
+                            onOpenConverterGrid = {
+                                converterViewModel.showCategoryGrid()
+                            },
+                            onSelectConverterCategory = { category ->
+                                converterViewModel.selectCategoryAndOpenDedicatedScreen(category)
                             },
                             onCloseDrawer = {
                                 scope.launch { drawerState.close() }
@@ -194,6 +217,10 @@ class MainActivity : ComponentActivity() {
                                     DrawerDestination.SALES -> "Sales Reconciliation"
                                     DrawerDestination.MIXTURE_CALCULATOR -> "Mixture Calculator"
                                     DrawerDestination.BATCH_SCALING -> "Batch Scaler"
+                                    DrawerDestination.CONVERTER -> {
+                                        if (converterUiState.isCategoryGridActive) "Units Converter"
+                                        else "Units: ${converterUiState.activeCategory.shortName}"
+                                    }
                                     else -> "Calculator"
                                 }
                                 val topBarIcon = when (currentDestination) {
@@ -201,11 +228,19 @@ class MainActivity : ComponentActivity() {
                                     DrawerDestination.SALES -> Icons.Default.ReceiptLong
                                     DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Science
                                     DrawerDestination.BATCH_SCALING -> Icons.Default.Scale
+                                    DrawerDestination.CONVERTER -> {
+                                        if (converterUiState.isCategoryGridActive) Icons.Default.SwapHoriz
+                                        else converterUiState.activeCategory.icon
+                                    }
                                     else -> Icons.Default.Calculate
                                 }
                                 val actionIcon = when (currentDestination) {
                                     DrawerDestination.CALCULATOR -> Icons.Default.History
                                     DrawerDestination.SALES -> Icons.Default.ReceiptLong
+                                    DrawerDestination.CONVERTER -> {
+                                        if (converterUiState.isCategoryGridActive) Icons.Default.Tune
+                                        else Icons.Default.SwapHoriz
+                                    }
                                     DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Settings
                                     DrawerDestination.BATCH_SCALING -> Icons.Default.Settings
                                     else -> Icons.Default.History
@@ -213,6 +248,7 @@ class MainActivity : ComponentActivity() {
                                 val actionDescription = when (currentDestination) {
                                     DrawerDestination.CALCULATOR -> "History Tape"
                                     DrawerDestination.SALES -> "Saved Sales"
+                                    DrawerDestination.CONVERTER -> "All Categories"
                                     else -> "Settings"
                                 }
                                 val onActionClick: () -> Unit = when (currentDestination) {
@@ -221,6 +257,15 @@ class MainActivity : ComponentActivity() {
                                     }
                                     DrawerDestination.SALES -> {
                                         { salesViewModel.setSavedHistorySheetOpen(true) }
+                                    }
+                                    DrawerDestination.CONVERTER -> {
+                                        {
+                                            if (converterUiState.isCategoryGridActive) {
+                                                scope.launch { drawerState.open() }
+                                            } else {
+                                                converterViewModel.showCategoryGrid()
+                                            }
+                                        }
                                     }
                                     else -> {
                                         { currentDestination = DrawerDestination.SETTINGS }
@@ -331,6 +376,16 @@ class MainActivity : ComponentActivity() {
                                                 onLoadPreset = { batchScalingViewModel.loadPreset(it) },
                                                 onClearAll = { batchScalingViewModel.clearAll() },
                                                 onCopyResults = { copyToClipboard(it, "Batch scaling report") }
+                                            )
+                                        }
+                                        DrawerDestination.CONVERTER -> {
+                                            ConverterScreen(
+                                                viewModel = converterViewModel,
+                                                uiState = converterUiState,
+                                                shapeStructureStyle = uiState.shapeStructureStyle,
+                                                componentSizeStyle = uiState.componentSizeStyle,
+                                                animationIntensity = uiState.animationIntensity,
+                                                onCopyToClipboard = copyToClipboard
                                             )
                                         }
                                         else -> {
