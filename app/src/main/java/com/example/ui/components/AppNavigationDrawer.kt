@@ -243,9 +243,10 @@ fun AppNavigationDrawer(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Calculator • Offline & Secure",
+                        text = "Mahmood khan",
                         fontFamily = DigitalMonospaceFont,
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
