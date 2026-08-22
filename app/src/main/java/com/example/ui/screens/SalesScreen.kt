@@ -24,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
@@ -75,6 +76,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.db.SalesTransactionEntity
 import com.example.ui.components.SalesRepresentativesMatrixCard
+import com.example.ui.components.SimpleCalculatorDialog
 import com.example.domain.sales.ReconciliationStatus
 import com.example.domain.sales.SalesReconciliationResult
 import com.example.domain.util.IndianNumberFormatter
@@ -98,12 +100,14 @@ fun SalesScreen(
     onSetTotalSoldQty: (String) -> Unit,
     onSetReturnedQty: (String) -> Unit,
     onSetExpiredQty: (String) -> Unit,
+    onSetSharedQty: (String) -> Unit,
     onSetCreditSalesQty: (String) -> Unit,
     onSetRecoveredCredit: (String) -> Unit,
     onSetPhysicalCash: (String) -> Unit,
     onSetExpense: (String) -> Unit,
     onSetUnitSalePrice: (String) -> Unit,
     onSetCommissionPerUnit: (String) -> Unit,
+    onSetCommissionPaid: (String) -> Unit,
     onSaveTransaction: () -> Unit,
     onClearInputs: () -> Unit,
     onCopySummary: (String) -> Unit,
@@ -116,6 +120,7 @@ fun SalesScreen(
     val context = LocalContext.current
     var showDatePickerDialog by remember { mutableStateOf(false) }
     var showCustomRepDialog by remember { mutableStateOf(false) }
+    var showCalculatorDialog by remember { mutableStateOf(false) }
 
     val isDark = MaterialTheme.colorScheme.background.red < 0.2f
     val primaryColor = MaterialTheme.colorScheme.primary
@@ -137,6 +142,7 @@ fun SalesScreen(
             SalesScreenHeader(
                 savedCount = savedTransactions.size,
                 onOpenSavedSheet = onOpenHistorySheet,
+                onOpenCalculator = { showCalculatorDialog = true },
                 onClearAll = onClearInputs,
                 primaryColor = primaryColor
             )
@@ -164,21 +170,26 @@ fun SalesScreen(
                 totalSoldQty = uiState.totalSoldQtyText,
                 returnedQty = uiState.returnedQtyText,
                 expiredQty = uiState.expiredQtyText,
+                sharedQty = uiState.sharedQtyText,
                 creditSalesQty = uiState.creditSalesQtyText,
                 recoveredCredit = uiState.recoveredCreditText,
                 physicalCash = uiState.physicalCashText,
                 expense = uiState.expenseText,
                 unitSalePrice = uiState.unitSalePriceText,
                 commissionPerUnit = uiState.commissionPerUnitText,
+                commissionPaid = uiState.commissionPaidText,
                 onSetTotalSoldQty = onSetTotalSoldQty,
                 onSetReturnedQty = onSetReturnedQty,
                 onSetExpiredQty = onSetExpiredQty,
+                onSetSharedQty = onSetSharedQty,
                 onSetCreditSalesQty = onSetCreditSalesQty,
                 onSetRecoveredCredit = onSetRecoveredCredit,
                 onSetPhysicalCash = onSetPhysicalCash,
                 onSetExpense = onSetExpense,
                 onSetUnitSalePrice = onSetUnitSalePrice,
                 onSetCommissionPerUnit = onSetCommissionPerUnit,
+                onSetCommissionPaid = onSetCommissionPaid,
+                onOpenCalculator = { showCalculatorDialog = true },
                 primaryColor = primaryColor,
                 surfaceBg = surfaceBg,
                 borderColor = cardBorderColor,
@@ -248,6 +259,16 @@ fun SalesScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    // Quick Calculator Popup Dialog
+    if (showCalculatorDialog) {
+        SimpleCalculatorDialog(
+            onDismiss = { showCalculatorDialog = false },
+            onResultSelected = { calcResult ->
+                // Dialog can be closed or value copied
+            }
+        )
     }
 
     // Date Picker Dialog
@@ -341,6 +362,7 @@ fun SalesScreen(
 private fun SalesScreenHeader(
     savedCount: Int,
     onOpenSavedSheet: () -> Unit,
+    onOpenCalculator: () -> Unit,
     onClearAll: () -> Unit,
     primaryColor: Color
 ) {
@@ -364,7 +386,35 @@ private fun SalesScreenHeader(
             )
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable { onOpenCalculator() }
+                    .testTag("open_calculator_popup_button"),
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Calculate,
+                        contentDescription = "Open Calculator",
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "Calc",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            }
+
             Surface(
                 modifier = Modifier
                     .clip(RoundedCornerShape(10.dp))
@@ -374,7 +424,7 @@ private fun SalesScreenHeader(
                 color = primaryColor.copy(alpha = 0.12f)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
@@ -609,21 +659,26 @@ private fun SalesInputFormCard(
     totalSoldQty: String,
     returnedQty: String,
     expiredQty: String,
+    sharedQty: String,
     creditSalesQty: String,
     recoveredCredit: String,
     physicalCash: String,
     expense: String,
     unitSalePrice: String,
     commissionPerUnit: String,
+    commissionPaid: String,
     onSetTotalSoldQty: (String) -> Unit,
     onSetReturnedQty: (String) -> Unit,
     onSetExpiredQty: (String) -> Unit,
+    onSetSharedQty: (String) -> Unit,
     onSetCreditSalesQty: (String) -> Unit,
     onSetRecoveredCredit: (String) -> Unit,
     onSetPhysicalCash: (String) -> Unit,
     onSetExpense: (String) -> Unit,
     onSetUnitSalePrice: (String) -> Unit,
     onSetCommissionPerUnit: (String) -> Unit,
+    onSetCommissionPaid: (String) -> Unit,
+    onOpenCalculator: () -> Unit,
     primaryColor: Color,
     surfaceBg: Color,
     borderColor: Color,
@@ -636,17 +691,35 @@ private fun SalesInputFormCard(
         border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            // Section 1: Units
-            Text(
-                text = "PRODUCT QUANTITIES",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = DigitalMonospaceFont,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                letterSpacing = 0.8.sp
-            )
+            // Header with Quick Calculator Icon
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "PRODUCT QUANTITIES",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = DigitalMonospaceFont,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 0.8.sp
+                )
+                IconButton(
+                    onClick = onOpenCalculator,
+                    modifier = Modifier.size(26.dp).testTag("quick_form_calc_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Calculate,
+                        contentDescription = "Quick Calculator",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Row 1: Total Sold & Returned
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -675,6 +748,7 @@ private fun SalesInputFormCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Row 2: Expired / Damage & Shared (Deducts from net sold)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -690,16 +764,30 @@ private fun SalesInputFormCard(
                     modifier = Modifier.weight(1f)
                 )
                 NumericGridInputField(
-                    label = "Credit Sales Qty",
+                    label = "Shared (Deduction)",
                     placeholder = "0",
-                    value = creditSalesQty,
-                    onValueChange = onSetCreditSalesQty,
-                    testTag = "credit_sales_qty_input",
+                    value = sharedQty,
+                    onValueChange = onSetSharedQty,
+                    testTag = "shared_qty_input",
                     primaryColor = primaryColor,
                     isDark = isDark,
                     modifier = Modifier.weight(1f)
                 )
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Row 3: Credit Sales Qty
+            NumericGridInputField(
+                label = "Credit Sales Qty",
+                placeholder = "0",
+                value = creditSalesQty,
+                onValueChange = onSetCreditSalesQty,
+                testTag = "credit_sales_qty_input",
+                primaryColor = primaryColor,
+                isDark = isDark,
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Spacer(modifier = Modifier.height(14.dp))
 
@@ -739,6 +827,20 @@ private fun SalesInputFormCard(
                     modifier = Modifier.weight(1f)
                 )
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Commission Paid (Deducts from commission, adds to expected cash)
+            NumericGridInputField(
+                label = "Commission Paid (Advance/Paid)",
+                placeholder = "0.00",
+                value = commissionPaid,
+                onValueChange = onSetCommissionPaid,
+                testTag = "commission_paid_input",
+                primaryColor = primaryColor,
+                isDark = isDark,
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Spacer(modifier = Modifier.height(14.dp))
 
@@ -923,11 +1025,26 @@ private fun SettlementResultPanel(
 
                     // Concise Formula Breakdown
                     Text(
-                        text = "Cash Sales (${result.formattedCashFromSales}) + Recovery (${result.formattedRecoveredCredit}) − Comm (${result.formattedTotalCommission}) − Exp (${result.formattedExpense})",
+                        text = "Cash Sales (${result.formattedCashFromSales}) + Recovery (${result.formattedRecoveredCredit}) − Net Comm (${result.formattedTotalCommission}) − Exp (${result.formattedExpense})",
                         fontSize = 10.5.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontFamily = DigitalMonospaceFont
                     )
+
+                    if (result.sharedQty > 0 || result.commissionPaid > 0) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val extraDetails = buildList {
+                            if (result.sharedQty > 0) add("Shared: ${result.formattedSharedQty} units deducted")
+                            if (result.commissionPaid > 0) add("Gross Comm: ${result.formattedGrossCommission} | Paid: ${result.formattedCommissionPaid}")
+                        }.joinToString(" • ")
+                        Text(
+                            text = extraDetails,
+                            fontSize = 10.sp,
+                            color = primaryColor,
+                            fontFamily = DigitalMonospaceFont,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
 
@@ -1447,13 +1564,16 @@ private fun buildReconciliationSummaryText(uiState: SalesUiState): String {
         appendLine("• Total Sold: ${uiState.totalSoldQtyText}")
         appendLine("• Returned: ${uiState.returnedQtyText}")
         appendLine("• Expired: ${uiState.expiredQtyText}")
+        appendLine("• Shared: ${uiState.sharedQtyText}")
         appendLine("• Credit Sales: ${uiState.creditSalesQtyText}")
         appendLine("• Net Sold Units: ${res.formattedNetSold}")
         appendLine("• Cash Qty Units: ${res.formattedCashQty}")
         appendLine("\n--- FINANCIAL SETTLEMENT ---")
         appendLine("• Unit Sale Price: ${res.formattedUnitPrice}")
         appendLine("• Commission / Unit: ${res.formattedCommissionPerUnit}")
-        appendLine("• Total Commission: ${res.formattedTotalCommission}")
+        appendLine("• Gross Commission: ${res.formattedGrossCommission}")
+        appendLine("• Commission Paid: ${res.formattedCommissionPaid}")
+        appendLine("• Net Commission Payable: ${res.formattedTotalCommission}")
         appendLine("• Product Cash Sales: ${res.formattedCashFromSales}")
         appendLine("• Recovered Credit: ${res.formattedRecoveredCredit}")
         appendLine("• Field Expenses: ${res.formattedExpense}")

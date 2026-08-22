@@ -155,4 +155,35 @@ class SalesReconciliationCalculatorTest {
         assertEquals("Rs. 9,225.00", repA.formattedExpectedCash)
         assertEquals("Rs. 0.00", repA.formattedDiscrepancy)
     }
+
+    @Test
+    fun testUserScenarioWithExpenseAndExpired() {
+        // Total sold: 375, Expired: 19.45, Returned: 0, Unit Price: 400
+        // Net sold = 355.55
+        // Cash from sales = 355.55 * 400 = 142,220.00
+        // Recoveries: 0, Commission: 0, Expense: 14,300.00
+        // Expected Cash = 142,220 - 14,300 = 127,920.00
+        // Physical Cash = 128,500.00
+        // Discrepancy = 128,500 - 127,920 = +580.00 (Surplus)
+        val input = SalesReconciliationInput(
+            totalSoldQty = 375.0,
+            returnedQty = 0.0,
+            expiredQty = 19.45,
+            creditSalesQty = 0.0,
+            recoveredCredit = 0.0,
+            physicalCashInHand = 128500.0,
+            expense = 14300.0,
+            unitSalePrice = 400.0,
+            commissionPerUnit = 0.0
+        )
+
+        val result = SalesReconciliationCalculator.calculate(input)
+        assertEquals(355.55, result.netSoldUnits, 0.001)
+        assertEquals(142220.0, result.cashFromSales, 0.001)
+        assertEquals(127920.0, result.expectedCash, 0.001)
+        assertEquals(128500.0, result.physicalCashInHand, 0.001)
+        assertEquals(580.0, result.discrepancy, 0.001)
+        assertEquals(ReconciliationStatus.OVER, result.status)
+        assertEquals("+Rs. 580.00", result.formattedDiscrepancy)
+    }
 }

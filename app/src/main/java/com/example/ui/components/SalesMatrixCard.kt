@@ -2,8 +2,6 @@ package com.example.ui.components
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,8 +23,6 @@ import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Payments
@@ -39,17 +35,15 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
@@ -86,6 +80,9 @@ enum class MatrixSortOption(val displayName: String) {
     EXPECTED_CASH("Highest Expected Cash"),
     NET_SALES("Highest Net Sold Units"),
     CASH_COLLECTED("Highest Cash Received"),
+    SHARED_VOLUME("Highest Shared Units"),
+    COMMISSION("Highest Commission"),
+    LOSS_RATE("Highest Loss/Return %"),
     VARIANCE_RISK("Variance (Shortage First)"),
     REP_NAME("Representative Name A-Z")
 }
@@ -93,17 +90,26 @@ enum class MatrixSortOption(val displayName: String) {
 data class RepMatrixSummary(
     val repName: String,
     val transactionCount: Int,
+    val totalGrossSoldUnits: Double = 0.0,
+    val totalReturnedUnits: Double = 0.0,
+    val totalExpiredUnits: Double = 0.0,
+    val totalSharedUnits: Double = 0.0,
     val totalNetSoldUnits: Double,
     val totalCashQtyUnits: Double,
     val totalCreditSalesQty: Double,
     val totalProductCashSales: Double,
     val totalRecoveredCredit: Double,
-    val totalCommission: Double,
+    val totalGrossCommission: Double = 0.0,
+    val totalCommissionPaid: Double = 0.0,
+    val totalCommission: Double, // Net commission payable
     val totalExpense: Double,
     val totalExpectedCash: Double,
     val totalPhysicalCash: Double,
     val netDiscrepancy: Double,
     val collectionRate: Double,
+    val returnRatePercent: Double = 0.0,
+    val lossRatePercent: Double = 0.0,
+    val creditRatioPercent: Double = 0.0,
     val balancedCount: Int,
     val latestTimestamp: Long,
     val transactions: List<SalesTransactionEntity>
@@ -115,11 +121,35 @@ data class RepMatrixSummary(
             else -> ReconciliationStatus.SHORT
         }
 
+    val formattedGrossSold: String
+        get() = IndianNumberFormatter.formatIndianDouble(totalGrossSoldUnits, 0)
+
+    val formattedReturned: String
+        get() = IndianNumberFormatter.formatIndianDouble(totalReturnedUnits, 0)
+
+    val formattedExpired: String
+        get() = IndianNumberFormatter.formatIndianDouble(totalExpiredUnits, 0)
+
+    val formattedShared: String
+        get() = IndianNumberFormatter.formatIndianDouble(totalSharedUnits, 0)
+
     val formattedNetSold: String
         get() = IndianNumberFormatter.formatIndianDouble(totalNetSoldUnits, 0)
 
+    val formattedCashQty: String
+        get() = IndianNumberFormatter.formatIndianDouble(totalCashQtyUnits, 0)
+
+    val formattedCreditQty: String
+        get() = IndianNumberFormatter.formatIndianDouble(totalCreditSalesQty, 0)
+
     val formattedProductCashSales: String
         get() = IndianNumberFormatter.formatIndianCurrency(totalProductCashSales)
+
+    val formattedGrossCommission: String
+        get() = IndianNumberFormatter.formatIndianCurrency(totalGrossCommission)
+
+    val formattedCommissionPaid: String
+        get() = IndianNumberFormatter.formatIndianCurrency(totalCommissionPaid)
 
     val formattedTotalCommission: String
         get() = IndianNumberFormatter.formatIndianCurrency(totalCommission)
@@ -172,34 +202,52 @@ fun SalesRepresentativesMatrixCard(
             val grouped = transactions.groupBy { it.salesRep.trim().ifEmpty { "General Sales" } }
             grouped.map { (name, list) ->
                 val txCount = list.size
+                val grossSold = list.sumOf { it.totalSoldQty }
+                val returned = list.sumOf { it.returnedQty }
+                val expired = list.sumOf { it.expiredQty }
+                val shared = list.sumOf { it.sharedQty }
                 val netUnits = list.sumOf { it.netSoldUnits }
                 val cashQty = list.sumOf { it.cashQtyUnits }
                 val creditQty = list.sumOf { it.creditSalesQty }
                 val prodCashSales = list.sumOf { it.cashQtyUnits * it.unitSalePrice }
                 val recovered = list.sumOf { it.recoveredCredit }
-                val commission = list.sumOf { it.totalCommission }
+                val grossComm = list.sumOf { if (it.grossCommission > 0.0) it.grossCommission else it.totalCommission }
+                val commPaid = list.sumOf { it.commissionPaid }
+                val netComm = list.sumOf { it.totalCommission }
                 val expense = list.sumOf { it.expense }
                 val expectedCash = list.sumOf { it.expectedCash }
                 val physicalCash = list.sumOf { it.physicalCashInHand }
                 val discrepancy = physicalCash - expectedCash
                 val collectionRate = if (expectedCash > 0.0) (physicalCash / expectedCash) * 100.0 else 100.0
+                val returnRate = if (grossSold > 0.0) (returned / grossSold) * 100.0 else 0.0
+                val lossRate = if (grossSold > 0.0) ((returned + expired + shared) / grossSold) * 100.0 else 0.0
+                val creditRatio = if (netUnits > 0.0) (creditQty / netUnits) * 100.0 else 0.0
                 val balanced = list.count { it.status == "BALANCED" || kotlin.math.abs(it.physicalCashInHand - it.expectedCash) < 0.01 }
                 val latestTime = list.maxOfOrNull { it.timestamp } ?: 0L
 
                 RepMatrixSummary(
                     repName = name,
                     transactionCount = txCount,
+                    totalGrossSoldUnits = grossSold,
+                    totalReturnedUnits = returned,
+                    totalExpiredUnits = expired,
+                    totalSharedUnits = shared,
                     totalNetSoldUnits = netUnits,
                     totalCashQtyUnits = cashQty,
                     totalCreditSalesQty = creditQty,
                     totalProductCashSales = prodCashSales,
                     totalRecoveredCredit = recovered,
-                    totalCommission = commission,
+                    totalGrossCommission = grossComm,
+                    totalCommissionPaid = commPaid,
+                    totalCommission = netComm,
                     totalExpense = expense,
                     totalExpectedCash = expectedCash,
                     totalPhysicalCash = physicalCash,
                     netDiscrepancy = discrepancy,
                     collectionRate = collectionRate,
+                    returnRatePercent = returnRate,
+                    lossRatePercent = lossRate,
+                    creditRatioPercent = creditRatio,
                     balancedCount = balanced,
                     latestTimestamp = latestTime,
                     transactions = list.sortedByDescending { it.dateMillis }
@@ -221,6 +269,9 @@ fun SalesRepresentativesMatrixCard(
                 MatrixSortOption.EXPECTED_CASH -> filtered.sortedByDescending { it.totalExpectedCash }
                 MatrixSortOption.NET_SALES -> filtered.sortedByDescending { it.totalNetSoldUnits }
                 MatrixSortOption.CASH_COLLECTED -> filtered.sortedByDescending { it.totalPhysicalCash }
+                MatrixSortOption.SHARED_VOLUME -> filtered.sortedByDescending { it.totalSharedUnits }
+                MatrixSortOption.COMMISSION -> filtered.sortedByDescending { it.totalCommission }
+                MatrixSortOption.LOSS_RATE -> filtered.sortedByDescending { it.lossRatePercent }
                 MatrixSortOption.VARIANCE_RISK -> filtered.sortedBy { it.netDiscrepancy }
                 MatrixSortOption.REP_NAME -> filtered.sortedBy { it.repName.lowercase(Locale.ROOT) }
             }
@@ -228,10 +279,14 @@ fun SalesRepresentativesMatrixCard(
     }
 
     // Dynamic Fleet Overview Metrics
+    val fleetTotalGrossUnits = remember(repSummaries) { repSummaries.sumOf { it.totalGrossSoldUnits } }
     val fleetTotalNetUnits = remember(repSummaries) { repSummaries.sumOf { it.totalNetSoldUnits } }
+    val fleetTotalSharedUnits = remember(repSummaries) { repSummaries.sumOf { it.totalSharedUnits } }
+    val fleetTotalReturnedUnits = remember(repSummaries) { repSummaries.sumOf { it.totalReturnedUnits } }
     val fleetTotalExpectedCash = remember(repSummaries) { repSummaries.sumOf { it.totalExpectedCash } }
     val fleetTotalPhysicalCash = remember(repSummaries) { repSummaries.sumOf { it.totalPhysicalCash } }
     val fleetTotalCommission = remember(repSummaries) { repSummaries.sumOf { it.totalCommission } }
+    val fleetTotalCommissionPaid = remember(repSummaries) { repSummaries.sumOf { it.totalCommissionPaid } }
     val fleetTotalExpenses = remember(repSummaries) { repSummaries.sumOf { it.totalExpense } }
     val fleetTotalRecovered = remember(repSummaries) { repSummaries.sumOf { it.totalRecoveredCredit } }
     val fleetVariance = fleetTotalPhysicalCash - fleetTotalExpectedCash
@@ -290,7 +345,9 @@ fun SalesRepresentativesMatrixCard(
                             repSummaries = repSummaries,
                             fleetExpectedCash = fleetTotalExpectedCash,
                             fleetPhysicalCash = fleetTotalPhysicalCash,
-                            fleetVariance = fleetVariance
+                            fleetVariance = fleetVariance,
+                            fleetShared = fleetTotalSharedUnits,
+                            fleetCommPaid = fleetTotalCommissionPaid
                         )
                         clipboardManager.setText(AnnotatedString(report))
                         Toast.makeText(context, "Sales matrix report copied!", Toast.LENGTH_SHORT).show()
@@ -312,9 +369,11 @@ fun SalesRepresentativesMatrixCard(
             FleetSummaryKpiBanner(
                 totalReps = repSummaries.size,
                 totalNetUnits = fleetTotalNetUnits,
+                totalSharedUnits = fleetTotalSharedUnits,
                 totalExpectedCash = fleetTotalExpectedCash,
                 totalPhysicalCash = fleetTotalPhysicalCash,
                 totalCommission = fleetTotalCommission,
+                totalCommissionPaid = fleetTotalCommissionPaid,
                 totalExpenses = fleetTotalExpenses,
                 totalRecovered = fleetTotalRecovered,
                 fleetVariance = fleetVariance,
@@ -324,11 +383,12 @@ fun SalesRepresentativesMatrixCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Tab Row: Comparative Matrix vs Reconciliation vs Profiles
-            TabRow(
+            // Tab Row: Comparative Matrix vs Reconciliation vs Loss vs Profiles
+            ScrollableTabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.Transparent,
                 contentColor = primaryColor,
+                edgePadding = 0.dp,
                 indicator = { tabPositions ->
                     TabRowDefaults.SecondaryIndicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
@@ -343,8 +403,8 @@ fun SalesRepresentativesMatrixCard(
                     onClick = { selectedTab = 0 },
                     text = {
                         Text(
-                            text = "Fleet Leaderboard",
-                            fontSize = 12.sp,
+                            text = "Leaderboard",
+                            fontSize = 11.5.sp,
                             fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
                             fontFamily = DigitalMonospaceFont
                         )
@@ -355,8 +415,8 @@ fun SalesRepresentativesMatrixCard(
                     onClick = { selectedTab = 1 },
                     text = {
                         Text(
-                            text = "Cash vs Sales Audit",
-                            fontSize = 12.sp,
+                            text = "Cash vs Sales",
+                            fontSize = 11.5.sp,
                             fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
                             fontFamily = DigitalMonospaceFont
                         )
@@ -367,9 +427,21 @@ fun SalesRepresentativesMatrixCard(
                     onClick = { selectedTab = 2 },
                     text = {
                         Text(
-                            text = "Rep Profiles (${repSummaries.size})",
-                            fontSize = 12.sp,
+                            text = "Loss & Returns",
+                            fontSize = 11.5.sp,
                             fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal,
+                            fontFamily = DigitalMonospaceFont
+                        )
+                    }
+                )
+                Tab(
+                    selected = selectedTab == 3,
+                    onClick = { selectedTab = 3 },
+                    text = {
+                        Text(
+                            text = "Rep Profiles (${repSummaries.size})",
+                            fontSize = 11.5.sp,
+                            fontWeight = if (selectedTab == 3) FontWeight.Bold else FontWeight.Normal,
                             fontFamily = DigitalMonospaceFont
                         )
                     }
@@ -530,6 +602,19 @@ fun SalesRepresentativesMatrixCard(
                         }
                     }
                     2 -> {
+                        // Loss, Return & Shared Analysis
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            filteredSummaries.forEach { summary ->
+                                RepLossReturnsCard(
+                                    summary = summary,
+                                    onSelectRep = onSelectRep,
+                                    primaryColor = primaryColor,
+                                    isDark = isDark
+                                )
+                            }
+                        }
+                    }
+                    3 -> {
                         // Detailed Representative Profiles
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             filteredSummaries.forEach { summary ->
@@ -553,9 +638,11 @@ fun SalesRepresentativesMatrixCard(
 private fun FleetSummaryKpiBanner(
     totalReps: Int,
     totalNetUnits: Double,
+    totalSharedUnits: Double,
     totalExpectedCash: Double,
     totalPhysicalCash: Double,
     totalCommission: Double,
+    totalCommissionPaid: Double,
     totalExpenses: Double,
     totalRecovered: Double,
     fleetVariance: Double,
@@ -634,7 +721,7 @@ private fun FleetSummaryKpiBanner(
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
-                    label = "Commission",
+                    label = "Net Commission",
                     value = IndianNumberFormatter.formatIndianCurrency(totalCommission),
                     tintColor = Color(0xFFF59E0B),
                     modifier = Modifier.weight(1f)
@@ -723,16 +810,34 @@ private fun RepLeaderboardRow(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = summary.repName,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (summary.totalSharedUnits > 0.0) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = Color(0xFF8B5CF6).copy(alpha = 0.18f)
+                                ) {
+                                    Text(
+                                        text = "${summary.formattedShared} shared",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = DigitalMonospaceFont,
+                                        color = Color(0xFF8B5CF6),
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                    )
+                                }
+                            }
+                        }
                         Text(
-                            text = summary.repName,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = "${summary.transactionCount} audits • ${summary.formattedNetSold} units sold",
+                            text = "${summary.transactionCount} audits • ${summary.formattedNetSold} net sold",
                             fontSize = 10.5.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -810,7 +915,7 @@ private fun RepLeaderboardRow(
                             modifier = Modifier.weight(1f)
                         )
                         MatrixStatBox(
-                            label = "Commission",
+                            label = "Net Comm",
                             value = summary.formattedTotalCommission,
                             tintColor = Color(0xFFF59E0B),
                             modifier = Modifier.weight(1f)
@@ -920,11 +1025,21 @@ private fun RepCashSalesAuditCard(
 
             // Audit Formula Decomposition Row
             Text(
-                text = "Sales (${summary.formattedProductCashSales}) + Recovery (${summary.formattedRecoveredCredit}) − Comm (${summary.formattedTotalCommission}) − Exp (${summary.formattedTotalExpense})",
+                text = "Sales (${summary.formattedProductCashSales}) + Recovery (${summary.formattedRecoveredCredit}) − Net Comm (${summary.formattedTotalCommission}) − Exp (${summary.formattedTotalExpense})",
                 fontSize = 10.sp,
                 fontFamily = DigitalMonospaceFont,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            if (summary.totalCommissionPaid > 0.0) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Gross Comm: ${summary.formattedGrossCommission} | Paid: ${summary.formattedCommissionPaid} | Remaining: ${summary.formattedTotalCommission}",
+                    fontSize = 9.5.sp,
+                    fontFamily = DigitalMonospaceFont,
+                    color = Color(0xFFF59E0B)
+                )
+            }
 
             Spacer(modifier = Modifier.height(6.dp))
 
@@ -948,6 +1063,95 @@ private fun RepCashSalesAuditCard(
                     label = "Discrepancy",
                     value = summary.formattedDiscrepancy,
                     tintColor = varianceColor,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RepLossReturnsCard(
+    summary: RepMatrixSummary,
+    onSelectRep: (String) -> Unit,
+    primaryColor: Color,
+    isDark: Boolean
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .border(
+                1.dp,
+                if (isDark) Color(0x22FFFFFF) else Color(0x1A000000),
+                RoundedCornerShape(12.dp)
+            ),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDark) Color(0xFF121B2D) else Color(0xFFF9FAFB)
+        )
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = summary.repName,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = if (summary.lossRatePercent > 10.0) Color(0xFFEF4444).copy(alpha = 0.15f) else Color(0xFF10B981).copy(alpha = 0.15f)
+                ) {
+                    Text(
+                        text = "Loss: ${String.format(Locale.US, "%.1f", summary.lossRatePercent)}%",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = if (summary.lossRatePercent > 10.0) Color(0xFFEF4444) else Color(0xFF10B981),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                MatrixStatBox(
+                    label = "Gross Sold",
+                    value = summary.formattedGrossSold,
+                    tintColor = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                MatrixStatBox(
+                    label = "Returned",
+                    value = summary.formattedReturned,
+                    tintColor = Color(0xFFF59E0B),
+                    modifier = Modifier.weight(1f)
+                )
+                MatrixStatBox(
+                    label = "Expired",
+                    value = summary.formattedExpired,
+                    tintColor = Color(0xFFEF4444),
+                    modifier = Modifier.weight(1f)
+                )
+                MatrixStatBox(
+                    label = "Shared",
+                    value = summary.formattedShared,
+                    tintColor = Color(0xFF8B5CF6),
+                    modifier = Modifier.weight(1f)
+                )
+                MatrixStatBox(
+                    label = "Net Sold",
+                    value = summary.formattedNetSold,
+                    tintColor = Color(0xFF10B981),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -1031,6 +1235,12 @@ private fun RepProfileDetailCard(
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
+                    label = "Shared Units",
+                    value = summary.formattedShared,
+                    tintColor = Color(0xFF8B5CF6),
+                    modifier = Modifier.weight(1f)
+                )
+                MatrixStatBox(
                     label = "Total Expected",
                     value = summary.formattedExpectedCash,
                     tintColor = primaryColor,
@@ -1106,7 +1316,9 @@ private fun buildMatrixExecutiveReport(
     repSummaries: List<RepMatrixSummary>,
     fleetExpectedCash: Double,
     fleetPhysicalCash: Double,
-    fleetVariance: Double
+    fleetVariance: Double,
+    fleetShared: Double = 0.0,
+    fleetCommPaid: Double = 0.0
 ): String {
     return buildString {
         appendLine("========================================")
@@ -1115,6 +1327,12 @@ private fun buildMatrixExecutiveReport(
         appendLine("Total Active Reps: ${repSummaries.size}")
         appendLine("Fleet Expected Cash: ${IndianNumberFormatter.formatIndianCurrency(fleetExpectedCash)}")
         appendLine("Fleet Cash Collected: ${IndianNumberFormatter.formatIndianCurrency(fleetPhysicalCash)}")
+        if (fleetShared > 0.0) {
+            appendLine("Fleet Shared Units: ${IndianNumberFormatter.formatIndianDouble(fleetShared, 0)}")
+        }
+        if (fleetCommPaid > 0.0) {
+            appendLine("Fleet Commission Paid: ${IndianNumberFormatter.formatIndianCurrency(fleetCommPaid)}")
+        }
         val varianceStr = when {
             kotlin.math.abs(fleetVariance) < 0.01 -> "Rs. 0.00 (Balanced)"
             fleetVariance > 0 -> "+Rs. ${IndianNumberFormatter.formatIndianDouble(fleetVariance, 2)} (Surplus)"
@@ -1125,10 +1343,15 @@ private fun buildMatrixExecutiveReport(
         appendLine("REPRESENTATIVE PERFORMANCE BREAKDOWN:")
         repSummaries.forEachIndexed { i, r ->
             appendLine("${i + 1}. ${r.repName} [${r.status.name}]")
-            appendLine("   • Net Sold: ${r.formattedNetSold} units")
+            appendLine("   • Gross Sold: ${r.formattedGrossSold} | Returned: ${r.formattedReturned} | Expired: ${r.formattedExpired} | Shared: ${r.formattedShared}")
+            appendLine("   • Net Sold: ${r.formattedNetSold} units | Cash Qty: ${r.formattedCashQty}")
             appendLine("   • Cash Sales: ${r.formattedProductCashSales}")
             appendLine("   • Recoveries: ${r.formattedRecoveredCredit}")
-            appendLine("   • Commission: ${r.formattedTotalCommission}")
+            if (r.totalCommissionPaid > 0.0) {
+                appendLine("   • Gross Comm: ${r.formattedGrossCommission} | Paid: ${r.formattedCommissionPaid} | Net Comm: ${r.formattedTotalCommission}")
+            } else {
+                appendLine("   • Commission: ${r.formattedTotalCommission}")
+            }
             appendLine("   • Expenses: ${r.formattedTotalExpense}")
             appendLine("   • Expected: ${r.formattedExpectedCash}")
             appendLine("   • Handover: ${r.formattedPhysicalCash}")

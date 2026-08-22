@@ -28,12 +28,14 @@ data class SalesUiState(
     val totalSoldQtyText: String = "",
     val returnedQtyText: String = "",
     val expiredQtyText: String = "",
+    val sharedQtyText: String = "",
     val creditSalesQtyText: String = "",
     val recoveredCreditText: String = "",
     val physicalCashText: String = "",
     val expenseText: String = "",
     val unitSalePriceText: String = "",
     val commissionPerUnitText: String = "",
+    val commissionPaidText: String = "",
     val reconciliationResult: SalesReconciliationResult = SalesReconciliationCalculator.calculate(
         SalesReconciliationInput(
             salesRep = "",
@@ -41,12 +43,14 @@ data class SalesUiState(
             totalSoldQty = 0.0,
             returnedQty = 0.0,
             expiredQty = 0.0,
+            sharedQty = 0.0,
             creditSalesQty = 0.0,
             recoveredCredit = 0.0,
             physicalCashInHand = 0.0,
             expense = 0.0,
             unitSalePrice = 0.0,
-            commissionPerUnit = 0.0
+            commissionPerUnit = 0.0,
+            commissionPaid = 0.0
         )
     ),
     val isSavedSuccess: Boolean = false,
@@ -131,6 +135,13 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun setSharedQty(text: String) {
+        _uiState.update { current ->
+            val updated = current.copy(sharedQtyText = text, isSavedSuccess = false)
+            recalculate(updated)
+        }
+    }
+
     fun setCreditSalesQty(text: String) {
         _uiState.update { current ->
             val updated = current.copy(creditSalesQtyText = text, isSavedSuccess = false)
@@ -173,6 +184,13 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun setCommissionPaid(text: String) {
+        _uiState.update { current ->
+            val updated = current.copy(commissionPaidText = text, isSavedSuccess = false)
+            recalculate(updated)
+        }
+    }
+
     fun setSavedHistorySheetOpen(isOpen: Boolean) {
         _uiState.update { it.copy(showSavedHistorySheet = isOpen) }
     }
@@ -183,12 +201,14 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
                 totalSoldQtyText = "",
                 returnedQtyText = "",
                 expiredQtyText = "",
+                sharedQtyText = "",
                 creditSalesQtyText = "",
                 recoveredCreditText = "",
                 physicalCashText = "",
                 expenseText = "",
                 unitSalePriceText = "",
                 commissionPerUnitText = "",
+                commissionPaidText = "",
                 isSavedSuccess = false
             )
             recalculate(cleared)
@@ -203,15 +223,18 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
         val entity = SalesTransactionEntity(
             salesRep = repName,
             dateMillis = state.dateMillis,
-            totalSoldQty = state.totalSoldQtyText.toDoubleOrNull() ?: 0.0,
-            returnedQty = state.returnedQtyText.toDoubleOrNull() ?: 0.0,
-            expiredQty = state.expiredQtyText.toDoubleOrNull() ?: 0.0,
-            creditSalesQty = state.creditSalesQtyText.toDoubleOrNull() ?: 0.0,
-            recoveredCredit = state.recoveredCreditText.toDoubleOrNull() ?: 0.0,
-            physicalCashInHand = state.physicalCashText.toDoubleOrNull() ?: 0.0,
-            expense = state.expenseText.toDoubleOrNull() ?: 0.0,
-            unitSalePrice = state.unitSalePriceText.toDoubleOrNull() ?: 0.0,
-            commissionPerUnit = state.commissionPerUnitText.toDoubleOrNull() ?: 0.0,
+            totalSoldQty = state.totalSoldQtyText.parseCleanDouble(),
+            returnedQty = state.returnedQtyText.parseCleanDouble(),
+            expiredQty = state.expiredQtyText.parseCleanDouble(),
+            sharedQty = state.sharedQtyText.parseCleanDouble(),
+            creditSalesQty = state.creditSalesQtyText.parseCleanDouble(),
+            recoveredCredit = state.recoveredCreditText.parseCleanDouble(),
+            physicalCashInHand = state.physicalCashText.parseCleanDouble(),
+            expense = state.expenseText.parseCleanDouble(),
+            unitSalePrice = state.unitSalePriceText.parseCleanDouble(),
+            commissionPerUnit = state.commissionPerUnitText.parseCleanDouble(),
+            grossCommission = result.grossCommission,
+            commissionPaid = state.commissionPaidText.parseCleanDouble(),
             totalCommission = result.totalCommission,
             netSoldUnits = result.netSoldUnits,
             cashQtyUnits = result.cashQtyUnits,
@@ -249,12 +272,14 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
                 totalSoldQtyText = formatNumberInput(entity.totalSoldQty),
                 returnedQtyText = formatNumberInput(entity.returnedQty),
                 expiredQtyText = formatNumberInput(entity.expiredQty),
+                sharedQtyText = formatNumberInput(entity.sharedQty),
                 creditSalesQtyText = formatNumberInput(entity.creditSalesQty),
                 recoveredCreditText = formatNumberInput(entity.recoveredCredit),
                 physicalCashText = formatNumberInput(entity.physicalCashInHand),
                 expenseText = formatNumberInput(entity.expense),
                 unitSalePriceText = formatNumberInput(entity.unitSalePrice),
                 commissionPerUnitText = formatNumberInput(entity.commissionPerUnit),
+                commissionPaidText = formatNumberInput(entity.commissionPaid),
                 showSavedHistorySheet = false,
                 isSavedSuccess = false
             )
@@ -266,18 +291,25 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
         val input = SalesReconciliationInput(
             salesRep = state.salesRep,
             dateMillis = state.dateMillis,
-            totalSoldQty = state.totalSoldQtyText.toDoubleOrNull() ?: 0.0,
-            returnedQty = state.returnedQtyText.toDoubleOrNull() ?: 0.0,
-            expiredQty = state.expiredQtyText.toDoubleOrNull() ?: 0.0,
-            creditSalesQty = state.creditSalesQtyText.toDoubleOrNull() ?: 0.0,
-            recoveredCredit = state.recoveredCreditText.toDoubleOrNull() ?: 0.0,
-            physicalCashInHand = state.physicalCashText.toDoubleOrNull() ?: 0.0,
-            expense = state.expenseText.toDoubleOrNull() ?: 0.0,
-            unitSalePrice = state.unitSalePriceText.toDoubleOrNull() ?: 0.0,
-            commissionPerUnit = state.commissionPerUnitText.toDoubleOrNull() ?: 0.0
+            totalSoldQty = state.totalSoldQtyText.parseCleanDouble(),
+            returnedQty = state.returnedQtyText.parseCleanDouble(),
+            expiredQty = state.expiredQtyText.parseCleanDouble(),
+            sharedQty = state.sharedQtyText.parseCleanDouble(),
+            creditSalesQty = state.creditSalesQtyText.parseCleanDouble(),
+            recoveredCredit = state.recoveredCreditText.parseCleanDouble(),
+            physicalCashInHand = state.physicalCashText.parseCleanDouble(),
+            expense = state.expenseText.parseCleanDouble(),
+            unitSalePrice = state.unitSalePriceText.parseCleanDouble(),
+            commissionPerUnit = state.commissionPerUnitText.parseCleanDouble(),
+            commissionPaid = state.commissionPaidText.parseCleanDouble()
         )
         val result = SalesReconciliationCalculator.calculate(input)
         return state.copy(reconciliationResult = result)
+    }
+
+    private fun String.parseCleanDouble(): Double {
+        val clean = this.replace(",", "").replace(" ", "").trim()
+        return clean.toDoubleOrNull() ?: 0.0
     }
 
     private fun formatNumberInput(value: Double): String {
