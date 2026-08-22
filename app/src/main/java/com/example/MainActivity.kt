@@ -66,6 +66,7 @@ import com.example.ui.MixtureViewModel
 import com.example.ui.SalesViewModel
 import com.example.ui.components.AppNavigationDrawer
 import com.example.ui.components.DrawerDestination
+import com.example.ui.components.SimpleCalculatorDialog
 import com.example.ui.components.TapeHistorySheet
 import com.example.ui.screens.BasicCalculatorScreen
 import com.example.ui.screens.BatchScalingScreen
@@ -100,6 +101,7 @@ class MainActivity : ComponentActivity() {
             val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
             val scope = rememberCoroutineScope()
             var currentDestination by remember { mutableStateOf(DrawerDestination.CALCULATOR) }
+            var showQuickCalculatorDialog by remember { mutableStateOf(false) }
 
             BackHandler(enabled = drawerState.isOpen) {
                 scope.launch { drawerState.close() }
@@ -235,21 +237,17 @@ class MainActivity : ComponentActivity() {
                                 val actionIcon = when (currentDestination) {
                                     DrawerDestination.CALCULATOR -> Icons.Default.History
                                     DrawerDestination.SALES -> Icons.Default.ReceiptLong
-                                    DrawerDestination.CONVERTER -> {
-                                        if (converterUiState.isCategoryGridActive) Icons.Default.Category
-                                        else Icons.Default.Category
-                                    }
-                                    DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Settings
-                                    DrawerDestination.BATCH_SCALING -> Icons.Default.Settings
+                                    DrawerDestination.CONVERTER -> Icons.Default.Calculate
+                                    DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Calculate
+                                    DrawerDestination.BATCH_SCALING -> Icons.Default.Calculate
                                     else -> Icons.Default.History
                                 }
                                 val actionDescription = when (currentDestination) {
                                     DrawerDestination.CALCULATOR -> "History Tape"
                                     DrawerDestination.SALES -> "Saved Sales"
-                                    DrawerDestination.CONVERTER -> {
-                                        if (converterUiState.isCategoryGridActive) "Categories Hub"
-                                        else "All Categories"
-                                    }
+                                    DrawerDestination.CONVERTER -> "Quick Calculator"
+                                    DrawerDestination.MIXTURE_CALCULATOR -> "Quick Calculator"
+                                    DrawerDestination.BATCH_SCALING -> "Quick Calculator"
                                     else -> "Settings"
                                 }
                                 val onActionClick: () -> Unit = when (currentDestination) {
@@ -259,14 +257,10 @@ class MainActivity : ComponentActivity() {
                                     DrawerDestination.SALES -> {
                                         { salesViewModel.setSavedHistorySheetOpen(true) }
                                     }
-                                    DrawerDestination.CONVERTER -> {
-                                        {
-                                            if (converterUiState.isCategoryGridActive) {
-                                                scope.launch { drawerState.open() }
-                                            } else {
-                                                converterViewModel.showCategoryGrid()
-                                            }
-                                        }
+                                    DrawerDestination.CONVERTER,
+                                    DrawerDestination.MIXTURE_CALCULATOR,
+                                    DrawerDestination.BATCH_SCALING -> {
+                                        { showQuickCalculatorDialog = true }
                                     }
                                     else -> {
                                         { currentDestination = DrawerDestination.SETTINGS }
@@ -345,6 +339,8 @@ class MainActivity : ComponentActivity() {
                                                 onSetUnitSalePrice = { salesViewModel.setUnitSalePrice(it) },
                                                 onSetCommissionPerUnit = { salesViewModel.setCommissionPerUnit(it) },
                                                 onSetCommissionPaid = { salesViewModel.setCommissionPaid(it) },
+                                                onSetDeficitThreshold = { salesViewModel.setDeficitThreshold(it) },
+                                                onSetDeficitThresholdText = { salesViewModel.setDeficitThresholdText(it) },
                                                 onSaveTransaction = { salesViewModel.saveTransaction() },
                                                 onClearInputs = { salesViewModel.clearInputs() },
                                                 onCopySummary = { copyToClipboard(it, "Sales reconciliation audit") },

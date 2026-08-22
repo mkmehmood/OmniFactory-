@@ -36,6 +36,8 @@ data class SalesUiState(
     val unitSalePriceText: String = "",
     val commissionPerUnitText: String = "",
     val commissionPaidText: String = "",
+    val deficitThreshold: Double = 500.0,
+    val deficitThresholdText: String = "500",
     val reconciliationResult: SalesReconciliationResult = SalesReconciliationCalculator.calculate(
         SalesReconciliationInput(
             salesRep = "",
@@ -55,7 +57,10 @@ data class SalesUiState(
     ),
     val isSavedSuccess: Boolean = false,
     val showSavedHistorySheet: Boolean = false
-)
+) {
+    val isDeficitThresholdExceeded: Boolean
+        get() = reconciliationResult.deficitAmount > (deficitThreshold + 0.005)
+}
 
 class SalesViewModel(application: Application) : AndroidViewModel(application) {
     private val salesRepository: SalesRepository
@@ -188,6 +193,26 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { current ->
             val updated = current.copy(commissionPaidText = text, isSavedSuccess = false)
             recalculate(updated)
+        }
+    }
+
+    fun setDeficitThreshold(threshold: Double) {
+        _uiState.update { current ->
+            val clean = maxOf(0.0, threshold)
+            current.copy(
+                deficitThreshold = clean,
+                deficitThresholdText = if (clean % 1.0 == 0.0) String.format(java.util.Locale.US, "%.0f", clean) else String.format(java.util.Locale.US, "%.2f", clean)
+            )
+        }
+    }
+
+    fun setDeficitThresholdText(text: String) {
+        _uiState.update { current ->
+            val value = text.parseCleanDouble()
+            current.copy(
+                deficitThreshold = maxOf(0.0, value),
+                deficitThresholdText = text
+            )
         }
     }
 

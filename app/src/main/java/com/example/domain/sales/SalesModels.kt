@@ -31,7 +31,8 @@ data class SalesReconciliationResult(
     val commissionPerUnit: Double,
     val grossCommission: Double,
     val commissionPaid: Double,
-    val totalCommission: Double,
+    val commissionPayable: Double,
+    val totalCommission: Double, // Same as commissionPayable for backwards compatibility
     val cashFromSales: Double,
     val recoveredCredit: Double,
     val expense: Double,
@@ -39,6 +40,7 @@ data class SalesReconciliationResult(
     val physicalCashInHand: Double,
     val reconciledCash: Double,
     val discrepancy: Double,
+    val deficitAmount: Double,
     val status: ReconciliationStatus,
     val sharedQty: Double = 0.0,
     val formattedNetSold: String,
@@ -48,11 +50,13 @@ data class SalesReconciliationResult(
     val formattedCommissionPerUnit: String,
     val formattedGrossCommission: String,
     val formattedCommissionPaid: String,
+    val formattedCommissionPayable: String,
     val formattedTotalCommission: String,
     val formattedExpectedCash: String,
     val formattedPhysicalCash: String,
     val formattedReconciledCash: String,
     val formattedDiscrepancy: String,
+    val formattedDeficitAmount: String,
     val formattedExpense: String,
     val formattedRecoveredCredit: String,
     val formattedCashFromSales: String
@@ -79,25 +83,26 @@ object SalesReconciliationCalculator {
         // CashQtyUnits = max(0, NetSoldUnits − CreditSalesQty)
         val cashQtyUnits = maxOf(0.0, netSoldUnits - creditSales)
 
-        // Cash from product sales = CashQtyUnits * UnitSalePrice
+        // Cash from product sales = CashQtyUnits * UnitSalePrice (Strictly quantity & prices)
         val cashFromSales = cashQtyUnits * unitPrice
 
-        // Gross commission = NetSoldUnits * CommissionPerUnit
+        // Gross commission earned = NetSoldUnits * CommissionPerUnit
         val grossCommission = netSoldUnits * commissionPerUnit
 
-        // Net commission payable (deducting commission already paid)
-        val netCommission = maxOf(0.0, grossCommission - commissionPaid)
+        // Commission Payable (Net Commission to be paid) = max(0, Gross Commission - Commission Paid)
+        val commissionPayable = maxOf(0.0, grossCommission - commissionPaid)
 
         // Expected Cash to receive from Sales Rep / Manager:
-        // Cash from sales + Recoveries − Net Commission Payable − Expenses
-        // = Cash from sales + Recoveries − (Gross Commission − Commission Paid) − Expenses
-        val expectedCash = cashFromSales + recoveredCredit - (grossCommission - commissionPaid) - expense
+        // Relates ONLY to product quantity and prices (+ recovered credit - field expenses).
+        // Commission does NOT affect or reduce expected cash.
+        val expectedCash = cashFromSales + recoveredCredit - expense
 
         // Reconciled Cash accounted for (Physical Cash received)
         val reconciledCash = physicalCash
 
         // Status / Discrepancy = Physical Cash Received − Expected Cash
         val discrepancy = physicalCash - expectedCash
+        val deficitAmount = if (discrepancy < -0.005) kotlin.math.abs(discrepancy) else 0.0
 
         val status = when {
             kotlin.math.abs(discrepancy) < 0.005 -> ReconciliationStatus.BALANCED
@@ -112,7 +117,8 @@ object SalesReconciliationCalculator {
             commissionPerUnit = commissionPerUnit,
             grossCommission = grossCommission,
             commissionPaid = commissionPaid,
-            totalCommission = netCommission,
+            commissionPayable = commissionPayable,
+            totalCommission = commissionPayable,
             cashFromSales = cashFromSales,
             recoveredCredit = recoveredCredit,
             expense = expense,
@@ -120,6 +126,7 @@ object SalesReconciliationCalculator {
             physicalCashInHand = physicalCash,
             reconciledCash = reconciledCash,
             discrepancy = discrepancy,
+            deficitAmount = deficitAmount,
             status = status,
             sharedQty = shared,
             formattedNetSold = formatIndianNumber(netSoldUnits),
@@ -129,11 +136,13 @@ object SalesReconciliationCalculator {
             formattedCommissionPerUnit = IndianNumberFormatter.formatIndianCurrency(commissionPerUnit),
             formattedGrossCommission = IndianNumberFormatter.formatIndianCurrency(grossCommission),
             formattedCommissionPaid = IndianNumberFormatter.formatIndianCurrency(commissionPaid),
-            formattedTotalCommission = IndianNumberFormatter.formatIndianCurrency(netCommission),
+            formattedCommissionPayable = IndianNumberFormatter.formatIndianCurrency(commissionPayable),
+            formattedTotalCommission = IndianNumberFormatter.formatIndianCurrency(commissionPayable),
             formattedExpectedCash = IndianNumberFormatter.formatIndianCurrency(expectedCash),
             formattedPhysicalCash = IndianNumberFormatter.formatIndianCurrency(physicalCash),
             formattedReconciledCash = IndianNumberFormatter.formatIndianCurrency(reconciledCash),
             formattedDiscrepancy = IndianNumberFormatter.formatIndianCurrency(discrepancy, showSign = true),
+            formattedDeficitAmount = IndianNumberFormatter.formatIndianCurrency(deficitAmount),
             formattedExpense = IndianNumberFormatter.formatIndianCurrency(expense),
             formattedRecoveredCredit = IndianNumberFormatter.formatIndianCurrency(recoveredCredit),
             formattedCashFromSales = IndianNumberFormatter.formatIndianCurrency(cashFromSales)
