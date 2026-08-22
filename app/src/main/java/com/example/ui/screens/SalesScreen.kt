@@ -66,8 +66,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -140,9 +142,6 @@ fun SalesScreen(
         ) {
             // Header Bar
             SalesScreenHeader(
-                savedCount = savedTransactions.size,
-                onOpenSavedSheet = onOpenHistorySheet,
-                onOpenCalculator = { showCalculatorDialog = true },
                 onClearAll = onClearInputs,
                 primaryColor = primaryColor
             )
@@ -360,9 +359,6 @@ fun SalesScreen(
 
 @Composable
 private fun SalesScreenHeader(
-    savedCount: Int,
-    onOpenSavedSheet: () -> Unit,
-    onOpenCalculator: () -> Unit,
     onClearAll: () -> Unit,
     primaryColor: Color
 ) {
@@ -386,89 +382,31 @@ private fun SalesScreenHeader(
             )
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable { onOpenCalculator() }
-                    .testTag("open_calculator_popup_button"),
-                shape = RoundedCornerShape(10.dp),
-                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)
+        Surface(
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .clickable { onClearAll() }
+                .testTag("clear_sales_inputs_button"),
+            shape = RoundedCornerShape(10.dp),
+            color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Calculate,
-                        contentDescription = "Open Calculator",
-                        tint = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = "Calc",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.tertiary
-                    )
-                }
-            }
-
-            Surface(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable { onOpenSavedSheet() }
-                    .testTag("open_saved_sales_button"),
-                shape = RoundedCornerShape(10.dp),
-                color = primaryColor.copy(alpha = 0.12f)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.History,
-                        contentDescription = "Saved Sales Records",
-                        tint = primaryColor,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = "Records ($savedCount)",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = primaryColor
-                    )
-                }
-            }
-
-            Surface(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable { onClearAll() }
-                    .testTag("clear_sales_inputs_button"),
-                shape = RoundedCornerShape(10.dp),
-                color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.RestartAlt,
-                        contentDescription = "Reset Form",
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = "Reset",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.RestartAlt,
+                    contentDescription = "Reset Form",
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = "Reset",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error
+                )
             }
         }
     }
@@ -1343,6 +1281,9 @@ private fun SalesRecordCard(
     primaryColor: Color,
     isDark: Boolean
 ) {
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    var isExpanded by remember { mutableStateOf(false) }
     val discrepancy = tx.physicalCashInHand - tx.expectedCash
 
     val (statusBg, statusFg, statusText, statusIcon) = when {
@@ -1381,7 +1322,6 @@ private fun SalesRecordCard(
                 if (isDark) Color(0x2AFFFFFF) else Color(0x20000000),
                 RoundedCornerShape(14.dp)
             )
-            .clickable { onLoad() }
             .testTag("sales_record_card_${tx.id}"),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
@@ -1390,6 +1330,7 @@ private fun SalesRecordCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
+            // Header Row: Rep Name & Audit Date
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1426,49 +1367,214 @@ private fun SalesRecordCard(
                     )
                 }
 
-                IconButton(
-                    onClick = onDelete,
-                    modifier = Modifier.size(28.dp).testTag("delete_transaction_button_${tx.id}")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = {
+                            val auditReport = buildSingleTransactionAuditText(tx)
+                            clipboardManager.setText(AnnotatedString(auditReport))
+                            Toast.makeText(context, "Audit copied for ${tx.salesRep}", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = "Copy Audit",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(28.dp).testTag("delete_transaction_button_${tx.id}")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+
+            // PRIMARY 11 INPUT FIELDS BREAKDOWN
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // 1. QUANTITIES (5 Inputs: Total Sold, Returned, Expired, Shared, Credit Sales)
+                Text(
+                    text = "QUANTITIES (5 INPUTS)",
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = DigitalMonospaceFont,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 0.5.sp
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
-                        modifier = Modifier.size(16.dp)
+                    GridKeyValueBox(
+                        label = "Total Sold",
+                        value = IndianNumberFormatter.formatIndianDouble(tx.totalSoldQty, 0),
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                    GridKeyValueBox(
+                        label = "Returned",
+                        value = IndianNumberFormatter.formatIndianDouble(tx.returnedQty, 0),
+                        highlightColor = if (tx.returnedQty > 0) Color(0xFFF59E0B) else null,
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                    GridKeyValueBox(
+                        label = "Expired",
+                        value = IndianNumberFormatter.formatIndianDouble(tx.expiredQty, 0),
+                        highlightColor = if (tx.expiredQty > 0) Color(0xFFEF4444) else null,
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                    GridKeyValueBox(
+                        label = "Shared",
+                        value = IndianNumberFormatter.formatIndianDouble(tx.sharedQty, 0),
+                        highlightColor = if (tx.sharedQty > 0) Color(0xFF8B5CF6) else null,
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                    GridKeyValueBox(
+                        label = "Credit Qty",
+                        value = IndianNumberFormatter.formatIndianDouble(tx.creditSalesQty, 0),
+                        highlightColor = if (tx.creditSalesQty > 0) Color(0xFF38BDF8) else null,
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                // 2. PRICING & COMMISSION (3 Inputs: Unit Price, Comm/Unit, Comm Paid)
+                Text(
+                    text = "PRICING & COMMISSION (3 INPUTS)",
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = DigitalMonospaceFont,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 0.5.sp
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    GridKeyValueBox(
+                        label = "Unit Price",
+                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.unitSalePrice, 2)}",
+                        isDark = isDark,
+                        modifier = Modifier.weight(1.1f)
+                    )
+                    GridKeyValueBox(
+                        label = "Comm / Unit",
+                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.commissionPerUnit, 2)}",
+                        isDark = isDark,
+                        modifier = Modifier.weight(1.1f)
+                    )
+                    GridKeyValueBox(
+                        label = "Comm Paid",
+                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.commissionPaid, 2)}",
+                        highlightColor = if (tx.commissionPaid > 0) Color(0xFFF59E0B) else null,
+                        isDark = isDark,
+                        modifier = Modifier.weight(1.1f)
+                    )
+                    GridKeyValueBox(
+                        label = "Net Comm",
+                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.totalCommission, 2)}",
+                        highlightColor = Color(0xFF10B981),
+                        isDark = isDark,
+                        modifier = Modifier.weight(1.1f)
+                    )
+                }
+
+                // 3. SETTLEMENT & CASH (3 Inputs: Field Expenses, Recovered Credit, Cash Received)
+                Text(
+                    text = "CASH & EXPENSES (3 INPUTS)",
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = DigitalMonospaceFont,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 0.5.sp
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    GridKeyValueBox(
+                        label = "Recovered Cr",
+                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.recoveredCredit, 2)}",
+                        highlightColor = if (tx.recoveredCredit > 0) Color(0xFF10B981) else null,
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                    GridKeyValueBox(
+                        label = "Field Exp",
+                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.expense, 2)}",
+                        highlightColor = if (tx.expense > 0) Color(0xFFEF4444) else null,
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                    GridKeyValueBox(
+                        label = "Cash Handover",
+                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.physicalCashInHand, 2)}",
+                        highlightColor = primaryColor,
+                        isDark = isDark,
+                        modifier = Modifier.weight(1.2f)
+                    )
+                    GridKeyValueBox(
+                        label = "Expected Cash",
+                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.expectedCash, 2)}",
+                        highlightColor = primaryColor,
+                        isDark = isDark,
+                        modifier = Modifier.weight(1.2f)
                     )
                 }
             }
 
-            // Key Details
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Action bar & Load into form button
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    .padding(horizontal = 12.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                GridKeyValueBox(
-                    label = "Expected Cash",
-                    value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.expectedCash, 2)}",
-                    highlightColor = primaryColor,
-                    isDark = isDark,
-                    modifier = Modifier.weight(1f)
+                Text(
+                    text = "Net Units: ${IndianNumberFormatter.formatIndianDouble(tx.netSoldUnits, 0)} • Cash Qty: ${IndianNumberFormatter.formatIndianDouble(tx.cashQtyUnits, 0)}",
+                    fontSize = 10.sp,
+                    fontFamily = DigitalMonospaceFont,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                GridKeyValueBox(
-                    label = "Cash Received",
-                    value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.physicalCashInHand, 2)}",
-                    isDark = isDark,
-                    modifier = Modifier.weight(1f)
-                )
-                GridKeyValueBox(
-                    label = "Commission",
-                    value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.totalCommission, 2)}",
-                    highlightColor = Color(0xFF10B981),
-                    isDark = isDark,
-                    modifier = Modifier.weight(1f)
-                )
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                TextButton(
+                    onClick = onLoad,
+                    modifier = Modifier.height(30.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.TrendingUp,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Load into Form",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = primaryColor
+                    )
+                }
+            }
 
             // Status Banner
             Surface(
@@ -1502,6 +1608,43 @@ private fun SalesRecordCard(
                 }
             }
         }
+    }
+}
+
+private fun buildSingleTransactionAuditText(tx: SalesTransactionEntity): String {
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
+    return buildString {
+        appendLine("=== SALES RECONCILIATION AUDIT ===")
+        appendLine("Representative: ${tx.salesRep}")
+        appendLine("Audit Date: ${dateFormat.format(Date(tx.dateMillis))}")
+        appendLine("Status: ${tx.status}")
+        appendLine("----------------------------------")
+        appendLine("ALL 11 INPUT FIELDS:")
+        appendLine("1. Total Sold Qty: ${IndianNumberFormatter.formatIndianDouble(tx.totalSoldQty, 0)}")
+        appendLine("2. Returned Qty: ${IndianNumberFormatter.formatIndianDouble(tx.returnedQty, 0)}")
+        appendLine("3. Expired Qty: ${IndianNumberFormatter.formatIndianDouble(tx.expiredQty, 0)}")
+        appendLine("4. Shared Qty: ${IndianNumberFormatter.formatIndianDouble(tx.sharedQty, 0)}")
+        appendLine("5. Credit Sales Qty: ${IndianNumberFormatter.formatIndianDouble(tx.creditSalesQty, 0)}")
+        appendLine("6. Unit Sale Price: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.unitSalePrice, 2)}")
+        appendLine("7. Commission / Unit: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.commissionPerUnit, 2)}")
+        appendLine("8. Commission Paid: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.commissionPaid, 2)}")
+        appendLine("9. Recovered Credit: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.recoveredCredit, 2)}")
+        appendLine("10. Field Expenses: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.expense, 2)}")
+        appendLine("11. Physical Cash Handover: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.physicalCashInHand, 2)}")
+        appendLine("----------------------------------")
+        appendLine("AUDIT CALCULATIONS:")
+        appendLine("• Net Sold Units: ${IndianNumberFormatter.formatIndianDouble(tx.netSoldUnits, 0)}")
+        appendLine("• Cash Qty Units: ${IndianNumberFormatter.formatIndianDouble(tx.cashQtyUnits, 0)}")
+        appendLine("• Cash Sales Revenue: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.cashQtyUnits * tx.unitSalePrice, 2)}")
+        appendLine("• Gross Commission: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.grossCommission, 2)}")
+        appendLine("• Net Commission Payable: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.totalCommission, 2)}")
+        appendLine("• Expected Cash Receivable: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.expectedCash, 2)}")
+        val discrepancy = tx.physicalCashInHand - tx.expectedCash
+        val discStr = if (kotlin.math.abs(discrepancy) < 0.01) "Rs. 0.00 (Balanced)"
+        else if (discrepancy > 0) "+Rs. ${IndianNumberFormatter.formatIndianDouble(discrepancy, 2)} (Surplus)"
+        else "-Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(discrepancy), 2)} (Shortage)"
+        appendLine("• Variance / Discrepancy: $discStr")
+        appendLine("==================================")
     }
 }
 

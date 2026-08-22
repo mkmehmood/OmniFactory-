@@ -898,9 +898,63 @@ private fun RepLeaderboardRow(
                         .fillMaxWidth()
                         .padding(top = 10.dp)
                 ) {
+                    Text(
+                        text = "QUANTITIES (5 INPUTS)",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        MatrixStatBox(
+                            label = "Gross Sold",
+                            value = summary.formattedGrossSold,
+                            tintColor = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        MatrixStatBox(
+                            label = "Returned",
+                            value = summary.formattedReturned,
+                            tintColor = if (summary.totalReturnedUnits > 0) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        MatrixStatBox(
+                            label = "Expired",
+                            value = summary.formattedExpired,
+                            tintColor = if (summary.totalExpiredUnits > 0) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        MatrixStatBox(
+                            label = "Shared",
+                            value = summary.formattedShared,
+                            tintColor = if (summary.totalSharedUnits > 0) Color(0xFF8B5CF6) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        MatrixStatBox(
+                            label = "Credit Qty",
+                            value = summary.formattedCreditQty,
+                            tintColor = if (summary.totalCreditSalesQty > 0) Color(0xFF38BDF8) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "FINANCIALS & COMMISSION (6 INPUTS)",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         MatrixStatBox(
                             label = "Cash Sales",
@@ -915,9 +969,15 @@ private fun RepLeaderboardRow(
                             modifier = Modifier.weight(1f)
                         )
                         MatrixStatBox(
+                            label = "Comm Paid",
+                            value = summary.formattedCommissionPaid,
+                            tintColor = if (summary.totalCommissionPaid > 0) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        MatrixStatBox(
                             label = "Net Comm",
                             value = summary.formattedTotalCommission,
-                            tintColor = Color(0xFFF59E0B),
+                            tintColor = Color(0xFF10B981),
                             modifier = Modifier.weight(1f)
                         )
                         MatrixStatBox(
@@ -1172,21 +1232,28 @@ private fun RepProfileDetailCard(
         if (summary.latestTimestamp > 0) dateFormat.format(Date(summary.latestTimestamp)) else "N/A"
     }
 
+    val varianceColor = when (summary.status) {
+        ReconciliationStatus.BALANCED -> Color(0xFF10B981)
+        ReconciliationStatus.OVER -> Color(0xFF38BDF8)
+        ReconciliationStatus.SHORT -> Color(0xFFEF4444)
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(14.dp))
             .border(
                 1.dp,
                 if (isDark) Color(0x22FFFFFF) else Color(0x1A000000),
-                RoundedCornerShape(12.dp)
+                RoundedCornerShape(14.dp)
             ),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isDark) Color(0xFF121B2D) else Color(0xFFF9FAFB)
         )
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1197,68 +1264,198 @@ private fun RepProfileDetailCard(
                         imageVector = Icons.Default.AccountCircle,
                         contentDescription = null,
                         tint = primaryColor,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = summary.repName,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Column {
+                        Text(
+                            text = summary.repName,
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "${summary.transactionCount} Audits Recorded • Last: $lastDateStr",
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
-                Text(
-                    text = "Last Active: $lastDateStr",
-                    fontSize = 10.sp,
-                    fontFamily = DigitalMonospaceFont,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = varianceColor.copy(alpha = 0.18f)
+                ) {
+                    Text(
+                        text = summary.formattedDiscrepancy,
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = varianceColor,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
+            // 11 INPUT FIELDS COMPLETE MATRIX
+            Text(
+                text = "1. PRODUCT QUANTITIES (5 INPUTS)",
+                fontSize = 9.5.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 0.5.sp
+            )
+            Spacer(modifier = Modifier.height(3.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 MatrixStatBox(
-                    label = "Audits",
-                    value = "${summary.transactionCount}",
+                    label = "Total Sold",
+                    value = summary.formattedGrossSold,
                     tintColor = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
-                    label = "Balanced %",
-                    value = "${(summary.balancedCount * 100) / summary.transactionCount}%",
-                    tintColor = Color(0xFF10B981),
+                    label = "Returned",
+                    value = summary.formattedReturned,
+                    tintColor = if (summary.totalReturnedUnits > 0) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
-                    label = "Shared Units",
+                    label = "Expired",
+                    value = summary.formattedExpired,
+                    tintColor = if (summary.totalExpiredUnits > 0) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                MatrixStatBox(
+                    label = "Shared",
                     value = summary.formattedShared,
-                    tintColor = Color(0xFF8B5CF6),
+                    tintColor = if (summary.totalSharedUnits > 0) Color(0xFF8B5CF6) else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
-                    label = "Total Expected",
-                    value = summary.formattedExpectedCash,
-                    tintColor = primaryColor,
-                    modifier = Modifier.weight(1.2f)
+                    label = "Credit Qty",
+                    value = summary.formattedCreditQty,
+                    tintColor = if (summary.totalCreditSalesQty > 0) Color(0xFF38BDF8) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
                 )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            Text(
+                text = "2. PRICING & COMMISSION (3 INPUTS)",
+                fontSize = 9.5.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 0.5.sp
+            )
+            Spacer(modifier = Modifier.height(3.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                TextButton(
-                    onClick = { onSelectRep(summary.repName) },
-                    modifier = Modifier.height(30.dp)
-                ) {
-                    Text("Select Rep", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = primaryColor)
+                MatrixStatBox(
+                    label = "Net Sold Units",
+                    value = summary.formattedNetSold,
+                    tintColor = Color(0xFF10B981),
+                    modifier = Modifier.weight(1f)
+                )
+                MatrixStatBox(
+                    label = "Gross Comm",
+                    value = summary.formattedGrossCommission,
+                    tintColor = Color(0xFFF59E0B),
+                    modifier = Modifier.weight(1.1f)
+                )
+                MatrixStatBox(
+                    label = "Comm Paid",
+                    value = summary.formattedCommissionPaid,
+                    tintColor = if (summary.totalCommissionPaid > 0) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1.1f)
+                )
+                MatrixStatBox(
+                    label = "Net Comm",
+                    value = summary.formattedTotalCommission,
+                    tintColor = Color(0xFF10B981),
+                    modifier = Modifier.weight(1.1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "3. CASH & SETTLEMENT (3 INPUTS)",
+                fontSize = 9.5.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 0.5.sp
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                MatrixStatBox(
+                    label = "Recovered Cr",
+                    value = summary.formattedRecoveredCredit,
+                    tintColor = Color(0xFF10B981),
+                    modifier = Modifier.weight(1f)
+                )
+                MatrixStatBox(
+                    label = "Field Exp",
+                    value = summary.formattedTotalExpense,
+                    tintColor = if (summary.totalExpense > 0) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                MatrixStatBox(
+                    label = "Cash Handover",
+                    value = summary.formattedPhysicalCash,
+                    tintColor = primaryColor,
+                    modifier = Modifier.weight(1.15f)
+                )
+                MatrixStatBox(
+                    label = "Expected Cash",
+                    value = summary.formattedExpectedCash,
+                    tintColor = primaryColor,
+                    modifier = Modifier.weight(1.15f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Collection Accuracy: ${String.format(Locale.US, "%.1f", summary.collectionRate)}%",
+                    fontSize = 10.sp,
+                    fontFamily = DigitalMonospaceFont,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (summary.transactions.isNotEmpty()) {
+                        TextButton(
+                            onClick = { onLoadTransaction(summary.transactions.first()) },
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            Text("Load Latest", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                        }
+                    }
+                    TextButton(
+                        onClick = { onSelectRep(summary.repName) },
+                        modifier = Modifier.height(30.dp)
+                    ) {
+                        Text("Select Rep", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = primaryColor)
+                    }
                 }
             }
         }

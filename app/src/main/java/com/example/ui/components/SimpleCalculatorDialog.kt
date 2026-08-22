@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,9 +55,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.data.db.AppDatabase
+import com.example.data.repository.HistoryRepository
 import com.example.domain.calculator.CalculationResult
 import com.example.domain.calculator.CalculatorEngine
 import com.example.ui.theme.DigitalMonospaceFont
+import kotlinx.coroutines.launch
 
 @Composable
 fun SimpleCalculatorDialog(
@@ -68,6 +72,10 @@ fun SimpleCalculatorDialog(
     var resultText by remember { mutableStateOf<String?>(null) }
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val historyRepo = remember(context) {
+        HistoryRepository(AppDatabase.getDatabase(context.applicationContext).calculationDao())
+    }
 
     fun evaluateLive(expr: String) {
         if (expr.isBlank()) {
@@ -103,9 +111,18 @@ fun SimpleCalculatorDialog(
 
     fun onEquals() {
         if (expression.isNotBlank()) {
-            val res = CalculatorEngine.evaluate(expression)
+            val currentExpr = expression
+            val res = CalculatorEngine.evaluate(currentExpr)
             if (res is CalculationResult.Success) {
                 val formatted = CalculatorEngine.formatNumber(res.value)
+                scope.launch {
+                    historyRepo.insertCalculation(
+                        expression = currentExpr,
+                        result = formatted,
+                        tag = "Sales Settlement",
+                        note = "Sales Reconcile Calc"
+                    )
+                }
                 expression = formatted.replace(",", "")
                 resultText = null
             }
