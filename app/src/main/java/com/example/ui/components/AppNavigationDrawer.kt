@@ -26,7 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
@@ -181,11 +180,11 @@ fun AppNavigationDrawer(
                 )
             }
 
-            // 2. Units Converter Option (Opens Directory Grid Hub)
+            // 2. Units Converter Option (Opens Categories Hub)
             item {
                 DrawerNavItem(
                     label = "Units Converter",
-                    subtitle = "11 unit conversion categories",
+                    subtitle = "11 dedicated conversion suites",
                     icon = Icons.Default.SwapHoriz,
                     isSelected = currentDestination == DrawerDestination.CONVERTER,
                     onClick = {

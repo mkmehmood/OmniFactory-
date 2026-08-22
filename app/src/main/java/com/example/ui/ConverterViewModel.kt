@@ -40,13 +40,11 @@ enum class BmiCategory(val label: String, val rangeDescription: String, val colo
 data class ConverterUiState(
     val activeCategory: ConverterCategory = ConverterCategory.CURRENCY,
     val isCategoryGridActive: Boolean = true,
-    // Currency: 5 active countries/currencies at a time
+    // Currency
     val currencyBase: String = "USD",
-    val activeCurrencyCodes: List<String> = listOf("USD", "EUR", "GBP", "JPY", "CAD"),
     val currencyTarget: String = "EUR",
     val currencyAmount: String = "100",
     val currencyRates: CurrencyRateState = CurrencyRateState(),
-    val currencySearchQuery: String = "",
 
     // Standard Units Conversion
     val standardInput: String = "1",
@@ -118,32 +116,13 @@ class ConverterViewModel(
         _uiState.update { it.copy(isCategoryGridActive = !it.isCategoryGridActive) }
     }
 
-    // --- CURRENCY LOGIC (5 COUNTRIES AT A TIME + SEARCH & CLICK) ---
+    // --- CURRENCY LOGIC ---
     fun setCurrencyBase(code: String) {
-        _uiState.update { current ->
-            val list = current.activeCurrencyCodes.toMutableList()
-            if (!list.contains(code)) {
-                if (list.isNotEmpty()) list[0] = code else list.add(code)
-            }
-            current.copy(currencyBase = code, activeCurrencyCodes = list)
-        }
+        _uiState.update { it.copy(currencyBase = code) }
     }
 
     fun setCurrencyTarget(code: String) {
         _uiState.update { it.copy(currencyTarget = code) }
-    }
-
-    fun setCurrencySlot(slotIndex: Int, code: String) {
-        _uiState.update { current ->
-            val list = current.activeCurrencyCodes.toMutableList()
-            if (slotIndex in list.indices) {
-                list[slotIndex] = code
-            } else if (list.size < 5) {
-                list.add(code)
-            }
-            val newBase = if (slotIndex == 0) code else current.currencyBase
-            current.copy(activeCurrencyCodes = list, currencyBase = newBase)
-        }
     }
 
     fun setCurrencyAmount(amount: String) {
@@ -160,22 +139,6 @@ class ConverterViewModel(
                 currencyTarget = current.currencyBase
             )
         }
-    }
-
-    fun swapCurrencySlots(indexA: Int, indexB: Int) {
-        _uiState.update { current ->
-            val list = current.activeCurrencyCodes.toMutableList()
-            if (indexA in list.indices && indexB in list.indices) {
-                val temp = list[indexA]
-                list[indexA] = list[indexB]
-                list[indexB] = temp
-            }
-            current.copy(activeCurrencyCodes = list)
-        }
-    }
-
-    fun setCurrencySearchQuery(query: String) {
-        _uiState.update { it.copy(currencySearchQuery = query) }
     }
 
     fun fetchLiveCurrencyRates() {
@@ -209,13 +172,10 @@ class ConverterViewModel(
     }
 
     fun getCurrencyConvertedAmount(): String {
-        return getConvertedAmountFor(_uiState.value.currencyTarget)
-    }
-
-    fun getConvertedAmountFor(targetCode: String): String {
         val state = _uiState.value
         val amount = state.currencyAmount.toDoubleOrNull() ?: 0.0
         val baseCode = state.currencyBase
+        val targetCode = state.currencyTarget
 
         val rates = state.currencyRates.rates
         val baseRateToUsd = rates[baseCode] ?: defaultRates[baseCode] ?: 1.0
@@ -227,12 +187,9 @@ class ConverterViewModel(
     }
 
     fun getCurrencySingleRate(): String {
-        return getSingleRateFor(_uiState.value.currencyTarget)
-    }
-
-    fun getSingleRateFor(targetCode: String): String {
         val state = _uiState.value
         val baseCode = state.currencyBase
+        val targetCode = state.currencyTarget
         val rates = state.currencyRates.rates
         val baseRateToUsd = rates[baseCode] ?: defaultRates[baseCode] ?: 1.0
         val targetRateToUsd = rates[targetCode] ?: defaultRates[targetCode] ?: 1.0
@@ -606,6 +563,210 @@ class ConverterViewModel(
                 if (cur.startsWith("-")) setStandardInput(cur.removePrefix("-"))
                 else if (cur.isNotEmpty() && cur != "0") setStandardInput("-$cur")
             }
+        }
+    }
+
+    // --- FIELD-SPECIFIC KEYPAD ROUTING ---
+    fun appendTokenToField(fieldId: String?, token: String) {
+        if (fieldId == null) {
+            appendActiveValue(token)
+            return
+        }
+        when (fieldId) {
+            "currency_amount" -> appendToSingleValue(
+                getCurrent = { _uiState.value.currencyAmount },
+                setter = { setCurrencyAmount(it) },
+                token = token,
+                allowDecimal = true
+            )
+            "temp_input" -> appendToSingleValue(
+                getCurrent = { _uiState.value.tempInput },
+                setter = { setTempInput(it) },
+                token = token,
+                allowDecimal = true
+            )
+            "standard_input" -> appendToSingleValue(
+                getCurrent = { _uiState.value.standardInput },
+                setter = { setStandardInput(it) },
+                token = token,
+                allowDecimal = true
+            )
+            "bmi_weight_metric" -> appendToSingleValue(
+                getCurrent = { _uiState.value.bmiWeightMetricKg },
+                setter = { setBmiMetricWeight(it) },
+                token = token,
+                allowDecimal = true
+            )
+            "bmi_height_metric" -> appendToSingleValue(
+                getCurrent = { _uiState.value.bmiHeightMetricCm },
+                setter = { setBmiMetricHeight(it) },
+                token = token,
+                allowDecimal = true
+            )
+            "bmi_weight_imperial" -> appendToSingleValue(
+                getCurrent = { _uiState.value.bmiWeightImperialLbs },
+                setter = { setBmiImperialWeight(it) },
+                token = token,
+                allowDecimal = true
+            )
+            "bmi_feet_imperial" -> appendToSingleValue(
+                getCurrent = { _uiState.value.bmiHeightImperialFeet },
+                setter = { setBmiImperialFeet(it) },
+                token = token,
+                allowDecimal = false
+            )
+            "bmi_inches_imperial" -> appendToSingleValue(
+                getCurrent = { _uiState.value.bmiHeightImperialInches },
+                setter = { setBmiImperialInches(it) },
+                token = token,
+                allowDecimal = false
+            )
+            "num_decimal" -> appendToSingleValue(
+                getCurrent = { _uiState.value.numDecimal },
+                setter = { onNumberSystemChanged(10, it) },
+                token = token,
+                allowDecimal = false
+            )
+            "num_binary" -> {
+                if (token == "0" || token == "1" || token == "00") {
+                    val cur = _uiState.value.numBinary
+                    val next = if (cur == "0") token else cur + token
+                    onNumberSystemChanged(2, next)
+                }
+            }
+            "num_hex" -> {
+                val cur = _uiState.value.numHex
+                val next = if (cur == "0") token else cur + token
+                onNumberSystemChanged(16, next)
+            }
+            "num_octal" -> {
+                if (token != "8" && token != "9" && token != ".") {
+                    val cur = _uiState.value.numOctal
+                    val next = if (cur == "0") token else cur + token
+                    onNumberSystemChanged(8, next)
+                }
+            }
+            else -> appendActiveValue(token)
+        }
+    }
+
+    private fun appendToSingleValue(
+        getCurrent: () -> String,
+        setter: (String) -> Unit,
+        token: String,
+        allowDecimal: Boolean
+    ) {
+        val cur = getCurrent()
+        if (token == "00") {
+            if (cur.isEmpty() || cur == "0") setter("0")
+            else setter(cur + "00")
+        } else if (token == ".") {
+            if (allowDecimal && !cur.contains('.')) {
+                setter(if (cur.isEmpty()) "0." else "$cur.")
+            }
+        } else {
+            if (cur == "0" && token != ".") setter(token)
+            else setter(cur + token)
+        }
+    }
+
+    fun backspaceField(fieldId: String?) {
+        if (fieldId == null) {
+            backspaceActiveValue()
+            return
+        }
+        when (fieldId) {
+            "currency_amount" -> {
+                val cur = _uiState.value.currencyAmount
+                setCurrencyAmount(if (cur.length > 1) cur.dropLast(1) else "0")
+            }
+            "temp_input" -> {
+                val cur = _uiState.value.tempInput
+                setTempInput(if (cur.length > 1) cur.dropLast(1) else "0")
+            }
+            "standard_input" -> {
+                val cur = _uiState.value.standardInput
+                setStandardInput(if (cur.length > 1) cur.dropLast(1) else "0")
+            }
+            "bmi_weight_metric" -> {
+                val cur = _uiState.value.bmiWeightMetricKg
+                setBmiMetricWeight(if (cur.length > 1) cur.dropLast(1) else "0")
+            }
+            "bmi_height_metric" -> {
+                val cur = _uiState.value.bmiHeightMetricCm
+                setBmiMetricHeight(if (cur.length > 1) cur.dropLast(1) else "0")
+            }
+            "bmi_weight_imperial" -> {
+                val cur = _uiState.value.bmiWeightImperialLbs
+                setBmiImperialWeight(if (cur.length > 1) cur.dropLast(1) else "0")
+            }
+            "bmi_feet_imperial" -> {
+                val cur = _uiState.value.bmiHeightImperialFeet
+                setBmiImperialFeet(if (cur.length > 1) cur.dropLast(1) else "0")
+            }
+            "bmi_inches_imperial" -> {
+                val cur = _uiState.value.bmiHeightImperialInches
+                setBmiImperialInches(if (cur.length > 1) cur.dropLast(1) else "0")
+            }
+            "num_decimal" -> {
+                val cur = _uiState.value.numDecimal
+                onNumberSystemChanged(10, if (cur.length > 1) cur.dropLast(1) else "0")
+            }
+            "num_binary" -> {
+                val cur = _uiState.value.numBinary
+                onNumberSystemChanged(2, if (cur.length > 1) cur.dropLast(1) else "0")
+            }
+            "num_hex" -> {
+                val cur = _uiState.value.numHex
+                onNumberSystemChanged(16, if (cur.length > 1) cur.dropLast(1) else "0")
+            }
+            "num_octal" -> {
+                val cur = _uiState.value.numOctal
+                onNumberSystemChanged(8, if (cur.length > 1) cur.dropLast(1) else "0")
+            }
+            else -> backspaceActiveValue()
+        }
+    }
+
+    fun clearField(fieldId: String?) {
+        if (fieldId == null) {
+            clearActiveValue()
+            return
+        }
+        when (fieldId) {
+            "currency_amount" -> setCurrencyAmount("0")
+            "temp_input" -> setTempInput("0")
+            "standard_input" -> setStandardInput("0")
+            "bmi_weight_metric" -> setBmiMetricWeight("0")
+            "bmi_height_metric" -> setBmiMetricHeight("0")
+            "bmi_weight_imperial" -> setBmiImperialWeight("0")
+            "bmi_feet_imperial" -> setBmiImperialFeet("0")
+            "bmi_inches_imperial" -> setBmiImperialInches("0")
+            "num_decimal" -> onNumberSystemChanged(10, "0")
+            "num_binary" -> onNumberSystemChanged(2, "0")
+            "num_hex" -> onNumberSystemChanged(16, "0")
+            "num_octal" -> onNumberSystemChanged(8, "0")
+            else -> clearActiveValue()
+        }
+    }
+
+    fun negateField(fieldId: String?) {
+        if (fieldId == null) {
+            negateActiveValue()
+            return
+        }
+        when (fieldId) {
+            "temp_input" -> {
+                val cur = _uiState.value.tempInput
+                if (cur.startsWith("-")) setTempInput(cur.removePrefix("-"))
+                else if (cur.isNotEmpty() && cur != "0") setTempInput("-$cur")
+            }
+            "standard_input" -> {
+                val cur = _uiState.value.standardInput
+                if (cur.startsWith("-")) setStandardInput(cur.removePrefix("-"))
+                else if (cur.isNotEmpty() && cur != "0") setStandardInput("-$cur")
+            }
+            else -> negateActiveValue()
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.domain
 
+import com.example.data.currency.supportedCurrencies
 import com.example.domain.converter.ConverterCategory
 import com.example.domain.converter.UnitRegistry
 import com.example.ui.BmiCategory
@@ -157,9 +158,9 @@ class ConverterTest {
     }
 
     @Test
-    fun testConverterNavigationAnd3x4GridFlow() {
+    fun testConverterNavigationAndCategoriesHubFlow() {
         val vm = ConverterViewModel()
-        // Default starts in grid overview
+        // Default starts in categories hub overview
         assertTrue(vm.uiState.value.isCategoryGridActive)
 
         // Select category and open dedicated screen
@@ -167,7 +168,7 @@ class ConverterTest {
         assertEquals(ConverterCategory.SPEED, vm.uiState.value.activeCategory)
         assertEquals(false, vm.uiState.value.isCategoryGridActive)
 
-        // Return to 3x4 categories grid
+        // Return to categories hub
         vm.showCategoryGrid()
         assertEquals(true, vm.uiState.value.isCategoryGridActive)
 
@@ -178,72 +179,58 @@ class ConverterTest {
     }
 
     @Test
-    fun testDialpadWithDoubleZero() {
+    fun testSmartKeypadFieldAwareRouting() {
         val vm = ConverterViewModel()
-        vm.selectCategoryAndOpenDedicatedScreen(ConverterCategory.CURRENCY)
-        vm.clearActiveValue()
+
+        // 1. Currency amount routing
+        vm.clearField("currency_amount")
         assertEquals("0", vm.uiState.value.currencyAmount)
+        vm.appendTokenToField("currency_amount", "7")
+        vm.appendTokenToField("currency_amount", "00")
+        assertEquals("700", vm.uiState.value.currencyAmount)
+        vm.backspaceField("currency_amount")
+        assertEquals("70", vm.uiState.value.currencyAmount)
 
-        // Type '5'
-        vm.appendActiveValue("5")
-        assertEquals("5", vm.uiState.value.currencyAmount)
+        // 2. BMI Metric Weight routing
+        vm.clearField("bmi_weight_metric")
+        assertEquals("0", vm.uiState.value.bmiWeightMetricKg)
+        vm.appendTokenToField("bmi_weight_metric", "6")
+        vm.appendTokenToField("bmi_weight_metric", "8")
+        vm.appendTokenToField("bmi_weight_metric", ".")
+        vm.appendTokenToField("bmi_weight_metric", "5")
+        assertEquals("68.5", vm.uiState.value.bmiWeightMetricKg)
 
-        // Type '00'
-        vm.appendActiveValue("00")
-        assertEquals("500", vm.uiState.value.currencyAmount)
+        // 3. Temperature input routing with Negate
+        vm.clearField("temp_input")
+        assertEquals("0", vm.uiState.value.tempInput)
+        vm.appendTokenToField("temp_input", "4")
+        vm.appendTokenToField("temp_input", "0")
+        assertEquals("40", vm.uiState.value.tempInput)
+        vm.negateField("temp_input")
+        assertEquals("-40", vm.uiState.value.tempInput)
+        vm.negateField("temp_input")
+        assertEquals("40", vm.uiState.value.tempInput)
 
-        // Type another '00'
-        vm.appendActiveValue("00")
-        assertEquals("50000", vm.uiState.value.currencyAmount)
-
-        // Backspace
-        vm.backspaceActiveValue()
-        assertEquals("5000", vm.uiState.value.currencyAmount)
-
-        // Test Standard Units with 00
-        vm.selectCategoryAndOpenDedicatedScreen(ConverterCategory.LENGTH)
-        vm.clearActiveValue()
+        // 4. Standard Input routing
+        vm.clearField("standard_input")
         assertEquals("0", vm.uiState.value.standardInput)
-        vm.appendActiveValue("2")
-        vm.appendActiveValue("00")
-        assertEquals("200", vm.uiState.value.standardInput)
+        vm.appendTokenToField("standard_input", "1")
+        vm.appendTokenToField("standard_input", "00")
+        assertEquals("100", vm.uiState.value.standardInput)
     }
 
     @Test
-    fun testFiveCountriesSimultaneousCurrencyExchange() {
-        val vm = ConverterViewModel()
-        vm.selectCategoryAndOpenDedicatedScreen(ConverterCategory.CURRENCY)
-        vm.setCurrencyAmount("100")
-        vm.setCurrencyBase("USD")
+    fun testCurrenciesSearchData() {
+        val usd = supportedCurrencies.find { it.code == "USD" }
+        assertNotNull(usd)
+        assertTrue(usd!!.country.contains("America") || usd.country.contains("United States"))
 
-        // Check 5 active countries
-        val slots = vm.uiState.value.activeCurrencyCodes
-        assertEquals(5, slots.size)
-        assertEquals("USD", slots[0])
+        val jpy = supportedCurrencies.find { it.code == "JPY" }
+        assertNotNull(jpy)
+        assertEquals("Japan", jpy!!.country)
 
-        // Verify conversion amounts for different countries
-        val eurAmount = vm.getConvertedAmountFor("EUR")
-        assertNotNull(eurAmount)
-        assertTrue(eurAmount.isNotEmpty())
-
-        val gbpAmount = vm.getConvertedAmountFor("GBP")
-        assertNotNull(gbpAmount)
-        assertTrue(gbpAmount.isNotEmpty())
-
-        val jpyAmount = vm.getConvertedAmountFor("JPY")
-        assertNotNull(jpyAmount)
-        assertTrue(jpyAmount.isNotEmpty())
-
-        // Change a slot via search & click
-        vm.setCurrencySlot(3, "SAR") // Saudi Riyal in 4th slot
-        assertEquals("SAR", vm.uiState.value.activeCurrencyCodes[3])
-        val sarAmount = vm.getConvertedAmountFor("SAR")
-        assertNotNull(sarAmount)
-
-        // Set base country to SAR
-        vm.setCurrencyBase("SAR")
-        assertEquals("SAR", vm.uiState.value.currencyBase)
-        val usdFromSar = vm.getConvertedAmountFor("USD")
-        assertNotNull(usdFromSar)
+        val eur = supportedCurrencies.find { it.code == "EUR" }
+        assertNotNull(eur)
+        assertEquals("Europe", eur!!.region)
     }
 }

@@ -27,8 +27,6 @@ import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -77,7 +75,7 @@ import com.example.ui.screens.SalesScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.theme.DigitalMonospaceFont
 import com.example.ui.theme.MyApplicationTheme
-import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Category
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -229,7 +227,7 @@ class MainActivity : ComponentActivity() {
                                     DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Science
                                     DrawerDestination.BATCH_SCALING -> Icons.Default.Scale
                                     DrawerDestination.CONVERTER -> {
-                                        if (converterUiState.isCategoryGridActive) Icons.Default.SwapHoriz
+                                        if (converterUiState.isCategoryGridActive) Icons.Default.Category
                                         else converterUiState.activeCategory.icon
                                     }
                                     else -> Icons.Default.Calculate
@@ -238,8 +236,8 @@ class MainActivity : ComponentActivity() {
                                     DrawerDestination.CALCULATOR -> Icons.Default.History
                                     DrawerDestination.SALES -> Icons.Default.ReceiptLong
                                     DrawerDestination.CONVERTER -> {
-                                        if (converterUiState.isCategoryGridActive) Icons.Default.Tune
-                                        else Icons.Default.SwapHoriz
+                                        if (converterUiState.isCategoryGridActive) Icons.Default.Category
+                                        else Icons.Default.Category
                                     }
                                     DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Settings
                                     DrawerDestination.BATCH_SCALING -> Icons.Default.Settings
@@ -248,7 +246,10 @@ class MainActivity : ComponentActivity() {
                                 val actionDescription = when (currentDestination) {
                                     DrawerDestination.CALCULATOR -> "History Tape"
                                     DrawerDestination.SALES -> "Saved Sales"
-                                    DrawerDestination.CONVERTER -> "All Categories"
+                                    DrawerDestination.CONVERTER -> {
+                                        if (converterUiState.isCategoryGridActive) "Categories Hub"
+                                        else "All Categories"
+                                    }
                                     else -> "Settings"
                                 }
                                 val onActionClick: () -> Unit = when (currentDestination) {

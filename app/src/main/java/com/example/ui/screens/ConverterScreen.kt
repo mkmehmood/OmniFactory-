@@ -2,21 +2,20 @@ package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,42 +29,27 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Backspace
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.SwapVert
-import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -76,33 +60,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import com.example.data.currency.CurrencyInfo
 import com.example.data.currency.supportedCurrencies
 import com.example.domain.converter.ConversionUnit
 import com.example.domain.converter.ConverterCategory
 import com.example.domain.converter.UnitRegistry
-import com.example.ui.BmiCategory
 import com.example.ui.BmiUnitSystem
 import com.example.ui.ConverterUiState
 import com.example.ui.ConverterViewModel
+import com.example.ui.components.CurrencySearchBottomSheet
+import com.example.ui.components.SmartStationKeypad
 import com.example.ui.theme.AnimationIntensity
 import com.example.ui.theme.ComponentSizeStyle
-import com.example.ui.theme.DigitalMonospaceFont
 import com.example.ui.theme.ShapeStructureStyle
-import com.example.ui.theme.toButtonShape
+import com.example.ui.theme.DigitalMonospaceFont
 import com.example.ui.theme.toCardShape
 import com.example.ui.theme.toInputShape
-import com.example.ui.theme.toSmallShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,6 +96,10 @@ fun ConverterScreen(
     val isDark = MaterialTheme.colorScheme.background.red < 0.2f
     val primaryColor = MaterialTheme.colorScheme.primary
 
+    // Smart Keypad Focus State
+    var focusedFieldId by remember { mutableStateOf<String?>(null) }
+    var focusedFieldLabel by remember { mutableStateOf<String?>(null) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -130,14 +112,18 @@ fun ConverterScreen(
                 fadeIn(spring(stiffness = Spring.StiffnessMediumLow)) togetherWith
                         fadeOut(spring(stiffness = Spring.StiffnessMediumLow))
             },
-            label = "converter_view_toggle"
+            label = "converter_view_toggle",
+            modifier = Modifier.weight(1f)
         ) { inGridView ->
             if (inGridView) {
-                // Directory Grid Hub Screen (Clean & Professional, no horizontal top buttons)
-                ConverterDirectoryGrid(
+                // Categories Grid Hub Screen (Clean & Professional)
+                ConverterCategoriesHub(
                     activeCategory = uiState.activeCategory,
                     onSelectCategory = { category ->
                         viewModel.selectCategoryAndOpenDedicatedScreen(category)
+                        // Reset focus on category switch
+                        focusedFieldId = null
+                        focusedFieldLabel = null
                     },
                     shapeStructureStyle = shapeStructureStyle,
                     isDark = isDark,
@@ -149,14 +135,18 @@ fun ConverterScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
-                    contentPadding = PaddingValues(top = 12.dp, bottom = 32.dp),
+                    contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     item {
                         ConverterActiveHeader(
                             category = uiState.activeCategory,
                             shapeStructureStyle = shapeStructureStyle,
-                            onBackToGrid = { viewModel.showCategoryGrid() },
+                            onBackToGrid = {
+                                focusedFieldId = null
+                                focusedFieldLabel = null
+                                viewModel.showCategoryGrid()
+                            },
                             isDark = isDark
                         )
                     }
@@ -167,6 +157,11 @@ fun ConverterScreen(
                                 CurrencyConverterModule(
                                     viewModel = viewModel,
                                     uiState = uiState,
+                                    focusedFieldId = focusedFieldId,
+                                    onFieldClicked = { fieldId, label ->
+                                        focusedFieldId = fieldId
+                                        focusedFieldLabel = label
+                                    },
                                     shapeStructureStyle = shapeStructureStyle,
                                     onCopyToClipboard = onCopyToClipboard,
                                     isDark = isDark,
@@ -179,6 +174,11 @@ fun ConverterScreen(
                                 BmiConverterModule(
                                     viewModel = viewModel,
                                     uiState = uiState,
+                                    focusedFieldId = focusedFieldId,
+                                    onFieldClicked = { fieldId, label ->
+                                        focusedFieldId = fieldId
+                                        focusedFieldLabel = label
+                                    },
                                     shapeStructureStyle = shapeStructureStyle,
                                     onCopyToClipboard = onCopyToClipboard,
                                     isDark = isDark,
@@ -191,6 +191,11 @@ fun ConverterScreen(
                                 TemperatureConverterModule(
                                     viewModel = viewModel,
                                     uiState = uiState,
+                                    focusedFieldId = focusedFieldId,
+                                    onFieldClicked = { fieldId, label ->
+                                        focusedFieldId = fieldId
+                                        focusedFieldLabel = label
+                                    },
                                     shapeStructureStyle = shapeStructureStyle,
                                     onCopyToClipboard = onCopyToClipboard,
                                     isDark = isDark,
@@ -203,6 +208,11 @@ fun ConverterScreen(
                                 NumberSystemConverterModule(
                                     viewModel = viewModel,
                                     uiState = uiState,
+                                    focusedFieldId = focusedFieldId,
+                                    onFieldClicked = { fieldId, label ->
+                                        focusedFieldId = fieldId
+                                        focusedFieldLabel = label
+                                    },
                                     shapeStructureStyle = shapeStructureStyle,
                                     onCopyToClipboard = onCopyToClipboard,
                                     isDark = isDark,
@@ -216,6 +226,11 @@ fun ConverterScreen(
                                 StandardUnitsConverterModule(
                                     viewModel = viewModel,
                                     uiState = uiState,
+                                    focusedFieldId = focusedFieldId,
+                                    onFieldClicked = { fieldId, label ->
+                                        focusedFieldId = fieldId
+                                        focusedFieldLabel = label
+                                    },
                                     shapeStructureStyle = shapeStructureStyle,
                                     onCopyToClipboard = onCopyToClipboard,
                                     isDark = isDark,
@@ -227,14 +242,51 @@ fun ConverterScreen(
                 }
             }
         }
+
+        // SMART UNIFIED KEYPAD (Shows only when user clicks an input field for data entry)
+        AnimatedVisibility(
+            visible = !uiState.isCategoryGridActive && focusedFieldId != null,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+        ) {
+            val currentField = focusedFieldId ?: ""
+            val isHexField = currentField == "num_hex"
+            val isBinaryField = currentField == "num_binary"
+            val isOctalField = currentField == "num_octal"
+            val showNegate = uiState.activeCategory == ConverterCategory.TEMPERATURE ||
+                    uiState.activeCategory in listOf(
+                        ConverterCategory.PRESSURE,
+                        ConverterCategory.POWER
+                    )
+
+            SmartStationKeypad(
+                activeFieldLabel = focusedFieldLabel,
+                onDigit = { digit -> viewModel.appendTokenToField(currentField, digit) },
+                onDoubleZero = { viewModel.appendTokenToField(currentField, "00") },
+                onDecimal = { viewModel.appendTokenToField(currentField, ".") },
+                onBackspace = { viewModel.backspaceField(currentField) },
+                onClear = { viewModel.clearField(currentField) },
+                onNegate = { viewModel.negateField(currentField) },
+                onDone = {
+                    focusedFieldId = null
+                    focusedFieldLabel = null
+                },
+                showDoubleZeroKey = !isBinaryField,
+                showNegateKey = showNegate,
+                shapeStructureStyle = shapeStructureStyle,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            )
+        }
     }
 }
 
 // -------------------------------------------------------------------------------------------------
-// DIRECTORY GRID HUB (CLEAN, MINIMAL & PROFESSIONAL CATEGORIES GRID)
+// DIRECTORY GRID HUB (CLEAN, MINIMAL & MODERN CATEGORIES HUB)
 // -------------------------------------------------------------------------------------------------
 @Composable
-fun ConverterDirectoryGrid(
+fun ConverterCategoriesHub(
     activeCategory: ConverterCategory,
     onSelectCategory: (ConverterCategory) -> Unit,
     shapeStructureStyle: ShapeStructureStyle,
@@ -250,7 +302,6 @@ fun ConverterDirectoryGrid(
             .padding(horizontal = 14.dp, vertical = 12.dp)
             .testTag("converter_hub_grid")
     ) {
-        // Grid of Categories (Simple & Professional, no unnecessary texts)
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
             modifier = Modifier.fillMaxSize(),
@@ -321,7 +372,7 @@ fun ConverterDirectoryGrid(
                 }
             }
 
-            // 12th card to complete the grid structure
+            // Quick Hub summary item
             item {
                 val infoColor = primaryColor
                 Surface(
@@ -356,7 +407,7 @@ fun ConverterDirectoryGrid(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.SwapHoriz,
+                                imageVector = Icons.Default.SwapVert,
                                 contentDescription = null,
                                 tint = infoColor,
                                 modifier = Modifier.size(24.dp)
@@ -380,265 +431,58 @@ fun ConverterDirectoryGrid(
 }
 
 // -------------------------------------------------------------------------------------------------
-// CONVERTER DIALPAD (FEATURING "00" DOUBLE ZERO KEY)
+// ACTIVE CATEGORY HEADER
 // -------------------------------------------------------------------------------------------------
 @Composable
-fun ConverterDialpad(
-    onDigit: (String) -> Unit,
-    onDoubleZero: () -> Unit,
-    onDecimal: () -> Unit,
-    onBackspace: () -> Unit,
-    onClear: () -> Unit,
-    onNegate: (() -> Unit)? = null,
-    shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
+fun ConverterActiveHeader(
+    category: ConverterCategory,
+    shapeStructureStyle: ShapeStructureStyle,
+    onBackToGrid: () -> Unit,
     isDark: Boolean,
-    primaryColor: Color,
     modifier: Modifier = Modifier
 ) {
     val cardShape = shapeStructureStyle.toCardShape()
-    val buttonShape = shapeStructureStyle.toButtonShape()
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .clip(cardShape)
-            .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), cardShape)
-            .testTag("converter_dialpad"),
+            .border(1.dp, category.accentColor.copy(alpha = 0.4f), cardShape)
+            .testTag("converter_active_header"),
         shape = cardShape,
-        color = if (isDark) Color(0xFF101726) else Color(0xFFF8FAFC)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Row 1: 7, 8, 9, ⌫ (Backspace)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                DialpadKey(text = "7", onClick = { onDigit("7") }, shape = buttonShape, isDark = isDark, modifier = Modifier.weight(1f))
-                DialpadKey(text = "8", onClick = { onDigit("8") }, shape = buttonShape, isDark = isDark, modifier = Modifier.weight(1f))
-                DialpadKey(text = "9", onClick = { onDigit("9") }, shape = buttonShape, isDark = isDark, modifier = Modifier.weight(1f))
-                DialpadActionKey(
-                    icon = Icons.AutoMirrored.Filled.Backspace,
-                    contentDescription = "Backspace",
-                    onClick = onBackspace,
-                    shape = buttonShape,
-                    isDark = isDark,
-                    tint = Color(0xFFEF4444),
-                    testTag = "dialpad_backspace",
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            // Row 2: 4, 5, 6, C (Clear)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                DialpadKey(text = "4", onClick = { onDigit("4") }, shape = buttonShape, isDark = isDark, modifier = Modifier.weight(1f))
-                DialpadKey(text = "5", onClick = { onDigit("5") }, shape = buttonShape, isDark = isDark, modifier = Modifier.weight(1f))
-                DialpadKey(text = "6", onClick = { onDigit("6") }, shape = buttonShape, isDark = isDark, modifier = Modifier.weight(1f))
-                DialpadActionKey(
-                    text = "C",
-                    onClick = onClear,
-                    shape = buttonShape,
-                    isDark = isDark,
-                    tint = Color(0xFFF59E0B),
-                    testTag = "dialpad_clear",
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            // Row 3: 1, 2, 3, ± (Negate / Sign)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                DialpadKey(text = "1", onClick = { onDigit("1") }, shape = buttonShape, isDark = isDark, modifier = Modifier.weight(1f))
-                DialpadKey(text = "2", onClick = { onDigit("2") }, shape = buttonShape, isDark = isDark, modifier = Modifier.weight(1f))
-                DialpadKey(text = "3", onClick = { onDigit("3") }, shape = buttonShape, isDark = isDark, modifier = Modifier.weight(1f))
-                DialpadActionKey(
-                    text = "±",
-                    onClick = { onNegate?.invoke() ?: onClear() },
-                    shape = buttonShape,
-                    isDark = isDark,
-                    tint = primaryColor,
-                    testTag = "dialpad_negate",
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            // Row 4: 0, 00 (Double Zero), ., AC
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                DialpadKey(text = "0", onClick = { onDigit("0") }, shape = buttonShape, isDark = isDark, modifier = Modifier.weight(1f))
-                // DOUBLE ZERO KEY
-                DialpadKey(
-                    text = "00",
-                    onClick = onDoubleZero,
-                    shape = buttonShape,
-                    isDark = isDark,
-                    isSpecial = true,
-                    specialColor = primaryColor,
-                    testTag = "key_00",
-                    modifier = Modifier.weight(1f)
-                )
-                DialpadKey(text = ".", onClick = onDecimal, shape = buttonShape, isDark = isDark, modifier = Modifier.weight(1f))
-                DialpadActionKey(
-                    text = "AC",
-                    onClick = onClear,
-                    shape = buttonShape,
-                    isDark = isDark,
-                    tint = Color(0xFFF59E0B),
-                    testTag = "dialpad_all_clear",
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DialpadKey(
-    text: String,
-    onClick: () -> Unit,
-    shape: androidx.compose.ui.graphics.Shape,
-    isDark: Boolean,
-    isSpecial: Boolean = false,
-    specialColor: Color = Color.Unspecified,
-    testTag: String = "dialpad_key_$text",
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier
-            .height(48.dp)
-            .clip(shape)
-            .border(
-                1.dp,
-                if (isSpecial) specialColor.copy(alpha = 0.5f) else (if (isDark) Color(0x20FFFFFF) else Color(0x18000000)),
-                shape
-            )
-            .clickable { onClick() }
-            .testTag(testTag),
-        shape = shape,
-        color = if (isSpecial) specialColor.copy(alpha = 0.15f) else (if (isDark) Color(0xFF182234) else Color(0xFFFFFFFF)),
-        shadowElevation = if (isDark) 0.dp else 1.dp
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = text,
-                fontSize = if (text == "00") 16.sp else 18.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = DigitalMonospaceFont,
-                color = if (isSpecial) specialColor else MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}
-
-@Composable
-private fun DialpadActionKey(
-    text: String? = null,
-    icon: ImageVector? = null,
-    contentDescription: String? = null,
-    onClick: () -> Unit,
-    shape: androidx.compose.ui.graphics.Shape,
-    isDark: Boolean,
-    tint: Color,
-    testTag: String,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier
-            .height(48.dp)
-            .clip(shape)
-            .border(1.dp, tint.copy(alpha = 0.35f), shape)
-            .clickable { onClick() }
-            .testTag(testTag),
-        shape = shape,
-        color = tint.copy(alpha = 0.12f),
-        shadowElevation = if (isDark) 0.dp else 1.dp
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = contentDescription,
-                    tint = tint,
-                    modifier = Modifier.size(18.dp)
-                )
-            } else if (text != null) {
-                Text(
-                    text = text,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = DigitalMonospaceFont,
-                    color = tint
-                )
-            }
-        }
-    }
-}
-
-// -------------------------------------------------------------------------------------------------
-// ACTIVE CONVERTER HEADER (WITH CLEAN CATEGORIES BACK BUTTON)
-// -------------------------------------------------------------------------------------------------
-@Composable
-private fun ConverterActiveHeader(
-    category: ConverterCategory,
-    shapeStructureStyle: ShapeStructureStyle,
-    onBackToGrid: () -> Unit,
-    isDark: Boolean
-) {
-    val shape = shapeStructureStyle.toCardShape()
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .border(
-                1.dp,
-                category.accentColor.copy(alpha = 0.35f),
-                shape
-            ),
-        shape = shape,
-        color = category.accentColor.copy(alpha = 0.09f)
+        color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF),
+        shadowElevation = if (isDark) 0.dp else 2.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(38.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(category.accentColor.copy(alpha = 0.22f)),
+                        .background(category.accentColor.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = category.icon,
-                        contentDescription = null,
+                        contentDescription = category.title,
                         tint = category.accentColor,
                         modifier = Modifier.size(22.dp)
                     )
                 }
+
                 Spacer(modifier = Modifier.width(12.dp))
+
                 Column {
                     Text(
                         text = category.title,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
+                        fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
@@ -651,32 +495,31 @@ private fun ConverterActiveHeader(
                 }
             }
 
-            // Back to Categories Button
+            // Back to Categories Hub Button
             Surface(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .clickable { onBackToGrid() }
-                    .testTag("back_to_categories_button"),
+                    .testTag("back_to_grid_button"),
                 shape = RoundedCornerShape(8.dp),
                 color = category.accentColor.copy(alpha = 0.18f),
                 border = androidx.compose.foundation.BorderStroke(1.dp, category.accentColor.copy(alpha = 0.5f))
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        imageVector = Icons.Default.Category,
                         contentDescription = "All Categories",
                         tint = category.accentColor,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Categories",
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
                         color = category.accentColor
                     )
                 }
@@ -686,272 +529,14 @@ private fun ConverterActiveHeader(
 }
 
 // -------------------------------------------------------------------------------------------------
-// COUNTRY & CURRENCY SEARCH AND CLICK DIALOG
+// 1. LIVE CURRENCY EXCHANGE RATE MODULE (SEARCH & CLICK MODAL PICKER)
 // -------------------------------------------------------------------------------------------------
-@Composable
-fun CountryCurrencySearchDialog(
-    currentSelectedCode: String,
-    onSelectCurrency: (CurrencyInfo) -> Unit,
-    onDismiss: () -> Unit,
-    shapeStructureStyle: ShapeStructureStyle,
-    isDark: Boolean,
-    primaryColor: Color
-) {
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedRegion by remember { mutableStateOf("All") }
-
-    val regions = listOf("All", "Americas", "Europe", "Asia", "Middle East", "Africa")
-
-    val filteredList = remember(searchQuery, selectedRegion) {
-        supportedCurrencies.filter { item ->
-            val matchesRegion = selectedRegion == "All" || item.region.equals(selectedRegion, ignoreCase = true)
-            val q = searchQuery.trim()
-            val matchesSearch = q.isEmpty() ||
-                    item.country.contains(q, ignoreCase = true) ||
-                    item.name.contains(q, ignoreCase = true) ||
-                    item.code.contains(q, ignoreCase = true) ||
-                    item.symbol.contains(q, ignoreCase = true)
-            matchesRegion && matchesSearch
-        }
-    }
-
-    val cardShape = shapeStructureStyle.toCardShape()
-    val inputShape = shapeStructureStyle.toInputShape()
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .height(560.dp)
-                .clip(cardShape)
-                .border(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x22000000), cardShape)
-                .testTag("country_currency_search_dialog"),
-            shape = cardShape,
-            color = if (isDark) Color(0xFF131C2D) else Color(0xFFFFFFFF),
-            shadowElevation = 8.dp
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            ) {
-                // Dialog Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = "Select Country & Currency",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Search across 40+ countries & live exchange rates",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.size(32.dp).testTag("close_currency_search_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Search Bar
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search country, currency name, code...", fontSize = 13.sp) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = primaryColor,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Clear Search",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    shape = inputShape,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("currency_search_input"),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = primaryColor,
-                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Region Filter Chips (Horizontal Scroll)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    regions.forEach { region ->
-                        val isSelected = selectedRegion == region
-                        Surface(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .border(
-                                    1.dp,
-                                    if (isSelected) primaryColor else (if (isDark) Color(0x22FFFFFF) else Color(0x18000000)),
-                                    RoundedCornerShape(8.dp)
-                                )
-                                .clickable { selectedRegion = region }
-                                .testTag("region_chip_$region"),
-                            color = if (isSelected) primaryColor.copy(alpha = 0.18f) else Color.Transparent
-                        ) {
-                            Text(
-                                text = region,
-                                fontSize = 11.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-                HorizontalDivider(color = if (isDark) Color(0x18FFFFFF) else Color(0x18000000))
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Results Count
-                Text(
-                    text = "${filteredList.size} countries available",
-                    fontSize = 11.sp,
-                    fontFamily = DigitalMonospaceFont,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-
-                // Searchable Country List
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .testTag("currency_search_results_list"),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    items(filteredList) { item ->
-                        val isCurrent = item.code == currentSelectedCode
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .border(
-                                    1.dp,
-                                    if (isCurrent) primaryColor else (if (isDark) Color(0x14FFFFFF) else Color(0x10000000)),
-                                    RoundedCornerShape(10.dp)
-                                )
-                                .clickable {
-                                    onSelectCurrency(item)
-                                    onDismiss()
-                                }
-                                .testTag("country_item_${item.code}"),
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (isCurrent) primaryColor.copy(alpha = 0.12f) else (if (isDark) Color(0xFF182234) else Color(0xFFF8FAFC))
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(text = item.flagEmoji, fontSize = 24.sp)
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column {
-                                        Text(
-                                            text = item.country,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = "${item.name} (${item.symbol})",
-                                            fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = if (isDark) Color(0x33FFFFFF) else Color(0x18000000)
-                                    ) {
-                                        Text(
-                                            text = item.code,
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = DigitalMonospaceFont,
-                                            fontSize = 12.sp,
-                                            color = if (isCurrent) primaryColor else MaterialTheme.colorScheme.onSurface,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                    if (isCurrent) {
-                                        Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = "Selected",
-                                            tint = primaryColor,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// -------------------------------------------------------------------------------------------------
-// 1. LIVE CURRENCY EXCHANGE RATE MODULE (5 COUNTRIES AT A TIME + SEARCH & CLICK)
-// -------------------------------------------------------------------------------------------------
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun CurrencyConverterModule(
     viewModel: ConverterViewModel,
     uiState: ConverterUiState,
+    focusedFieldId: String?,
+    onFieldClicked: (String, String) -> Unit,
     shapeStructureStyle: ShapeStructureStyle,
     onCopyToClipboard: (String, String) -> Unit,
     isDark: Boolean,
@@ -961,39 +546,44 @@ private fun CurrencyConverterModule(
     val inputShape = shapeStructureStyle.toInputShape()
     val ratesState = uiState.currencyRates
 
-    // 5 active countries list
-    val activeCodes = remember(uiState.activeCurrencyCodes) {
-        val list = uiState.activeCurrencyCodes.toMutableList()
-        val defaultFive = listOf("USD", "EUR", "GBP", "JPY", "CAD")
-        while (list.size < 5) {
-            val next = defaultFive.firstOrNull { !list.contains(it) } ?: "AUD"
-            list.add(next)
-        }
-        list.take(5)
-    }
+    val fromCurrency = supportedCurrencies.find { it.code == uiState.currencyBase } ?: supportedCurrencies[0]
+    val toCurrency = supportedCurrencies.find { it.code == uiState.currencyTarget } ?: supportedCurrencies[1]
+    val convertedAmount = viewModel.getCurrencyConvertedAmount()
+    val singleRate = viewModel.getCurrencySingleRate()
 
-    var searchDialogSlotIndex by remember { mutableStateOf<Int?>(null) }
+    // Search and Click Modal State
+    var showFromSearchSheet by remember { mutableStateOf(false) }
+    var showToSearchSheet by remember { mutableStateOf(false) }
 
-    if (searchDialogSlotIndex != null) {
-        val slot = searchDialogSlotIndex!!
-        val currentCode = activeCodes.getOrElse(slot) { "USD" }
-        CountryCurrencySearchDialog(
-            currentSelectedCode = currentCode,
-            onSelectCurrency = { selectedCurr ->
-                viewModel.setCurrencySlot(slot, selectedCurr.code)
+    val isAmountFocused = focusedFieldId == "currency_amount"
+
+    // Searchable Currency Bottom Sheets
+    if (showFromSearchSheet) {
+        CurrencySearchBottomSheet(
+            title = "Select Source Currency",
+            selectedCurrencyCode = uiState.currencyBase,
+            onSelectCurrency = { selected ->
+                viewModel.setCurrencyBase(selected.code)
+                showFromSearchSheet = false
             },
-            onDismiss = { searchDialogSlotIndex = null },
-            shapeStructureStyle = shapeStructureStyle,
-            isDark = isDark,
-            primaryColor = primaryColor
+            onDismissRequest = { showFromSearchSheet = false }
         )
     }
 
-    val baseCurrencyInfo = supportedCurrencies.find { it.code == uiState.currencyBase }
-        ?: supportedCurrencies.first()
+    if (showToSearchSheet) {
+        CurrencySearchBottomSheet(
+            title = "Select Target Currency",
+            selectedCurrencyCode = uiState.currencyTarget,
+            onSelectCurrency = { selected ->
+                viewModel.setCurrencyTarget(selected.code)
+                showToSearchSheet = false
+            },
+            onDismissRequest = { showToSearchSheet = false }
+        )
+    }
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Live Status & Refresh Bar
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // Status & Refresh Bar
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1018,7 +608,7 @@ private fun CurrencyConverterModule(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (ratesState.isLiveOnline) "Live Rates (${ratesState.lastUpdated.take(16)})" else "Live Rates (Cached)",
+                        text = if (ratesState.isLiveOnline) "Live Rates (${ratesState.lastUpdated.take(16)})" else "Cached Rates",
                         fontSize = 11.sp,
                         fontFamily = DigitalMonospaceFont,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1045,77 +635,27 @@ private fun CurrencyConverterModule(
             }
         }
 
-        // BASE CURRENCY INPUT CARD
+        // FROM CURRENCY CARD
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(cardShape)
-                .border(1.5.dp, primaryColor.copy(alpha = 0.5f), cardShape),
+                .border(
+                    1.dp,
+                    if (isAmountFocused) primaryColor.copy(alpha = 0.8f) else if (isDark) Color(0x22FFFFFF) else Color(0x18000000),
+                    cardShape
+                ),
             shape = cardShape,
             color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = primaryColor.copy(alpha = 0.18f)
-                        ) {
-                            Text(
-                                text = "BASE INPUT",
-                                fontSize = 10.sp,
-                                fontFamily = DigitalMonospaceFont,
-                                fontWeight = FontWeight.Bold,
-                                color = primaryColor,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = baseCurrencyInfo.country,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-
-                    // Click to search & replace Base Country
-                    Surface(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .border(1.dp, primaryColor.copy(alpha = 0.35f), RoundedCornerShape(6.dp))
-                            .clickable {
-                                val baseIndex = activeCodes.indexOf(uiState.currencyBase).let { if (it >= 0) it else 0 }
-                                searchDialogSlotIndex = baseIndex
-                            }
-                            .testTag("search_change_base_button"),
-                        color = primaryColor.copy(alpha = 0.1f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "Search Country",
-                                tint = primaryColor,
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Search Country",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = primaryColor
-                            )
-                        }
-                    }
-                }
-
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "FROM (SOURCE)",
+                    fontSize = 11.sp,
+                    fontFamily = DigitalMonospaceFont,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
@@ -1123,67 +663,111 @@ private fun CurrencyConverterModule(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = baseCurrencyInfo.flagEmoji, fontSize = 28.sp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = baseCurrencyInfo.code,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = DigitalMonospaceFont,
-                                fontSize = 18.sp,
-                                color = primaryColor
-                            )
-                            Text(
-                                text = baseCurrencyInfo.name,
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    // Search & Click Picker Button
+                    Surface(
+                        modifier = Modifier
+                            .clip(inputShape)
+                            .border(1.dp, primaryColor.copy(alpha = 0.5f), inputShape)
+                            .clickable { showFromSearchSheet = true }
+                            .testTag("currency_from_picker"),
+                        shape = inputShape,
+                        color = primaryColor.copy(alpha = 0.12f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = fromCurrency.flagEmoji, fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = fromCurrency.code,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp
+                                )
+                                Text(
+                                    text = fromCurrency.symbol,
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search Currency",
+                                tint = primaryColor,
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                     }
 
-                    // Editable Amount Input
-                    OutlinedTextField(
-                        value = uiState.currencyAmount,
-                        onValueChange = { viewModel.setCurrencyAmount(it) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            textAlign = TextAlign.End
-                        ),
+                    // Smart Data-Entry Amount Input Box
+                    Surface(
                         modifier = Modifier
-                            .width(150.dp)
+                            .width(170.dp)
+                            .clip(inputShape)
+                            .border(
+                                1.5.dp,
+                                if (isAmountFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                inputShape
+                            )
+                            .clickable {
+                                onFieldClicked("currency_amount", "Amount in ${fromCurrency.code}")
+                            }
                             .testTag("currency_amount_input"),
                         shape = inputShape,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = primaryColor,
-                            unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
-                        )
-                    )
+                        color = if (isAmountFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            if (isAmountFocused) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Editing",
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
+                            Text(
+                                text = uiState.currencyAmount,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = if (isAmountFocused) primaryColor else MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.End,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
-
                 // Quick Amount Presets
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    listOf("10", "50", "100", "500", "1,000", "5,000").forEach { preset ->
+                    listOf("10", "50", "100", "500", "1,000").forEach { preset ->
                         val clean = preset.replace(",", "")
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(8.dp))
                                 .border(1.dp, if (isDark) Color(0x18FFFFFF) else Color(0x18000000), RoundedCornerShape(8.dp))
-                                .clickable { viewModel.setCurrencyAmount(clean) },
+                                .clickable {
+                                    viewModel.setCurrencyAmount(clean)
+                                    onFieldClicked("currency_amount", "Amount in ${fromCurrency.code}")
+                                },
                             color = if (uiState.currencyAmount == clean) primaryColor.copy(alpha = 0.2f) else Color.Transparent
                         ) {
                             Text(
                                 text = preset,
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontFamily = DigitalMonospaceFont,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(vertical = 4.dp),
@@ -1195,166 +779,141 @@ private fun CurrencyConverterModule(
             }
         }
 
-        // 5 COUNTRIES MULTI-EXCHANGE BOARD
-        Text(
-            text = "5 COUNTRIES REAL-TIME EXCHANGE (CLICK TO SELECT / SEARCH)",
-            fontSize = 11.sp,
-            fontFamily = DigitalMonospaceFont,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-        )
-
-        // Render 5 Countries Simultaneously
-        activeCodes.forEachIndexed { index, code ->
-            val curr = supportedCurrencies.find { it.code == code } ?: supportedCurrencies[0]
-            val isBase = code == uiState.currencyBase
-            val convertedVal = if (isBase) uiState.currencyAmount else viewModel.getConvertedAmountFor(code)
-            val singleRate = viewModel.getSingleRateFor(code)
-
+        // SWAP BUTTON
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
             Surface(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(cardShape)
-                    .border(
-                        1.dp,
-                        if (isBase) primaryColor else (if (isDark) Color(0x22FFFFFF) else Color(0x18000000)),
-                        cardShape
-                    )
-                    .clickable {
-                        // Click makes this country the active base!
-                        if (!isBase) {
-                            viewModel.setCurrencyBase(code)
-                        }
-                    }
-                    .testTag("currency_slot_$index"),
-                shape = cardShape,
-                color = if (isBase) primaryColor.copy(alpha = 0.12f) else (if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF))
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .border(1.dp, primaryColor.copy(alpha = 0.5f), CircleShape)
+                    .clickable { viewModel.swapCurrency() }
+                    .testTag("currency_swap_button"),
+                shape = CircleShape,
+                color = if (isDark) Color(0xFF1B2436) else Color(0xFFF1F5F9),
+                shadowElevation = 4.dp
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Country Details & Search Option Button
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(text = curr.flagEmoji, fontSize = 26.sp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = curr.code,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = DigitalMonospaceFont,
-                                    fontSize = 15.sp,
-                                    color = if (isBase) primaryColor else MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                if (isBase) {
-                                    Surface(
-                                        shape = RoundedCornerShape(4.dp),
-                                        color = primaryColor.copy(alpha = 0.25f)
-                                    ) {
-                                        Text(
-                                            text = "BASE",
-                                            fontSize = 9.sp,
-                                            fontFamily = DigitalMonospaceFont,
-                                            fontWeight = FontWeight.Bold,
-                                            color = primaryColor,
-                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                        )
-                                    }
-                                }
-                            }
-                            Text(
-                                text = curr.country,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            if (!isBase) {
-                                Text(
-                                    text = "1 ${uiState.currencyBase} = $singleRate ${curr.symbol}",
-                                    fontSize = 10.sp,
-                                    fontFamily = DigitalMonospaceFont,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                                )
-                            }
-                        }
-                    }
-
-                    // Converted Value & Search/Change Button
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = "${curr.symbol} $convertedVal",
-                                fontSize = 17.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = DigitalMonospaceFont,
-                                color = if (isBase) primaryColor else MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.testTag("currency_result_text_$index")
-                            )
-                        }
-
-                        IconButton(
-                            onClick = { onCopyToClipboard(convertedVal, "${curr.country} (${curr.code})") },
-                            modifier = Modifier.size(32.dp).testTag("copy_currency_$index")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ContentCopy,
-                                contentDescription = "Copy Value",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-
-                        // Search & Change Country Button for this slot
-                        Surface(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .border(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x22000000), CircleShape)
-                                .clickable { searchDialogSlotIndex = index }
-                                .testTag("search_slot_button_$index"),
-                            shape = CircleShape,
-                            color = if (isDark) Color(0xFF1B2436) else Color(0xFFF1F5F9)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = "Search & Change Country",
-                                    tint = primaryColor,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-                        }
-                    }
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.SwapVert,
+                        contentDescription = "Swap Currency",
+                        tint = primaryColor,
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
             }
         }
 
-        // Interactive Dialpad with 00 Double Zero
-        ConverterDialpad(
-            onDigit = { viewModel.appendActiveValue(it) },
-            onDoubleZero = { viewModel.appendActiveValue("00") },
-            onDecimal = { viewModel.appendActiveValue(".") },
-            onBackspace = { viewModel.backspaceActiveValue() },
-            onClear = { viewModel.clearActiveValue() },
-            onNegate = null,
-            shapeStructureStyle = shapeStructureStyle,
-            isDark = isDark,
-            primaryColor = primaryColor
-        )
+        // TO (TARGET) CURRENCY CARD
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(cardShape)
+                .border(1.dp, primaryColor.copy(alpha = 0.35f), cardShape),
+            shape = cardShape,
+            color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "TO (CONVERTED RESULT)",
+                    fontSize = 11.sp,
+                    fontFamily = DigitalMonospaceFont,
+                    fontWeight = FontWeight.Bold,
+                    color = primaryColor
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Search & Click Picker Button
+                    Surface(
+                        modifier = Modifier
+                            .clip(inputShape)
+                            .border(1.dp, primaryColor.copy(alpha = 0.5f), inputShape)
+                            .clickable { showToSearchSheet = true }
+                            .testTag("currency_to_picker"),
+                        shape = inputShape,
+                        color = primaryColor.copy(alpha = 0.12f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = toCurrency.flagEmoji, fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = toCurrency.code,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp
+                                )
+                                Text(
+                                    text = toCurrency.symbol,
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search Currency",
+                                tint = primaryColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    // Result Display & Copy Button
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = convertedAmount,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = primaryColor,
+                            modifier = Modifier.testTag("currency_result_text")
+                        )
+                        IconButton(
+                            onClick = { onCopyToClipboard(convertedAmount, "Converted Currency") },
+                            modifier = Modifier.testTag("copy_currency_result_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = "Copy",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(color = if (isDark) Color(0x18FFFFFF) else Color(0x18000000))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "1 ${fromCurrency.code} = $singleRate ${toCurrency.code}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = toCurrency.name,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -1365,6 +924,8 @@ private fun CurrencyConverterModule(
 private fun BmiConverterModule(
     viewModel: ConverterViewModel,
     uiState: ConverterUiState,
+    focusedFieldId: String?,
+    onFieldClicked: (String, String) -> Unit,
     shapeStructureStyle: ShapeStructureStyle,
     onCopyToClipboard: (String, String) -> Unit,
     isDark: Boolean,
@@ -1423,7 +984,7 @@ private fun BmiConverterModule(
             }
         }
 
-        // Input Fields
+        // Smart Input Fields
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1438,70 +999,149 @@ private fun BmiConverterModule(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        OutlinedTextField(
-                            value = uiState.bmiWeightMetricKg,
-                            onValueChange = { viewModel.setBmiMetricWeight(it) },
-                            label = { Text("Weight (kg)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            singleLine = true,
-                            modifier = Modifier
-                                .weight(1f)
-                                .testTag("bmi_input_weight_metric"),
-                            shape = inputShape
-                        )
+                        val isWeightFocused = focusedFieldId == "bmi_weight_metric"
+                        val isHeightFocused = focusedFieldId == "bmi_height_metric"
 
-                        OutlinedTextField(
-                            value = uiState.bmiHeightMetricCm,
-                            onValueChange = { viewModel.setBmiMetricHeight(it) },
-                            label = { Text("Height (cm)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            singleLine = true,
+                        // Weight Metric
+                        Surface(
                             modifier = Modifier
                                 .weight(1f)
+                                .clip(inputShape)
+                                .border(
+                                    1.5.dp,
+                                    if (isWeightFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                    inputShape
+                                )
+                                .clickable { onFieldClicked("bmi_weight_metric", "Weight (kg)") }
+                                .testTag("bmi_input_weight_metric"),
+                            shape = inputShape,
+                            color = if (isWeightFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                        ) {
+                            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                                Text("Weight (kg)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    text = uiState.bmiWeightMetricKg,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = if (isWeightFocused) primaryColor else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        // Height Metric
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(inputShape)
+                                .border(
+                                    1.5.dp,
+                                    if (isHeightFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                    inputShape
+                                )
+                                .clickable { onFieldClicked("bmi_height_metric", "Height (cm)") }
                                 .testTag("bmi_input_height_metric"),
-                            shape = inputShape
-                        )
+                            shape = inputShape,
+                            color = if (isHeightFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                        ) {
+                            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                                Text("Height (cm)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    text = uiState.bmiHeightMetricCm,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = if (isHeightFocused) primaryColor else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
                     }
                 } else {
-                    OutlinedTextField(
-                        value = uiState.bmiWeightImperialLbs,
-                        onValueChange = { viewModel.setBmiImperialWeight(it) },
-                        label = { Text("Weight (lbs)") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
+                    val isImpWeightFocused = focusedFieldId == "bmi_weight_imperial"
+                    val isFeetFocused = focusedFieldId == "bmi_feet_imperial"
+                    val isInchesFocused = focusedFieldId == "bmi_inches_imperial"
+
+                    Surface(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clip(inputShape)
+                            .border(
+                                1.5.dp,
+                                if (isImpWeightFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                inputShape
+                            )
+                            .clickable { onFieldClicked("bmi_weight_imperial", "Weight (lbs)") }
                             .testTag("bmi_input_weight_imperial"),
-                        shape = inputShape
-                    )
+                        shape = inputShape,
+                        color = if (isImpWeightFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                            Text("Weight (lbs)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = uiState.bmiWeightImperialLbs,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = if (isImpWeightFocused) primaryColor else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        OutlinedTextField(
-                            value = uiState.bmiHeightImperialFeet,
-                            onValueChange = { viewModel.setBmiImperialFeet(it) },
-                            label = { Text("Height (Feet)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
+                        Surface(
                             modifier = Modifier
                                 .weight(1f)
+                                .clip(inputShape)
+                                .border(
+                                    1.5.dp,
+                                    if (isFeetFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                    inputShape
+                                )
+                                .clickable { onFieldClicked("bmi_feet_imperial", "Height (Feet)") }
                                 .testTag("bmi_input_feet"),
-                            shape = inputShape
-                        )
+                            shape = inputShape,
+                            color = if (isFeetFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                        ) {
+                            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                                Text("Height (Feet)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    text = uiState.bmiHeightImperialFeet,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = if (isFeetFocused) primaryColor else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
 
-                        OutlinedTextField(
-                            value = uiState.bmiHeightImperialInches,
-                            onValueChange = { viewModel.setBmiImperialInches(it) },
-                            label = { Text("Inches (0-11)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
+                        Surface(
                             modifier = Modifier
                                 .weight(1f)
+                                .clip(inputShape)
+                                .border(
+                                    1.5.dp,
+                                    if (isInchesFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                    inputShape
+                                )
+                                .clickable { onFieldClicked("bmi_inches_imperial", "Inches (0-11)") }
                                 .testTag("bmi_input_inches"),
-                            shape = inputShape
-                        )
+                            shape = inputShape,
+                            color = if (isInchesFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                        ) {
+                            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                                Text("Inches (0-11)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    text = uiState.bmiHeightImperialInches,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = if (isInchesFocused) primaryColor else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1567,7 +1207,7 @@ private fun BmiConverterModule(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Progress Bar representation (10 to 45 scale)
+                // Progress Bar representation
                 val progressFraction = ((bmiResult.bmiValue - 10.0) / 35.0).coerceIn(0.0, 1.0).toFloat()
                 LinearProgressIndicator(
                     progress = { progressFraction },
@@ -1618,30 +1258,18 @@ private fun BmiConverterModule(
                 }
             }
         }
-
-        // Interactive Dialpad with 00 Double Zero
-        ConverterDialpad(
-            onDigit = { viewModel.appendActiveValue(it) },
-            onDoubleZero = { viewModel.appendActiveValue("00") },
-            onDecimal = { viewModel.appendActiveValue(".") },
-            onBackspace = { viewModel.backspaceActiveValue() },
-            onClear = { viewModel.clearActiveValue() },
-            onNegate = null,
-            shapeStructureStyle = shapeStructureStyle,
-            isDark = isDark,
-            primaryColor = primaryColor
-        )
     }
 }
 
 // -------------------------------------------------------------------------------------------------
 // 3. STANDARD UNITS CONVERTER MODULE (Length, Area, Volume, Weight, Speed, Pressure, Power)
 // -------------------------------------------------------------------------------------------------
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StandardUnitsConverterModule(
     viewModel: ConverterViewModel,
     uiState: ConverterUiState,
+    focusedFieldId: String?,
+    onFieldClicked: (String, String) -> Unit,
     shapeStructureStyle: ShapeStructureStyle,
     onCopyToClipboard: (String, String) -> Unit,
     isDark: Boolean,
@@ -1658,13 +1286,19 @@ private fun StandardUnitsConverterModule(
     var showFromMenu by remember { mutableStateOf(false) }
     var showToMenu by remember { mutableStateOf(false) }
 
+    val isInputFocused = focusedFieldId == "standard_input"
+
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         // FROM CARD
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(cardShape)
-                .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), cardShape),
+                .border(
+                    1.dp,
+                    if (isInputFocused) primaryColor.copy(alpha = 0.8f) else if (isDark) Color(0x22FFFFFF) else Color(0x18000000),
+                    cardShape
+                ),
             shape = cardShape,
             color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
         ) {
@@ -1722,22 +1356,49 @@ private fun StandardUnitsConverterModule(
                         }
                     }
 
-                    // Value input
-                    OutlinedTextField(
-                        value = uiState.standardInput,
-                        onValueChange = { viewModel.setStandardInput(it) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            textAlign = TextAlign.End
-                        ),
+                    // Value input box (smart keypad trigger)
+                    Surface(
                         modifier = Modifier
                             .width(160.dp)
+                            .clip(inputShape)
+                            .border(
+                                1.5.dp,
+                                if (isInputFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                inputShape
+                            )
+                            .clickable {
+                                onFieldClicked("standard_input", "${fromUnit.name} (${fromUnit.symbol})")
+                            }
                             .testTag("standard_value_input"),
-                        shape = inputShape
-                    )
+                        shape = inputShape,
+                        color = if (isInputFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            if (isInputFocused) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Editing",
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
+                            Text(
+                                text = uiState.standardInput,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = if (isInputFocused) primaryColor else MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.End,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -1902,19 +1563,6 @@ private fun StandardUnitsConverterModule(
                 }
             }
         }
-
-        // Interactive Dialpad with 00 Double Zero
-        ConverterDialpad(
-            onDigit = { viewModel.appendActiveValue(it) },
-            onDoubleZero = { viewModel.appendActiveValue("00") },
-            onDecimal = { viewModel.appendActiveValue(".") },
-            onBackspace = { viewModel.backspaceActiveValue() },
-            onClear = { viewModel.clearActiveValue() },
-            onNegate = { viewModel.negateActiveValue() },
-            shapeStructureStyle = shapeStructureStyle,
-            isDark = isDark,
-            primaryColor = primaryColor
-        )
     }
 }
 
@@ -1925,6 +1573,8 @@ private fun StandardUnitsConverterModule(
 private fun TemperatureConverterModule(
     viewModel: ConverterViewModel,
     uiState: ConverterUiState,
+    focusedFieldId: String?,
+    onFieldClicked: (String, String) -> Unit,
     shapeStructureStyle: ShapeStructureStyle,
     onCopyToClipboard: (String, String) -> Unit,
     isDark: Boolean,
@@ -1939,13 +1589,19 @@ private fun TemperatureConverterModule(
     var showFromMenu by remember { mutableStateOf(false) }
     var showToMenu by remember { mutableStateOf(false) }
 
+    val isTempFocused = focusedFieldId == "temp_input"
+
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         // Temperature Input Card
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(cardShape)
-                .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), cardShape),
+                .border(
+                    1.dp,
+                    if (isTempFocused) primaryColor.copy(alpha = 0.8f) else if (isDark) Color(0x22FFFFFF) else Color(0x18000000),
+                    cardShape
+                ),
             shape = cardShape,
             color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
         ) {
@@ -1998,21 +1654,49 @@ private fun TemperatureConverterModule(
                         }
                     }
 
-                    OutlinedTextField(
-                        value = uiState.tempInput,
-                        onValueChange = { viewModel.setTempInput(it) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            textAlign = TextAlign.End
-                        ),
+                    // Smart Input Field
+                    Surface(
                         modifier = Modifier
                             .width(160.dp)
+                            .clip(inputShape)
+                            .border(
+                                1.5.dp,
+                                if (isTempFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                inputShape
+                            )
+                            .clickable {
+                                onFieldClicked("temp_input", "Temperature (${uiState.tempFromUnit.symbol})")
+                            }
                             .testTag("temp_input_field"),
-                        shape = inputShape
-                    )
+                        shape = inputShape,
+                        color = if (isTempFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            if (isTempFocused) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Editing",
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
+                            Text(
+                                text = uiState.tempInput,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = if (isTempFocused) primaryColor else MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.End,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -2183,19 +1867,6 @@ private fun TemperatureConverterModule(
                 }
             }
         }
-
-        // Interactive Dialpad with 00 Double Zero
-        ConverterDialpad(
-            onDigit = { viewModel.appendActiveValue(it) },
-            onDoubleZero = { viewModel.appendActiveValue("00") },
-            onDecimal = { viewModel.appendActiveValue(".") },
-            onBackspace = { viewModel.backspaceActiveValue() },
-            onClear = { viewModel.clearActiveValue() },
-            onNegate = { viewModel.negateActiveValue() },
-            shapeStructureStyle = shapeStructureStyle,
-            isDark = isDark,
-            primaryColor = primaryColor
-        )
     }
 }
 
@@ -2206,6 +1877,8 @@ private fun TemperatureConverterModule(
 private fun NumberSystemConverterModule(
     viewModel: ConverterViewModel,
     uiState: ConverterUiState,
+    focusedFieldId: String?,
+    onFieldClicked: (String, String) -> Unit,
     shapeStructureStyle: ShapeStructureStyle,
     onCopyToClipboard: (String, String) -> Unit,
     isDark: Boolean,
@@ -2216,12 +1889,12 @@ private fun NumberSystemConverterModule(
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Decimal Base 10
-        NumberBaseCard(
+        SmartNumberBaseCard(
             label = "Decimal (Base 10)",
             prefix = "DEC",
             value = uiState.numDecimal,
-            onValueChange = { viewModel.onNumberSystemChanged(10, it) },
-            keyboardType = KeyboardType.Number,
+            isFocused = focusedFieldId == "num_decimal",
+            onCardClicked = { onFieldClicked("num_decimal", "Decimal (Base 10)") },
             onCopy = { onCopyToClipboard(uiState.numDecimal, "Decimal") },
             inputShape = inputShape,
             cardShape = cardShape,
@@ -2231,12 +1904,12 @@ private fun NumberSystemConverterModule(
         )
 
         // Binary Base 2
-        NumberBaseCard(
+        SmartNumberBaseCard(
             label = "Binary (Base 2) [Nibbles 4-bit]",
             prefix = "BIN",
             value = uiState.numBinary,
-            onValueChange = { viewModel.onNumberSystemChanged(2, it) },
-            keyboardType = KeyboardType.Number,
+            isFocused = focusedFieldId == "num_binary",
+            onCardClicked = { onFieldClicked("num_binary", "Binary (Base 2)") },
             onCopy = { onCopyToClipboard(uiState.numBinary, "Binary") },
             inputShape = inputShape,
             cardShape = cardShape,
@@ -2246,12 +1919,12 @@ private fun NumberSystemConverterModule(
         )
 
         // Hexadecimal Base 16
-        NumberBaseCard(
+        SmartNumberBaseCard(
             label = "Hexadecimal (Base 16)",
             prefix = "0x",
             value = uiState.numHex,
-            onValueChange = { viewModel.onNumberSystemChanged(16, it) },
-            keyboardType = KeyboardType.Text,
+            isFocused = focusedFieldId == "num_hex",
+            onCardClicked = { onFieldClicked("num_hex", "Hexadecimal (Base 16)") },
             onCopy = { onCopyToClipboard(uiState.numHex, "Hexadecimal") },
             inputShape = inputShape,
             cardShape = cardShape,
@@ -2261,12 +1934,12 @@ private fun NumberSystemConverterModule(
         )
 
         // Octal Base 8
-        NumberBaseCard(
+        SmartNumberBaseCard(
             label = "Octal (Base 8)",
             prefix = "0o",
             value = uiState.numOctal,
-            onValueChange = { viewModel.onNumberSystemChanged(8, it) },
-            keyboardType = KeyboardType.Number,
+            isFocused = focusedFieldId == "num_octal",
+            onCardClicked = { onFieldClicked("num_octal", "Octal (Base 8)") },
             onCopy = { onCopyToClipboard(uiState.numOctal, "Octal") },
             inputShape = inputShape,
             cardShape = cardShape,
@@ -2325,7 +1998,8 @@ private fun NumberSystemConverterModule(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text("Bit Length (Active Bits)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("${java.lang.Long.toBinaryString(decLong).length} bits", fontSize = 13.sp, fontFamily = DigitalMonospaceFont, color = MaterialTheme.colorScheme.onSurface)
+                    val bitLength = if (decLong == 0L) 1 else java.lang.Long.toBinaryString(decLong).length
+                    Text("$bitLength bits", fontSize = 13.sp, fontFamily = DigitalMonospaceFont, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         }
@@ -2333,12 +2007,12 @@ private fun NumberSystemConverterModule(
 }
 
 @Composable
-private fun NumberBaseCard(
+private fun SmartNumberBaseCard(
     label: String,
     prefix: String,
     value: String,
-    onValueChange: (String) -> Unit,
-    keyboardType: KeyboardType,
+    isFocused: Boolean,
+    onCardClicked: () -> Unit,
     onCopy: () -> Unit,
     inputShape: androidx.compose.ui.graphics.Shape,
     cardShape: androidx.compose.ui.graphics.Shape,
@@ -2350,7 +2024,12 @@ private fun NumberBaseCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(cardShape)
-            .border(1.dp, accentColor.copy(alpha = 0.35f), cardShape),
+            .border(
+                1.dp,
+                if (isFocused) accentColor else accentColor.copy(alpha = 0.35f),
+                cardShape
+            )
+            .clickable { onCardClicked() },
         shape = cardShape,
         color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
     ) {
@@ -2383,34 +2062,51 @@ private fun NumberBaseCard(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-                singleLine = true,
-                leadingIcon = {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(inputShape)
+                    .border(
+                        1.5.dp,
+                        if (isFocused) accentColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                        inputShape
+                    )
+                    .testTag(testTag),
+                shape = inputShape,
+                color = if (isFocused) accentColor.copy(alpha = 0.08f) else Color.Transparent
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         text = prefix,
                         fontWeight = FontWeight.Bold,
                         fontFamily = DigitalMonospaceFont,
                         color = accentColor,
-                        fontSize = 13.sp,
-                        modifier = Modifier.padding(start = 12.dp)
+                        fontSize = 13.sp
                     )
-                },
-                textStyle = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = DigitalMonospaceFont
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag(testTag),
-                shape = inputShape,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = accentColor,
-                    unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
-                )
-            )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = value.ifEmpty { "0" },
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        fontSize = 16.sp,
+                        color = if (isFocused) accentColor else MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    if (isFocused) {
+                        Icon(
+                            imageVector = Icons.Default.Keyboard,
+                            contentDescription = "Active Keypad",
+                            tint = accentColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }

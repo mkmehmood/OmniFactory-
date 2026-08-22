@@ -1,21 +1,61 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# ==============================================================================
+# ProGuard / R8 Optimization & Obfuscation Rules
+# ==============================================================================
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Preserve source file & line numbers for de-obfuscation in crash reports / stack traces
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Preserve standard reflection and annotation attributes
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod,Exceptions
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# ------------------------------------------------------------------------------
+# Kotlin Coroutines & Standard Library
+# ------------------------------------------------------------------------------
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+-keepclassmembernames class kotlinx.coroutines.** {
+    volatile <fields>;
+}
+
+# ------------------------------------------------------------------------------
+# Jetpack Compose Internals
+# ------------------------------------------------------------------------------
+-keep class androidx.compose.runtime.** { *; }
+-keepclassmembers class * {
+    @androidx.compose.runtime.Composable *;
+}
+
+# ------------------------------------------------------------------------------
+# Moshi & Retrofit Serialization (Reflection & Codegen)
+# ------------------------------------------------------------------------------
+-keepclasseswithmembers class * {
+    @com.squareup.moshi.Json <fields>;
+}
+-keepclasseswithmembers class * {
+    @com.squareup.moshi.JsonQualifier <fields>;
+}
+-keep class * extends com.squareup.moshi.JsonAdapter { *; }
+-keepclassmembers enum * { *; }
+
+-keepattributes EnclosingMethod
+-keepclassmembers,allowobfuscation interface * {
+    @retrofit2.http.* <methods>;
+}
+
+# ------------------------------------------------------------------------------
+# Room Database
+# ------------------------------------------------------------------------------
+-keep class * extends androidx.room.RoomDatabase
+-keep @androidx.room.Entity class * { *; }
+-keep @androidx.room.Dao interface * { *; }
+-dontwarn androidx.room.paging.**
+
+# ------------------------------------------------------------------------------
+# Firebase & Google Play Services
+# ------------------------------------------------------------------------------
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+-dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.**
+

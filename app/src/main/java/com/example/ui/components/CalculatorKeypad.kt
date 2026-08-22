@@ -20,11 +20,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.KeyboardHide
 import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Surface
+import com.example.ui.theme.toButtonShape
+import com.example.ui.theme.toCardShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -554,6 +561,362 @@ private fun LiquidGlassKey(
                 fontWeight = if (type == KeyType.EQUALS || type == KeyType.OPERATOR || type == KeyType.DOUBLE_ZERO) FontWeight.Bold else FontWeight.Medium,
                 fontFamily = FontFamily.SansSerif
             )
+        }
+    }
+}
+
+/**
+ * Universal, high-efficiency Smart Station Keypad for dedicated inputs (Converter, Sales, Mixture, Batch, etc.)
+ * Provides haptic/audio feedback, physics animations, double-zero key, and dismiss actions.
+ */
+@Composable
+fun SmartStationKeypad(
+    activeFieldLabel: String? = null,
+    onDigit: (String) -> Unit,
+    onDoubleZero: (() -> Unit)? = null,
+    onDecimal: (() -> Unit)? = null,
+    onBackspace: () -> Unit,
+    onClear: () -> Unit,
+    onNegate: (() -> Unit)? = null,
+    onDone: (() -> Unit)? = null,
+    showDoubleZeroKey: Boolean = true,
+    showNegateKey: Boolean = false,
+    showDecimalKey: Boolean = true,
+    animationIntensity: AnimationIntensity = AnimationIntensity.BALANCED,
+    hapticIntensity: HapticIntensity = HapticIntensity.MEDIUM,
+    soundIntensity: SoundIntensity = SoundIntensity.STANDARD,
+    componentSizeStyle: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
+    shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val view = LocalView.current
+    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val primaryColor = MaterialTheme.colorScheme.primary
+
+    val triggerFeedback = {
+        HapticFeedbackHelper.performKeypadTap(context, view, hapticIntensity)
+        SoundFeedbackHelper.playClickSound(context, view, soundIntensity)
+    }
+
+    val spacing = 8.dp
+    val cardShape = shapeStructureStyle.toCardShape()
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(cardShape)
+            .border(
+                1.dp,
+                if (isDark) Color(0x22FFFFFF) else Color(0x18000000),
+                cardShape
+            )
+            .testTag("smart_station_keypad"),
+        shape = cardShape,
+        color = if (isDark) Color(0xFF131C2E) else Color(0xFFFFFFFF),
+        shadowElevation = if (isDark) 0.dp else 4.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(spacing)
+        ) {
+            // Active Field Header & Hide Keypad Button
+            if (activeFieldLabel != null || onDone != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (activeFieldLabel != null) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = primaryColor.copy(alpha = 0.12f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
+                        ) {
+                            Text(
+                                text = "⌨️ $activeFieldLabel",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = primaryColor,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.width(1.dp))
+                    }
+
+                    if (onDone != null) {
+                        Surface(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    triggerFeedback()
+                                    onDone()
+                                }
+                                .testTag("smart_keypad_done_button"),
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isDark) Color(0x20FFFFFF) else Color(0x15000000)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Done",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = primaryColor
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardHide,
+                                    contentDescription = "Hide Keypad",
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Row 1: 7, 8, 9, ⌫
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(spacing)
+            ) {
+                LiquidGlassKey(
+                    text = "7",
+                    type = KeyType.NUMBER,
+                    onClick = { triggerFeedback(); onDigit("7") },
+                    testTag = "key_7",
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
+                    shapeStructureStyle = shapeStructureStyle,
+                    modifier = Modifier.weight(1f)
+                )
+                LiquidGlassKey(
+                    text = "8",
+                    type = KeyType.NUMBER,
+                    onClick = { triggerFeedback(); onDigit("8") },
+                    testTag = "key_8",
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
+                    shapeStructureStyle = shapeStructureStyle,
+                    modifier = Modifier.weight(1f)
+                )
+                LiquidGlassKey(
+                    text = "9",
+                    type = KeyType.NUMBER,
+                    onClick = { triggerFeedback(); onDigit("9") },
+                    testTag = "key_9",
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
+                    shapeStructureStyle = shapeStructureStyle,
+                    modifier = Modifier.weight(1f)
+                )
+                LiquidGlassKey(
+                    icon = Icons.AutoMirrored.Filled.Backspace,
+                    iconContentDescription = "Backspace",
+                    type = KeyType.ACTION,
+                    onClick = { triggerFeedback(); onBackspace() },
+                    testTag = "key_backspace",
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
+                    shapeStructureStyle = shapeStructureStyle,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // Row 2: 4, 5, 6, C (Clear)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(spacing)
+            ) {
+                LiquidGlassKey(
+                    text = "4",
+                    type = KeyType.NUMBER,
+                    onClick = { triggerFeedback(); onDigit("4") },
+                    testTag = "key_4",
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
+                    shapeStructureStyle = shapeStructureStyle,
+                    modifier = Modifier.weight(1f)
+                )
+                LiquidGlassKey(
+                    text = "5",
+                    type = KeyType.NUMBER,
+                    onClick = { triggerFeedback(); onDigit("5") },
+                    testTag = "key_5",
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
+                    shapeStructureStyle = shapeStructureStyle,
+                    modifier = Modifier.weight(1f)
+                )
+                LiquidGlassKey(
+                    text = "6",
+                    type = KeyType.NUMBER,
+                    onClick = { triggerFeedback(); onDigit("6") },
+                    testTag = "key_6",
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
+                    shapeStructureStyle = shapeStructureStyle,
+                    modifier = Modifier.weight(1f)
+                )
+                LiquidGlassKey(
+                    text = "C",
+                    type = KeyType.ACTION,
+                    onClick = { triggerFeedback(); onClear() },
+                    testTag = "key_clear",
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
+                    shapeStructureStyle = shapeStructureStyle,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // Row 3: 1, 2, 3, ± (or AC)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(spacing)
+            ) {
+                LiquidGlassKey(
+                    text = "1",
+                    type = KeyType.NUMBER,
+                    onClick = { triggerFeedback(); onDigit("1") },
+                    testTag = "key_1",
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
+                    shapeStructureStyle = shapeStructureStyle,
+                    modifier = Modifier.weight(1f)
+                )
+                LiquidGlassKey(
+                    text = "2",
+                    type = KeyType.NUMBER,
+                    onClick = { triggerFeedback(); onDigit("2") },
+                    testTag = "key_2",
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
+                    shapeStructureStyle = shapeStructureStyle,
+                    modifier = Modifier.weight(1f)
+                )
+                LiquidGlassKey(
+                    text = "3",
+                    type = KeyType.NUMBER,
+                    onClick = { triggerFeedback(); onDigit("3") },
+                    testTag = "key_3",
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
+                    shapeStructureStyle = shapeStructureStyle,
+                    modifier = Modifier.weight(1f)
+                )
+                if (showNegateKey && onNegate != null) {
+                    LiquidGlassKey(
+                        text = "±",
+                        type = KeyType.ACTION,
+                        onClick = { triggerFeedback(); onNegate() },
+                        testTag = "key_negate",
+                        animationIntensity = animationIntensity,
+                        componentSizeStyle = componentSizeStyle,
+                        shapeStructureStyle = shapeStructureStyle,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    LiquidGlassKey(
+                        text = "AC",
+                        type = KeyType.ACTION,
+                        onClick = { triggerFeedback(); onClear() },
+                        testTag = "key_all_clear",
+                        animationIntensity = animationIntensity,
+                        componentSizeStyle = componentSizeStyle,
+                        shapeStructureStyle = shapeStructureStyle,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            // Row 4: 0, 00, ., ✓ (Done/Hide)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(spacing)
+            ) {
+                LiquidGlassKey(
+                    text = "0",
+                    type = KeyType.NUMBER,
+                    onClick = { triggerFeedback(); onDigit("0") },
+                    testTag = "key_0",
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
+                    shapeStructureStyle = shapeStructureStyle,
+                    modifier = Modifier.weight(1f)
+                )
+                if (showDoubleZeroKey && onDoubleZero != null) {
+                    LiquidGlassKey(
+                        text = "00",
+                        type = KeyType.DOUBLE_ZERO,
+                        onClick = { triggerFeedback(); onDoubleZero() },
+                        testTag = "key_double_zero",
+                        animationIntensity = animationIntensity,
+                        componentSizeStyle = componentSizeStyle,
+                        shapeStructureStyle = shapeStructureStyle,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    LiquidGlassKey(
+                        text = "000",
+                        type = KeyType.DOUBLE_ZERO,
+                        onClick = { triggerFeedback(); onDigit("000") },
+                        testTag = "key_triple_zero",
+                        animationIntensity = animationIntensity,
+                        componentSizeStyle = componentSizeStyle,
+                        shapeStructureStyle = shapeStructureStyle,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                if (showDecimalKey && onDecimal != null) {
+                    LiquidGlassKey(
+                        text = ".",
+                        type = KeyType.NUMBER,
+                        onClick = { triggerFeedback(); onDecimal() },
+                        testTag = "key_decimal",
+                        animationIntensity = animationIntensity,
+                        componentSizeStyle = componentSizeStyle,
+                        shapeStructureStyle = shapeStructureStyle,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    LiquidGlassKey(
+                        text = "",
+                        type = KeyType.NUMBER,
+                        onClick = {},
+                        testTag = "key_empty",
+                        animationIntensity = animationIntensity,
+                        componentSizeStyle = componentSizeStyle,
+                        shapeStructureStyle = shapeStructureStyle,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                LiquidGlassKey(
+                    icon = Icons.Default.Check,
+                    iconContentDescription = "Done",
+                    type = KeyType.EQUALS,
+                    onClick = {
+                        triggerFeedback()
+                        onDone?.invoke()
+                    },
+                    testTag = "key_done",
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
+                    shapeStructureStyle = shapeStructureStyle,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }
