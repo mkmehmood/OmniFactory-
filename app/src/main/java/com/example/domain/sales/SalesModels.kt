@@ -69,20 +69,21 @@ object SalesReconciliationCalculator {
         // CashQtyUnits = max(0, NetSoldUnits − CreditSalesQty)
         val cashQtyUnits = maxOf(0.0, netSoldUnits - creditSales)
 
-        // Cash from sales = CashQtyUnits * UnitSalePrice
+        // Cash from product sales = CashQtyUnits * UnitSalePrice
         val cashFromSales = cashQtyUnits * unitPrice
 
         // Total commission = NetSoldUnits * CommissionPerUnit
         val totalCommission = netSoldUnits * commissionPerUnit
 
-        // ExpectedCash = (CashQtyUnits × UnitSalePrice) + RecoveredCredit
-        val expectedCash = cashFromSales + recoveredCredit
+        // Expected Cash to receive from Sales Rep / Manager:
+        // Cash from sales + Recoveries - Commission - Expenses
+        val expectedCash = cashFromSales + recoveredCredit - totalCommission - expense
 
-        // ReconciledCash = PhysicalCashInHand + Expense
-        val reconciledCash = physicalCash + expense
+        // Reconciled Cash accounted for (Physical Cash received)
+        val reconciledCash = physicalCash
 
-        // Status / Discrepancy = ReconciledCash − ExpectedCash
-        val discrepancy = reconciledCash - expectedCash
+        // Status / Discrepancy = Physical Cash Received − Expected Cash
+        val discrepancy = physicalCash - expectedCash
 
         val status = when {
             kotlin.math.abs(discrepancy) < 0.005 -> ReconciliationStatus.BALANCED

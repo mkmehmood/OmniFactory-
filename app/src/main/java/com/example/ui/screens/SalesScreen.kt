@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.RestartAlt
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.AlertDialog
@@ -75,6 +74,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.db.SalesTransactionEntity
+import com.example.ui.components.SalesRepresentativesMatrixCard
 import com.example.domain.sales.ReconciliationStatus
 import com.example.domain.sales.SalesReconciliationResult
 import com.example.domain.util.IndianNumberFormatter
@@ -82,7 +82,6 @@ import com.example.ui.SalesUiState
 import com.example.ui.theme.DigitalMonospaceFont
 import com.example.ui.theme.LocalShapeStructure
 import com.example.ui.theme.toButtonShape
-import com.example.ui.theme.toCardShape
 import com.example.ui.theme.toInputShape
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -134,7 +133,7 @@ fun SalesScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            // Header Bar with Quick Action Buttons
+            // Header Bar
             SalesScreenHeader(
                 savedCount = savedTransactions.size,
                 onOpenSavedSheet = onOpenHistorySheet,
@@ -144,7 +143,7 @@ fun SalesScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 1. Sales Representative Selector & Date Picker Card
+            // 1. Sales Representative & Date Card
             SalesRepAndDateCard(
                 selectedRep = uiState.salesRep,
                 availableReps = uiState.availableReps,
@@ -160,8 +159,8 @@ fun SalesScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 2. Numeric Input Grid (Quantities, Cash, Unit Price & Commission per Unit)
-            NumericInputGridCard(
+            // 2. Input Fields Card
+            SalesInputFormCard(
                 totalSoldQty = uiState.totalSoldQtyText,
                 returnedQty = uiState.returnedQtyText,
                 expiredQty = uiState.expiredQtyText,
@@ -188,13 +187,13 @@ fun SalesScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 3. Calculated Reconciliation Result Panel
-            CalculatedReconciliationResultPanel(
+            // 3. Expected Cash & Settlement Result Panel
+            SettlementResultPanel(
                 result = uiState.reconciliationResult,
                 onCopySummary = {
                     val summaryText = buildReconciliationSummaryText(uiState)
                     onCopySummary(summaryText)
-                    Toast.makeText(context, "Reconciliation summary copied to clipboard!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Settlement summary copied!", Toast.LENGTH_SHORT).show()
                 },
                 primaryColor = primaryColor,
                 surfaceBg = surfaceBg,
@@ -204,29 +203,29 @@ fun SalesScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 4. Full-Width Primary Action Button: "Save This Transaction"
+            // 4. Save Record Button
             val buttonShape = LocalShapeStructure.current.toButtonShape()
             Button(
                 onClick = onSaveTransaction,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp)
+                    .height(52.dp)
                     .testTag("save_transaction_button"),
                 shape = buttonShape,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = primaryColor,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp, pressedElevation = 6.dp)
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp, pressedElevation = 4.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.ReceiptLong,
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Save This Transaction",
+                    text = "Save Settlement Record",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = DigitalMonospaceFont,
@@ -234,7 +233,20 @@ fun SalesScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 5. Dynamic Sales Representatives Matrix & Financial Audit
+            SalesRepresentativesMatrixCard(
+                transactions = savedTransactions,
+                onSelectRep = onSetSalesRep,
+                onLoadTransaction = onLoadTransaction,
+                primaryColor = primaryColor,
+                surfaceBg = surfaceBg,
+                borderColor = cardBorderColor,
+                isDark = isDark
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 
@@ -275,7 +287,7 @@ fun SalesScreen(
         var customRepInput by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showCustomRepDialog = false },
-            title = { Text("Add Sales Representative", fontWeight = FontWeight.Bold) },
+            title = { Text("Add Representative", fontWeight = FontWeight.Bold) },
             text = {
                 OutlinedTextField(
                     value = customRepInput,
@@ -339,21 +351,20 @@ private fun SalesScreenHeader(
     ) {
         Column {
             Text(
-                text = "Sales Audit & Reconciliation",
+                text = "Sales Settlement",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "Live dynamic balance calculation",
+                text = "Representative Cash Settlement",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            // Saved History Button
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Surface(
                 modifier = Modifier
                     .clip(RoundedCornerShape(10.dp))
@@ -374,7 +385,7 @@ private fun SalesScreenHeader(
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = "Saved ($savedCount)",
+                        text = "Records ($savedCount)",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = primaryColor
@@ -382,7 +393,6 @@ private fun SalesScreenHeader(
                 }
             }
 
-            // Clear Button
             Surface(
                 modifier = Modifier
                     .clip(RoundedCornerShape(10.dp))
@@ -398,7 +408,7 @@ private fun SalesScreenHeader(
                 ) {
                     Icon(
                         imageVector = Icons.Default.RestartAlt,
-                        contentDescription = "Clear Form Inputs",
+                        contentDescription = "Reset Form",
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(16.dp)
                     )
@@ -433,179 +443,161 @@ private fun SalesRepAndDateCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = surfaceBg),
         border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            // Row 1: Sales Representative Dropdown
             Text(
-                text = "SALES REPRESENTATIVE",
+                text = "REPRESENTATIVE & DATE",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 0.8.sp
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            Box(modifier = Modifier.fillMaxWidth()) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .border(
-                            1.dp,
-                            if (isDark) Color(0x28FFFFFF) else Color(0x20000000),
-                            RoundedCornerShape(12.dp)
-                        )
-                        .clickable { dropdownExpanded = true }
-                        .testTag("sales_rep_dropdown_selector"),
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
-                ) {
-                    Row(
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Sales Rep Selector Box
+                Box(modifier = Modifier.weight(1.2f)) {
+                    Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .border(
+                                1.dp,
+                                if (isDark) Color(0x28FFFFFF) else Color(0x20000000),
+                                RoundedCornerShape(10.dp)
+                            )
+                            .clickable { dropdownExpanded = true }
+                            .testTag("sales_rep_dropdown_selector"),
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Sales Representative Icon",
-                                tint = primaryColor,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = if (selectedRep.isBlank()) "Select or Add Representative..." else selectedRep,
-                                fontSize = 14.sp,
-                                fontWeight = if (selectedRep.isBlank()) FontWeight.Normal else FontWeight.SemiBold,
-                                color = if (selectedRep.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Dropdown Chevron",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-
-                DropdownMenu(
-                    expanded = dropdownExpanded,
-                    onDismissRequest = { dropdownExpanded = false },
-                    modifier = Modifier.testTag("sales_rep_dropdown_menu")
-                ) {
-                    availableReps.forEach { rep ->
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = rep,
-                                    fontWeight = if (rep == selectedRep) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (rep == selectedRep) primaryColor else MaterialTheme.colorScheme.onSurface
-                                )
-                            },
-                            onClick = {
-                                onSelectRep(rep)
-                                dropdownExpanded = false
-                            },
-                            leadingIcon = {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
                                 Icon(
                                     imageVector = Icons.Default.Person,
                                     contentDescription = null,
-                                    tint = if (rep == selectedRep) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (selectedRep.isBlank()) "Select Rep..." else selectedRep,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (selectedRep.isBlank()) FontWeight.Normal else FontWeight.SemiBold,
+                                    color = if (selectedRep.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = dropdownExpanded,
+                        onDismissRequest = { dropdownExpanded = false },
+                        modifier = Modifier.testTag("sales_rep_dropdown_menu")
+                    ) {
+                        availableReps.forEach { rep ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = rep,
+                                        fontWeight = if (rep == selectedRep) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (rep == selectedRep) primaryColor else MaterialTheme.colorScheme.onSurface
+                                    )
+                                },
+                                onClick = {
+                                    onSelectRep(rep)
+                                    dropdownExpanded = false
+                                }
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = "+ Add Representative...",
+                                    fontWeight = FontWeight.Bold,
+                                    color = primaryColor
+                                )
+                            },
+                            onClick = {
+                                dropdownExpanded = false
+                                onOpenCustomRepDialog()
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint = primaryColor,
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
                         )
                     }
-
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = "+ Add Representative...",
-                                fontWeight = FontWeight.Bold,
-                                color = primaryColor
-                            )
-                        },
-                        onClick = {
-                            dropdownExpanded = false
-                            onOpenCustomRepDialog()
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = null,
-                                tint = primaryColor,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Row 2: Date Picker Selector
-            Text(
-                text = "TRANSACTION DATE",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = DigitalMonospaceFont,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                letterSpacing = 0.8.sp
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .border(
-                        1.dp,
-                        if (isDark) Color(0x28FFFFFF) else Color(0x20000000),
-                        RoundedCornerShape(12.dp)
-                    )
-                    .clickable { onOpenDatePicker() }
-                    .testTag("sales_date_picker_button"),
-                shape = RoundedCornerShape(12.dp),
-                color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
-            ) {
-                Row(
+                // Date Selector Box
+                Surface(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .weight(1f)
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .border(
+                            1.dp,
+                            if (isDark) Color(0x28FFFFFF) else Color(0x20000000),
+                            RoundedCornerShape(10.dp)
+                        )
+                        .clickable { onOpenDatePicker() }
+                        .testTag("sales_date_picker_button"),
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Icon(
                             imageVector = Icons.Default.CalendarMonth,
-                            contentDescription = "Date Picker Calendar Icon",
+                            contentDescription = null,
                             tint = primaryColor,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = formattedDate,
-                            fontSize = 14.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
                             fontFamily = DigitalMonospaceFont,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
-
-                    Text(
-                        text = "Change",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = primaryColor
-                    )
                 }
             }
         }
@@ -613,7 +605,7 @@ private fun SalesRepAndDateCard(
 }
 
 @Composable
-private fun NumericInputGridCard(
+private fun SalesInputFormCard(
     totalSoldQty: String,
     returnedQty: String,
     expiredQty: String,
@@ -639,28 +631,28 @@ private fun NumericInputGridCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = surfaceBg),
         border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
+            // Section 1: Units
             Text(
-                text = "QUANTITIES, CASH & COMMISSION AUDIT",
+                text = "PRODUCT QUANTITIES",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 0.8.sp
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Row 1: Total Sold Qty | Returned Qty
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 NumericGridInputField(
-                    label = "Total Sold Qty",
+                    label = "Total Sold",
                     placeholder = "0",
                     value = totalSoldQty,
                     onValueChange = onSetTotalSoldQty,
@@ -669,9 +661,8 @@ private fun NumericInputGridCard(
                     isDark = isDark,
                     modifier = Modifier.weight(1f)
                 )
-
                 NumericGridInputField(
-                    label = "Returned Qty",
+                    label = "Returned",
                     placeholder = "0",
                     value = returnedQty,
                     onValueChange = onSetReturnedQty,
@@ -682,15 +673,14 @@ private fun NumericInputGridCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Row 2: Expired Qty | Credit Sales Qty
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 NumericGridInputField(
-                    label = "Expired Qty",
+                    label = "Expired / Damage",
                     placeholder = "0",
                     value = expiredQty,
                     onValueChange = onSetExpiredQty,
@@ -699,7 +689,6 @@ private fun NumericInputGridCard(
                     isDark = isDark,
                     modifier = Modifier.weight(1f)
                 )
-
                 NumericGridInputField(
                     label = "Credit Sales Qty",
                     placeholder = "0",
@@ -712,56 +701,25 @@ private fun NumericInputGridCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Row 3: Recovered Credit | Physical Cash In Hand
+            // Section 2: Rate & Commission
+            Text(
+                text = "PRICING & COMMISSION",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 0.8.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 NumericGridInputField(
-                    label = "Recovered Credit (Rs.)",
-                    placeholder = "0.00",
-                    value = recoveredCredit,
-                    onValueChange = onSetRecoveredCredit,
-                    testTag = "recovered_credit_input",
-                    primaryColor = primaryColor,
-                    isDark = isDark,
-                    modifier = Modifier.weight(1f)
-                )
-
-                NumericGridInputField(
-                    label = "Physical Cash (Rs.)",
-                    placeholder = "0.00",
-                    value = physicalCash,
-                    onValueChange = onSetPhysicalCash,
-                    testTag = "physical_cash_input",
-                    primaryColor = primaryColor,
-                    isDark = isDark,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Row 4: Expense (Rs.) | Unit Sale Price (Rs.)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                NumericGridInputField(
-                    label = "Expense (Rs.)",
-                    placeholder = "0.00",
-                    value = expense,
-                    onValueChange = onSetExpense,
-                    testTag = "expense_input",
-                    primaryColor = primaryColor,
-                    isDark = isDark,
-                    modifier = Modifier.weight(1f)
-                )
-
-                EmphasizedUnitPriceInputField(
-                    label = "Unit Sale Price (Rs.)",
+                    label = "Unit Sale Price",
                     placeholder = "0.00",
                     value = unitSalePrice,
                     onValueChange = onSetUnitSalePrice,
@@ -770,17 +728,65 @@ private fun NumericInputGridCard(
                     isDark = isDark,
                     modifier = Modifier.weight(1f)
                 )
+                NumericGridInputField(
+                    label = "Commission / Unit",
+                    placeholder = "0.00",
+                    value = commissionPerUnit,
+                    onValueChange = onSetCommissionPerUnit,
+                    testTag = "commission_per_unit_input",
+                    primaryColor = primaryColor,
+                    isDark = isDark,
+                    modifier = Modifier.weight(1f)
+                )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Row 5: Commission Per Unit (Rs.)
-            EmphasizedCommissionInputField(
-                label = "Commission Per Unit (Rs.)",
+            // Section 3: Recovery, Expenses & Physical Cash
+            Text(
+                text = "COLLECTIONS & HANDOVER CASH",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 0.8.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                NumericGridInputField(
+                    label = "Recovered Credit",
+                    placeholder = "0.00",
+                    value = recoveredCredit,
+                    onValueChange = onSetRecoveredCredit,
+                    testTag = "recovered_credit_input",
+                    primaryColor = primaryColor,
+                    isDark = isDark,
+                    modifier = Modifier.weight(1f)
+                )
+                NumericGridInputField(
+                    label = "Field Expenses",
+                    placeholder = "0.00",
+                    value = expense,
+                    onValueChange = onSetExpense,
+                    testTag = "expense_input",
+                    primaryColor = primaryColor,
+                    isDark = isDark,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            NumericGridInputField(
+                label = "Physical Cash Received from Rep",
                 placeholder = "0.00",
-                value = commissionPerUnit,
-                onValueChange = onSetCommissionPerUnit,
-                testTag = "commission_per_unit_input",
+                value = physicalCash,
+                onValueChange = onSetPhysicalCash,
+                testTag = "physical_cash_input",
                 primaryColor = primaryColor,
                 isDark = isDark,
                 modifier = Modifier.fillMaxWidth()
@@ -832,112 +838,7 @@ private fun NumericGridInputField(
 }
 
 @Composable
-private fun EmphasizedUnitPriceInputField(
-    label: String,
-    placeholder: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    testTag: String,
-    primaryColor: Color,
-    isDark: Boolean,
-    modifier: Modifier = Modifier
-) {
-    val highlightAmber = Color(0xFFF59E0B)
-    val inputShape = LocalShapeStructure.current.toInputShape()
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = {
-            Text(
-                text = label,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = highlightAmber,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        },
-        placeholder = { Text(placeholder, fontSize = 12.sp) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier = modifier
-            .testTag(testTag)
-            .border(1.5.dp, highlightAmber.copy(alpha = 0.6f), inputShape),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = highlightAmber,
-            unfocusedBorderColor = highlightAmber.copy(alpha = 0.4f),
-            focusedContainerColor = highlightAmber.copy(alpha = 0.12f),
-            unfocusedContainerColor = highlightAmber.copy(alpha = 0.06f)
-        ),
-        shape = inputShape,
-        textStyle = androidx.compose.ui.text.TextStyle(
-            fontSize = 14.sp,
-            fontFamily = DigitalMonospaceFont,
-            fontWeight = FontWeight.Bold,
-            color = if (isDark) Color(0xFFFDE68A) else Color(0xFFB45309)
-        )
-    )
-}
-
-@Composable
-private fun EmphasizedCommissionInputField(
-    label: String,
-    placeholder: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    testTag: String,
-    primaryColor: Color,
-    isDark: Boolean,
-    modifier: Modifier = Modifier
-) {
-    val highlightGreen = Color(0xFF10B981)
-    val inputShape = LocalShapeStructure.current.toInputShape()
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Payments,
-                    contentDescription = null,
-                    tint = highlightGreen,
-                    modifier = Modifier.size(13.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = label,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = highlightGreen,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        },
-        placeholder = { Text(placeholder, fontSize = 12.sp) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier = modifier
-            .testTag(testTag)
-            .border(1.5.dp, highlightGreen.copy(alpha = 0.6f), inputShape),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = highlightGreen,
-            unfocusedBorderColor = highlightGreen.copy(alpha = 0.4f),
-            focusedContainerColor = highlightGreen.copy(alpha = 0.12f),
-            unfocusedContainerColor = highlightGreen.copy(alpha = 0.06f)
-        ),
-        shape = inputShape,
-        textStyle = androidx.compose.ui.text.TextStyle(
-            fontSize = 14.sp,
-            fontFamily = DigitalMonospaceFont,
-            fontWeight = FontWeight.Bold,
-            color = if (isDark) Color(0xFFA7F3D0) else Color(0xFF065F46)
-        )
-    )
-}
-
-@Composable
-private fun CalculatedReconciliationResultPanel(
+private fun SettlementResultPanel(
     result: SalesReconciliationResult,
     onCopySummary: () -> Unit,
     primaryColor: Color,
@@ -949,7 +850,7 @@ private fun CalculatedReconciliationResultPanel(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("calculated_reconciliation_result_panel"),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = surfaceBg),
         border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
     ) {
@@ -960,7 +861,7 @@ private fun CalculatedReconciliationResultPanel(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "RECONCILIATION RESULT",
+                    text = "SETTLEMENT AUDIT",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = DigitalMonospaceFont,
@@ -970,27 +871,27 @@ private fun CalculatedReconciliationResultPanel(
 
                 IconButton(
                     onClick = onCopySummary,
-                    modifier = Modifier.testTag("copy_reconciliation_button")
+                    modifier = Modifier.size(28.dp).testTag("copy_reconciliation_button")
                 ) {
                     Icon(
                         imageVector = Icons.Default.ContentCopy,
-                        contentDescription = "Copy Reconciliation Summary",
+                        contentDescription = "Copy Summary",
                         tint = primaryColor,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // 1. Expected Cash Read-Only Computed Display
+            // Hero Expected Cash Receivable Card
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
                     .border(
                         1.dp,
-                        primaryColor.copy(alpha = 0.35f),
+                        primaryColor.copy(alpha = 0.4f),
                         RoundedCornerShape(14.dp)
                     ),
                 shape = RoundedCornerShape(14.dp),
@@ -999,25 +900,13 @@ private fun CalculatedReconciliationResultPanel(
                 Column(
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "EXPECTED CASH (COMPUTED)",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            color = primaryColor
-                        )
-
-                        Text(
-                            text = "Live Calculation",
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        text = "EXPECTED CASH RECEIVABLE",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = primaryColor
+                    )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -1032,20 +921,11 @@ private fun CalculatedReconciliationResultPanel(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
+                    // Concise Formula Breakdown
                     Text(
-                        text = "Expected: (${result.formattedCashQty} units × ${result.formattedUnitPrice}) + Rec Credit: ${result.formattedRecoveredCredit}",
-                        fontSize = 11.sp,
+                        text = "Cash Sales (${result.formattedCashFromSales}) + Recovery (${result.formattedRecoveredCredit}) − Comm (${result.formattedTotalCommission}) − Exp (${result.formattedExpense})",
+                        fontSize = 10.5.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontFamily = DigitalMonospaceFont
-                    )
-
-                    Spacer(modifier = Modifier.height(2.dp))
-
-                    Text(
-                        text = "Reconciled Cash: Physical (${result.formattedPhysicalCash}) + Expense (${result.formattedExpense}) = ${result.formattedReconciledCash}",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = primaryColor,
                         fontFamily = DigitalMonospaceFont
                     )
                 }
@@ -1053,87 +933,26 @@ private fun CalculatedReconciliationResultPanel(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Commission Summary Card (if commission is set)
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .border(
-                        1.dp,
-                        Color(0xFF10B981).copy(alpha = 0.35f),
-                        RoundedCornerShape(14.dp)
-                    ),
-                shape = RoundedCornerShape(14.dp),
-                color = Color(0xFF10B981).copy(alpha = 0.08f)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Payments,
-                                contentDescription = null,
-                                tint = Color(0xFF10B981),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "TOTAL COMMISSION EARNED",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = DigitalMonospaceFont,
-                                color = Color(0xFF10B981)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "${result.formattedNetSold} net units × ${result.formattedCommissionPerUnit}/unit",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontFamily = DigitalMonospaceFont
-                        )
-                    }
-
-                    Text(
-                        text = result.formattedTotalCommission,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = if (isDark) Color(0xFFA7F3D0) else Color(0xFF047857),
-                        modifier = Modifier.testTag("total_commission_display")
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 2. Reconciliation Status Badge — Three States: Balanced, Over (Surplus), Short (Deficit)
-            ReconciliationStatusBadge(
+            // Settlement Status Banner
+            SettlementStatusBadge(
                 status = result.status,
                 discrepancyFormatted = result.formattedDiscrepancy,
-                reconciledCashFormatted = result.formattedReconciledCash,
+                physicalCashFormatted = result.formattedPhysicalCash,
                 expectedCashFormatted = result.formattedExpectedCash,
                 isDark = isDark
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 3. Four summary stat boxes: Net Sold Units, Cash Qty Units, Unit Price, Commission
+            // Key Financial Stats Grid
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 SummaryStatBox(
                     label = "Net Units",
                     value = result.formattedNetSold,
-                    subtext = "Sold-Ret-Exp",
                     tintColor = Color(0xFF38BDF8),
-                    isDark = isDark,
                     modifier = Modifier.weight(1f),
                     testTag = "stat_net_sold_units"
                 )
@@ -1141,31 +960,25 @@ private fun CalculatedReconciliationResultPanel(
                 SummaryStatBox(
                     label = "Cash Qty",
                     value = result.formattedCashQty,
-                    subtext = "Net - Credit",
                     tintColor = Color(0xFF10B981),
-                    isDark = isDark,
                     modifier = Modifier.weight(1f),
                     testTag = "stat_cash_qty_units"
                 )
 
                 SummaryStatBox(
-                    label = "Unit Price",
-                    value = result.formattedUnitPrice,
-                    subtext = "Per Unit",
+                    label = "Commission",
+                    value = result.formattedTotalCommission,
                     tintColor = Color(0xFFF59E0B),
-                    isDark = isDark,
                     modifier = Modifier.weight(1f),
-                    testTag = "stat_unit_sale_price"
+                    testTag = "stat_commission_rate"
                 )
 
                 SummaryStatBox(
-                    label = "Commission",
-                    value = result.formattedCommissionPerUnit,
-                    subtext = "Per Unit",
-                    tintColor = Color(0xFF10B981),
-                    isDark = isDark,
+                    label = "Cash Handover",
+                    value = result.formattedPhysicalCash,
+                    tintColor = primaryColor,
                     modifier = Modifier.weight(1f),
-                    testTag = "stat_commission_rate"
+                    testTag = "stat_physical_cash"
                 )
             }
         }
@@ -1173,10 +986,10 @@ private fun CalculatedReconciliationResultPanel(
 }
 
 @Composable
-private fun ReconciliationStatusBadge(
+private fun SettlementStatusBadge(
     status: ReconciliationStatus,
     discrepancyFormatted: String,
-    reconciledCashFormatted: String,
+    physicalCashFormatted: String,
     expectedCashFormatted: String,
     isDark: Boolean
 ) {
@@ -1186,8 +999,8 @@ private fun ReconciliationStatusBadge(
                 Color(0xFF10B981).copy(alpha = 0.14f),
                 Color(0xFF10B981).copy(alpha = 0.45f),
                 Color(0xFF10B981),
-                "BALANCED (EXACT MATCH)",
-                "Reconciled cash ($reconciledCashFormatted) matches expected cash ($expectedCashFormatted) exactly",
+                "SETTLED (BALANCED)",
+                "Cash received ($physicalCashFormatted) matches expected cash ($expectedCashFormatted)",
                 Icons.Default.CheckCircle
             )
         }
@@ -1196,8 +1009,8 @@ private fun ReconciliationStatusBadge(
                 Color(0xFF0284C7).copy(alpha = 0.14f),
                 Color(0xFF0284C7).copy(alpha = 0.45f),
                 Color(0xFF38BDF8),
-                "SURPLUS (OVER / EXCESS)",
-                "Reconciled cash exceeds expected cash by $discrepancyFormatted surplus",
+                "SURPLUS (+)",
+                "Cash received exceeds expected cash by $discrepancyFormatted",
                 Icons.Default.TrendingUp
             )
         }
@@ -1206,8 +1019,8 @@ private fun ReconciliationStatusBadge(
                 Color(0xFFEF4444).copy(alpha = 0.14f),
                 Color(0xFFEF4444).copy(alpha = 0.45f),
                 Color(0xFFF87171),
-                "DEFICIT (SHORTAGE)",
-                "Reconciled cash is short of expected cash by $discrepancyFormatted deficit",
+                "SHORTAGE (−)",
+                "Cash received is short of expected cash by $discrepancyFormatted",
                 Icons.Default.TrendingDown
             )
         }
@@ -1225,12 +1038,12 @@ private fun ReconciliationStatusBadge(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(32.dp)
                     .clip(CircleShape)
                     .background(contentColor.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
@@ -1239,7 +1052,7 @@ private fun ReconciliationStatusBadge(
                     imageVector = statusIcon,
                     contentDescription = statusTitle,
                     tint = contentColor,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
 
@@ -1248,7 +1061,7 @@ private fun ReconciliationStatusBadge(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = statusTitle,
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = DigitalMonospaceFont,
                     color = contentColor
@@ -1267,31 +1080,29 @@ private fun ReconciliationStatusBadge(
 private fun SummaryStatBox(
     label: String,
     value: String,
-    subtext: String,
     tintColor: Color,
-    isDark: Boolean,
     modifier: Modifier = Modifier,
     testTag: String
 ) {
     Surface(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(10.dp))
             .border(
                 1.dp,
-                tintColor.copy(alpha = 0.3f),
-                RoundedCornerShape(12.dp)
+                tintColor.copy(alpha = 0.25f),
+                RoundedCornerShape(10.dp)
             )
             .testTag(testTag),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(10.dp),
         color = tintColor.copy(alpha = 0.08f)
     ) {
         Column(
-            modifier = Modifier.padding(8.dp),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = label,
-                fontSize = 10.sp,
+                fontSize = 9.5.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1299,26 +1110,13 @@ private fun SummaryStatBox(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = value,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
                 color = tintColor,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            Text(
-                text = subtext,
-                fontSize = 9.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -1354,11 +1152,11 @@ private fun SavedTransactionsBottomSheet(
                     imageVector = Icons.Default.ReceiptLong,
                     contentDescription = null,
                     tint = primaryColor,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Saved Transactions (${transactions.size})",
+                    text = "Saved Records (${transactions.size})",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = DigitalMonospaceFont
@@ -1366,11 +1164,11 @@ private fun SavedTransactionsBottomSheet(
             }
 
             TextButton(onClick = onClose) {
-                Text("Done")
+                Text("Close")
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         if (transactions.isEmpty()) {
             Box(
@@ -1384,11 +1182,11 @@ private fun SavedTransactionsBottomSheet(
                         imageVector = Icons.Default.ReceiptLong,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier.size(40.dp)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "No saved sales transactions yet",
+                        text = "No saved settlement records",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1398,8 +1196,8 @@ private fun SavedTransactionsBottomSheet(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(480.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .height(460.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(transactions.size, key = { transactions[it].id }) { index ->
                     val tx = transactions[index]
@@ -1415,7 +1213,7 @@ private fun SavedTransactionsBottomSheet(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
     }
 }
 
@@ -1428,15 +1226,14 @@ private fun SalesRecordCard(
     primaryColor: Color,
     isDark: Boolean
 ) {
-    val reconciledCash = if (tx.reconciledCash > 0) tx.reconciledCash else (tx.physicalCashInHand + tx.expense)
-    val discrepancy = reconciledCash - tx.expectedCash
+    val discrepancy = tx.physicalCashInHand - tx.expectedCash
 
     val (statusBg, statusFg, statusText, statusIcon) = when {
         tx.status == "BALANCED" || kotlin.math.abs(discrepancy) < 0.005 -> {
             Tuple4(
                 Color(0xFF10B981),
                 Color(0xFFFFFFFF),
-                "BALANCED • Exact Match (Rs. 0.00 Difference)",
+                "BALANCED",
                 Icons.Default.CheckCircle
             )
         }
@@ -1444,7 +1241,7 @@ private fun SalesRecordCard(
             Tuple4(
                 Color(0xFF0284C7),
                 Color(0xFFFFFFFF),
-                "SURPLUS • Excess of +Rs. ${IndianNumberFormatter.formatIndianDouble(discrepancy, 2)}",
+                "SURPLUS +Rs. ${IndianNumberFormatter.formatIndianDouble(discrepancy, 2)}",
                 Icons.Default.TrendingUp
             )
         }
@@ -1452,7 +1249,7 @@ private fun SalesRecordCard(
             Tuple4(
                 Color(0xFFEF4444),
                 Color(0xFFFFFFFF),
-                "DEFICIT • Shortage of -Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(discrepancy), 2)}",
+                "SHORTAGE −Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(discrepancy), 2)}",
                 Icons.Default.TrendingDown
             )
         }
@@ -1461,26 +1258,25 @@ private fun SalesRecordCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(14.dp))
             .border(
                 1.dp,
                 if (isDark) Color(0x2AFFFFFF) else Color(0x20000000),
-                RoundedCornerShape(16.dp)
+                RoundedCornerShape(14.dp)
             )
             .clickable { onLoad() }
             .testTag("sales_record_card_${tx.id}"),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // 1. Top Bar: Representative Tag + Date + Delete Action
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1488,35 +1284,21 @@ private fun SalesRecordCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
-                    // Representative Tag
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = primaryColor.copy(alpha = 0.15f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f))
+                        shape = RoundedCornerShape(6.dp),
+                        color = primaryColor.copy(alpha = 0.15f)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = primaryColor,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = tx.salesRep,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = primaryColor
-                            )
-                        }
+                        Text(
+                            text = tx.salesRep,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = primaryColor,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                        )
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    // Date & Time (12-hour format)
                     Text(
                         text = dateFormat.format(Date(tx.dateMillis)),
                         fontSize = 11.sp,
@@ -1527,143 +1309,51 @@ private fun SalesRecordCard(
                     )
                 }
 
-                // Delete Action Button
                 IconButton(
                     onClick = onDelete,
-                    modifier = Modifier.size(32.dp).testTag("delete_transaction_button_${tx.id}")
+                    modifier = Modifier.size(28.dp).testTag("delete_transaction_button_${tx.id}")
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete",
                         tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
-                        modifier = Modifier.size(17.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
 
-            // 2. Labeled Key-Value Field Grid
-            Column(
+            // Key Details
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // Row 1: Sold | Returned | Expired
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    GridKeyValueBox(
-                        label = "Sold",
-                        value = formatQuantity(tx.totalSoldQty),
-                        isDark = isDark,
-                        modifier = Modifier.weight(1f)
-                    )
-                    GridKeyValueBox(
-                        label = "Returned",
-                        value = formatQuantity(tx.returnedQty),
-                        isDark = isDark,
-                        modifier = Modifier.weight(1f)
-                    )
-                    GridKeyValueBox(
-                        label = "Expired",
-                        value = formatQuantity(tx.expiredQty),
-                        isDark = isDark,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                // Row 2: Credit Sales | Recovered | Price
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    GridKeyValueBox(
-                        label = "Credit Sales",
-                        value = formatQuantity(tx.creditSalesQty),
-                        isDark = isDark,
-                        modifier = Modifier.weight(1f)
-                    )
-                    GridKeyValueBox(
-                        label = "Recovered",
-                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.recoveredCredit, 2)}",
-                        isDark = isDark,
-                        modifier = Modifier.weight(1.2f)
-                    )
-                    GridKeyValueBox(
-                        label = "Price",
-                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.unitSalePrice, 2)}",
-                        isDark = isDark,
-                        modifier = Modifier.weight(1.1f)
-                    )
-                }
-
-                // Row 3: Commission Rate | Total Commission
-                if (tx.commissionPerUnit > 0 || tx.totalCommission > 0) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        GridKeyValueBox(
-                            label = "Commission Rate",
-                            value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.commissionPerUnit, 2)}/unit",
-                            isDark = isDark,
-                            modifier = Modifier.weight(1f)
-                        )
-                        GridKeyValueBox(
-                            label = "Total Commission",
-                            value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.totalCommission, 2)}",
-                            highlightColor = Color(0xFF10B981),
-                            isDark = isDark,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
-                // Row 4: Expected Cash | Physical Cash
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    GridKeyValueBox(
-                        label = "Expected Cash",
-                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.expectedCash, 2)}",
-                        highlightColor = primaryColor,
-                        isDark = isDark,
-                        modifier = Modifier.weight(1f)
-                    )
-                    GridKeyValueBox(
-                        label = "Physical Cash",
-                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.physicalCashInHand, 2)}",
-                        isDark = isDark,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                // Row 5: Expense | Reconciled Cash
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    GridKeyValueBox(
-                        label = "Expense",
-                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.expense, 2)}",
-                        isDark = isDark,
-                        modifier = Modifier.weight(1f)
-                    )
-                    GridKeyValueBox(
-                        label = "Reconciled Cash",
-                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(reconciledCash, 2)}",
-                        highlightColor = Color(0xFF10B981),
-                        isDark = isDark,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                GridKeyValueBox(
+                    label = "Expected Cash",
+                    value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.expectedCash, 2)}",
+                    highlightColor = primaryColor,
+                    isDark = isDark,
+                    modifier = Modifier.weight(1f)
+                )
+                GridKeyValueBox(
+                    label = "Cash Received",
+                    value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.physicalCashInHand, 2)}",
+                    isDark = isDark,
+                    modifier = Modifier.weight(1f)
+                )
+                GridKeyValueBox(
+                    label = "Commission",
+                    value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.totalCommission, 2)}",
+                    highlightColor = Color(0xFF10B981),
+                    isDark = isDark,
+                    modifier = Modifier.weight(1f)
+                )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // 3. Full-Width Status Banner Capping the Card Bottom
+            // Status Banner
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1673,7 +1363,7 @@ private fun SalesRecordCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 9.dp),
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
@@ -1681,12 +1371,12 @@ private fun SalesRecordCard(
                         imageVector = statusIcon,
                         contentDescription = null,
                         tint = statusFg,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = statusText,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = DigitalMonospaceFont,
                         color = statusFg,
@@ -1718,7 +1408,7 @@ private fun GridKeyValueBox(
         color = highlightColor?.copy(alpha = 0.08f) ?: if (isDark) Color(0x10FFFFFF) else Color(0x06000000)
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp)
         ) {
             Text(
                 text = label,
@@ -1732,7 +1422,7 @@ private fun GridKeyValueBox(
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = value,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
                 color = highlightColor ?: MaterialTheme.colorScheme.onSurface,
@@ -1743,42 +1433,33 @@ private fun GridKeyValueBox(
     }
 }
 
-private fun formatQuantity(qty: Double): String {
-    return if (qty % 1.0 == 0.0) {
-        IndianNumberFormatter.formatIndianDouble(qty, 0)
-    } else {
-        IndianNumberFormatter.formatIndianDouble(qty, 2)
-    }
-}
-
 private fun buildReconciliationSummaryText(uiState: SalesUiState): String {
     val res = uiState.reconciliationResult
     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     val dateStr = dateFormat.format(Date(uiState.dateMillis))
 
     return buildString {
-        appendLine("=== SALES RECONCILIATION AUDIT ===")
+        appendLine("=== SALES SETTLEMENT AUDIT ===")
         appendLine("Representative: ${uiState.salesRep}")
         appendLine("Date: $dateStr")
         appendLine("Status: ${res.status.name}")
         appendLine("\n--- QUANTITIES ---")
-        appendLine("• Total Sold Qty: ${uiState.totalSoldQtyText}")
-        appendLine("• Returned Qty: ${uiState.returnedQtyText}")
-        appendLine("• Expired Qty: ${uiState.expiredQtyText}")
-        appendLine("• Credit Sales Qty: ${uiState.creditSalesQtyText}")
+        appendLine("• Total Sold: ${uiState.totalSoldQtyText}")
+        appendLine("• Returned: ${uiState.returnedQtyText}")
+        appendLine("• Expired: ${uiState.expiredQtyText}")
+        appendLine("• Credit Sales: ${uiState.creditSalesQtyText}")
         appendLine("• Net Sold Units: ${res.formattedNetSold}")
         appendLine("• Cash Qty Units: ${res.formattedCashQty}")
-        appendLine("\n--- CASH, COMMISSION & RECONCILIATION ---")
+        appendLine("\n--- FINANCIAL SETTLEMENT ---")
         appendLine("• Unit Sale Price: ${res.formattedUnitPrice}")
         appendLine("• Commission / Unit: ${res.formattedCommissionPerUnit}")
-        appendLine("• Total Commission Earned: ${res.formattedTotalCommission}")
-        appendLine("• Sales Cash Revenue: ${res.formattedCashFromSales}")
+        appendLine("• Total Commission: ${res.formattedTotalCommission}")
+        appendLine("• Product Cash Sales: ${res.formattedCashFromSales}")
         appendLine("• Recovered Credit: ${res.formattedRecoveredCredit}")
-        appendLine("• Expected Cash: ${res.formattedExpectedCash}")
-        appendLine("• Physical Cash: ${res.formattedPhysicalCash}")
-        appendLine("• Expense: ${res.formattedExpense}")
-        appendLine("• Reconciled Cash: ${res.formattedReconciledCash}")
-        appendLine("• Difference (Status): ${res.formattedDiscrepancy}")
+        appendLine("• Field Expenses: ${res.formattedExpense}")
+        appendLine("• Expected Cash Receivable: ${res.formattedExpectedCash}")
+        appendLine("• Physical Cash Received: ${res.formattedPhysicalCash}")
+        appendLine("• Variance / Discrepancy: ${res.formattedDiscrepancy}")
     }
 }
 

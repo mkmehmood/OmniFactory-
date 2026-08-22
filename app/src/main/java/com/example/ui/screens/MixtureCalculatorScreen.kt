@@ -444,46 +444,6 @@ private fun Step1EnterTargetIngredients(
     isDark: Boolean
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        // 1. Intro Card: Short welcome/explainer in a tinted info box
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .border(1.dp, primaryColor.copy(alpha = 0.35f), RoundedCornerShape(14.dp))
-                .testTag("step1_intro_card"),
-            shape = RoundedCornerShape(14.dp),
-            color = primaryColor.copy(alpha = 0.10f)
-        ) {
-            Row(
-                modifier = Modifier.padding(14.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = null,
-                    tint = primaryColor,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Text(
-                        text = "Recipe Target Formulation",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Text(
-                        text = "Enter your standard recipe/mixture target amounts below. You can calibrate against any component you actually weighed or added in later steps.",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
         // Target Ingredients List Section
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -924,45 +884,16 @@ private fun Step3ReferenceAndActualAdded(
     isDark: Boolean
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        // Instruction text
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .border(1.dp, Color(0xFFF59E0B).copy(alpha = 0.35f), RoundedCornerShape(14.dp))
-                .testTag("step3_instruction_card"),
-            shape = RoundedCornerShape(14.dp),
-            color = Color(0xFFF59E0B).copy(alpha = 0.08f)
-        ) {
-            Row(
-                modifier = Modifier.padding(14.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = null,
-                    tint = Color(0xFFF59E0B),
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Text(
-                        text = "Choose Calibration Anchor & Enter Actuals",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Select ONE component as your reference anchor (the one you over-poured or want to base the whole batch around), then enter the actual quantity added.",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
+        Text(
+            text = "SELECT CALIBRATION ANCHOR & ACTUALS",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = DigitalMonospaceFont,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            letterSpacing = 0.8.sp
+        )
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Cards per ingredient
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

@@ -127,14 +127,14 @@ fun BatchScalingScreen(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "Batch & Ratio Scaler",
+                        text = "Batch Scaler",
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = DigitalMonospaceFont,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Proportional batch distribution calculator",
+                        text = "Industrial Batch Distribution",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -265,24 +265,17 @@ private fun ModeTabSelector(
                 shape = RoundedCornerShape(10.dp),
                 color = if (currentMode == ScalingMode.TARGET_TOTAL) primaryColor else Color.Transparent
             ) {
-                Column(
-                    modifier = Modifier.padding(vertical = 9.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Box(
+                    modifier = Modifier.padding(vertical = 11.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Scale to Target Total",
+                        text = "Target Total",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (currentMode == ScalingMode.TARGET_TOTAL) {
                             if (isDark) Color.Black else Color.White
                         } else MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Enter grand total",
-                        fontSize = 10.sp,
-                        color = if (currentMode == ScalingMode.TARGET_TOTAL) {
-                            (if (isDark) Color.Black else Color.White).copy(alpha = 0.8f)
-                        } else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -299,24 +292,17 @@ private fun ModeTabSelector(
                 shape = RoundedCornerShape(10.dp),
                 color = if (currentMode == ScalingMode.BATCH_SIZE) primaryColor else Color.Transparent
             ) {
-                Column(
-                    modifier = Modifier.padding(vertical = 9.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Box(
+                    modifier = Modifier.padding(vertical = 11.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Scale by Batch Size",
+                        text = "Batch Sizing",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (currentMode == ScalingMode.BATCH_SIZE) {
                             if (isDark) Color.Black else Color.White
                         } else MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Enter size & count / total",
-                        fontSize = 10.sp,
-                        color = if (currentMode == ScalingMode.BATCH_SIZE) {
-                            (if (isDark) Color.Black else Color.White).copy(alpha = 0.8f)
-                        } else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
