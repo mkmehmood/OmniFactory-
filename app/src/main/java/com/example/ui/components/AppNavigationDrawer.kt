@@ -85,215 +85,203 @@ fun AppNavigationDrawer(
             .fillMaxHeight()
             .testTag("app_navigation_drawer")
     ) {
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxHeight()
-                .padding(horizontal = 16.dp, vertical = 18.dp),
-            contentPadding = PaddingValues(bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .padding(horizontal = 16.dp, vertical = 18.dp)
         ) {
-            // Header with App Title and Close button
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            // Header with App Title (No close cross button)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(primaryColor.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(primaryColor.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.WaterDrop,
-                                contentDescription = null,
-                                tint = primaryColor,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "CALCULATOR",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                fontFamily = DigitalMonospaceFont,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "Precision, Conversions & Audit",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = primaryColor
-                            )
-                        }
-                    }
-
-                    IconButton(
-                        onClick = onCloseDrawer,
-                        modifier = Modifier.testTag("close_drawer_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close Menu",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.WaterDrop,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "CALCULATOR",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        fontFamily = DigitalMonospaceFont,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Precision, Conversions & Audit",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = primaryColor
+                    )
                 }
             }
 
-            item {
-                HorizontalDivider(
-                    thickness = 1.dp,
-                    color = if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
+            HorizontalDivider(
+                thickness = 1.dp,
+                color = if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
+                modifier = Modifier.padding(vertical = 12.dp)
+            )
+
+            // Scrollable List for Destinations
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                item {
+                    Text(
+                        text = "CORE TOOLS & CALCULATORS",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.2.sp,
+                        fontFamily = DigitalMonospaceFont,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+                }
+
+                // 1. Standard Calculator Option
+                item {
+                    DrawerNavItem(
+                        label = "Standard Calculator",
+                        subtitle = "Sequential math & history tape",
+                        icon = Icons.Default.Calculate,
+                        isSelected = currentDestination == DrawerDestination.CALCULATOR,
+                        onClick = { onSelectDestination(DrawerDestination.CALCULATOR) },
+                        testTag = "drawer_item_calculator",
+                        primaryColor = primaryColor,
+                        isDark = isDark
+                    )
+                }
+
+                // 2. Units Converter Option (Opens Categories Hub)
+                item {
+                    DrawerNavItem(
+                        label = "Units Converter",
+                        subtitle = "11 dedicated conversion suites",
+                        icon = Icons.Default.SwapHoriz,
+                        isSelected = currentDestination == DrawerDestination.CONVERTER,
+                        onClick = {
+                            onOpenConverterGrid()
+                            onSelectDestination(DrawerDestination.CONVERTER)
+                        },
+                        testTag = "drawer_item_converter",
+                        primaryColor = primaryColor,
+                        isDark = isDark
+                    )
+                }
+
+                // 3. Sales Audit Option
+                item {
+                    DrawerNavItem(
+                        label = "Sales Audit",
+                        subtitle = "Reconciliation & commission audit",
+                        icon = Icons.Default.ReceiptLong,
+                        isSelected = currentDestination == DrawerDestination.SALES,
+                        onClick = { onSelectDestination(DrawerDestination.SALES) },
+                        testTag = "drawer_item_sales",
+                        primaryColor = primaryColor,
+                        isDark = isDark
+                    )
+                }
+
+                // 4. Mixture Calculator
+                item {
+                    DrawerNavItem(
+                        label = "Mixture Calculator",
+                        subtitle = "6-step ratio recalibration wizard",
+                        icon = Icons.Default.Science,
+                        isSelected = currentDestination == DrawerDestination.MIXTURE_CALCULATOR,
+                        onClick = { onSelectDestination(DrawerDestination.MIXTURE_CALCULATOR) },
+                        testTag = "drawer_item_mixture_calculator",
+                        primaryColor = primaryColor,
+                        isDark = isDark
+                    )
+                }
+
+                // 5. Batch Scaling
+                item {
+                    DrawerNavItem(
+                        label = "Batch & Ratio Scaler",
+                        subtitle = "Proportional recipes & locking",
+                        icon = Icons.Default.Scale,
+                        isSelected = currentDestination == DrawerDestination.BATCH_SCALING,
+                        onClick = { onSelectDestination(DrawerDestination.BATCH_SCALING) },
+                        testTag = "drawer_item_batch_scaling",
+                        primaryColor = primaryColor,
+                        isDark = isDark
+                    )
+                }
+
+                item {
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
+
+                // Settings Option
+                item {
+                    DrawerNavItem(
+                        label = "Settings",
+                        subtitle = "Palettes, shapes, sounds & haptics",
+                        icon = Icons.Default.Settings,
+                        isSelected = currentDestination == DrawerDestination.SETTINGS,
+                        onClick = { onSelectDestination(DrawerDestination.SETTINGS) },
+                        testTag = "drawer_item_settings",
+                        primaryColor = primaryColor,
+                        isDark = isDark
+                    )
+                }
             }
 
-            // PRIMARY CALCULATORS & CONVERTER TOOLS SECTION
-            item {
-                Text(
-                    text = "CORE TOOLS & CALCULATORS",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.2.sp,
-                    fontFamily = DigitalMonospaceFont,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                )
-            }
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 1. Standard Calculator Option
-            item {
-                DrawerNavItem(
-                    label = "Standard Calculator",
-                    subtitle = "Sequential math & history tape",
-                    icon = Icons.Default.Calculate,
-                    isSelected = currentDestination == DrawerDestination.CALCULATOR,
-                    onClick = { onSelectDestination(DrawerDestination.CALCULATOR) },
-                    testTag = "drawer_item_calculator",
-                    primaryColor = primaryColor,
-                    isDark = isDark
-                )
-            }
-
-            // 2. Units Converter Option (Opens Categories Hub)
-            item {
-                DrawerNavItem(
-                    label = "Units Converter",
-                    subtitle = "11 dedicated conversion suites",
-                    icon = Icons.Default.SwapHoriz,
-                    isSelected = currentDestination == DrawerDestination.CONVERTER,
-                    onClick = {
-                        onOpenConverterGrid()
-                        onSelectDestination(DrawerDestination.CONVERTER)
-                    },
-                    testTag = "drawer_item_converter",
-                    primaryColor = primaryColor,
-                    isDark = isDark
-                )
-            }
-
-            // 3. Sales Audit Option
-            item {
-                DrawerNavItem(
-                    label = "Sales Audit",
-                    subtitle = "Reconciliation & commission audit",
-                    icon = Icons.Default.ReceiptLong,
-                    isSelected = currentDestination == DrawerDestination.SALES,
-                    onClick = { onSelectDestination(DrawerDestination.SALES) },
-                    testTag = "drawer_item_sales",
-                    primaryColor = primaryColor,
-                    isDark = isDark
-                )
-            }
-
-            // 4. Mixture Calculator
-            item {
-                DrawerNavItem(
-                    label = "Mixture Calculator",
-                    subtitle = "6-step ratio recalibration wizard",
-                    icon = Icons.Default.Science,
-                    isSelected = currentDestination == DrawerDestination.MIXTURE_CALCULATOR,
-                    onClick = { onSelectDestination(DrawerDestination.MIXTURE_CALCULATOR) },
-                    testTag = "drawer_item_mixture_calculator",
-                    primaryColor = primaryColor,
-                    isDark = isDark
-                )
-            }
-
-            // 5. Batch Scaling
-            item {
-                DrawerNavItem(
-                    label = "Batch & Ratio Scaler",
-                    subtitle = "Proportional recipes & locking",
-                    icon = Icons.Default.Scale,
-                    isSelected = currentDestination == DrawerDestination.BATCH_SCALING,
-                    onClick = { onSelectDestination(DrawerDestination.BATCH_SCALING) },
-                    testTag = "drawer_item_batch_scaling",
-                    primaryColor = primaryColor,
-                    isDark = isDark
-                )
-            }
-
-            item {
-                HorizontalDivider(
-                    thickness = 1.dp,
-                    color = if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
-
-            // Settings Option
-            item {
-                DrawerNavItem(
-                    label = "Settings",
-                    subtitle = "Palettes, shapes, sounds & haptics",
-                    icon = Icons.Default.Settings,
-                    isSelected = currentDestination == DrawerDestination.SETTINGS,
-                    onClick = { onSelectDestination(DrawerDestination.SETTINGS) },
-                    testTag = "drawer_item_settings",
-                    primaryColor = primaryColor,
-                    isDark = isDark
-                )
-            }
-
-            // Footer Panel
-            item {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .border(
-                            1.dp,
-                            if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
-                            RoundedCornerShape(16.dp)
-                        ),
-                    color = if (isDark) Color(0x14FFFFFF) else Color(0x10000000),
-                    shape = RoundedCornerShape(16.dp)
+            // Footer Panel - Mahmood khan anchored at the bottom of the sidebar
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(
+                        1.dp,
+                        if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
+                        RoundedCornerShape(16.dp)
+                    )
+                    .testTag("sidebar_footer_mahmood_khan"),
+                color = if (isDark) Color(0x14FFFFFF) else Color(0x10000000),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Palette,
-                            contentDescription = null,
-                            tint = primaryColor,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "Mahmood khan",
-                            fontFamily = DigitalMonospaceFont,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Palette,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Mahmood khan",
+                        fontFamily = DigitalMonospaceFont,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }

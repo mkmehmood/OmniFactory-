@@ -52,6 +52,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -110,8 +112,7 @@ fun SalesScreen(
     onSetUnitSalePrice: (String) -> Unit,
     onSetCommissionPerUnit: (String) -> Unit,
     onSetCommissionPaid: (String) -> Unit,
-    onSetDeficitThreshold: (Double) -> Unit,
-    onSetDeficitThresholdText: (String) -> Unit,
+    onShiftDeficitToCommissionPaid: () -> Unit,
     onSaveTransaction: () -> Unit,
     onClearInputs: () -> Unit,
     onCopySummary: (String) -> Unit,
@@ -202,8 +203,7 @@ fun SalesScreen(
             // 3. Expected Cash & Settlement Result Panel
             SettlementResultPanel(
                 uiState = uiState,
-                onSetDeficitThreshold = onSetDeficitThreshold,
-                onSetDeficitThresholdText = onSetDeficitThresholdText,
+                onShiftDeficitToCommissionPaid = onShiftDeficitToCommissionPaid,
                 onCopySummary = {
                     val summaryText = buildReconciliationSummaryText(uiState)
                     onCopySummary(summaryText)
@@ -884,8 +884,7 @@ private fun NumericGridInputField(
 @Composable
 private fun SettlementResultPanel(
     uiState: SalesUiState,
-    onSetDeficitThreshold: (Double) -> Unit,
-    onSetDeficitThresholdText: (String) -> Unit,
+    onShiftDeficitToCommissionPaid: () -> Unit,
     onCopySummary: () -> Unit,
     primaryColor: Color,
     surfaceBg: Color,
@@ -893,7 +892,6 @@ private fun SettlementResultPanel(
     isDark: Boolean
 ) {
     val result = uiState.reconciliationResult
-    var showCustomThresholdDialog by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
@@ -933,12 +931,11 @@ private fun SettlementResultPanel(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Deficit Warning Indicator Alert Banner (Triggered when deficit exists or exceeds threshold)
+            // Deficit Warning Indicator & Shift Deficit Radio Button
             if (result.deficitAmount > 0.0) {
-                val isThresholdExceeded = uiState.isDeficitThresholdExceeded
-                val alertBg = if (isThresholdExceeded) Color(0xFFEF4444).copy(alpha = 0.16f) else Color(0xFFF59E0B).copy(alpha = 0.14f)
-                val alertBorder = if (isThresholdExceeded) Color(0xFFEF4444).copy(alpha = 0.75f) else Color(0xFFF59E0B).copy(alpha = 0.6f)
-                val alertFg = if (isThresholdExceeded) Color(0xFFEF4444) else Color(0xFFF59E0B)
+                val alertBg = Color(0xFFEF4444).copy(alpha = 0.12f)
+                val alertBorder = Color(0xFFEF4444).copy(alpha = 0.75f)
+                val alertFg = Color(0xFFEF4444)
                 val alertIcon = Icons.Default.TrendingDown
 
                 Surface(
@@ -972,17 +969,14 @@ private fun SettlementResultPanel(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = if (isThresholdExceeded) "⚠️ DEFICIT THRESHOLD EXCEEDED" else "⚠️ CASH DEFICIT DETECTED",
+                                    text = "⚠️ CASH DEFICIT DETECTED",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = DigitalMonospaceFont,
                                     color = alertFg
                                 )
                                 Text(
-                                    text = if (isThresholdExceeded)
-                                        "Deficit of ${result.formattedDeficitAmount} exceeds your alert limit of Rs. ${uiState.deficitThresholdText}!"
-                                    else
-                                        "Current deficit: ${result.formattedDeficitAmount} (Limit: Rs. ${uiState.deficitThresholdText})",
+                                    text = "Shortfall: ${result.formattedDeficitAmount} (Physical Cash is less than Expected Cash)",
                                     fontSize = 11.sp,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontFamily = DigitalMonospaceFont
@@ -990,67 +984,54 @@ private fun SettlementResultPanel(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
-                        // Threshold selector chips
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        // Radio button to shift deficit into commission paid
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .border(
+                                    1.dp,
+                                    Color(0xFF10B981).copy(alpha = 0.6f),
+                                    RoundedCornerShape(10.dp)
+                                )
+                                .clickable { onShiftDeficitToCommissionPaid() }
+                                .testTag("shift_deficit_radio_button_container"),
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFF10B981).copy(alpha = 0.12f)
                         ) {
-                            Text(
-                                text = "Alert Limit:",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontFamily = DigitalMonospaceFont
-                            )
-
-                            val presets = listOf(100.0, 500.0, 1000.0, 5000.0)
-                            presets.forEach { preset ->
-                                val isSelected = kotlin.math.abs(uiState.deficitThreshold - preset) < 0.1
-                                Surface(
-                                    modifier = Modifier
-                                        .clickable { onSetDeficitThreshold(preset) }
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .border(
-                                            1.dp,
-                                            if (isSelected) alertFg else (if (isDark) Color(0x30FFFFFF) else Color(0x20000000)),
-                                            RoundedCornerShape(6.dp)
-                                        ),
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = if (isSelected) alertFg.copy(alpha = 0.22f) else Color.Transparent
-                                ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = false,
+                                    onClick = { onShiftDeficitToCommissionPaid() },
+                                    colors = RadioButtonDefaults.colors(
+                                        selectedColor = Color(0xFF10B981),
+                                        unselectedColor = Color(0xFF10B981)
+                                    ),
+                                    modifier = Modifier.testTag("shift_deficit_radio_button")
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Rs. ${preset.toInt()}",
-                                        fontSize = 10.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (isSelected) alertFg else MaterialTheme.colorScheme.onSurface,
-                                        fontFamily = DigitalMonospaceFont,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        text = "Shift deficit into commission paid",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF10B981),
+                                        fontFamily = DigitalMonospaceFont
+                                    )
+                                    Text(
+                                        text = "Eliminates ${result.formattedDeficitAmount} deficit and transfers that money to ${uiState.salesRep.ifBlank { "Sales Representative" }} as Commission Paid",
+                                        fontSize = 10.5.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontFamily = DigitalMonospaceFont
                                     )
                                 }
-                            }
-
-                            Surface(
-                                modifier = Modifier
-                                    .clickable { showCustomThresholdDialog = true }
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .border(
-                                        1.dp,
-                                        if (isDark) Color(0x30FFFFFF) else Color(0x20000000),
-                                        RoundedCornerShape(6.dp)
-                                    ),
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color.Transparent
-                            ) {
-                                Text(
-                                    text = "Custom",
-                                    fontSize = 10.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontFamily = DigitalMonospaceFont,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
                             }
                         }
                     }
@@ -1234,39 +1215,6 @@ private fun SettlementResultPanel(
                 )
             }
         }
-    }
-
-    if (showCustomThresholdDialog) {
-        var inputVal by remember { mutableStateOf(uiState.deficitThresholdText) }
-        AlertDialog(
-            onDismissRequest = { showCustomThresholdDialog = false },
-            title = { Text("Set Deficit Alert Limit", fontWeight = FontWeight.Bold) },
-            text = {
-                OutlinedTextField(
-                    value = inputVal,
-                    onValueChange = { inputVal = it },
-                    label = { Text("Deficit Threshold (Rs.)") },
-                    placeholder = { Text("500") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        onSetDeficitThresholdText(inputVal)
-                        showCustomThresholdDialog = false
-                    }
-                ) {
-                    Text("Save")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCustomThresholdDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
 }
 

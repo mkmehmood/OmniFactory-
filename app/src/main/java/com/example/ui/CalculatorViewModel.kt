@@ -392,6 +392,22 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
         _uiState.update { it.copy(showDoubleZeroKey = enabled) }
     }
 
+    fun reloadPreferences() {
+        _uiState.update {
+            it.copy(
+                shapeStructureStyle = userPreferencesManager.shapeStructureStyle,
+                componentSizeStyle = userPreferencesManager.componentSizeStyle,
+                themeMode = userPreferencesManager.themeMode,
+                accentTheme = userPreferencesManager.accentTheme,
+                animationIntensity = userPreferencesManager.animationIntensity,
+                hapticIntensity = userPreferencesManager.hapticIntensity,
+                soundIntensity = userPreferencesManager.soundIntensity,
+                historyTimeSplit = userPreferencesManager.lastHistoryTimeSplit,
+                showDoubleZeroKey = userPreferencesManager.showDoubleZeroKey
+            )
+        }
+    }
+
     fun setEnableAnimations(enabled: Boolean) {
         userPreferencesManager.enableAnimations = enabled
         _uiState.update { it.copy(animationIntensity = userPreferencesManager.animationIntensity) }

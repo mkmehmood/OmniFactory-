@@ -90,6 +90,32 @@ fun SimpleCalculatorDialog(
         }
     }
 
+    fun appendOperator(op: String) {
+        if (expression.isEmpty()) {
+            if (op == "-" || op == "−") {
+                expression = "-"
+                evaluateLive("-")
+            }
+            return
+        }
+        val isTrailingOp = expression.endsWith("+") ||
+                expression.endsWith("-") ||
+                expression.endsWith("−") ||
+                expression.endsWith("×") ||
+                expression.endsWith("÷") ||
+                expression.endsWith("*") ||
+                expression.endsWith("/") ||
+                expression.endsWith("%")
+
+        val newExpr = if (isTrailingOp) {
+            expression.dropLast(1) + op
+        } else {
+            expression + op
+        }
+        expression = newExpr
+        evaluateLive(newExpr)
+    }
+
     fun appendChar(c: String) {
         val newExpr = expression + c
         expression = newExpr
@@ -154,51 +180,34 @@ fun SimpleCalculatorDialog(
                     .fillMaxWidth()
                     .padding(18.dp)
             ) {
-                // Header
+                // Header (No cross sign)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(primaryColor.copy(alpha = 0.15f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Calculate,
-                                contentDescription = null,
-                                tint = primaryColor,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Text(
-                            text = "QUICK CALCULATOR",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
-
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.size(28.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(primaryColor.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close Calculator",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            imageVector = Icons.Default.Calculate,
+                            contentDescription = null,
+                            tint = primaryColor,
                             modifier = Modifier.size(18.dp)
                         )
                     }
+                    Text(
+                        text = "QUICK CALCULATOR",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        letterSpacing = 0.5.sp
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -298,92 +307,17 @@ fun SimpleCalculatorDialog(
                                             "C" -> onClear()
                                             "⌫" -> onBackspace()
                                             "=" -> onEquals()
-                                            "÷" -> appendChar("÷")
-                                            "×" -> appendChar("×")
-                                            "−" -> appendChar("-")
-                                            "+" -> appendChar("+")
-                                            "%" -> appendChar("%")
+                                            "÷" -> appendOperator("÷")
+                                            "×" -> appendOperator("×")
+                                            "−" -> appendOperator("-")
+                                            "+" -> appendOperator("+")
+                                            "%" -> appendOperator("%")
                                             else -> appendChar(label)
                                         }
                                     }
                                 )
                             }
                         }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Bottom Action Bar
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(42.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .border(
-                                1.dp,
-                                if (isDark) Color(0x28FFFFFF) else Color(0x1F000000),
-                                RoundedCornerShape(10.dp)
-                            )
-                            .clickable {
-                                val currentVal = (resultText ?: expression).replace(",", "").trim()
-                                if (currentVal.isNotEmpty()) {
-                                    clipboardManager.setText(AnnotatedString(currentVal))
-                                    Toast.makeText(context, "Copied: $currentVal", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (isDark) Color(0x15FFFFFF) else Color(0x0A000000)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ContentCopy,
-                                contentDescription = null,
-                                modifier = Modifier.size(15.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Copy Result",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                fontFamily = DigitalMonospaceFont,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = {
-                            val activeVal = (resultText ?: expression).replace(",", "").trim()
-                            if (activeVal.isNotEmpty()) {
-                                onResultSelected?.invoke(activeVal)
-                            }
-                            onDismiss()
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(42.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = primaryColor,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Text(
-                            text = "Done",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont
-                        )
                     }
                 }
             }

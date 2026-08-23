@@ -64,6 +64,7 @@ import com.example.ui.CalculatorViewModel
 import com.example.ui.ConverterViewModel
 import com.example.ui.MixtureViewModel
 import com.example.ui.SalesViewModel
+import com.example.ui.SettingsViewModel
 import com.example.ui.components.AppNavigationDrawer
 import com.example.ui.components.DrawerDestination
 import com.example.ui.components.SimpleCalculatorDialog
@@ -85,6 +86,7 @@ class MainActivity : ComponentActivity() {
     private val salesViewModel: SalesViewModel by viewModels()
     private val mixtureViewModel: MixtureViewModel by viewModels()
     private val converterViewModel: ConverterViewModel by viewModels()
+    private val settingsViewModel: SettingsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -131,6 +133,15 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(Unit) {
                 converterViewModel.userMessage.collect { message ->
+                    snackbarHostState.showSnackbar(
+                        message = message,
+                        duration = SnackbarDuration.Short
+                    )
+                }
+            }
+
+            LaunchedEffect(Unit) {
+                settingsViewModel.userMessage.collect { message ->
                     snackbarHostState.showSnackbar(
                         message = message,
                         duration = SnackbarDuration.Short
@@ -204,6 +215,9 @@ class MainActivity : ComponentActivity() {
                             onHapticIntensityChange = { calculatorViewModel.setHapticIntensity(it) },
                             onSoundIntensityChange = { calculatorViewModel.setSoundIntensity(it) },
                             onToggleDoubleZero = { calculatorViewModel.setShowDoubleZeroKey(it) },
+                            settingsViewModel = settingsViewModel,
+                            onPreferencesReload = { calculatorViewModel.reloadPreferences() },
+                            onCopyToClipboard = copyToClipboard,
                             onNavigateBack = {
                                 currentDestination = DrawerDestination.CALCULATOR
                             }
@@ -339,8 +353,7 @@ class MainActivity : ComponentActivity() {
                                                 onSetUnitSalePrice = { salesViewModel.setUnitSalePrice(it) },
                                                 onSetCommissionPerUnit = { salesViewModel.setCommissionPerUnit(it) },
                                                 onSetCommissionPaid = { salesViewModel.setCommissionPaid(it) },
-                                                onSetDeficitThreshold = { salesViewModel.setDeficitThreshold(it) },
-                                                onSetDeficitThresholdText = { salesViewModel.setDeficitThresholdText(it) },
+                                                onShiftDeficitToCommissionPaid = { salesViewModel.shiftDeficitToCommissionPaid() },
                                                 onSaveTransaction = { salesViewModel.saveTransaction() },
                                                 onClearInputs = { salesViewModel.clearInputs() },
                                                 onCopySummary = { copyToClipboard(it, "Sales reconciliation audit") },

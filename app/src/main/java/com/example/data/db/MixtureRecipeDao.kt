@@ -14,6 +14,9 @@ interface MixtureRecipeDao {
     @Query("SELECT * FROM mixture_recipes ORDER BY timestamp DESC")
     fun getAllRecipes(): Flow<List<MixtureRecipeEntity>>
 
+    @Query("SELECT * FROM mixture_recipes ORDER BY timestamp DESC")
+    suspend fun getAllList(): List<MixtureRecipeEntity>
+
     @Query("SELECT * FROM mixture_recipes WHERE category = :category ORDER BY timestamp DESC")
     fun getRecipesByCategory(category: String): Flow<List<MixtureRecipeEntity>>
 

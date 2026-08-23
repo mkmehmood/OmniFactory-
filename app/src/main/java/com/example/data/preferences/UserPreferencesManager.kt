@@ -132,6 +132,10 @@ class UserPreferencesManager(context: Context) {
         get() = prefs.getBoolean(KEY_SHOW_DOUBLE_ZERO, true)
         set(value) = prefs.edit().putBoolean(KEY_SHOW_DOUBLE_ZERO, value).apply()
 
+    var lastBackupTimestamp: Long
+        get() = prefs.getLong(KEY_LAST_BACKUP_TIMESTAMP, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_BACKUP_TIMESTAMP, value).apply()
+
     // Backward compatibility helpers
     var enableAnimations: Boolean
         get() = animationIntensity != AnimationIntensity.OFF
@@ -162,5 +166,6 @@ class UserPreferencesManager(context: Context) {
         private const val KEY_SOUND_INTENSITY = "pref_sound_intensity"
         private const val KEY_HISTORY_TIME_SPLIT = "pref_history_time_split"
         private const val KEY_SHOW_DOUBLE_ZERO = "pref_show_double_zero"
+        private const val KEY_LAST_BACKUP_TIMESTAMP = "pref_last_backup_timestamp"
     }
 }

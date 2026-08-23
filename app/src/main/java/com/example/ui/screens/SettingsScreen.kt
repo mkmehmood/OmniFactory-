@@ -25,26 +25,49 @@ import androidx.compose.material.icons.filled.Animation
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.AspectRatio
+import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.DensityMedium
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LinearScale
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PanoramaFishEye
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.RoundedCorner
+import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,13 +76,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,14 +98,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.data.db.BackupValidationResult
+import com.example.data.db.RestoreMode
 import com.example.domain.util.HapticFeedbackHelper
 import com.example.domain.util.SoundFeedbackHelper
+import com.example.ui.BackupDialogType
+import com.example.ui.SettingsViewModel
 import com.example.ui.theme.AccentTheme
 import com.example.ui.theme.AnimationIntensity
 import com.example.ui.theme.ComponentSizeStyle
@@ -111,6 +146,9 @@ fun SettingsScreen(
     onSoundIntensityChange: (SoundIntensity) -> Unit = {},
     onToggleDoubleZero: (Boolean) -> Unit,
     onNavigateBack: () -> Unit,
+    settingsViewModel: SettingsViewModel = viewModel(),
+    onPreferencesReload: () -> Unit = {},
+    onCopyToClipboard: (String, String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -118,6 +156,9 @@ fun SettingsScreen(
     val isDark = MaterialTheme.colorScheme.background.red < 0.2f
     val primaryColor = MaterialTheme.colorScheme.primary
     val shapeStructure = LocalShapeStructure.current
+    val clipboardManager = LocalClipboardManager.current
+
+    val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
 
     var colorDropdownExpanded by remember { mutableStateOf(false) }
     var shapeDropdownExpanded by remember { mutableStateOf(false) }
@@ -858,8 +899,688 @@ fun SettingsScreen(
                 }
             }
 
+            HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
+
+            // ==========================================
+            // SECTION 7: Complete App Database Backup & Restore
+            // ==========================================
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Complete App Database Backup & Restore",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "Full snapshot, JSON export, sharing & complete data recovery",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                IconButton(
+                    onClick = { settingsViewModel.refreshStats() },
+                    modifier = Modifier.size(36.dp).testTag("refresh_db_stats_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Refresh Database Statistics",
+                        tint = primaryColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = shapeStructure.toCardShape(),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isDark) Color(0x1CFFFFFF) else Color(0x0C000000)
+                ),
+                border = BorderStroke(
+                    1.dp,
+                    if (isDark) Color(0x2EFFFFFF) else Color(0x1C000000)
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // Database Stats Matrix
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        DbStatPill(
+                            title = "Calculations",
+                            value = "${settingsUiState.stats.calculationsCount}",
+                            icon = Icons.Default.Calculate,
+                            modifier = Modifier.weight(1f)
+                        )
+                        DbStatPill(
+                            title = "Sales Audits",
+                            value = "${settingsUiState.stats.salesTransactionsCount}",
+                            icon = Icons.Default.ReceiptLong,
+                            modifier = Modifier.weight(1f)
+                        )
+                        DbStatPill(
+                            title = "Mixtures",
+                            value = "${settingsUiState.stats.mixtureRecipesCount}",
+                            icon = Icons.Default.Science,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    // Metadata details row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Last Backup: ${settingsUiState.stats.formattedLastBackup}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontFamily = DigitalMonospaceFont
+                            )
+                            Text(
+                                text = if (settingsUiState.stats.hasLocalSnapshot) "Local snapshot available on device" else "No offline snapshot created",
+                                fontSize = 10.5.sp,
+                                color = if (settingsUiState.stats.hasLocalSnapshot) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = primaryColor.copy(alpha = 0.15f),
+                            border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f))
+                        ) {
+                            Text(
+                                text = "${settingsUiState.stats.totalRecords} Total Records",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = primaryColor,
+                                fontFamily = DigitalMonospaceFont,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(color = primaryColor.copy(alpha = 0.15f))
+
+                    // Action buttons
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        // 1. Create Backup Button
+                        Button(
+                            onClick = { settingsViewModel.openDialog(BackupDialogType.EXPORT_PREVIEW) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(46.dp)
+                                .testTag("create_backup_button"),
+                            shape = shapeStructure.toInputShape(),
+                            colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Backup,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Create & Export Full Backup",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
+
+                        // 2. Secondary Row: Quick Local Snapshot & Restore
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = { settingsViewModel.createLocalSnapshot() },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(42.dp)
+                                    .testTag("save_snapshot_button"),
+                                shape = shapeStructure.toInputShape(),
+                                border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.6f))
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Download,
+                                    contentDescription = null,
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Save Snapshot",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = primaryColor
+                                )
+                            }
+
+                            Button(
+                                onClick = { settingsViewModel.openDialog(BackupDialogType.IMPORT_JSON) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(42.dp)
+                                    .testTag("restore_backup_button"),
+                                shape = shapeStructure.toInputShape(),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Restore,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Restore Data",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+
+                        // 3. Reset / Wipe Database Option
+                        OutlinedButton(
+                            onClick = { settingsViewModel.openDialog(BackupDialogType.RESET_DATABASE) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(38.dp)
+                                .testTag("reset_db_button"),
+                            shape = shapeStructure.toInputShape(),
+                            border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.5f)),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFFEF4444)
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteSweep,
+                                contentDescription = null,
+                                tint = Color(0xFFEF4444),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Database Maintenance & Reset Tables...",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFFEF4444)
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(28.dp))
         }
+    }
+
+    // ==========================================
+    // BACKUP & RESTORE DIALOGS
+    // ==========================================
+
+    // 1. Export Preview Dialog
+    if (settingsUiState.activeDialog == BackupDialogType.EXPORT_PREVIEW) {
+        AlertDialog(
+            onDismissRequest = { settingsViewModel.closeDialog() },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Backup,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("App Database Backup", fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "A complete JSON backup of all calculations, sales transactions, mixture recipes, and app configurations has been generated.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isDark) Color(0x20FFFFFF) else Color(0x10000000),
+                        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "📦 Summary of Backup Payload:",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = primaryColor
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("• Calculation History: ${settingsUiState.stats.calculationsCount} items", fontSize = 11.5.sp)
+                            Text("• Sales Reconciliations: ${settingsUiState.stats.salesTransactionsCount} audits", fontSize = 11.5.sp)
+                            Text("• Mixture Wizard Recipes: ${settingsUiState.stats.mixtureRecipesCount} formulas", fontSize = 11.5.sp)
+                            Text("• App Themes & Keypad Settings: Included", fontSize = 11.5.sp)
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                settingsViewModel.exportAndShare(context)
+                                settingsViewModel.closeDialog()
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
+                        ) {
+                            Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Share File", fontSize = 12.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                settingsViewModel.exportAndCopy { text ->
+                                    onCopyToClipboard(text, "App Backup JSON")
+                                }
+                                settingsViewModel.closeDialog()
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Copy JSON", fontSize = 12.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { settingsViewModel.closeDialog() }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
+
+    // 2. Import & Restore Dialog
+    if (settingsUiState.activeDialog == BackupDialogType.IMPORT_JSON || settingsUiState.activeDialog == BackupDialogType.RESTORE_CONFIRM) {
+        var inputJson by remember { mutableStateOf(settingsUiState.pendingJson) }
+        val validation = settingsUiState.validationResult
+
+        AlertDialog(
+            onDismissRequest = { settingsViewModel.closeDialog() },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Restore,
+                        contentDescription = null,
+                        tint = Color(0xFF10B981),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Restore Database", fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Quick Action: Load Local Snapshot
+                    if (settingsUiState.stats.hasLocalSnapshot) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(1.dp, Color(0xFF10B981).copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                .clickable {
+                                    settingsViewModel.loadLocalSnapshotForRestore()
+                                    inputJson = settingsUiState.pendingJson
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFF10B981).copy(alpha = 0.12f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Download,
+                                    contentDescription = null,
+                                    tint = Color(0xFF10B981),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Load Device Offline Snapshot",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF10B981)
+                                    )
+                                    Text(
+                                        text = "Tap to load latest local snapshot",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // JSON Input Area
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Paste Backup JSON:",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+
+                        TextButton(
+                            onClick = {
+                                val clipText = clipboardManager.getText()?.text ?: ""
+                                if (clipText.isNotBlank()) {
+                                    inputJson = clipText
+                                    settingsViewModel.setPendingJson(clipText)
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentPaste,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Paste Clipboard", fontSize = 11.sp)
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = inputJson,
+                        onValueChange = {
+                            inputJson = it
+                            settingsViewModel.setPendingJson(it)
+                        },
+                        placeholder = { Text("Paste {\"metadata\": ...} JSON here", fontSize = 11.sp) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(110.dp)
+                            .testTag("backup_json_input"),
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            fontFamily = DigitalMonospaceFont,
+                            fontSize = 10.5.sp
+                        ),
+                        maxLines = 6
+                    )
+
+                    // Validation Card
+                    if (validation != null) {
+                        if (validation.isValid) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF10B981).copy(alpha = 0.14f),
+                                border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.6f))
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = Color(0xFF10B981),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "Valid Backup Payload Detected",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF10B981)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("• Backup Date: ${validation.formattedBackupDate}", fontSize = 11.sp, fontFamily = DigitalMonospaceFont)
+                                    Text("• Calculations: ${validation.calculationsCount} items", fontSize = 11.sp)
+                                    Text("• Sales Audits: ${validation.salesTransactionsCount} transactions", fontSize = 11.sp)
+                                    Text("• Mixture Recipes: ${validation.mixtureRecipesCount} formulas", fontSize = 11.sp)
+                                    Text("• App Settings: ${if (validation.hasPreferences) "Included" else "None"}", fontSize = 11.sp)
+                                }
+                            }
+                        } else {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFFEF4444).copy(alpha = 0.12f),
+                                border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.5f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Warning,
+                                        contentDescription = null,
+                                        tint = Color(0xFFEF4444),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = validation.errorMessage ?: "Invalid backup JSON format.",
+                                        color = Color(0xFFEF4444),
+                                        fontSize = 11.5.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Restore Strategy
+                    Text(
+                        text = "Restore Strategy:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { settingsViewModel.setRestoreMode(RestoreMode.OVERWRITE) }
+                        ) {
+                            RadioButton(
+                                selected = settingsUiState.restoreMode == RestoreMode.OVERWRITE,
+                                onClick = { settingsViewModel.setRestoreMode(RestoreMode.OVERWRITE) },
+                                colors = RadioButtonDefaults.colors(selectedColor = primaryColor)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Column {
+                                Text("Clean Overwrite (Recommended)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                Text("Wipes current database and replaces with backup data", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { settingsViewModel.setRestoreMode(RestoreMode.MERGE) }
+                        ) {
+                            RadioButton(
+                                selected = settingsUiState.restoreMode == RestoreMode.MERGE,
+                                onClick = { settingsViewModel.setRestoreMode(RestoreMode.MERGE) },
+                                colors = RadioButtonDefaults.colors(selectedColor = primaryColor)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Column {
+                                Text("Merge & Append", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                Text("Keeps existing items and adds backup records", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+
+                    // Settings restore checkbox
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { settingsViewModel.setRestoreSettingsOption(!settingsUiState.restoreSettingsOption) }
+                    ) {
+                        Checkbox(
+                            checked = settingsUiState.restoreSettingsOption,
+                            onCheckedChange = { settingsViewModel.setRestoreSettingsOption(it) },
+                            colors = CheckboxDefaults.colors(checkedColor = primaryColor)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Apply themes, styles & sound settings from backup",
+                            fontSize = 11.5.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        settingsViewModel.performRestore(onPreferencesReload)
+                    },
+                    enabled = validation?.isValid == true && !settingsUiState.isBusy,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                ) {
+                    if (settingsUiState.isBusy) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+                    Text("Restore Database", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { settingsViewModel.closeDialog() }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // 3. Reset Database Confirmation Dialog
+    if (settingsUiState.activeDialog == BackupDialogType.RESET_DATABASE) {
+        AlertDialog(
+            onDismissRequest = { settingsViewModel.closeDialog() },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteSweep,
+                        contentDescription = null,
+                        tint = Color(0xFFEF4444),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Reset Database Tables", fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Select which database tables you want to wipe. This action cannot be undone unless you have a backup.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFEF4444).copy(alpha = 0.1f),
+                        border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.4f))
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { settingsViewModel.setClearCalculationsOption(!settingsUiState.clearCalculationsOption) }
+                            ) {
+                                Checkbox(
+                                    checked = settingsUiState.clearCalculationsOption,
+                                    onCheckedChange = { settingsViewModel.setClearCalculationsOption(it) },
+                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFFEF4444))
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Calculation History (${settingsUiState.stats.calculationsCount} items)", fontSize = 12.sp)
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { settingsViewModel.setClearSalesOption(!settingsUiState.clearSalesOption) }
+                            ) {
+                                Checkbox(
+                                    checked = settingsUiState.clearSalesOption,
+                                    onCheckedChange = { settingsViewModel.setClearSalesOption(it) },
+                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFFEF4444))
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Sales Reconciliation Audits (${settingsUiState.stats.salesTransactionsCount} audits)", fontSize = 12.sp)
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { settingsViewModel.setClearMixturesOption(!settingsUiState.clearMixturesOption) }
+                            ) {
+                                Checkbox(
+                                    checked = settingsUiState.clearMixturesOption,
+                                    onCheckedChange = { settingsViewModel.setClearMixturesOption(it) },
+                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFFEF4444))
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Mixture Wizard Recipes (${settingsUiState.stats.mixtureRecipesCount} recipes)", fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { settingsViewModel.performResetDatabase(onPreferencesReload) },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Purge Selected Tables", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { settingsViewModel.closeDialog() }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
@@ -989,6 +1710,50 @@ private fun LiquidThemeCard(
                 fontSize = 11.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+private fun DbStatPill(
+    title: String,
+    value: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier
+) {
+    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val primaryColor = MaterialTheme.colorScheme.primary
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(10.dp),
+        color = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000),
+        border = BorderStroke(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x15000000))
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 8.dp, horizontal = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = primaryColor,
+                modifier = Modifier.size(16.dp)
+            )
+            Text(
+                text = value,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = title,
+                fontSize = 9.5.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
             )
         }
     }

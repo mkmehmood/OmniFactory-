@@ -13,6 +13,9 @@ interface CalculationDao {
     @Query("SELECT * FROM calculation_history ORDER BY isPinned DESC, timestamp DESC")
     fun getAllHistory(): Flow<List<CalculationEntity>>
 
+    @Query("SELECT * FROM calculation_history ORDER BY isPinned DESC, timestamp DESC")
+    suspend fun getAllList(): List<CalculationEntity>
+
     @Query("SELECT * FROM calculation_history WHERE tag = :tag ORDER BY isPinned DESC, timestamp DESC")
     fun getHistoryByTag(tag: String): Flow<List<CalculationEntity>>
 

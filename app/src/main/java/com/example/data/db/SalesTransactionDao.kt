@@ -12,6 +12,12 @@ interface SalesTransactionDao {
     @Query("SELECT * FROM sales_transactions ORDER BY dateMillis DESC, timestamp DESC")
     fun getAllTransactions(): Flow<List<SalesTransactionEntity>>
 
+    @Query("SELECT * FROM sales_transactions ORDER BY dateMillis DESC, timestamp DESC")
+    suspend fun getAllList(): List<SalesTransactionEntity>
+
+    @Query("SELECT COUNT(*) FROM sales_transactions")
+    suspend fun getCount(): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(entity: SalesTransactionEntity): Long
 
