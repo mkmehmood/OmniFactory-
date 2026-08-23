@@ -463,6 +463,36 @@ class DatabaseBackupManager(private val context: Context) {
         }
     }
 
+    fun generateBackupFileName(): String {
+        val dateStr = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        return "calculator_suite_backup_$dateStr.json"
+    }
+
+    suspend fun writeBackupToUri(context: Context, uri: android.net.Uri, json: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                outputStream.write(json.toByteArray(Charsets.UTF_8))
+                outputStream.flush()
+            }
+            prefs.lastBackupTimestamp = System.currentTimeMillis()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun readBackupFromUri(context: Context, uri: android.net.Uri): String? = withContext(Dispatchers.IO) {
+        try {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
+                    reader.readText()
+                }
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     fun shareBackup(context: Context, backupJson: String) {
         try {
             val dateStr = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())

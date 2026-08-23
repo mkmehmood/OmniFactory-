@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -159,6 +161,22 @@ fun SettingsScreen(
     val clipboardManager = LocalClipboardManager.current
 
     val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+
+    val saveFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            settingsViewModel.saveBackupToUri(context, uri)
+        }
+    }
+
+    val pickFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            settingsViewModel.loadBackupFromUri(context, uri)
+        }
+    }
 
     var colorDropdownExpanded by remember { mutableStateOf(false) }
     var shapeDropdownExpanded by remember { mutableStateOf(false) }
@@ -1016,30 +1034,81 @@ fun SettingsScreen(
 
                     // Action buttons
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        // 1. Create Backup Button
-                        Button(
-                            onClick = { settingsViewModel.openDialog(BackupDialogType.EXPORT_PREVIEW) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(46.dp)
-                                .testTag("create_backup_button"),
-                            shape = shapeStructure.toInputShape(),
-                            colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
+                        // 1. Direct Download & Pick File Row (Primary Action Pair)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Backup,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Create & Export Full Backup",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            )
+                            Button(
+                                onClick = {
+                                    saveFileLauncher.launch(settingsViewModel.getDefaultBackupFileName())
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .testTag("download_backup_button"),
+                                shape = shapeStructure.toInputShape(),
+                                colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Download,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Column {
+                                    Text(
+                                        text = "Download Backup",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        lineHeight = 14.sp
+                                    )
+                                    Text(
+                                        text = "Save .json file",
+                                        fontSize = 9.5.sp,
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        lineHeight = 11.sp
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = {
+                                    pickFileLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/*", "*/*"))
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .testTag("pick_file_restore_button"),
+                                shape = shapeStructure.toInputShape(),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Upload,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Column {
+                                    Text(
+                                        text = "Pick File & Restore",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = Color.White,
+                                        lineHeight = 14.sp
+                                    )
+                                    Text(
+                                        text = "From device storage",
+                                        fontSize = 9.5.sp,
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        lineHeight = 11.sp
+                                    )
+                                }
+                            }
                         }
 
-                        // 2. Secondary Row: Quick Local Snapshot & Restore
+                        // 2. Secondary Row: Quick Local Snapshot & Advanced Share/Restore Dialogs
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1048,47 +1117,47 @@ fun SettingsScreen(
                                 onClick = { settingsViewModel.createLocalSnapshot() },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(42.dp)
+                                    .height(40.dp)
                                     .testTag("save_snapshot_button"),
                                 shape = shapeStructure.toInputShape(),
-                                border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.6f))
+                                border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.5f))
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Download,
+                                    imageVector = Icons.Default.Storage,
                                     contentDescription = null,
                                     tint = primaryColor,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(15.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Save Snapshot",
-                                    fontSize = 12.sp,
+                                    text = "Offline Snapshot",
+                                    fontSize = 11.5.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = primaryColor
                                 )
                             }
 
-                            Button(
-                                onClick = { settingsViewModel.openDialog(BackupDialogType.IMPORT_JSON) },
+                            OutlinedButton(
+                                onClick = { settingsViewModel.openDialog(BackupDialogType.EXPORT_PREVIEW) },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(42.dp)
-                                    .testTag("restore_backup_button"),
+                                    .height(40.dp)
+                                    .testTag("share_export_button"),
                                 shape = shapeStructure.toInputShape(),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                                border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.5f))
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Restore,
+                                    imageVector = Icons.Default.Share,
                                     contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(15.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "Restore Data",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    text = "Share & Copy JSON",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = primaryColor
                                 )
                             }
                         }
@@ -1098,10 +1167,10 @@ fun SettingsScreen(
                             onClick = { settingsViewModel.openDialog(BackupDialogType.RESET_DATABASE) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(38.dp)
+                                .height(36.dp)
                                 .testTag("reset_db_button"),
                             shape = shapeStructure.toInputShape(),
-                            border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.5f)),
+                            border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.4f)),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = Color(0xFFEF4444)
                             )
@@ -1110,12 +1179,12 @@ fun SettingsScreen(
                                 imageVector = Icons.Default.DeleteSweep,
                                 contentDescription = null,
                                 tint = Color(0xFFEF4444),
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(15.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "Database Maintenance & Reset Tables...",
-                                fontSize = 11.5.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = Color(0xFFEF4444)
                             )
@@ -1177,22 +1246,36 @@ fun SettingsScreen(
                         }
                     }
 
+                    // Direct Download button
+                    Button(
+                        onClick = {
+                            saveFileLauncher.launch(settingsViewModel.getDefaultBackupFileName())
+                            settingsViewModel.closeDialog()
+                        },
+                        modifier = Modifier.fillMaxWidth().height(42.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
+                    ) {
+                        Icon(imageVector = Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Download .json File to Device", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Button(
+                        OutlinedButton(
                             onClick = {
                                 settingsViewModel.exportAndShare(context)
                                 settingsViewModel.closeDialog()
                             },
                             modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
+                            shape = RoundedCornerShape(8.dp)
                         ) {
-                            Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Share File", fontSize = 12.sp)
+                            Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(15.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Share", fontSize = 11.5.sp)
                         }
 
                         OutlinedButton(
@@ -1205,9 +1288,9 @@ fun SettingsScreen(
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Copy JSON", fontSize = 12.sp)
+                            Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(15.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Copy JSON", fontSize = 11.5.sp)
                         }
                     }
                 }
@@ -1246,29 +1329,76 @@ fun SettingsScreen(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    // HERO ACTION: Pick File from Device
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(1.dp, Color(0xFF10B981).copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                            .clickable {
+                                pickFileLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/*", "*/*"))
+                            },
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFF10B981).copy(alpha = 0.14f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF10B981)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Upload,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "📂 Pick Backup File from Device",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.5.sp,
+                                    color = Color(0xFF10B981)
+                                )
+                                Text(
+                                    text = "Choose any .json file from Downloads, Drive or Storage",
+                                    fontSize = 10.5.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
                     // Quick Action: Load Local Snapshot
                     if (settingsUiState.stats.hasLocalSnapshot) {
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
-                                .border(1.dp, Color(0xFF10B981).copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                                .clickable {
-                                    settingsViewModel.loadLocalSnapshotForRestore()
-                                    inputJson = settingsUiState.pendingJson
-                                },
+                                .border(1.dp, primaryColor.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                            .clickable {
+                                settingsViewModel.loadLocalSnapshotForRestore()
+                                inputJson = settingsUiState.pendingJson
+                            },
                             shape = RoundedCornerShape(8.dp),
-                            color = Color(0xFF10B981).copy(alpha = 0.12f)
+                            color = primaryColor.copy(alpha = 0.10f)
                         ) {
                             Row(
                                 modifier = Modifier.padding(10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Download,
+                                    imageVector = Icons.Default.Storage,
                                     contentDescription = null,
-                                    tint = Color(0xFF10B981),
-                                    modifier = Modifier.size(20.dp)
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column(modifier = Modifier.weight(1f)) {
@@ -1276,11 +1406,11 @@ fun SettingsScreen(
                                         text = "Load Device Offline Snapshot",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 12.sp,
-                                        color = Color(0xFF10B981)
+                                        color = primaryColor
                                     )
                                     Text(
                                         text = "Tap to load latest local snapshot",
-                                        fontSize = 11.sp,
+                                        fontSize = 10.5.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
@@ -1295,8 +1425,8 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Paste Backup JSON:",
-                            fontSize = 12.sp,
+                            text = "Or Paste Backup JSON:",
+                            fontSize = 11.5.sp,
                             fontWeight = FontWeight.SemiBold
                         )
 
@@ -1328,13 +1458,13 @@ fun SettingsScreen(
                         placeholder = { Text("Paste {\"metadata\": ...} JSON here", fontSize = 11.sp) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(110.dp)
+                            .height(95.dp)
                             .testTag("backup_json_input"),
                         textStyle = androidx.compose.ui.text.TextStyle(
                             fontFamily = DigitalMonospaceFont,
-                            fontSize = 10.5.sp
+                            fontSize = 10.sp
                         ),
-                        maxLines = 6
+                        maxLines = 5
                     )
 
                     // Validation Card

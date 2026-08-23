@@ -123,6 +123,55 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun getDefaultBackupFileName(): String {
+        return backupManager.generateBackupFileName()
+    }
+
+    fun saveBackupToUri(context: Context, uri: android.net.Uri) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isBusy = true) }
+            val json = if (_uiState.value.pendingJson.isNotBlank()) {
+                _uiState.value.pendingJson
+            } else {
+                backupManager.createBackupJson()
+            }
+            val success = backupManager.writeBackupToUri(context, uri, json)
+            val stats = backupManager.getStats()
+            _uiState.update { it.copy(isBusy = false, stats = stats) }
+            if (success) {
+                _userMessage.emit("✅ Backup downloaded & saved successfully!")
+            } else {
+                _userMessage.emit("❌ Failed to write backup file.")
+            }
+        }
+    }
+
+    fun loadBackupFromUri(context: Context, uri: android.net.Uri) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isBusy = true) }
+            val content = backupManager.readBackupFromUri(context, uri)
+            if (!content.isNullOrBlank()) {
+                val validation = backupManager.validateBackupJson(content)
+                _uiState.update {
+                    it.copy(
+                        isBusy = false,
+                        pendingJson = content,
+                        validationResult = validation,
+                        activeDialog = BackupDialogType.RESTORE_CONFIRM
+                    )
+                }
+                if (validation.isValid) {
+                    _userMessage.emit("Backup file loaded successfully (${validation.totalItems} items).")
+                } else {
+                    _userMessage.emit("⚠️ Invalid backup file format.")
+                }
+            } else {
+                _uiState.update { it.copy(isBusy = false) }
+                _userMessage.emit("❌ Could not read the selected backup file.")
+            }
+        }
+    }
+
     fun exportAndShare(context: Context) {
         viewModelScope.launch {
             _uiState.update { it.copy(isBusy = true) }
