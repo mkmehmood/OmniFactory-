@@ -110,6 +110,8 @@ fun SalesScreen(
     onSetUnitSalePrice: (String) -> Unit,
     onSetCommissionPerUnit: (String) -> Unit,
     onSetCommissionPaid: (String) -> Unit,
+    onSetDeficitThreshold: (Double) -> Unit,
+    onSetDeficitThresholdText: (String) -> Unit,
     onSaveTransaction: () -> Unit,
     onClearInputs: () -> Unit,
     onCopySummary: (String) -> Unit,
@@ -199,7 +201,9 @@ fun SalesScreen(
 
             // 3. Expected Cash & Settlement Result Panel
             SettlementResultPanel(
-                result = uiState.reconciliationResult,
+                uiState = uiState,
+                onSetDeficitThreshold = onSetDeficitThreshold,
+                onSetDeficitThresholdText = onSetDeficitThresholdText,
                 onCopySummary = {
                     val summaryText = buildReconciliationSummaryText(uiState)
                     onCopySummary(summaryText)
@@ -879,13 +883,18 @@ private fun NumericGridInputField(
 
 @Composable
 private fun SettlementResultPanel(
-    result: SalesReconciliationResult,
+    uiState: SalesUiState,
+    onSetDeficitThreshold: (Double) -> Unit,
+    onSetDeficitThresholdText: (String) -> Unit,
     onCopySummary: () -> Unit,
     primaryColor: Color,
     surfaceBg: Color,
     borderColor: Color,
     isDark: Boolean
 ) {
+    val result = uiState.reconciliationResult
+    var showCustomThresholdDialog by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -901,7 +910,7 @@ private fun SettlementResultPanel(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "SETTLEMENT AUDIT",
+                    text = "SETTLEMENT AUDIT & CASH FLOW",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = DigitalMonospaceFont,
@@ -924,7 +933,133 @@ private fun SettlementResultPanel(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Hero Expected Cash Receivable Card
+            // Deficit Warning Indicator Alert Banner (Triggered when deficit exists or exceeds threshold)
+            if (result.deficitAmount > 0.0) {
+                val isThresholdExceeded = uiState.isDeficitThresholdExceeded
+                val alertBg = if (isThresholdExceeded) Color(0xFFEF4444).copy(alpha = 0.16f) else Color(0xFFF59E0B).copy(alpha = 0.14f)
+                val alertBorder = if (isThresholdExceeded) Color(0xFFEF4444).copy(alpha = 0.75f) else Color(0xFFF59E0B).copy(alpha = 0.6f)
+                val alertFg = if (isThresholdExceeded) Color(0xFFEF4444) else Color(0xFFF59E0B)
+                val alertIcon = Icons.Default.TrendingDown
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(1.5.dp, alertBorder, RoundedCornerShape(12.dp))
+                        .testTag("deficit_warning_indicator_banner"),
+                    shape = RoundedCornerShape(12.dp),
+                    color = alertBg
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(alertFg.copy(alpha = 0.25f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = alertIcon,
+                                    contentDescription = "Deficit Warning",
+                                    tint = alertFg,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (isThresholdExceeded) "⚠️ DEFICIT THRESHOLD EXCEEDED" else "⚠️ CASH DEFICIT DETECTED",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = alertFg
+                                )
+                                Text(
+                                    text = if (isThresholdExceeded)
+                                        "Deficit of ${result.formattedDeficitAmount} exceeds your alert limit of Rs. ${uiState.deficitThresholdText}!"
+                                    else
+                                        "Current deficit: ${result.formattedDeficitAmount} (Limit: Rs. ${uiState.deficitThresholdText})",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontFamily = DigitalMonospaceFont
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Threshold selector chips
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Alert Limit:",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontFamily = DigitalMonospaceFont
+                            )
+
+                            val presets = listOf(100.0, 500.0, 1000.0, 5000.0)
+                            presets.forEach { preset ->
+                                val isSelected = kotlin.math.abs(uiState.deficitThreshold - preset) < 0.1
+                                Surface(
+                                    modifier = Modifier
+                                        .clickable { onSetDeficitThreshold(preset) }
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .border(
+                                            1.dp,
+                                            if (isSelected) alertFg else (if (isDark) Color(0x30FFFFFF) else Color(0x20000000)),
+                                            RoundedCornerShape(6.dp)
+                                        ),
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = if (isSelected) alertFg.copy(alpha = 0.22f) else Color.Transparent
+                                ) {
+                                    Text(
+                                        text = "Rs. ${preset.toInt()}",
+                                        fontSize = 10.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) alertFg else MaterialTheme.colorScheme.onSurface,
+                                        fontFamily = DigitalMonospaceFont,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                modifier = Modifier
+                                    .clickable { showCustomThresholdDialog = true }
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .border(
+                                        1.dp,
+                                        if (isDark) Color(0x30FFFFFF) else Color(0x20000000),
+                                        RoundedCornerShape(6.dp)
+                                    ),
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color.Transparent
+                            ) {
+                                Text(
+                                    text = "Custom",
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontFamily = DigitalMonospaceFont,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            // Hero Expected Cash Receivable Card (Pure cash flow from quantities & prices)
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -940,13 +1075,26 @@ private fun SettlementResultPanel(
                 Column(
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
                 ) {
-                    Text(
-                        text = "EXPECTED CASH RECEIVABLE",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = primaryColor
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "EXPECTED CASH RECEIVABLE",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = primaryColor
+                        )
+                        Text(
+                            text = "Product Cash Flow",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontFamily = DigitalMonospaceFont
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -961,26 +1109,75 @@ private fun SettlementResultPanel(
 
                     Spacer(modifier = Modifier.height(4.dp))
 
-                    // Concise Formula Breakdown
+                    // Concise Formula Breakdown (Pure Quantity & Prices, Commission independent)
                     Text(
-                        text = "Cash Sales (${result.formattedCashFromSales}) + Recovery (${result.formattedRecoveredCredit}) − Net Comm (${result.formattedTotalCommission}) − Exp (${result.formattedExpense})",
+                        text = "Cash Sales (${result.formattedCashFromSales}) + Recovery (${result.formattedRecoveredCredit}) − Field Exp (${result.formattedExpense})",
                         fontSize = 10.5.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontFamily = DigitalMonospaceFont
                     )
 
-                    if (result.sharedQty > 0 || result.commissionPaid > 0) {
+                    if (result.sharedQty > 0) {
                         Spacer(modifier = Modifier.height(4.dp))
-                        val extraDetails = buildList {
-                            if (result.sharedQty > 0) add("Shared: ${result.formattedSharedQty} units deducted")
-                            if (result.commissionPaid > 0) add("Gross Comm: ${result.formattedGrossCommission} | Paid: ${result.formattedCommissionPaid}")
-                        }.joinToString(" • ")
                         Text(
-                            text = extraDetails,
+                            text = "Shared Deductions: ${result.formattedSharedQty} units deducted from gross sold",
                             fontSize = 10.sp,
                             color = primaryColor,
                             fontFamily = DigitalMonospaceFont,
                             fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Commission Payable & Paid Dedicated Audit Panel
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(
+                        1.dp,
+                        Color(0xFFF59E0B).copy(alpha = 0.35f),
+                        RoundedCornerShape(12.dp)
+                    ),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFF59E0B).copy(alpha = 0.08f)
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                    Text(
+                        text = "COMMISSION ACCOUNTING (PAYABLE & PAID)",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = Color(0xFFF59E0B),
+                        letterSpacing = 0.5.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        CommissionMiniBox(
+                            label = "Gross Earned",
+                            value = result.formattedGrossCommission,
+                            color = Color(0xFF38BDF8),
+                            modifier = Modifier.weight(1f)
+                        )
+                        CommissionMiniBox(
+                            label = "Commission Paid",
+                            value = result.formattedCommissionPaid,
+                            color = Color(0xFFF59E0B),
+                            modifier = Modifier.weight(1f)
+                        )
+                        CommissionMiniBox(
+                            label = "Commission Payable",
+                            value = result.formattedCommissionPayable,
+                            color = Color(0xFF10B981),
+                            modifier = Modifier.weight(1.2f)
                         )
                     }
                 }
@@ -1021,21 +1218,94 @@ private fun SettlementResultPanel(
                 )
 
                 SummaryStatBox(
-                    label = "Commission",
-                    value = result.formattedTotalCommission,
+                    label = "Comm Payable",
+                    value = result.formattedCommissionPayable,
                     tintColor = Color(0xFFF59E0B),
                     modifier = Modifier.weight(1f),
                     testTag = "stat_commission_rate"
                 )
 
                 SummaryStatBox(
-                    label = "Cash Handover",
+                    label = "Cash Received",
                     value = result.formattedPhysicalCash,
                     tintColor = primaryColor,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1.1f),
                     testTag = "stat_physical_cash"
                 )
             }
+        }
+    }
+
+    if (showCustomThresholdDialog) {
+        var inputVal by remember { mutableStateOf(uiState.deficitThresholdText) }
+        AlertDialog(
+            onDismissRequest = { showCustomThresholdDialog = false },
+            title = { Text("Set Deficit Alert Limit", fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(
+                    value = inputVal,
+                    onValueChange = { inputVal = it },
+                    label = { Text("Deficit Threshold (Rs.)") },
+                    placeholder = { Text("500") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onSetDeficitThresholdText(inputVal)
+                        showCustomThresholdDialog = false
+                    }
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCustomThresholdDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun CommissionMiniBox(
+    label: String,
+    value: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(8.dp)),
+        shape = RoundedCornerShape(8.dp),
+        color = color.copy(alpha = 0.08f)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = label,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Medium,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = value,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -1711,18 +1981,22 @@ private fun buildReconciliationSummaryText(uiState: SalesUiState): String {
         appendLine("• Credit Sales: ${uiState.creditSalesQtyText}")
         appendLine("• Net Sold Units: ${res.formattedNetSold}")
         appendLine("• Cash Qty Units: ${res.formattedCashQty}")
-        appendLine("\n--- FINANCIAL SETTLEMENT ---")
+        appendLine("\n--- COMMISSION ACCOUNTING ---")
         appendLine("• Unit Sale Price: ${res.formattedUnitPrice}")
         appendLine("• Commission / Unit: ${res.formattedCommissionPerUnit}")
         appendLine("• Gross Commission: ${res.formattedGrossCommission}")
-        appendLine("• Commission Paid: ${res.formattedCommissionPaid}")
-        appendLine("• Net Commission Payable: ${res.formattedTotalCommission}")
+        appendLine("• Commission Paid (Advance): ${res.formattedCommissionPaid}")
+        appendLine("• Commission Payable (Net): ${res.formattedCommissionPayable}")
+        appendLine("\n--- FINANCIAL SETTLEMENT (PURE CASH FLOW) ---")
         appendLine("• Product Cash Sales: ${res.formattedCashFromSales}")
         appendLine("• Recovered Credit: ${res.formattedRecoveredCredit}")
         appendLine("• Field Expenses: ${res.formattedExpense}")
         appendLine("• Expected Cash Receivable: ${res.formattedExpectedCash}")
         appendLine("• Physical Cash Received: ${res.formattedPhysicalCash}")
         appendLine("• Variance / Discrepancy: ${res.formattedDiscrepancy}")
+        if (res.deficitAmount > 0) {
+            appendLine("• Deficit Shortfall: ${res.formattedDeficitAmount} (Alert Limit: Rs. ${uiState.deficitThresholdText})")
+        }
     }
 }
 

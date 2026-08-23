@@ -449,6 +449,12 @@ class MainActivity : ComponentActivity() {
                             onCopyTape = { tapeText -> copyToClipboard(tapeText, "History tape") }
                         )
                     }
+
+                    if (showQuickCalculatorDialog) {
+                        SimpleCalculatorDialog(
+                            onDismiss = { showQuickCalculatorDialog = false }
+                        )
+                    }
                 }
             }
         }
