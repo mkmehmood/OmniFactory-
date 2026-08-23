@@ -934,7 +934,7 @@ fun SettingsScreen(
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "Full snapshot, JSON export, sharing & complete data recovery",
+                        text = "Download backup files (.json) and restore database anytime",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1008,9 +1008,9 @@ fun SettingsScreen(
                                 fontFamily = DigitalMonospaceFont
                             )
                             Text(
-                                text = if (settingsUiState.stats.hasLocalSnapshot) "Local snapshot available on device" else "No offline snapshot created",
+                                text = "Export and restore entire app dataset",
                                 fontSize = 10.5.sp,
-                                color = if (settingsUiState.stats.hasLocalSnapshot) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                         }
 
@@ -1108,61 +1108,7 @@ fun SettingsScreen(
                             }
                         }
 
-                        // 2. Secondary Row: Quick Local Snapshot & Advanced Share/Restore Dialogs
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = { settingsViewModel.createLocalSnapshot() },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(40.dp)
-                                    .testTag("save_snapshot_button"),
-                                shape = shapeStructure.toInputShape(),
-                                border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.5f))
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Storage,
-                                    contentDescription = null,
-                                    tint = primaryColor,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Offline Snapshot",
-                                    fontSize = 11.5.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = primaryColor
-                                )
-                            }
-
-                            OutlinedButton(
-                                onClick = { settingsViewModel.openDialog(BackupDialogType.EXPORT_PREVIEW) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(40.dp)
-                                    .testTag("share_export_button"),
-                                shape = shapeStructure.toInputShape(),
-                                border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.5f))
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Share,
-                                    contentDescription = null,
-                                    tint = primaryColor,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Share & Copy JSON",
-                                    fontSize = 11.5.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = primaryColor
-                                )
-                            }
-                        }
-
-                        // 3. Reset / Wipe Database Option
+                        // 2. Reset / Wipe Database Option
                         OutlinedButton(
                             onClick = { settingsViewModel.openDialog(BackupDialogType.RESET_DATABASE) },
                             modifier = Modifier
@@ -1201,109 +1147,7 @@ fun SettingsScreen(
     // BACKUP & RESTORE DIALOGS
     // ==========================================
 
-    // 1. Export Preview Dialog
-    if (settingsUiState.activeDialog == BackupDialogType.EXPORT_PREVIEW) {
-        AlertDialog(
-            onDismissRequest = { settingsViewModel.closeDialog() },
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Backup,
-                        contentDescription = null,
-                        tint = primaryColor,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("App Database Backup", fontWeight = FontWeight.Bold)
-                }
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = "A complete JSON backup of all calculations, sales transactions, mixture recipes, and app configurations has been generated.",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
-                        color = if (isDark) Color(0x20FFFFFF) else Color(0x10000000),
-                        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Text(
-                                text = "📦 Summary of Backup Payload:",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                                color = primaryColor
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text("• Calculation History: ${settingsUiState.stats.calculationsCount} items", fontSize = 11.5.sp)
-                            Text("• Sales Reconciliations: ${settingsUiState.stats.salesTransactionsCount} audits", fontSize = 11.5.sp)
-                            Text("• Mixture Wizard Recipes: ${settingsUiState.stats.mixtureRecipesCount} formulas", fontSize = 11.5.sp)
-                            Text("• App Themes & Keypad Settings: Included", fontSize = 11.5.sp)
-                        }
-                    }
-
-                    // Direct Download button
-                    Button(
-                        onClick = {
-                            saveFileLauncher.launch(settingsViewModel.getDefaultBackupFileName())
-                            settingsViewModel.closeDialog()
-                        },
-                        modifier = Modifier.fillMaxWidth().height(42.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
-                    ) {
-                        Icon(imageVector = Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Download .json File to Device", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                settingsViewModel.exportAndShare(context)
-                                settingsViewModel.closeDialog()
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(15.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Share", fontSize = 11.5.sp)
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                settingsViewModel.exportAndCopy { text ->
-                                    onCopyToClipboard(text, "App Backup JSON")
-                                }
-                                settingsViewModel.closeDialog()
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(15.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Copy JSON", fontSize = 11.5.sp)
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { settingsViewModel.closeDialog() }) {
-                    Text("Close")
-                }
-            }
-        )
-    }
-
-    // 2. Import & Restore Dialog
+    // 1. Import & Restore Dialog
     if (settingsUiState.activeDialog == BackupDialogType.IMPORT_JSON || settingsUiState.activeDialog == BackupDialogType.RESTORE_CONFIRM) {
         var inputJson by remember { mutableStateOf(settingsUiState.pendingJson) }
         val validation = settingsUiState.validationResult
@@ -1362,7 +1206,7 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "📂 Pick Backup File from Device",
+                                    text = "Pick Backup File from Device",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 12.5.sp,
                                     color = Color(0xFF10B981)
@@ -1372,48 +1216,6 @@ fun SettingsScreen(
                                     fontSize = 10.5.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                            }
-                        }
-                    }
-
-                    // Quick Action: Load Local Snapshot
-                    if (settingsUiState.stats.hasLocalSnapshot) {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .border(1.dp, primaryColor.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-                            .clickable {
-                                settingsViewModel.loadLocalSnapshotForRestore()
-                                inputJson = settingsUiState.pendingJson
-                            },
-                            shape = RoundedCornerShape(8.dp),
-                            color = primaryColor.copy(alpha = 0.10f)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Storage,
-                                    contentDescription = null,
-                                    tint = primaryColor,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "Load Device Offline Snapshot",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp,
-                                        color = primaryColor
-                                    )
-                                    Text(
-                                        text = "Tap to load latest local snapshot",
-                                        fontSize = 10.5.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
                             }
                         }
                     }
@@ -1493,11 +1295,11 @@ fun SettingsScreen(
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text("• Backup Date: ${validation.formattedBackupDate}", fontSize = 11.sp, fontFamily = DigitalMonospaceFont)
-                                    Text("• Calculations: ${validation.calculationsCount} items", fontSize = 11.sp)
-                                    Text("• Sales Audits: ${validation.salesTransactionsCount} transactions", fontSize = 11.sp)
-                                    Text("• Mixture Recipes: ${validation.mixtureRecipesCount} formulas", fontSize = 11.sp)
-                                    Text("• App Settings: ${if (validation.hasPreferences) "Included" else "None"}", fontSize = 11.sp)
+                                    Text("Backup Date: ${validation.formattedBackupDate}", fontSize = 11.sp, fontFamily = DigitalMonospaceFont)
+                                    Text("Calculations: ${validation.calculationsCount} items", fontSize = 11.sp)
+                                    Text("Sales Audits: ${validation.salesTransactionsCount} transactions", fontSize = 11.sp)
+                                    Text("Mixture Recipes: ${validation.mixtureRecipesCount} formulas", fontSize = 11.sp)
+                                    Text("App Settings: ${if (validation.hasPreferences) "Included" else "None"}", fontSize = 11.sp)
                                 }
                             }
                         } else {

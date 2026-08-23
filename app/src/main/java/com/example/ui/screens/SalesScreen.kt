@@ -969,7 +969,7 @@ private fun SettlementResultPanel(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "⚠️ CASH DEFICIT DETECTED",
+                                    text = "CASH DEFICIT DETECTED",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = DigitalMonospaceFont,

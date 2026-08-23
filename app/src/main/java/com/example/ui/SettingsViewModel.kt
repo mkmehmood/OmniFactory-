@@ -139,9 +139,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             val stats = backupManager.getStats()
             _uiState.update { it.copy(isBusy = false, stats = stats) }
             if (success) {
-                _userMessage.emit("✅ Backup downloaded & saved successfully!")
+                _userMessage.emit("Backup downloaded and saved successfully.")
             } else {
-                _userMessage.emit("❌ Failed to write backup file.")
+                _userMessage.emit("Failed to write backup file.")
             }
         }
     }
@@ -163,72 +163,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 if (validation.isValid) {
                     _userMessage.emit("Backup file loaded successfully (${validation.totalItems} items).")
                 } else {
-                    _userMessage.emit("⚠️ Invalid backup file format.")
+                    _userMessage.emit("Invalid backup file format.")
                 }
             } else {
                 _uiState.update { it.copy(isBusy = false) }
-                _userMessage.emit("❌ Could not read the selected backup file.")
-            }
-        }
-    }
-
-    fun exportAndShare(context: Context) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isBusy = true) }
-            val json = if (_uiState.value.pendingJson.isNotBlank()) {
-                _uiState.value.pendingJson
-            } else {
-                backupManager.createBackupJson()
-            }
-            backupManager.shareBackup(context, json)
-            val stats = backupManager.getStats()
-            _uiState.update { it.copy(isBusy = false, stats = stats) }
-            _userMessage.emit("Backup file prepared for sharing!")
-        }
-    }
-
-    fun exportAndCopy(onCopy: (String) -> Unit) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isBusy = true) }
-            val json = if (_uiState.value.pendingJson.isNotBlank()) {
-                _uiState.value.pendingJson
-            } else {
-                backupManager.createBackupJson()
-            }
-            onCopy(json)
-            val stats = backupManager.getStats()
-            _uiState.update { it.copy(isBusy = false, stats = stats) }
-            _userMessage.emit("Full database backup JSON copied to clipboard!")
-        }
-    }
-
-    fun createLocalSnapshot() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isBusy = true) }
-            backupManager.createBackupJson()
-            val stats = backupManager.getStats()
-            _uiState.update { it.copy(isBusy = false, stats = stats) }
-            _userMessage.emit("Saved offline local snapshot (${stats.totalRecords} records).")
-        }
-    }
-
-    fun loadLocalSnapshotForRestore() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isBusy = true) }
-            val content = backupManager.getLocalSnapshotContent()
-            if (content != null) {
-                val validation = backupManager.validateBackupJson(content)
-                _uiState.update {
-                    it.copy(
-                        isBusy = false,
-                        pendingJson = content,
-                        validationResult = validation,
-                        activeDialog = BackupDialogType.RESTORE_CONFIRM
-                    )
-                }
-            } else {
-                _uiState.update { it.copy(isBusy = false) }
-                _userMessage.emit("No local snapshot file found. Create a backup first.")
+                _userMessage.emit("Could not read the selected backup file.")
             }
         }
     }
@@ -267,9 +206,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 if (current.restoreSettingsOption && result.restoredSettings) {
                     onPreferencesReload()
                 }
-                _userMessage.emit("✅ ${result.message}")
+                _userMessage.emit(result.message)
             } else {
-                _userMessage.emit("❌ ${result.message}")
+                _userMessage.emit(result.message)
             }
         }
     }
