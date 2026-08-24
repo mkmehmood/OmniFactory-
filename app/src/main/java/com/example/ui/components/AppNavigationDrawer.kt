@@ -18,17 +18,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Calculate
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Science
@@ -37,7 +33,6 @@ import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.Surface
@@ -50,7 +45,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.converter.ConverterCategory
@@ -59,6 +53,7 @@ import com.example.ui.theme.DigitalMonospaceFont
 enum class DrawerDestination {
     CALCULATOR,
     LEDGER,
+    EXPENSES,
     SALES,
     MIXTURE_CALCULATOR,
     BATCH_SCALING,
@@ -93,7 +88,7 @@ fun AppNavigationDrawer(
                 .fillMaxHeight()
                 .padding(horizontal = 16.dp, vertical = 18.dp)
         ) {
-            // Header with App Title (No close cross button)
+            // Header with App Title
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -183,7 +178,21 @@ fun AppNavigationDrawer(
                     )
                 }
 
-                // 3. Units Converter Option (Opens Categories Hub)
+                // 3. Expenses (Business & Home)
+                item {
+                    DrawerNavItem(
+                        label = "Expenses",
+                        subtitle = "Everyday business & home expense manager",
+                        icon = Icons.Default.Receipt,
+                        isSelected = currentDestination == DrawerDestination.EXPENSES,
+                        onClick = { onSelectDestination(DrawerDestination.EXPENSES) },
+                        testTag = "drawer_item_expenses",
+                        primaryColor = primaryColor,
+                        isDark = isDark
+                    )
+                }
+
+                // 4. Units Converter Option (Opens Categories Hub)
                 item {
                     DrawerNavItem(
                         label = "Units Converter",
@@ -200,7 +209,7 @@ fun AppNavigationDrawer(
                     )
                 }
 
-                // 4. Sales Audit Option
+                // 5. Sales Audit Option
                 item {
                     DrawerNavItem(
                         label = "Sales Audit",
@@ -214,7 +223,7 @@ fun AppNavigationDrawer(
                     )
                 }
 
-                // 5. Mixture Calculator
+                // 6. Mixture Calculator
                 item {
                     DrawerNavItem(
                         label = "Mixture Calculator",
@@ -228,7 +237,7 @@ fun AppNavigationDrawer(
                     )
                 }
 
-                // 6. Batch Scaling
+                // 7. Batch Scaling
                 item {
                     DrawerNavItem(
                         label = "Batch & Ratio Scaler",
@@ -272,12 +281,12 @@ fun AppNavigationDrawer(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .border(
-                        1.dp,
-                        if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
-                        RoundedCornerShape(16.dp)
-                    )
-                    .testTag("sidebar_footer_mahmood_khan"),
+                .border(
+                    1.dp,
+                    if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
+                    RoundedCornerShape(16.dp)
+                )
+                .testTag("sidebar_footer_mahmood_khan"),
                 color = if (isDark) Color(0x14FFFFFF) else Color(0x10000000),
                 shape = RoundedCornerShape(16.dp)
             ) {

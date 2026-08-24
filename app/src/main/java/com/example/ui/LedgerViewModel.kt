@@ -1,11 +1,13 @@
 package com.example.ui
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.db.AppDatabase
 import com.example.data.db.LedgerTransactionDao
 import com.example.data.db.LedgerTransactionEntity
+import com.example.domain.ledger.LedgerPaymentUtils
 import com.example.domain.ledger.LedgerSummary
 import com.example.domain.ledger.LedgerType
 import com.example.domain.util.IndianNumberFormatter
@@ -20,11 +22,17 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+private const val PREFS_NAME = "ledger_preferences"
+private const val KEY_SAVED_CATEGORIES = "saved_categories_set"
+private const val KEY_SAVED_MODES = "saved_modes_set"
+
+val DEFAULT_CATEGORIES = listOf("Sales", "Noran Shah", "Noman Shah", "Home")
+val DEFAULT_PAYMENT_MODES = listOf("Cash", "Bank Transfer")
+
 data class LedgerUiState(
     val searchQuery: String = "",
-    val selectedTypeFilter: String = "ALL",          // "ALL", "CASH_IN", "CASH_OUT", "OPENING_BALANCE"
-    val selectedCategoryFilter: String = "ALL",
-    val selectedPaymentModeFilter: String = "ALL",
+    val selectedTypeFilter: String = "ALL",          // "ALL", "CASH_IN", "CASH_OUT"
+    val selectedModeFilter: String = "ALL",          // "ALL", "CASH", "BANK", "OTHERS"
     val isAddSheetOpen: Boolean = false,
     val isHistoryPanelOpen: Boolean = false,
     val isDetailDialogOpen: Boolean = false,
@@ -45,14 +53,15 @@ data class LedgerUiState(
     val filteredTransactions: List<LedgerTransactionEntity> = emptyList(),
     val allTransactions: List<LedgerTransactionEntity> = emptyList(),
     val distinctParties: List<String> = emptyList(),
-    val distinctCategories: List<String> = emptyList(),
-    val distinctPaymentModes: List<String> = emptyList()
+    val availableCategories: List<String> = DEFAULT_CATEGORIES,
+    val availablePaymentModes: List<String> = DEFAULT_PAYMENT_MODES
 )
 
 class LedgerViewModel(
     application: Application
 ) : AndroidViewModel(application) {
 
+    private val prefs = application.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val ledgerDao: LedgerTransactionDao = AppDatabase.getDatabase(application).ledgerTransactionDao()
 
     private val _uiState = MutableStateFlow(LedgerUiState())
@@ -62,6 +71,8 @@ class LedgerViewModel(
     val userMessage: SharedFlow<String> = _userMessage.asSharedFlow()
 
     init {
+        loadPersistedLists()
+
         viewModelScope.launch {
             ledgerDao.getAllTransactions().collect { allList ->
                 _uiState.update { current ->
@@ -70,32 +81,83 @@ class LedgerViewModel(
                         allList,
                         current.searchQuery,
                         current.selectedTypeFilter,
-                        current.selectedCategoryFilter,
-                        current.selectedPaymentModeFilter
+                        current.selectedModeFilter
                     )
                     val distinctParties = allList.map { it.partyName.trim() }
                         .filter { it.isNotEmpty() }
                         .distinct()
                         .take(20)
-                    val distinctCategories = allList.map { it.category.trim() }
-                        .filter { it.isNotEmpty() }
-                        .distinct()
-                        .take(20)
-                    val distinctPaymentModes = allList.map { it.paymentMode.trim() }
-                        .filter { it.isNotEmpty() }
-                        .distinct()
-                        .take(15)
+
+                    // Merge DB categories and payment modes with current available
+                    val dbCategories = allList.map { it.category.trim() }.filter { it.isNotEmpty() }
+                    val dbModes = allList.map { it.paymentMode.trim() }.filter { it.isNotEmpty() }
+
+                    val mergedCategories = (current.availableCategories + dbCategories).distinct()
+                    val mergedModes = (current.availablePaymentModes + dbModes).distinct()
 
                     current.copy(
                         allTransactions = allList,
                         summary = summary,
                         filteredTransactions = filtered,
                         distinctParties = distinctParties,
-                        distinctCategories = distinctCategories,
-                        distinctPaymentModes = distinctPaymentModes
+                        availableCategories = mergedCategories,
+                        availablePaymentModes = mergedModes
                     )
                 }
             }
+        }
+    }
+
+    private fun loadPersistedLists() {
+        val savedCatSet = prefs.getStringSet(KEY_SAVED_CATEGORIES, null)
+        val loadedCategories = if (savedCatSet != null && savedCatSet.isNotEmpty()) {
+            (DEFAULT_CATEGORIES + savedCatSet).distinct()
+        } else {
+            DEFAULT_CATEGORIES
+        }
+
+        val savedModeSet = prefs.getStringSet(KEY_SAVED_MODES, null)
+        val loadedModes = if (savedModeSet != null && savedModeSet.isNotEmpty()) {
+            (DEFAULT_PAYMENT_MODES + savedModeSet).distinct()
+        } else {
+            DEFAULT_PAYMENT_MODES
+        }
+
+        _uiState.update {
+            it.copy(
+                availableCategories = loadedCategories,
+                availablePaymentModes = loadedModes
+            )
+        }
+    }
+
+    private fun persistCategories(list: List<String>) {
+        prefs.edit().putStringSet(KEY_SAVED_CATEGORIES, list.toSet()).apply()
+    }
+
+    private fun persistPaymentModes(list: List<String>) {
+        prefs.edit().putStringSet(KEY_SAVED_MODES, list.toSet()).apply()
+    }
+
+    private fun autoSaveCategoryIfNew(category: String) {
+        val trimmed = category.trim()
+        if (trimmed.isEmpty()) return
+        val currentCategories = _uiState.value.availableCategories
+        if (currentCategories.none { it.equals(trimmed, ignoreCase = true) }) {
+            val updated = currentCategories + trimmed
+            persistCategories(updated)
+            _uiState.update { it.copy(availableCategories = updated) }
+        }
+    }
+
+    private fun autoSavePaymentModeIfNew(mode: String) {
+        val trimmed = mode.trim()
+        if (trimmed.isEmpty()) return
+        val currentModes = _uiState.value.availablePaymentModes
+        if (currentModes.none { it.equals(trimmed, ignoreCase = true) }) {
+            val updated = currentModes + trimmed
+            persistPaymentModes(updated)
+            _uiState.update { it.copy(availablePaymentModes = updated) }
         }
     }
 
@@ -107,8 +169,7 @@ class LedgerViewModel(
             allList,
             current.searchQuery,
             current.selectedTypeFilter,
-            current.selectedCategoryFilter,
-            current.selectedPaymentModeFilter
+            current.selectedModeFilter
         )
 
         _uiState.update {
@@ -122,35 +183,44 @@ class LedgerViewModel(
     private fun computeSummary(allList: List<LedgerTransactionEntity>): LedgerSummary {
         var totalCashIn = 0.0
         var totalCashOut = 0.0
-        var totalOpening = 0.0
         var cashInCount = 0
         var cashOutCount = 0
+
+        var cashBalance = 0.0
+        var bankBalance = 0.0
+        var otherModesBalance = 0.0
+        var otherModesCount = 0
+
         val byMode = mutableMapOf<String, Double>()
         val byCategory = mutableMapOf<String, Double>()
 
         for (tx in allList) {
-            when (tx.type) {
-                "CASH_IN" -> {
-                    totalCashIn += tx.amount
-                    cashInCount++
-                }
-                "CASH_OUT" -> {
-                    totalCashOut += tx.amount
-                    cashOutCount++
-                }
-                "OPENING_BALANCE" -> {
-                    totalOpening += tx.amount
-                    totalCashIn += tx.amount
-                    cashInCount++
-                }
+            val isExpense = tx.type == "CASH_OUT"
+            if (isExpense) {
+                totalCashOut += tx.amount
+                cashOutCount++
+            } else {
+                totalCashIn += tx.amount
+                cashInCount++
             }
-            // By Mode
+
+            val netDelta = if (isExpense) -tx.amount else tx.amount
             val mode = tx.paymentMode.trim().ifEmpty { "Cash" }
-            val netDelta = if (tx.type == "CASH_OUT") -tx.amount else tx.amount
+
+            // Group by Cash, Bank Transfer, or Others
+            if (LedgerPaymentUtils.isCashMode(mode)) {
+                cashBalance += netDelta
+            } else if (LedgerPaymentUtils.isBankMode(mode)) {
+                bankBalance += netDelta
+            } else {
+                otherModesBalance += netDelta
+                otherModesCount++
+            }
+
             byMode[mode] = (byMode[mode] ?: 0.0) + netDelta
 
             // By Category
-            val cat = tx.category.trim().ifEmpty { "General" }
+            val cat = tx.category.trim().ifEmpty { "Sales" }
             byCategory[cat] = (byCategory[cat] ?: 0.0) + tx.amount
         }
 
@@ -161,10 +231,14 @@ class LedgerViewModel(
             totalCashOut = totalCashOut,
             netCashFlow = totalCashInHand,
             totalCashInHand = totalCashInHand,
-            totalOpeningBalance = totalOpening,
+            totalOpeningBalance = 0.0,
             transactionCount = allList.size,
             cashInCount = cashInCount,
             cashOutCount = cashOutCount,
+            cashBalance = cashBalance,
+            bankBalance = bankBalance,
+            otherModesBalance = otherModesBalance,
+            otherModesCount = otherModesCount,
             cashByMode = byMode,
             categoryBreakdown = byCategory
         )
@@ -174,23 +248,34 @@ class LedgerViewModel(
         allList: List<LedgerTransactionEntity>,
         searchQuery: String,
         typeFilter: String,
-        categoryFilter: String,
-        paymentModeFilter: String
+        modeFilter: String
     ): List<LedgerTransactionEntity> {
+        val query = searchQuery.trim()
         return allList.filter { tx ->
-            val matchSearch = searchQuery.isBlank() ||
-                    tx.partyName.contains(searchQuery, ignoreCase = true) ||
-                    tx.remarks.contains(searchQuery, ignoreCase = true) ||
-                    tx.referenceNo.contains(searchQuery, ignoreCase = true) ||
-                    tx.category.contains(searchQuery, ignoreCase = true) ||
-                    tx.paymentMode.contains(searchQuery, ignoreCase = true) ||
-                    tx.amount.toString().contains(searchQuery)
+            val matchSearch = query.isBlank() ||
+                    tx.partyName.contains(query, ignoreCase = true) ||
+                    tx.remarks.contains(query, ignoreCase = true) ||
+                    tx.referenceNo.contains(query, ignoreCase = true) ||
+                    tx.category.contains(query, ignoreCase = true) ||
+                    tx.paymentMode.contains(query, ignoreCase = true) ||
+                    tx.amount.toString().contains(query)
 
-            val matchType = typeFilter == "ALL" || tx.type.equals(typeFilter, ignoreCase = true)
-            val matchCategory = categoryFilter == "ALL" || tx.category.equals(categoryFilter, ignoreCase = true)
-            val matchMode = paymentModeFilter == "ALL" || tx.paymentMode.equals(paymentModeFilter, ignoreCase = true)
+            val matchType = when (typeFilter) {
+                "ALL" -> true
+                "CASH_IN" -> tx.type != "CASH_OUT"
+                "CASH_OUT" -> tx.type == "CASH_OUT"
+                else -> true
+            }
 
-            matchSearch && matchType && matchCategory && matchMode
+            val matchMode = when (modeFilter) {
+                "ALL" -> true
+                "CASH" -> LedgerPaymentUtils.isCashMode(tx.paymentMode)
+                "BANK" -> LedgerPaymentUtils.isBankMode(tx.paymentMode)
+                "OTHERS" -> !LedgerPaymentUtils.isDefaultMode(tx.paymentMode)
+                else -> tx.paymentMode.equals(modeFilter, ignoreCase = true)
+            }
+
+            matchSearch && matchType && matchMode
         }
     }
 
@@ -205,23 +290,36 @@ class LedgerViewModel(
         recomputeState()
     }
 
-    fun setCategoryFilter(category: String) {
-        _uiState.update { it.copy(selectedCategoryFilter = category) }
+    fun setModeFilter(filter: String) {
+        _uiState.update { it.copy(selectedModeFilter = filter) }
         recomputeState()
     }
 
-    fun setPaymentModeFilter(mode: String) {
-        _uiState.update { it.copy(selectedPaymentModeFilter = mode) }
+    fun openHistoryForMode(modeFilter: String) {
+        _uiState.update {
+            it.copy(
+                isHistoryPanelOpen = true,
+                selectedModeFilter = modeFilter,
+                selectedTypeFilter = "ALL",
+                searchQuery = ""
+            )
+        }
         recomputeState()
+    }
+
+    // --- Form Inputs ---
+    fun setFormCategory(category: String) {
+        _uiState.update { it.copy(formCategory = category) }
+    }
+
+    fun setFormPaymentMode(mode: String) {
+        _uiState.update { it.copy(formPaymentMode = mode) }
     }
 
     // --- Add / Edit Transaction Sheet & Form ---
     fun openAddTransactionSheet(type: LedgerType = LedgerType.CASH_IN) {
-        val defaultCategory = when (type) {
-            LedgerType.CASH_OUT -> "Expense"
-            LedgerType.OPENING_BALANCE -> "Opening Balance"
-            else -> "Sales"
-        }
+        val defaultCategory = if (type == LedgerType.CASH_OUT) "Home" else "Sales"
+        val defaultPaymentMode = "Cash"
 
         _uiState.update {
             it.copy(
@@ -230,7 +328,7 @@ class LedgerViewModel(
                 formType = type,
                 formAmountText = "",
                 formCategory = defaultCategory,
-                formPaymentMode = "Cash",
+                formPaymentMode = defaultPaymentMode,
                 formPartyName = "",
                 formRemarks = "",
                 formReferenceNo = "",
@@ -240,11 +338,7 @@ class LedgerViewModel(
     }
 
     fun openEditTransaction(tx: LedgerTransactionEntity) {
-        val type = when (tx.type) {
-            "CASH_OUT" -> LedgerType.CASH_OUT
-            "OPENING_BALANCE" -> LedgerType.OPENING_BALANCE
-            else -> LedgerType.CASH_IN
-        }
+        val type = if (tx.type == "CASH_OUT") LedgerType.CASH_OUT else LedgerType.CASH_IN
 
         _uiState.update {
             it.copy(
@@ -252,8 +346,8 @@ class LedgerViewModel(
                 editingTransaction = tx,
                 formType = type,
                 formAmountText = if (tx.amount % 1.0 == 0.0) tx.amount.toLong().toString() else tx.amount.toString(),
-                formCategory = tx.category,
-                formPaymentMode = tx.paymentMode,
+                formCategory = tx.category.ifBlank { "Sales" },
+                formPaymentMode = tx.paymentMode.ifBlank { "Cash" },
                 formPartyName = tx.partyName,
                 formRemarks = tx.remarks,
                 formReferenceNo = tx.referenceNo,
@@ -263,37 +357,20 @@ class LedgerViewModel(
     }
 
     fun closeAddSheet() {
-        _uiState.update { it.copy(isAddSheetOpen = false, editingTransaction = null) }
+        _uiState.update {
+            it.copy(
+                isAddSheetOpen = false,
+                editingTransaction = null
+            )
+        }
     }
 
     fun setFormType(type: LedgerType) {
-        val currentCategory = _uiState.value.formCategory
-        val defaultCategory = when (type) {
-            LedgerType.CASH_OUT -> if (currentCategory == "Sales" || currentCategory.isBlank()) "Expense" else currentCategory
-            LedgerType.OPENING_BALANCE -> "Opening Balance"
-            else -> if (currentCategory == "Expense" || currentCategory.isBlank()) "Sales" else currentCategory
-        }
-
-        _uiState.update { it.copy(formType = type, formCategory = defaultCategory) }
+        _uiState.update { it.copy(formType = type) }
     }
 
     fun setFormAmountText(amount: String) {
         _uiState.update { it.copy(formAmountText = amount) }
-    }
-
-    fun appendPresetAmount(preset: Double) {
-        val current = _uiState.value.formAmountText.toDoubleOrNull() ?: 0.0
-        val sum = current + preset
-        val text = if (sum % 1.0 == 0.0) sum.toLong().toString() else sum.toString()
-        _uiState.update { it.copy(formAmountText = text) }
-    }
-
-    fun setFormCategory(category: String) {
-        _uiState.update { it.copy(formCategory = category) }
-    }
-
-    fun setFormPaymentMode(mode: String) {
-        _uiState.update { it.copy(formPaymentMode = mode) }
     }
 
     fun setFormPartyName(partyName: String) {
@@ -316,17 +393,21 @@ class LedgerViewModel(
         val current = _uiState.value
         val amount = current.formAmountText.toDoubleOrNull()
         if (amount == null || amount <= 0.0) {
-            viewModelScope.launch { _userMessage.emit("Please enter a valid transaction amount greater than 0.") }
+            viewModelScope.launch { _userMessage.emit("Please enter a valid amount greater than 0.") }
             return
         }
 
         val typeStr = current.formType.name
-        val category = current.formCategory.trim().ifBlank { "General" }
+        val category = current.formCategory.trim().ifBlank { if (current.formType == LedgerType.CASH_OUT) "Home" else "Sales" }
         val mode = current.formPaymentMode.trim().ifBlank { "Cash" }
         val party = current.formPartyName.trim()
         val remarks = current.formRemarks.trim()
         val refNo = current.formReferenceNo.trim()
         val dateMillis = current.formDateMillis
+
+        // Auto-save new category and payment mode automatically without extra UI
+        autoSaveCategoryIfNew(category)
+        autoSavePaymentModeIfNew(mode)
 
         viewModelScope.launch {
             _uiState.update { it.copy(isFormSubmitting = true) }
@@ -358,7 +439,13 @@ class LedgerViewModel(
                 ledgerDao.insertTransaction(newTx)
                 _userMessage.emit("${current.formType.title} entry saved.")
             }
-            _uiState.update { it.copy(isAddSheetOpen = false, isFormSubmitting = false, editingTransaction = null) }
+            _uiState.update {
+                it.copy(
+                    isAddSheetOpen = false,
+                    isFormSubmitting = false,
+                    editingTransaction = null
+                )
+            }
         }
     }
 
@@ -388,9 +475,10 @@ class LedgerViewModel(
     // --- Formatted Exports ---
     fun buildSingleTransactionReport(tx: LedgerTransactionEntity): String {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
+        val typeLabel = if (tx.type == "CASH_OUT") "CASH OUT (EXPENSE)" else "CASH IN (INCOME)"
         return buildString {
             appendLine("=== CASHBOOK TRANSACTION VOUCHER ===")
-            appendLine("Type: ${if (tx.type == "CASH_IN") "CASH IN (INCOME)" else if (tx.type == "CASH_OUT") "CASH OUT (EXPENSE)" else "OPENING BALANCE"}")
+            appendLine("Type: $typeLabel")
             appendLine("Amount: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.amount, 2)}")
             appendLine("Category: ${tx.category}")
             appendLine("Payment Mode: ${tx.paymentMode}")
@@ -412,6 +500,10 @@ class LedgerViewModel(
             appendLine("Total Entries: ${summary.transactionCount}")
             appendLine("--------------------------------------")
             appendLine("TOTAL CASH IN HAND: ${summary.formattedCashInHand}")
+            appendLine("Cash Mode Balance:  ${summary.formattedCashBalance}")
+            appendLine("Bank Mode Balance:  ${summary.formattedBankBalance}")
+            appendLine("Others Balance:     ${summary.formattedOthersBalance} (${summary.otherModesCount} txns)")
+            appendLine("--------------------------------------")
             appendLine("TOTAL CASH IN:      ${summary.formattedCashIn} (${summary.cashInCount} txns)")
             appendLine("TOTAL CASH OUT:     ${summary.formattedCashOut} (${summary.cashOutCount} txns)")
             appendLine("NET BALANCE:        ${summary.formattedNetCashFlow}")

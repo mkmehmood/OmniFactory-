@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,12 +27,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CheckCircle
@@ -41,13 +39,11 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.AlertDialog
@@ -78,12 +74,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -91,12 +86,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.db.LedgerTransactionEntity
+import com.example.domain.ledger.LedgerCategoryIcons
 import com.example.domain.ledger.LedgerSummary
 import com.example.domain.ledger.LedgerType
 import com.example.domain.util.IndianNumberFormatter
 import com.example.ui.LedgerUiState
 import com.example.ui.LedgerViewModel
-import com.example.ui.components.SimpleCalculatorDialog
 import com.example.ui.theme.DigitalMonospaceFont
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -111,12 +106,10 @@ fun LedgerScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
 
     val isDark = MaterialTheme.colorScheme.background.red < 0.2f
     val primaryColor = MaterialTheme.colorScheme.primary
 
-    var showQuickCalcDialog by remember { mutableStateOf(false) }
     var transactionToDelete by remember { mutableStateOf<LedgerTransactionEntity?>(null) }
 
     LaunchedEffect(Unit) {
@@ -137,9 +130,12 @@ fun LedgerScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // 1. Grand Hero Card: Cash In Hand (Net Closing Balance)
+            // 1. Grand Hero Card: Cash In Hand with Cash, Bank & Others breakdown
             LedgerHeroBalanceCard(
                 summary = uiState.summary,
+                onModePillClick = { modeFilter ->
+                    viewModel.openHistoryForMode(modeFilter)
+                },
                 isDark = isDark
             )
 
@@ -171,7 +167,7 @@ fun LedgerScreen(
                 val isSurplus = uiState.summary.totalCashInHand >= 0
                 val netAccent = if (isSurplus) Color(0xFF0284C7) else Color(0xFFF59E0B)
                 LedgerMetricCard(
-                    title = "Net Cashflow",
+                    title = "Net Balance",
                     amount = uiState.summary.formattedNetCashFlow,
                     count = if (isSurplus) "Surplus" else "Deficit",
                     icon = if (isSurplus) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
@@ -181,31 +177,24 @@ fun LedgerScreen(
                 )
             }
 
-            // 3. Quick Action Buttons (+ Cash In, - Cash Out, + Opening / Capital)
+            // 3. Fast Action Buttons: Only + Cash In and - Cash Out
             LedgerFastActionBar(
                 onAddCashIn = { viewModel.openAddTransactionSheet(LedgerType.CASH_IN) },
-                onAddCashOut = { viewModel.openAddTransactionSheet(LedgerType.CASH_OUT) },
-                onAddOpening = { viewModel.openAddTransactionSheet(LedgerType.OPENING_BALANCE) },
-                isDark = isDark
+                onAddCashOut = { viewModel.openAddTransactionSheet(LedgerType.CASH_OUT) }
             )
 
-            // 4. Prominent Transaction History Launcher Card (History is opened here or via top bar icon)
-            LedgerHistoryLauncherCard(
-                totalCount = uiState.allTransactions.size,
-                onClick = { viewModel.setHistoryPanelOpen(true) },
-                primaryColor = primaryColor,
-                isDark = isDark
-            )
-
-            // 5. Payment Channel & Mode Distribution Card
+            // 4. Payment Channel & Mode Distribution Card
             if (uiState.summary.cashByMode.isNotEmpty()) {
                 LedgerPaymentModeBreakdownCard(
                     modes = uiState.summary.cashByMode,
+                    onModeClick = { modeName ->
+                        viewModel.openHistoryForMode(modeName)
+                    },
                     isDark = isDark
                 )
             }
 
-            // 6. Category Accounts Summary Card
+            // 5. Category Accounts Summary Card
             if (uiState.summary.categoryBreakdown.isNotEmpty()) {
                 LedgerCategoryBreakdownCard(
                     categories = uiState.summary.categoryBreakdown,
@@ -214,19 +203,7 @@ fun LedgerScreen(
                 )
             }
 
-            // 7. Quick Tools & Calculator Launcher Card
-            LedgerQuickToolsCard(
-                onOpenCalculator = onOpenCalculator,
-                onCopySummary = {
-                    val report = viewModel.buildPeriodAuditSummary()
-                    clipboardManager.setText(AnnotatedString(report))
-                    Toast.makeText(context, "Ledger summary copied to clipboard", Toast.LENGTH_SHORT).show()
-                },
-                primaryColor = primaryColor,
-                isDark = isDark
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
         // ==========================================
@@ -243,14 +220,12 @@ fun LedgerScreen(
                     uiState = uiState,
                     onTypeChange = { viewModel.setFormType(it) },
                     onAmountChange = { viewModel.setFormAmountText(it) },
-                    onAppendPreset = { viewModel.appendPresetAmount(it) },
                     onCategoryChange = { viewModel.setFormCategory(it) },
                     onPaymentModeChange = { viewModel.setFormPaymentMode(it) },
                     onPartyNameChange = { viewModel.setFormPartyName(it) },
                     onRemarksChange = { viewModel.setFormRemarks(it) },
                     onRefNoChange = { viewModel.setFormReferenceNo(it) },
                     onDateChange = { viewModel.setFormDateMillis(it) },
-                    onOpenCalculator = { showQuickCalcDialog = true },
                     onSave = { viewModel.saveFormTransaction() },
                     onCancel = { viewModel.closeAddSheet() },
                     primaryColor = primaryColor,
@@ -260,7 +235,7 @@ fun LedgerScreen(
         }
 
         // ==========================================
-        // DEDICATED HISTORY PANEL / AUDIT MODAL SHEET
+        // DEDICATED HISTORY PANEL SHEET (TOPBAR LAUNCHER & PILL DRILLDOWN)
         // ==========================================
         if (uiState.isHistoryPanelOpen) {
             ModalBottomSheet(
@@ -299,28 +274,17 @@ fun LedgerScreen(
                     viewModel.openEditTransaction(tx)
                 },
                 onDelete = {
+                    viewModel.closeTransactionDetail()
                     transactionToDelete = tx
                 },
                 onCopy = {
                     val voucher = viewModel.buildSingleTransactionReport(tx)
-                    clipboardManager.setText(AnnotatedString(voucher))
-                    Toast.makeText(context, "Voucher copied to clipboard", Toast.LENGTH_SHORT).show()
+                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Voucher", voucher))
+                    Toast.makeText(context, "Voucher copied", Toast.LENGTH_SHORT).show()
                 },
                 primaryColor = primaryColor,
                 isDark = isDark
-            )
-        }
-
-        // ==========================================
-        // QUICK CALCULATOR DIALOG
-        // ==========================================
-        if (showQuickCalcDialog) {
-            SimpleCalculatorDialog(
-                onDismiss = { showQuickCalcDialog = false },
-                onResultSelected = { calculatedValue ->
-                    viewModel.setFormAmountText(calculatedValue)
-                    showQuickCalcDialog = false
-                }
             )
         }
 
@@ -331,21 +295,18 @@ fun LedgerScreen(
             val tx = transactionToDelete!!
             AlertDialog(
                 onDismissRequest = { transactionToDelete = null },
-                title = { Text("Delete Transaction Entry", fontWeight = FontWeight.Bold) },
+                title = { Text("Delete Transaction Record?") },
                 text = {
-                    Text(
-                        "Are you sure you want to permanently delete this ${tx.category} record of Rs. ${IndianNumberFormatter.formatIndianDouble(tx.amount, 2)}?"
-                    )
+                    Text("Are you sure you want to delete this ${tx.type.replace('_', ' ')} entry of Rs. ${IndianNumberFormatter.formatIndianDouble(tx.amount, 2)} (${tx.category})?")
                 },
                 confirmButton = {
-                    Button(
+                    TextButton(
                         onClick = {
                             viewModel.deleteTransaction(tx)
                             transactionToDelete = null
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                        }
                     ) {
-                        Text("Delete", fontWeight = FontWeight.Bold)
+                        Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
@@ -359,34 +320,36 @@ fun LedgerScreen(
 }
 
 // =========================================================================
-// 1. HERO BALANCE CARD
+// 1. HERO CASH IN HAND CARD WITH CASH, BANK & OTHERS
 // =========================================================================
 
 @Composable
 private fun LedgerHeroBalanceCard(
     summary: LedgerSummary,
+    onModePillClick: (String) -> Unit,
     isDark: Boolean
 ) {
-    val isBalancePositive = summary.totalCashInHand >= 0
-    val balanceColor = if (isBalancePositive) Color(0xFF10B981) else Color(0xFFEF4444)
+    val isPositive = summary.totalCashInHand >= 0
+    val cardColor = if (isDark) Color(0xFF0D253A) else Color(0xFF0F172A)
+    val accentColor = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
             .border(
-                BorderStroke(1.5.dp, balanceColor.copy(alpha = 0.5f)),
+                BorderStroke(1.dp, if (isDark) Color(0x3338BDF8) else Color(0x22000000)),
                 RoundedCornerShape(18.dp)
             )
-            .testTag("cash_in_hand_card"),
+            .testTag("ledger_hero_balance_card"),
         shape = RoundedCornerShape(18.dp),
-        color = if (isDark) Color(0xFF111A2E) else Color(0xFFFFFFFF),
+        color = cardColor,
         shadowElevation = 3.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -396,91 +359,76 @@ private fun LedgerHeroBalanceCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(30.dp)
+                            .size(10.dp)
                             .clip(CircleShape)
-                            .background(balanceColor.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AccountBalanceWallet,
-                            contentDescription = null,
-                            tint = balanceColor,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
+                            .background(accentColor)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "TOTAL CASH IN HAND",
-                        fontSize = 11.5.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
                         fontFamily = DigitalMonospaceFont,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF94A3B8)
                     )
                 }
 
-                // Status Badge
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = balanceColor.copy(alpha = 0.15f)
+                    color = Color(0x25FFFFFF)
                 ) {
                     Text(
-                        text = if (isBalancePositive) "POSITIVE SURPLUS" else "DEFICIT SHORTFALL",
-                        fontSize = 9.5.sp,
-                        fontWeight = FontWeight.Bold,
+                        text = "${summary.transactionCount} Entries",
+                        fontSize = 10.sp,
                         fontFamily = DigitalMonospaceFont,
-                        color = balanceColor,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFE2E8F0),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Big Balance Digits
             Text(
                 text = summary.formattedCashInHand,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,
                 fontFamily = DigitalMonospaceFont,
-                color = balanceColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                color = if (isPositive) Color(0xFF34D399) else Color(0xFFF87171)
             )
 
             Spacer(modifier = Modifier.height(10.dp))
-            HorizontalDivider(thickness = 0.8.dp, color = if (isDark) Color(0x22FFFFFF) else Color(0x18000000))
+            HorizontalDivider(thickness = 0.8.dp, color = Color(0x22FFFFFF))
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Payment Mode Breakdown Pills
+            // Payment Mode Breakdown Pills: Cash, Bank, and OTHERS
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                val cashNet = summary.cashByMode["Cash"] ?: summary.cashByMode["CASH"] ?: 0.0
-                val bankNet = summary.cashByMode["Bank"] ?: summary.cashByMode["Bank Transfer"] ?: summary.cashByMode["BANK_TRANSFER"] ?: 0.0
-                val onlineNet = summary.cashByMode["Online"] ?: summary.cashByMode["UPI"] ?: summary.cashByMode["UPI / Digital"] ?: summary.cashByMode["UPI_DIGITAL"] ?: 0.0
-
                 ModeMiniPill(
-                    label = "Cash Balance",
-                    amount = cashNet,
+                    label = "Cash",
+                    amount = summary.cashBalance,
                     icon = Icons.Default.Payments,
-                    modifier = Modifier.weight(1f),
-                    isDark = isDark
+                    onClick = { onModePillClick("CASH") },
+                    modifier = Modifier.weight(1f)
                 )
                 ModeMiniPill(
-                    label = "Bank / Cheque",
-                    amount = bankNet,
+                    label = "Bank",
+                    amount = summary.bankBalance,
                     icon = Icons.Default.AccountBalance,
-                    modifier = Modifier.weight(1f),
-                    isDark = isDark
+                    onClick = { onModePillClick("BANK") },
+                    modifier = Modifier.weight(1f)
                 )
                 ModeMiniPill(
-                    label = "Online / Other",
-                    amount = onlineNet,
-                    icon = Icons.Default.AccountBalanceWallet,
-                    modifier = Modifier.weight(1f),
-                    isDark = isDark
+                    label = "Others",
+                    amount = summary.otherModesBalance,
+                    countSubtitle = "${summary.otherModesCount} txns",
+                    icon = Icons.Default.MoreHoriz,
+                    onClick = { onModePillClick("OTHERS") },
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
@@ -491,32 +439,36 @@ private fun LedgerHeroBalanceCard(
 private fun ModeMiniPill(
     label: String,
     amount: Double,
+    countSubtitle: String? = null,
     icon: ImageVector,
-    modifier: Modifier = Modifier,
-    isDark: Boolean
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier.clip(RoundedCornerShape(8.dp)),
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .testTag("mode_pill_${label.lowercase()}"),
         shape = RoundedCornerShape(8.dp),
-        color = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
+        color = Color(0x1FFFFFFF)
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = Color(0xFF94A3B8),
                     modifier = Modifier.size(11.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = label,
-                    fontSize = 9.sp,
+                    fontSize = 10.sp,
                     fontFamily = DigitalMonospaceFont,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color(0xFFCBD5E1),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -524,13 +476,20 @@ private fun ModeMiniPill(
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = "Rs. ${IndianNumberFormatter.formatIndianDouble(amount, 0)}",
-                fontSize = 11.sp,
+                fontSize = 11.5.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
-                color = if (amount >= 0) MaterialTheme.colorScheme.onSurface else Color(0xFFEF4444),
+                color = if (amount >= 0) Color.White else Color(0xFFF87171),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            if (countSubtitle != null) {
+                Text(
+                    text = countSubtitle,
+                    fontSize = 8.5.sp,
+                    color = Color(0xFF94A3B8)
+                )
+            }
         }
     }
 }
@@ -585,7 +544,7 @@ private fun LedgerMetricCard(
 
             Text(
                 text = amount,
-                fontSize = 13.5.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
                 color = accentColor,
@@ -605,43 +564,41 @@ private fun LedgerMetricCard(
 }
 
 // =========================================================================
-// 3. FAST ACTION BUTTONS
+// 3. FAST ACTION BUTTONS (ONLY CASH IN & CASH OUT)
 // =========================================================================
 
 @Composable
 private fun LedgerFastActionBar(
     onAddCashIn: () -> Unit,
-    onAddCashOut: () -> Unit,
-    onAddOpening: () -> Unit,
-    isDark: Boolean
+    onAddCashOut: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         // + Cash In
         Button(
             onClick = onAddCashIn,
             modifier = Modifier
-                .weight(1.1f)
-                .height(46.dp)
+                .weight(1f)
+                .height(48.dp)
                 .testTag("ledger_add_cash_in_btn"),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF10B981),
                 contentColor = Color.White
             ),
-            contentPadding = PaddingValues(horizontal = 8.dp)
+            contentPadding = PaddingValues(horizontal = 12.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.ArrowDownward,
                 contentDescription = null,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(18.dp)
             )
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Cash In",
-                fontSize = 13.sp,
+                text = "+ Cash In",
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -650,158 +607,39 @@ private fun LedgerFastActionBar(
         Button(
             onClick = onAddCashOut,
             modifier = Modifier
-                .weight(1.1f)
-                .height(46.dp)
+                .weight(1f)
+                .height(48.dp)
                 .testTag("ledger_add_cash_out_btn"),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFFEF4444),
                 contentColor = Color.White
             ),
-            contentPadding = PaddingValues(horizontal = 8.dp)
+            contentPadding = PaddingValues(horizontal = 12.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.ArrowUpward,
                 contentDescription = null,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(18.dp)
             )
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Cash Out",
-                fontSize = 13.sp,
+                text = "- Cash Out",
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
         }
-
-        // + Opening / Transfer
-        Button(
-            onClick = onAddOpening,
-            modifier = Modifier
-                .weight(1f)
-                .height(46.dp)
-                .testTag("ledger_add_opening_btn"),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (isDark) Color(0xFF1E293B) else Color(0xFFE2E8F0),
-                contentColor = if (isDark) Color(0xFF93C5FD) else Color(0xFF1E40AF)
-            ),
-            contentPadding = PaddingValues(horizontal = 6.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.AccountBalanceWallet,
-                contentDescription = null,
-                modifier = Modifier.size(15.dp)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = "Opening",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
     }
 }
 
 // =========================================================================
-// 4. TRANSACTION HISTORY LAUNCHER CARD
-// =========================================================================
-
-@Composable
-private fun LedgerHistoryLauncherCard(
-    totalCount: Int,
-    onClick: () -> Unit,
-    primaryColor: Color,
-    isDark: Boolean
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .border(
-                BorderStroke(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x20000000)),
-                RoundedCornerShape(14.dp)
-            )
-            .clickable { onClick() }
-            .testTag("ledger_history_launcher_card"),
-        shape = RoundedCornerShape(14.dp),
-        color = if (isDark) Color(0xFF151F33) else Color(0xFFFFFFFF),
-        shadowElevation = 1.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(primaryColor.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.History,
-                        contentDescription = "Transaction History",
-                        tint = primaryColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Transaction History & Vouchers",
-                            fontSize = 13.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = primaryColor.copy(alpha = 0.2f)
-                        ) {
-                            Text(
-                                text = "$totalCount",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = primaryColor,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
-                            )
-                        }
-                    }
-                    Text(
-                        text = "Tap to search, filter, edit & copy vouchers",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-    }
-}
-
-// =========================================================================
-// 5. PAYMENT CHANNEL DISTRIBUTION CARD
+// 4. PAYMENT CHANNEL DISTRIBUTION CARD
 // =========================================================================
 
 @Composable
 private fun LedgerPaymentModeBreakdownCard(
     modes: Map<String, Double>,
+    onModeClick: (String) -> Unit,
     isDark: Boolean
 ) {
     Surface(
@@ -843,19 +681,23 @@ private fun LedgerPaymentModeBreakdownCard(
                 modes.forEach { (modeName, netAmount) ->
                     val isPositive = netAmount >= 0
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable { onModeClick(modeName) }
+                            .padding(vertical = 4.dp, horizontal = 2.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             text = modeName,
-                            fontSize = 12.sp,
+                            fontSize = 12.5.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "${if (isPositive) "+ " else "- "}Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(netAmount), 2)}",
-                            fontSize = 12.sp,
+                            fontSize = 12.5.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = DigitalMonospaceFont,
                             color = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
@@ -868,7 +710,7 @@ private fun LedgerPaymentModeBreakdownCard(
 }
 
 // =========================================================================
-// 6. CATEGORY BREAKDOWN CARD
+// 5. CATEGORY BREAKDOWN CARD
 // =========================================================================
 
 @Composable
@@ -895,7 +737,7 @@ private fun LedgerCategoryBreakdownCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "ACCOUNTS & CATEGORIES BREAKDOWN",
+                    text = "CATEGORIES & ACCOUNTS SUMMARY",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.8.sp,
@@ -907,7 +749,7 @@ private fun LedgerCategoryBreakdownCard(
             Spacer(modifier = Modifier.height(10.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                categories.entries.sortedByDescending { it.value }.take(6).forEach { (catName, amount) ->
+                categories.entries.sortedByDescending { it.value }.take(8).forEach { (catName, amount) ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -915,13 +757,13 @@ private fun LedgerCategoryBreakdownCard(
                     ) {
                         Text(
                             text = catName,
-                            fontSize = 12.sp,
+                            fontSize = 12.5.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "Rs. ${IndianNumberFormatter.formatIndianDouble(amount, 2)}",
-                            fontSize = 12.sp,
+                            fontSize = 12.5.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = DigitalMonospaceFont,
                             color = primaryColor
@@ -934,82 +776,8 @@ private fun LedgerCategoryBreakdownCard(
 }
 
 // =========================================================================
-// 7. QUICK TOOLS & SUMMARY CARD
-// =========================================================================
-
-@Composable
-private fun LedgerQuickToolsCard(
-    onOpenCalculator: () -> Unit,
-    onCopySummary: () -> Unit,
-    primaryColor: Color,
-    isDark: Boolean
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // Quick Calculator
-        Surface(
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(12.dp))
-                .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(12.dp))
-                .clickable { onOpenCalculator() },
-            shape = RoundedCornerShape(12.dp),
-            color = if (isDark) Color(0x14FFFFFF) else Color(0x0A000000)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Calculate,
-                    contentDescription = null,
-                    tint = primaryColor,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Calculator",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        // Copy Ledger Summary
-        Surface(
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(12.dp))
-                .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(12.dp))
-                .clickable { onCopySummary() },
-            shape = RoundedCornerShape(12.dp),
-            color = if (isDark) Color(0x14FFFFFF) else Color(0x0A000000)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = null,
-                    tint = Color(0xFF10B981),
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Copy Summary",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}
-
-// =========================================================================
-// 8. ADD / EDIT TRANSACTION BOTTOM SHEET CONTENT (CUSTOM INPUTS)
+// 6. ADD / EDIT TRANSACTION BOTTOM SHEET CONTENT
+// (With seamless Auto-suggest & Auto-save for Categories and Payment Modes)
 // =========================================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1018,14 +786,12 @@ private fun LedgerAddEditSheetContent(
     uiState: LedgerUiState,
     onTypeChange: (LedgerType) -> Unit,
     onAmountChange: (String) -> Unit,
-    onAppendPreset: (Double) -> Unit,
     onCategoryChange: (String) -> Unit,
     onPaymentModeChange: (String) -> Unit,
     onPartyNameChange: (String) -> Unit,
     onRemarksChange: (String) -> Unit,
     onRefNoChange: (String) -> Unit,
     onDateChange: (Long) -> Unit,
-    onOpenCalculator: () -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit,
     primaryColor: Color,
@@ -1035,16 +801,9 @@ private fun LedgerAddEditSheetContent(
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.US) }
     val isEditing = uiState.editingTransaction != null
 
-    // Standard baseline suggestion presets
-    val standardCategories = when (uiState.formType) {
-        LedgerType.CASH_OUT -> listOf("Expense", "Purchase", "Salary", "Rent", "Utility", "Vendor Payment", "Transport", "Maintenance")
-        LedgerType.OPENING_BALANCE -> listOf("Opening Balance", "Capital Deposit", "Cash Transfer", "Bank Withdrawal")
-        else -> listOf("Sales", "Customer Payment", "Recovery", "Commission", "Service Fee", "Advance")
-    }
-    val combinedCategorySuggestions = (uiState.distinctCategories + standardCategories).distinct().take(10)
-
-    val standardModes = listOf("Cash", "Bank Transfer", "Online / UPI", "Cheque", "Credit Card")
-    val combinedModeSuggestions = (uiState.distinctPaymentModes + standardModes).distinct().take(8)
+    // Track focus for category and payment mode
+    var isCategoryFocused by remember { mutableStateOf(false) }
+    var isModeFocused by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -1073,7 +832,7 @@ private fun LedgerAddEditSheetContent(
             }
         }
 
-        // 1. Transaction Type Selector (Cash In, Cash Out, Opening)
+        // 1. Transaction Type Toggle: Only Cash In and Cash Out
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1086,44 +845,69 @@ private fun LedgerAddEditSheetContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                LedgerType.entries.forEach { type ->
-                    val isSelected = uiState.formType == type
-                    val bg = if (isSelected) type.color else Color.Transparent
-                    val fg = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                // Cash In Tab
+                val isCashIn = uiState.formType == LedgerType.CASH_IN
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(42.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isCashIn) Color(0xFF10B981) else Color.Transparent)
+                        .clickable { onTypeChange(LedgerType.CASH_IN) }
+                        .testTag("form_type_cash_in"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowDownward,
+                            contentDescription = null,
+                            tint = if (isCashIn) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Cash In",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isCashIn) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
 
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(40.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(bg)
-                            .clickable { onTypeChange(type) }
-                            .testTag("form_type_${type.name.lowercase()}"),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = type.icon,
-                                contentDescription = null,
-                                tint = fg,
-                                modifier = Modifier.size(15.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = type.title,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = fg
-                            )
-                        }
+                // Cash Out Tab
+                val isCashOut = uiState.formType == LedgerType.CASH_OUT
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(42.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isCashOut) Color(0xFFEF4444) else Color.Transparent)
+                        .clickable { onTypeChange(LedgerType.CASH_OUT) }
+                        .testTag("form_type_cash_out"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowUpward,
+                            contentDescription = null,
+                            tint = if (isCashOut) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Cash Out",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isCashOut) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
         }
 
-        // 2. Amount Input with Quick Calculator Launcher & Quick Increment Chips
+        // 2. Transaction Amount (Clean Input)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = "TRANSACTION AMOUNT (RS.) *",
@@ -1133,81 +917,41 @@ private fun LedgerAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedTextField(
-                    value = uiState.formAmountText,
-                    onValueChange = onAmountChange,
-                    placeholder = { Text("0.00", fontFamily = DigitalMonospaceFont) },
-                    leadingIcon = {
-                        Text(
-                            text = "Rs.",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            color = uiState.formType.color,
-                            modifier = Modifier.padding(start = 12.dp)
-                        )
-                    },
-                    trailingIcon = {
-                        IconButton(
-                            onClick = onOpenCalculator,
-                            modifier = Modifier
-                                .size(36.dp)
-                                .testTag("form_calculator_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Calculate,
-                                contentDescription = "Quick Calculator",
-                                tint = primaryColor
-                            )
+            OutlinedTextField(
+                value = uiState.formAmountText,
+                onValueChange = onAmountChange,
+                placeholder = { Text("0.00", fontFamily = DigitalMonospaceFont) },
+                leadingIcon = {
+                    Text(
+                        text = "Rs.",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = uiState.formType.color,
+                        modifier = Modifier.padding(start = 12.dp)
+                    )
+                },
+                trailingIcon = {
+                    if (uiState.formAmountText.isNotEmpty()) {
+                        IconButton(onClick = { onAmountChange("") }) {
+                            Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
                         }
-                    },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = uiState.formType.color,
-                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
-                    ),
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("form_amount_input")
-                )
-            }
-
-            // Quick Preset Increment Buttons (+500, +1000, +2000, +5000, +10000, +50000)
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                val presets = listOf(500.0, 1000.0, 2000.0, 5000.0, 10000.0, 50000.0)
-                items(presets) { preset ->
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = if (isDark) Color(0x1AFFFFFF) else Color(0x0C000000),
-                        border = BorderStroke(1.dp, if (isDark) Color(0x28FFFFFF) else Color(0x18000000)),
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onAppendPreset(preset) }
-                    ) {
-                        Text(
-                            text = "+${IndianNumberFormatter.formatIndianDouble(preset, 0)}",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            fontFamily = DigitalMonospaceFont,
-                            color = primaryColor,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
                     }
-                }
-            }
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = uiState.formType.color,
+                    unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("form_amount_input")
+            )
         }
 
-        // 3. Custom Category / Account Input Field with Quick Suggestion Chips
+        // 3. Category Field (Auto-suggests as user types, auto-saves on save, hidden until typed)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = "CATEGORY / HEAD OF ACCOUNT *",
@@ -1220,50 +964,89 @@ private fun LedgerAddEditSheetContent(
             OutlinedTextField(
                 value = uiState.formCategory,
                 onValueChange = onCategoryChange,
-                placeholder = { Text("e.g. Sales, Rent, Raw Materials, Salaries...") },
+                placeholder = { Text("Type category (e.g. Sales, Home, Noran Shah...)") },
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Default.Category,
+                        imageVector = LedgerCategoryIcons.getCategoryIcon(uiState.formCategory),
                         contentDescription = null,
                         tint = uiState.formType.color,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 },
+                trailingIcon = {
+                    if (uiState.formCategory.isNotEmpty()) {
+                        IconButton(onClick = { onCategoryChange("") }) {
+                            Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                        }
+                    }
+                },
                 singleLine = true,
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = primaryColor,
+                    unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .onFocusChanged { isCategoryFocused = it.isFocused }
                     .testTag("form_category_input")
             )
 
-            // Auto-complete suggestion chips for Category
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                items(combinedCategorySuggestions) { cat ->
-                    val isSelected = uiState.formCategory.equals(cat, ignoreCase = true)
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = if (isSelected) uiState.formType.color.copy(alpha = 0.2f) else if (isDark) Color(0x18FFFFFF) else Color(0x0A000000),
-                        border = BorderStroke(1.dp, if (isSelected) uiState.formType.color else if (isDark) Color(0x28FFFFFF) else Color(0x18000000)),
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .clickable { onCategoryChange(cat) }
-                    ) {
-                        Text(
-                            text = cat,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected) uiState.formType.color else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
+            // Dynamic Auto-suggestions: Shown ONLY when matching items exist as user types
+            val matchingCategories = remember(uiState.formCategory, uiState.availableCategories, isCategoryFocused) {
+                val input = uiState.formCategory.trim()
+                if (input.isEmpty()) {
+                    emptyList()
+                } else {
+                    uiState.availableCategories.filter {
+                        it.contains(input, ignoreCase = true) && !it.equals(input, ignoreCase = true)
+                    }
+                }
+            }
+
+            if (matchingCategories.isNotEmpty()) {
+                Text(
+                    text = "Matching suggestions:",
+                    fontSize = 10.5.sp,
+                    color = primaryColor,
+                    fontWeight = FontWeight.SemiBold
+                )
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(matchingCategories) { cat ->
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = primaryColor.copy(alpha = 0.15f),
+                            border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f)),
+                            modifier = Modifier.clickable { onCategoryChange(cat) }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = LedgerCategoryIcons.getCategoryIcon(cat),
+                                    contentDescription = null,
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = cat,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = primaryColor
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
 
-        // 4. Custom Payment Mode / Channel Input Field with Quick Suggestion Chips
+        // 4. Payment Mode Field (Auto-suggests as user types, auto-saves on save, hidden until typed)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = "PAYMENT MODE / CHANNEL *",
@@ -1276,44 +1059,83 @@ private fun LedgerAddEditSheetContent(
             OutlinedTextField(
                 value = uiState.formPaymentMode,
                 onValueChange = onPaymentModeChange,
-                placeholder = { Text("e.g. Cash, Bank Transfer, UPI, Cheque...") },
+                placeholder = { Text("Type payment mode (e.g. Cash, Bank Transfer, Easypaisa...)") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Payments,
                         contentDescription = null,
                         tint = primaryColor,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 },
+                trailingIcon = {
+                    if (uiState.formPaymentMode.isNotEmpty()) {
+                        IconButton(onClick = { onPaymentModeChange("") }) {
+                            Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                        }
+                    }
+                },
                 singleLine = true,
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = primaryColor,
+                    unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .onFocusChanged { isModeFocused = it.isFocused }
                     .testTag("form_payment_mode_input")
             )
 
-            // Auto-complete suggestion chips for Payment Mode
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                items(combinedModeSuggestions) { mode ->
-                    val isSelected = uiState.formPaymentMode.equals(mode, ignoreCase = true)
-                    Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = if (isSelected) primaryColor.copy(alpha = 0.2f) else if (isDark) Color(0x18FFFFFF) else Color(0x0A000000),
-                        border = BorderStroke(1.dp, if (isSelected) primaryColor else if (isDark) Color(0x28FFFFFF) else Color(0x18000000)),
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .clickable { onPaymentModeChange(mode) }
-                    ) {
-                        Text(
-                            text = mode,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
+            // Dynamic Auto-suggestions for Payment Mode: Shown ONLY when matching items exist as user types
+            val matchingModes = remember(uiState.formPaymentMode, uiState.availablePaymentModes, isModeFocused) {
+                val input = uiState.formPaymentMode.trim()
+                if (input.isEmpty()) {
+                    emptyList()
+                } else {
+                    uiState.availablePaymentModes.filter {
+                        it.contains(input, ignoreCase = true) && !it.equals(input, ignoreCase = true)
+                    }
+                }
+            }
+
+            if (matchingModes.isNotEmpty()) {
+                Text(
+                    text = "Matching payment modes:",
+                    fontSize = 10.5.sp,
+                    color = primaryColor,
+                    fontWeight = FontWeight.SemiBold
+                )
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(matchingModes) { mode ->
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = primaryColor.copy(alpha = 0.15f),
+                            border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f)),
+                            modifier = Modifier.clickable { onPaymentModeChange(mode) }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Payments,
+                                    contentDescription = null,
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = mode,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = primaryColor
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1332,14 +1154,16 @@ private fun LedgerAddEditSheetContent(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(44.dp)
+                    .height(48.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .border(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x28000000), RoundedCornerShape(10.dp))
                     .clickable { showDatePicker = true },
                 color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -1359,7 +1183,7 @@ private fun LedgerAddEditSheetContent(
             }
         }
 
-        // 6. Party / Customer / Vendor Name & Suggestions
+        // 6. Party / Contact Name
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = "PARTY / CONTACT NAME (OPTIONAL)",
@@ -1388,7 +1212,6 @@ private fun LedgerAddEditSheetContent(
                     .testTag("form_party_name_input")
             )
 
-            // Auto-complete suggestion chips from previous contacts
             if (uiState.distinctParties.isNotEmpty()) {
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
@@ -1398,15 +1221,13 @@ private fun LedgerAddEditSheetContent(
                         Surface(
                             shape = RoundedCornerShape(6.dp),
                             color = if (isDark) Color(0x1AFFFFFF) else Color(0x0E000000),
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .clickable { onPartyNameChange(party) }
+                            modifier = Modifier.clickable { onPartyNameChange(party) }
                         ) {
                             Text(
                                 text = party,
-                                fontSize = 10.sp,
-                                color = primaryColor,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                fontSize = 11.5.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
                     }
@@ -1414,87 +1235,131 @@ private fun LedgerAddEditSheetContent(
             }
         }
 
-        // 7. Reference # & Remarks
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+        // 7. Reference No / Bill No
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = "REFERENCE / BILL / INVOICE NO. (OPTIONAL)",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
             OutlinedTextField(
                 value = uiState.formReferenceNo,
                 onValueChange = onRefNoChange,
-                label = { Text("Bill / Ref #", fontSize = 11.sp) },
-                placeholder = { Text("e.g. INV-104") },
+                placeholder = { Text("Inv #, Bill #, Cheque #, Transaction ID...") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Receipt,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                },
                 singleLine = true,
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
-                    .weight(1f)
+                    .fillMaxWidth()
                     .testTag("form_ref_no_input")
+            )
+        }
+
+        // 8. Remarks / Note
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = "REMARKS / NOTES (OPTIONAL)",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             OutlinedTextField(
                 value = uiState.formRemarks,
                 onValueChange = onRemarksChange,
-                label = { Text("Remarks / Notes", fontSize = 11.sp) },
-                placeholder = { Text("Notes...") },
-                singleLine = true,
+                placeholder = { Text("Add transaction description, item details...") },
+                maxLines = 3,
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
-                    .weight(1.5f)
+                    .fillMaxWidth()
                     .testTag("form_remarks_input")
             )
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        // Save & Submit Button
-        Button(
-            onClick = onSave,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .testTag("form_save_button"),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = uiState.formType.color,
-                contentColor = Color.White
-            )
+        // Save and Cancel Actions
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = if (isEditing) "Update Transaction" else "Save ${uiState.formType.title}",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Button(
+                onClick = onCancel,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isDark) Color(0x22FFFFFF) else Color(0x18000000),
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            ) {
+                Text("Cancel", fontWeight = FontWeight.SemiBold)
+            }
+
+            Button(
+                onClick = onSave,
+                enabled = !uiState.isFormSubmitting && uiState.formAmountText.isNotBlank(),
+                modifier = Modifier
+                    .weight(1.5f)
+                    .height(50.dp)
+                    .testTag("form_save_transaction_btn"),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = uiState.formType.color,
+                    contentColor = Color.White
+                )
+            ) {
+                Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (isEditing) "Update Entry" else "Save Transaction",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
     }
 
+    // Material 3 Date Picker
     if (showDatePicker) {
-        val dateState = rememberDatePickerState(initialSelectedDateMillis = uiState.formDateMillis)
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = uiState.formDateMillis)
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    dateState.selectedDateMillis?.let { onDateChange(it) }
+                    datePickerState.selectedDateMillis?.let { onDateChange(it) }
                     showDatePicker = false
                 }) {
-                    Text("Done")
+                    Text("OK", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
                 }
             }
         ) {
-            DatePicker(state = dateState)
+            DatePicker(state = datePickerState)
         }
     }
 }
 
 // =========================================================================
-// 9. DEDICATED HISTORY PANEL / AUDIT MODAL SHEET (VISIBLE ON HISTORY CLICK)
+// 7. HISTORY PANEL SHEET CONTENT WITH MODE FILTERS (ALL, CASH, BANK, OTHERS)
 // =========================================================================
 
 @Composable
@@ -1508,16 +1373,15 @@ private fun LedgerHistoryPanelSheetContent(
     isDark: Boolean
 ) {
     val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(620.dp)
+            .heightIn(max = 680.dp)
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .testTag("ledger_history_panel_sheet")
     ) {
-        // Header Row
+        // Top Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1528,317 +1392,299 @@ private fun LedgerHistoryPanelSheetContent(
                     imageVector = Icons.Default.History,
                     contentDescription = null,
                     tint = primaryColor,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(22.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Transaction History & Vouchers",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = DigitalMonospaceFont,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = "Transaction History",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "${uiState.filteredTransactions.size} records matched",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
-            IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
-                Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Copy Summary Button
+                IconButton(
+                    onClick = {
+                        val report = viewModel.buildPeriodAuditSummary()
+                        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Audit Summary", report))
+                        Toast.makeText(context, "Summary copied to clipboard", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = "Copy Summary",
+                        tint = primaryColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                IconButton(onClick = onClose, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Search Bar & Copy Summary Action
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = { viewModel.setSearchQuery(it) },
-                placeholder = { Text("Search party, category, mode, amount...") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = primaryColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                },
-                trailingIcon = {
-                    if (uiState.searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                            Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear")
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("ledger_history_search_input")
-            )
-
-            // Export / Copy Full Audit Summary
-            IconButton(
-                onClick = {
-                    val report = viewModel.buildPeriodAuditSummary()
-                    clipboardManager.setText(AnnotatedString(report))
-                    Toast.makeText(context, "Full ledger summary copied to clipboard", Toast.LENGTH_SHORT).show()
-                },
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(if (isDark) Color(0x22FFFFFF) else Color(0x10000000))
-                    .testTag("ledger_history_share_btn")
-            ) {
+        // Balanced Search Bar
+        OutlinedTextField(
+            value = uiState.searchQuery,
+            onValueChange = { viewModel.setSearchQuery(it) },
+            placeholder = { Text("Search party, category, mode, amount...") },
+            leadingIcon = {
                 Icon(
-                    imageVector = Icons.Default.ContentCopy,
-                    contentDescription = "Copy Summary",
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search",
                     tint = primaryColor,
                     modifier = Modifier.size(18.dp)
                 )
-            }
-        }
+            },
+            trailingIcon = {
+                if (uiState.searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Clear",
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = primaryColor,
+                unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .testTag("history_search_input")
+        )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Type Filter Chips (All, Cash In, Cash Out, Opening)
+        // Filter Pills: Type (All, Cash In, Cash Out)
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            val typeFilters = listOf(
-                "ALL" to "All (${uiState.allTransactions.size})",
-                "CASH_IN" to "Cash In",
-                "CASH_OUT" to "Cash Out",
-                "OPENING_BALANCE" to "Opening"
-            )
-            items(typeFilters) { (typeKey, label) ->
-                val isSelected = uiState.selectedTypeFilter == typeKey
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (isSelected) primaryColor else if (isDark) Color(0x18FFFFFF) else Color(0x0C000000),
-                    border = BorderStroke(1.dp, if (isSelected) primaryColor else if (isDark) Color(0x28FFFFFF) else Color(0x18000000)),
+            item {
+                TypeFilterChip(
+                    label = "All Types",
+                    isSelected = uiState.selectedTypeFilter == "ALL",
+                    onClick = { viewModel.setTypeFilter("ALL") }
+                )
+            }
+            item {
+                TypeFilterChip(
+                    label = "Cash In",
+                    isSelected = uiState.selectedTypeFilter == "CASH_IN",
+                    color = Color(0xFF10B981),
+                    onClick = { viewModel.setTypeFilter("CASH_IN") }
+                )
+            }
+            item {
+                TypeFilterChip(
+                    label = "Cash Out",
+                    isSelected = uiState.selectedTypeFilter == "CASH_OUT",
+                    color = Color(0xFFEF4444),
+                    onClick = { viewModel.setTypeFilter("CASH_OUT") }
+                )
+            }
+            item {
+                Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { viewModel.setTypeFilter(typeKey) }
-                ) {
-                    Text(
-                        text = label,
-                        fontSize = 11.5.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                    )
-                }
+                        .height(26.dp)
+                        .width(1.dp)
+                        .background(if (isDark) Color(0x33FFFFFF) else Color(0x22000000))
+                )
+            }
+            // Mode Filters: All, Cash, Bank, Others
+            item {
+                TypeFilterChip(
+                    label = "All Channels",
+                    isSelected = uiState.selectedModeFilter == "ALL",
+                    onClick = { viewModel.setModeFilter("ALL") }
+                )
+            }
+            item {
+                TypeFilterChip(
+                    label = "Cash",
+                    isSelected = uiState.selectedModeFilter == "CASH",
+                    onClick = { viewModel.setModeFilter("CASH") }
+                )
+            }
+            item {
+                TypeFilterChip(
+                    label = "Bank",
+                    isSelected = uiState.selectedModeFilter == "BANK",
+                    onClick = { viewModel.setModeFilter("BANK") }
+                )
+            }
+            item {
+                TypeFilterChip(
+                    label = "Others",
+                    isSelected = uiState.selectedModeFilter == "OTHERS",
+                    color = Color(0xFF8B5CF6),
+                    onClick = { viewModel.setModeFilter("OTHERS") }
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Transaction List Grouped by Date
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-        ) {
-            if (uiState.filteredTransactions.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.History,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = if (uiState.searchQuery.isNotEmpty() || uiState.selectedTypeFilter != "ALL")
-                                "No transactions match your search filter"
-                            else "No transaction records found in ledger",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                    }
+        // Transaction List
+        if (uiState.filteredTransactions.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.Receipt,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = if (uiState.searchQuery.isNotBlank() || uiState.selectedModeFilter != "ALL" || uiState.selectedTypeFilter != "ALL")
+                            "No transactions match the selected filters"
+                        else
+                            "No cashbook entries yet",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-            } else {
-                val grouped = remember(uiState.filteredTransactions) {
-                    groupTransactionsByDate(uiState.filteredTransactions)
-                }
-
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .testTag("ledger_transaction_history_list"),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp)
-                ) {
-                    grouped.forEach { (dateHeader, txList) ->
-                        item(key = "header_$dateHeader") {
-                            LedgerDateGroupHeader(
-                                dateHeader = dateHeader,
-                                transactions = txList,
-                                primaryColor = primaryColor,
-                                isDark = isDark
-                            )
-                        }
-
-                        items(txList, key = { it.id }) { tx ->
-                            LedgerTransactionCard(
-                                tx = tx,
-                                onEdit = { onEditTx(tx) },
-                                onDelete = { onDeleteTx(tx) },
-                                onCopy = {
-                                    val voucher = viewModel.buildSingleTransactionReport(tx)
-                                    clipboardManager.setText(AnnotatedString(voucher))
-                                    Toast.makeText(context, "Voucher copied", Toast.LENGTH_SHORT).show()
-                                },
-                                onTapDetail = { viewModel.openTransactionDetail(tx) },
-                                primaryColor = primaryColor,
-                                isDark = isDark
-                            )
-                        }
-                    }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(uiState.filteredTransactions, key = { it.id }) { tx ->
+                    LedgerTransactionRowItem(
+                        tx = tx,
+                        onClick = { viewModel.openTransactionDetail(tx) },
+                        onEdit = { onEditTx(tx) },
+                        onDelete = { onDeleteTx(tx) },
+                        isDark = isDark
+                    )
                 }
             }
         }
     }
 }
 
-// =========================================================================
-// 10. DATE GROUP HEADER & TRANSACTION CARD
-// =========================================================================
-
 @Composable
-private fun LedgerDateGroupHeader(
-    dateHeader: String,
-    transactions: List<LedgerTransactionEntity>,
-    primaryColor: Color,
-    isDark: Boolean
+private fun TypeFilterChip(
+    label: String,
+    isSelected: Boolean,
+    color: Color = MaterialTheme.colorScheme.primary,
+    onClick: () -> Unit
 ) {
-    var dayIn = 0.0
-    var dayOut = 0.0
-    for (tx in transactions) {
-        if (tx.type == "CASH_IN" || tx.type == "OPENING_BALANCE") dayIn += tx.amount
-        else if (tx.type == "CASH_OUT") dayOut += tx.amount
-    }
-    val netDay = dayIn - dayOut
-
     Surface(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp)),
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { onClick() },
         shape = RoundedCornerShape(8.dp),
-        color = if (isDark) Color(0x1F223652) else Color(0x14E2E8F0)
+        color = if (isSelected) color.copy(alpha = 0.2f) else Color(0x10000000),
+        border = BorderStroke(
+            1.dp,
+            if (isSelected) color else Color(0x22000000)
+        )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.CalendarToday,
-                    contentDescription = null,
-                    tint = primaryColor,
-                    modifier = Modifier.size(12.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = dateHeader,
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = DigitalMonospaceFont,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "(${transactions.size})",
-                    fontSize = 10.5.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Text(
-                text = "Net: ${if (netDay >= 0) "+ " else "- "}Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(netDay), 2)}",
-                fontSize = 10.5.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = DigitalMonospaceFont,
-                color = if (netDay >= 0) Color(0xFF10B981) else Color(0xFFEF4444)
-            )
-        }
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color = if (isSelected) color else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+        )
     }
 }
 
 @Composable
-private fun LedgerTransactionCard(
+private fun LedgerTransactionRowItem(
     tx: LedgerTransactionEntity,
+    onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onCopy: () -> Unit,
-    onTapDetail: () -> Unit,
-    primaryColor: Color,
     isDark: Boolean
 ) {
-    val isIncome = tx.type == "CASH_IN" || tx.type == "OPENING_BALANCE"
-    val accentColor = if (tx.type == "CASH_IN") Color(0xFF10B981)
-    else if (tx.type == "CASH_OUT") Color(0xFFEF4444)
-    else Color(0xFF3B82F6)
-
-    val timeFormat = remember { SimpleDateFormat("hh:mm a", Locale.US) }
-    val timeStr = timeFormat.format(Date(tx.dateMillis))
+    val isExpense = tx.type == "CASH_OUT"
+    val accentColor = if (isExpense) Color(0xFFEF4444) else Color(0xFF10B981)
+    val dateFormat = remember { SimpleDateFormat("dd MMM, hh:mm a", Locale.US) }
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(12.dp))
-            .clickable { onTapDetail() }
-            .testTag("ledger_card_${tx.id}"),
+            .border(
+                1.dp,
+                if (isDark) Color(0x22FFFFFF) else Color(0x18000000),
+                RoundedCornerShape(12.dp)
+            )
+            .clickable { onClick() }
+            .testTag("tx_item_${tx.id}"),
         shape = RoundedCornerShape(12.dp),
-        color = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF),
-        shadowElevation = 1.dp
+        color = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
+                // Direction Icon Badge
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(accentColor.copy(alpha = 0.18f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(CircleShape)
-                            .background(accentColor.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (tx.type == "CASH_IN") Icons.Default.ArrowDownward
-                            else if (tx.type == "CASH_OUT") Icons.Default.ArrowUpward
-                            else Icons.Default.AccountBalanceWallet,
-                            contentDescription = null,
-                            tint = accentColor,
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = if (isExpense) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                        contentDescription = null,
+                        tint = accentColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(10.dp))
 
-                    Column {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = tx.category,
-                            fontSize = 13.sp,
+                            fontSize = 13.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
@@ -1846,107 +1692,68 @@ private fun LedgerTransactionCard(
                         )
                         if (tx.partyName.isNotBlank()) {
                             Text(
-                                text = tx.partyName,
-                                fontSize = 11.sp,
-                                color = primaryColor,
+                                text = " • ${tx.partyName}",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
-                }
 
-                // Amount
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "${if (isIncome) "+" else "-"} Rs. ${IndianNumberFormatter.formatIndianDouble(tx.amount, 2)}",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = accentColor,
-                        maxLines = 1
-                    )
-                    Text(
-                        text = timeStr,
-                        fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+                    Spacer(modifier = Modifier.height(2.dp))
 
-            if (tx.remarks.isNotBlank() || tx.referenceNo.isNotBlank()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    if (tx.remarks.isNotBlank()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = tx.remarks,
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    if (tx.referenceNo.isNotBlank()) {
-                        Text(
-                            text = "Ref: ${tx.referenceNo}",
-                            fontSize = 10.sp,
+                            text = dateFormat.format(Date(tx.dateMillis)),
+                            fontSize = 10.5.sp,
                             fontFamily = DigitalMonospaceFont,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Text(
+                            text = " | ${tx.paymentMode}",
+                            fontSize = 10.5.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        if (tx.referenceNo.isNotBlank()) {
+                            Text(
+                                text = " #${tx.referenceNo}",
+                                fontSize = 10.5.sp,
+                                fontFamily = DigitalMonospaceFont,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider(thickness = 0.5.dp, color = if (isDark) Color(0x18FFFFFF) else Color(0x12000000))
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
-            // Bottom row: Payment Mode Pill + Quick Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
-                ) {
-                    Text(
-                        text = tx.paymentMode,
-                        fontSize = 10.sp,
-                        fontFamily = DigitalMonospaceFont,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
+            // Amount Column
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "${if (isExpense) "-" else "+"}Rs. ${IndianNumberFormatter.formatIndianDouble(tx.amount, 2)}",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = DigitalMonospaceFont,
+                    color = accentColor
+                )
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onCopy, modifier = Modifier.size(28.dp)) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = "Copy",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                    IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
+                    IconButton(onClick = onEdit, modifier = Modifier.size(26.dp)) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit",
-                            tint = primaryColor,
-                            modifier = Modifier.size(14.dp)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(13.dp)
                         )
                     }
-                    IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
+                    IconButton(onClick = onDelete, modifier = Modifier.size(26.dp)) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(14.dp)
+                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                            modifier = Modifier.size(13.dp)
                         )
                     }
                 }
@@ -1956,7 +1763,7 @@ private fun LedgerTransactionCard(
 }
 
 // =========================================================================
-// 11. TRANSACTION DETAIL DIALOG
+// 8. TRANSACTION DETAIL DIALOG
 // =========================================================================
 
 @Composable
@@ -1969,52 +1776,79 @@ private fun LedgerDetailDialog(
     primaryColor: Color,
     isDark: Boolean
 ) {
-    val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy, hh:mm a", Locale.US) }
-    val isIncome = tx.type == "CASH_IN" || tx.type == "OPENING_BALANCE"
-    val accentColor = if (tx.type == "CASH_IN") Color(0xFF10B981)
-    else if (tx.type == "CASH_OUT") Color(0xFFEF4444)
-    else Color(0xFF3B82F6)
+    val isExpense = tx.type == "CASH_OUT"
+    val accentColor = if (isExpense) Color(0xFFEF4444) else Color(0xFF10B981)
+    val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy, hh:mm:ss a", Locale.US) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Receipt,
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(22.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Voucher Details", fontWeight = FontWeight.Bold)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(accentColor)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isExpense) "Cash Out Voucher" else "Cash In Voucher",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont
+                    )
+                }
+                IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                    Icon(imageVector = Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(18.dp))
+                }
             }
         },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = "${if (isIncome) "+ " else "- "}Rs. ${IndianNumberFormatter.formatIndianDouble(tx.amount, 2)}",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontFamily = DigitalMonospaceFont,
-                    color = accentColor
-                )
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = accentColor.copy(alpha = 0.12f)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.amount, 2)}",
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = accentColor
+                        )
+                        Text(
+                            text = if (isExpense) "CASH OUTFLOW" else "CASH INFLOW",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = accentColor
+                        )
+                    }
+                }
 
-                HorizontalDivider()
-
-                DetailItem(label = "Type", value = tx.type)
-                DetailItem(label = "Category", value = tx.category)
-                DetailItem(label = "Payment Mode", value = tx.paymentMode)
-                if (tx.partyName.isNotBlank()) DetailItem(label = "Party / Contact", value = tx.partyName)
-                if (tx.referenceNo.isNotBlank()) DetailItem(label = "Reference #", value = tx.referenceNo)
-                if (tx.remarks.isNotBlank()) DetailItem(label = "Remarks", value = tx.remarks)
-                DetailItem(label = "Date & Time", value = dateFormat.format(Date(tx.dateMillis)))
+                DetailRow(label = "Category", value = tx.category)
+                DetailRow(label = "Payment Mode", value = tx.paymentMode)
+                if (tx.partyName.isNotBlank()) DetailRow(label = "Party / Name", value = tx.partyName)
+                if (tx.referenceNo.isNotBlank()) DetailRow(label = "Reference #", value = tx.referenceNo)
+                if (tx.remarks.isNotBlank()) DetailRow(label = "Remarks", value = tx.remarks)
+                DetailRow(label = "Date & Time", value = dateFormat.format(Date(tx.dateMillis)))
             }
         },
         confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = onCopy) {
                     Icon(imageVector = Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
@@ -2025,42 +1859,34 @@ private fun LedgerDetailDialog(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Edit")
                 }
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
+                TextButton(onClick = onDelete) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
             }
         }
     )
 }
 
 @Composable
-private fun DetailItem(label: String, value: String) {
+private fun DetailRow(label: String, value: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(text = value, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
-    }
-}
-
-// =========================================================================
-// HELPER: GROUP TRANSACTIONS BY DATE
-// =========================================================================
-
-private fun groupTransactionsByDate(list: List<LedgerTransactionEntity>): Map<String, List<LedgerTransactionEntity>> {
-    val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)
-    val todayStr = dateFormat.format(Date())
-    val yesterdayStr = dateFormat.format(Date(System.currentTimeMillis() - 86400000L))
-
-    return list.groupBy { tx ->
-        val formatted = dateFormat.format(Date(tx.dateMillis))
-        when (formatted) {
-            todayStr -> "Today, $formatted"
-            yesterdayStr -> "Yesterday, $formatted"
-            else -> formatted
-        }
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            fontSize = 12.5.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.End
+        )
     }
 }

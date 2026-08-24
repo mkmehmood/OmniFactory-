@@ -20,9 +20,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Science
@@ -62,6 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.BatchScalingViewModel
 import com.example.ui.CalculatorViewModel
 import com.example.ui.ConverterViewModel
+import com.example.ui.ExpensesViewModel
 import com.example.ui.LedgerViewModel
 import com.example.ui.MixtureViewModel
 import com.example.ui.SalesViewModel
@@ -73,14 +78,13 @@ import com.example.ui.components.TapeHistorySheet
 import com.example.ui.screens.BasicCalculatorScreen
 import com.example.ui.screens.BatchScalingScreen
 import com.example.ui.screens.ConverterScreen
+import com.example.ui.screens.ExpensesScreen
 import com.example.ui.screens.LedgerScreen
 import com.example.ui.screens.MixtureCalculatorScreen
 import com.example.ui.screens.SalesScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.theme.DigitalMonospaceFont
 import com.example.ui.theme.MyApplicationTheme
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.Category
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -88,6 +92,7 @@ class MainActivity : ComponentActivity() {
     private val batchScalingViewModel: BatchScalingViewModel by viewModels()
     private val salesViewModel: SalesViewModel by viewModels()
     private val ledgerViewModel: LedgerViewModel by viewModels()
+    private val expensesViewModel: ExpensesViewModel by viewModels()
     private val mixtureViewModel: MixtureViewModel by viewModels()
     private val converterViewModel: ConverterViewModel by viewModels()
     private val settingsViewModel: SettingsViewModel by viewModels()
@@ -137,6 +142,15 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(Unit) {
                 ledgerViewModel.userMessage.collect { message ->
+                    snackbarHostState.showSnackbar(
+                        message = message,
+                        duration = SnackbarDuration.Short
+                    )
+                }
+            }
+
+            LaunchedEffect(Unit) {
+                expensesViewModel.userMessage.collect { message ->
                     snackbarHostState.showSnackbar(
                         message = message,
                         duration = SnackbarDuration.Short
@@ -242,6 +256,7 @@ class MainActivity : ComponentActivity() {
                                 val topBarTitle = when (currentDestination) {
                                     DrawerDestination.CALCULATOR -> "Calculator"
                                     DrawerDestination.LEDGER -> "Daily Ledger"
+                                    DrawerDestination.EXPENSES -> "Expenses"
                                     DrawerDestination.SALES -> "Sales Reconciliation"
                                     DrawerDestination.MIXTURE_CALCULATOR -> "Mixture Calculator"
                                     DrawerDestination.BATCH_SCALING -> "Batch Scaler"
@@ -254,6 +269,7 @@ class MainActivity : ComponentActivity() {
                                 val topBarIcon = when (currentDestination) {
                                     DrawerDestination.CALCULATOR -> Icons.Default.Calculate
                                     DrawerDestination.LEDGER -> Icons.Default.AccountBalanceWallet
+                                    DrawerDestination.EXPENSES -> Icons.Default.Receipt
                                     DrawerDestination.SALES -> Icons.Default.ReceiptLong
                                     DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Science
                                     DrawerDestination.BATCH_SCALING -> Icons.Default.Scale
@@ -266,6 +282,7 @@ class MainActivity : ComponentActivity() {
                                 val actionIcon = when (currentDestination) {
                                     DrawerDestination.CALCULATOR -> Icons.Default.History
                                     DrawerDestination.LEDGER -> Icons.Default.History
+                                    DrawerDestination.EXPENSES -> Icons.Default.Add
                                     DrawerDestination.SALES -> Icons.Default.ReceiptLong
                                     DrawerDestination.CONVERTER -> Icons.Default.Calculate
                                     DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Calculate
@@ -275,6 +292,7 @@ class MainActivity : ComponentActivity() {
                                 val actionDescription = when (currentDestination) {
                                     DrawerDestination.CALCULATOR -> "History Tape"
                                     DrawerDestination.LEDGER -> "Transaction History"
+                                    DrawerDestination.EXPENSES -> "Log Expense"
                                     DrawerDestination.SALES -> "Saved Sales"
                                     DrawerDestination.CONVERTER -> "Quick Calculator"
                                     DrawerDestination.MIXTURE_CALCULATOR -> "Quick Calculator"
@@ -287,6 +305,9 @@ class MainActivity : ComponentActivity() {
                                     }
                                     DrawerDestination.LEDGER -> {
                                         { ledgerViewModel.setHistoryPanelOpen(true) }
+                                    }
+                                    DrawerDestination.EXPENSES -> {
+                                        { expensesViewModel.openAddExpense() }
                                     }
                                     DrawerDestination.SALES -> {
                                         { salesViewModel.setSavedHistorySheetOpen(true) }
@@ -359,6 +380,11 @@ class MainActivity : ComponentActivity() {
                                             LedgerScreen(
                                                 viewModel = ledgerViewModel,
                                                 onOpenCalculator = { showQuickCalculatorDialog = true }
+                                            )
+                                        }
+                                        DrawerDestination.EXPENSES -> {
+                                            ExpensesScreen(
+                                                viewModel = expensesViewModel
                                             )
                                         }
                                         DrawerDestination.SALES -> {
