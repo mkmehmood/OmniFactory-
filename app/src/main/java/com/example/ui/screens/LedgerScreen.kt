@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -40,9 +41,12 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Dialpad
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.KeyboardHide
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
@@ -100,7 +104,12 @@ import com.example.domain.ledger.LedgerUnifiedDataManager
 import com.example.domain.util.IndianNumberFormatter
 import com.example.ui.LedgerUiState
 import com.example.ui.LedgerViewModel
+import com.example.ui.components.KeypadInputHelper
+import com.example.ui.components.SmartStationKeypad
 import com.example.ui.theme.DigitalMonospaceFont
+import com.example.ui.theme.LocalAnimationIntensity
+import com.example.ui.theme.LocalComponentSizing
+import com.example.ui.theme.LocalShapeStructure
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -1279,15 +1288,52 @@ private fun LedgerAddEditSheetContent(
             }
         }
 
-        // 2. Transaction Amount
+        // 2. Transaction Amount with Custom Keypad / Dialpad
+        var showKeypad by remember { mutableStateOf(true) }
+
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = "TRANSACTION AMOUNT (RS.) *",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = DigitalMonospaceFont,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "TRANSACTION AMOUNT (RS.) *",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = DigitalMonospaceFont,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Surface(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { showKeypad = !showKeypad }
+                        .testTag("toggle_ledger_keypad_button"),
+                    shape = RoundedCornerShape(6.dp),
+                    color = if (showKeypad) uiState.formType.color.copy(alpha = 0.15f) else if (isDark) Color(0x15FFFFFF) else Color(0x0E000000),
+                    border = BorderStroke(1.dp, if (showKeypad) uiState.formType.color.copy(alpha = 0.35f) else Color(0x20000000))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (showKeypad) Icons.Default.KeyboardHide else Icons.Default.Dialpad,
+                            contentDescription = if (showKeypad) "Hide Dialpad" else "Show Dialpad",
+                            tint = if (showKeypad) uiState.formType.color else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (showKeypad) "Dialpad Active" else "Use Dialpad",
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (showKeypad) uiState.formType.color else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
 
             OutlinedTextField(
                 value = uiState.formAmountText,
@@ -1321,6 +1367,31 @@ private fun LedgerAddEditSheetContent(
                     .fillMaxWidth()
                     .testTag("form_amount_input")
             )
+
+            // DEDICATED SMART DIALPAD / KEYPAD WITH PRESETS
+            AnimatedVisibility(visible = showKeypad) {
+                val animationIntensity = LocalAnimationIntensity.current
+                val componentSizeStyle = LocalComponentSizing.current
+                val shapeStructureStyle = LocalShapeStructure.current
+
+                SmartStationKeypad(
+                    activeFieldLabel = "Amount (Rs.)",
+                    onDigit = { d -> onAmountChange(KeypadInputHelper.handleDigit(uiState.formAmountText, d)) },
+                    onDoubleZero = { onAmountChange(KeypadInputHelper.handleDoubleZero(uiState.formAmountText)) },
+                    onDecimal = { onAmountChange(KeypadInputHelper.handleDecimal(uiState.formAmountText)) },
+                    onBackspace = { onAmountChange(KeypadInputHelper.handleBackspace(uiState.formAmountText)) },
+                    onClear = { onAmountChange(KeypadInputHelper.handleClear()) },
+                    quickAddChips = listOf(100L, 500L, 1000L, 5000L),
+                    onQuickAdd = { chip -> onAmountChange(KeypadInputHelper.handleQuickAdd(uiState.formAmountText, chip)) },
+                    onDone = { showKeypad = false },
+                    animationIntensity = animationIntensity,
+                    componentSizeStyle = componentSizeStyle,
+                    shapeStructureStyle = shapeStructureStyle,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                )
+            }
         }
 
         // 3. Category Field (Only for Cash In and Cash Out)
