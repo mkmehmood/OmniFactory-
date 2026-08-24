@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Store
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.domain.util.IndianNumberFormatter
@@ -32,6 +33,12 @@ enum class LedgerType(
         description = "Money paid / Expense / Purchase",
         color = Color(0xFFEF4444),
         icon = Icons.Default.ArrowUpward
+    ),
+    CASH_TRANSFER(
+        title = "Cash Transfer",
+        description = "Transfer between payment modes",
+        color = Color(0xFF3B82F6),
+        icon = Icons.Default.SwapHoriz
     )
 }
 
@@ -46,12 +53,14 @@ enum class LedgerPeriod(val label: String, val shortName: String) {
 data class LedgerSummary(
     val totalCashIn: Double = 0.0,
     val totalCashOut: Double = 0.0,
+    val totalTransferred: Double = 0.0,
     val netCashFlow: Double = 0.0,            // Inflow - Outflow in period
     val totalCashInHand: Double = 0.0,        // All-time accumulated cash in hand
     val totalOpeningBalance: Double = 0.0,
     val transactionCount: Int = 0,
     val cashInCount: Int = 0,
     val cashOutCount: Int = 0,
+    val transferCount: Int = 0,
     val cashBalance: Double = 0.0,            // Cash mode net balance
     val bankBalance: Double = 0.0,            // Bank Transfer mode net balance
     val otherModesBalance: Double = 0.0,      // All other modes combined net balance
@@ -61,6 +70,7 @@ data class LedgerSummary(
 ) {
     val formattedCashIn: String get() = "Rs. ${IndianNumberFormatter.formatIndianDouble(totalCashIn, 2)}"
     val formattedCashOut: String get() = "Rs. ${IndianNumberFormatter.formatIndianDouble(totalCashOut, 2)}"
+    val formattedTransferred: String get() = "Rs. ${IndianNumberFormatter.formatIndianDouble(totalTransferred, 2)}"
     val formattedNetCashFlow: String
         get() {
             val prefix = if (netCashFlow > 0) "+Rs. " else if (netCashFlow < 0) "-Rs. " else "Rs. "

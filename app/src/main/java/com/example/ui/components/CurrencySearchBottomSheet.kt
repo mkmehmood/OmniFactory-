@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
@@ -277,15 +278,20 @@ fun CurrencySearchBottomSheet(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    // Flag Emoji Container
+                                    // Flag SVG Icon Container
                                     Box(
                                         modifier = Modifier
                                             .size(40.dp)
                                             .clip(RoundedCornerShape(10.dp))
-                                            .background(if (isDark) Color(0x22FFFFFF) else Color(0x10000000)),
+                                            .background(if (isSelected) primaryColor.copy(alpha = 0.2f) else if (isDark) Color(0x22FFFFFF) else Color(0x10000000)),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text(text = currency.flagEmoji, fontSize = 22.sp)
+                                        Icon(
+                                            imageVector = Icons.Default.AccountBalance,
+                                            contentDescription = null,
+                                            tint = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(20.dp)
+                                        )
                                     }
 
                                     Spacer(modifier = Modifier.width(12.dp))

@@ -10,7 +10,8 @@ data class LedgerTransactionEntity(
     val type: String,                       // "CASH_IN", "CASH_OUT", "OPENING_BALANCE"
     val amount: Double,
     val category: String,                   // "Sales", "Customer Payment", "Raw Materials", "Groceries & Food", etc.
-    val paymentMode: String,                // "Cash", "Bank Transfer", "Easypaisa", "JazzCash", "Cheque", etc.
+    val paymentMode: String,                // "Cash", "Bank Transfer", "Easypaisa", "JazzCash", "Cheque", etc. (For TRANSFER: FROM mode)
+    val transferToMode: String = "",        // For TRANSFER: Destination / TO mode (e.g. "Bank Transfer")
     val expenseScope: String = "BUSINESS",  // "BUSINESS", "HOME", or "" (for Income / Cash In)
     val partyName: String = "",             // Customer / Vendor / Party name
     val remarks: String = "",               // Description / note
