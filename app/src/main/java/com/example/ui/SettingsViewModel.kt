@@ -37,7 +37,8 @@ data class SettingsUiState(
     val lastRestoreSummary: RestoreSummary? = null,
     val clearCalculationsOption: Boolean = true,
     val clearSalesOption: Boolean = true,
-    val clearMixturesOption: Boolean = true
+    val clearMixturesOption: Boolean = true,
+    val clearLedgerOption: Boolean = true
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -96,6 +97,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setClearMixturesOption(enabled: Boolean) {
         _uiState.update { it.copy(clearMixturesOption = enabled) }
+    }
+
+    fun setClearLedgerOption(enabled: Boolean) {
+        _uiState.update { it.copy(clearLedgerOption = enabled) }
     }
 
     fun setPendingJson(json: String) {
@@ -220,7 +225,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             val ok = backupManager.clearAllData(
                 clearCalculations = current.clearCalculationsOption,
                 clearSales = current.clearSalesOption,
-                clearMixtures = current.clearMixturesOption
+                clearMixtures = current.clearMixturesOption,
+                clearLedger = current.clearLedgerOption
             )
             val stats = backupManager.getStats()
             _uiState.update {

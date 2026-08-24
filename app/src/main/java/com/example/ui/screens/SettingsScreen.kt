@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Animation
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
@@ -968,29 +969,42 @@ fun SettingsScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    // Database Stats Matrix
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        DbStatPill(
-                            title = "Calculations",
-                            value = "${settingsUiState.stats.calculationsCount}",
-                            icon = Icons.Default.Calculate,
-                            modifier = Modifier.weight(1f)
-                        )
-                        DbStatPill(
-                            title = "Sales Audits",
-                            value = "${settingsUiState.stats.salesTransactionsCount}",
-                            icon = Icons.Default.ReceiptLong,
-                            modifier = Modifier.weight(1f)
-                        )
-                        DbStatPill(
-                            title = "Mixtures",
-                            value = "${settingsUiState.stats.mixtureRecipesCount}",
-                            icon = Icons.Default.Science,
-                            modifier = Modifier.weight(1f)
-                        )
+                    // Database Stats Matrix (2x2 Grid)
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            DbStatPill(
+                                title = "Calculations",
+                                value = "${settingsUiState.stats.calculationsCount}",
+                                icon = Icons.Default.Calculate,
+                                modifier = Modifier.weight(1f)
+                            )
+                            DbStatPill(
+                                title = "Cashbook",
+                                value = "${settingsUiState.stats.ledgerTransactionsCount}",
+                                icon = Icons.Default.AccountBalanceWallet,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            DbStatPill(
+                                title = "Sales Audits",
+                                value = "${settingsUiState.stats.salesTransactionsCount}",
+                                icon = Icons.Default.ReceiptLong,
+                                modifier = Modifier.weight(1f)
+                            )
+                            DbStatPill(
+                                title = "Mixtures",
+                                value = "${settingsUiState.stats.mixtureRecipesCount}",
+                                icon = Icons.Default.Science,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
 
                     // Metadata details row
@@ -1297,6 +1311,7 @@ fun SettingsScreen(
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text("Backup Date: ${validation.formattedBackupDate}", fontSize = 11.sp, fontFamily = DigitalMonospaceFont)
                                     Text("Calculations: ${validation.calculationsCount} items", fontSize = 11.sp)
+                                    Text("Cashbook Ledger: ${validation.ledgerTransactionsCount} entries", fontSize = 11.sp)
                                     Text("Sales Audits: ${validation.salesTransactionsCount} transactions", fontSize = 11.sp)
                                     Text("Mixture Recipes: ${validation.mixtureRecipesCount} formulas", fontSize = 11.sp)
                                     Text("App Settings: ${if (validation.hasPreferences) "Included" else "None"}", fontSize = 11.sp)
@@ -1463,6 +1478,21 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text("Calculation History (${settingsUiState.stats.calculationsCount} items)", fontSize = 12.sp)
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { settingsViewModel.setClearLedgerOption(!settingsUiState.clearLedgerOption) }
+                            ) {
+                                Checkbox(
+                                    checked = settingsUiState.clearLedgerOption,
+                                    onCheckedChange = { settingsViewModel.setClearLedgerOption(it) },
+                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFFEF4444))
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Cashbook / Ledger (${settingsUiState.stats.ledgerTransactionsCount} records)", fontSize = 12.sp)
                             }
 
                             Row(

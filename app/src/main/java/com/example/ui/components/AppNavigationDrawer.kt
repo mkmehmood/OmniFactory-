@@ -24,9 +24,11 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Science
@@ -56,6 +58,7 @@ import com.example.ui.theme.DigitalMonospaceFont
 
 enum class DrawerDestination {
     CALCULATOR,
+    LEDGER,
     SALES,
     MIXTURE_CALCULATOR,
     BATCH_SCALING,
@@ -166,7 +169,21 @@ fun AppNavigationDrawer(
                     )
                 }
 
-                // 2. Units Converter Option (Opens Categories Hub)
+                // 2. Daily Ledger / Cashbook Option
+                item {
+                    DrawerNavItem(
+                        label = "Daily Ledger / Cashbook",
+                        subtitle = "Cash in hand, cash in & out audit",
+                        icon = Icons.Default.AccountBalanceWallet,
+                        isSelected = currentDestination == DrawerDestination.LEDGER,
+                        onClick = { onSelectDestination(DrawerDestination.LEDGER) },
+                        testTag = "drawer_item_ledger",
+                        primaryColor = primaryColor,
+                        isDark = isDark
+                    )
+                }
+
+                // 3. Units Converter Option (Opens Categories Hub)
                 item {
                     DrawerNavItem(
                         label = "Units Converter",
@@ -183,7 +200,7 @@ fun AppNavigationDrawer(
                     )
                 }
 
-                // 3. Sales Audit Option
+                // 4. Sales Audit Option
                 item {
                     DrawerNavItem(
                         label = "Sales Audit",
@@ -197,7 +214,7 @@ fun AppNavigationDrawer(
                     )
                 }
 
-                // 4. Mixture Calculator
+                // 5. Mixture Calculator
                 item {
                     DrawerNavItem(
                         label = "Mixture Calculator",
@@ -211,7 +228,7 @@ fun AppNavigationDrawer(
                     )
                 }
 
-                // 5. Batch Scaling
+                // 6. Batch Scaling
                 item {
                     DrawerNavItem(
                         label = "Batch & Ratio Scaler",

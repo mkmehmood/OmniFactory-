@@ -24,11 +24,12 @@ data class DatabaseStats(
     val calculationsCount: Int = 0,
     val salesTransactionsCount: Int = 0,
     val mixtureRecipesCount: Int = 0,
+    val ledgerTransactionsCount: Int = 0,
     val lastBackupTimestamp: Long = 0L,
     val hasLocalSnapshot: Boolean = false,
     val localSnapshotTimestamp: Long? = null
 ) {
-    val totalRecords: Int get() = calculationsCount + salesTransactionsCount + mixtureRecipesCount
+    val totalRecords: Int get() = calculationsCount + salesTransactionsCount + mixtureRecipesCount + ledgerTransactionsCount
 
     val formattedLastBackup: String
         get() = if (lastBackupTimestamp > 0) {
@@ -46,10 +47,11 @@ data class BackupValidationResult(
     val calculationsCount: Int = 0,
     val salesTransactionsCount: Int = 0,
     val mixtureRecipesCount: Int = 0,
+    val ledgerTransactionsCount: Int = 0,
     val hasPreferences: Boolean = false,
     val errorMessage: String? = null
 ) {
-    val totalItems: Int get() = calculationsCount + salesTransactionsCount + mixtureRecipesCount
+    val totalItems: Int get() = calculationsCount + salesTransactionsCount + mixtureRecipesCount + ledgerTransactionsCount
 
     val formattedBackupDate: String
         get() = if (timestamp > 0) {
@@ -70,6 +72,7 @@ data class RestoreSummary(
     val restoredCalculations: Int = 0,
     val restoredSales: Int = 0,
     val restoredMixtures: Int = 0,
+    val restoredLedger: Int = 0,
     val restoredSettings: Boolean = false,
     val message: String
 )
@@ -80,6 +83,7 @@ class DatabaseBackupManager(private val context: Context) {
     private val calculationDao = db.calculationDao()
     private val salesDao = db.salesTransactionDao()
     private val mixtureDao = db.mixtureRecipeDao()
+    private val ledgerDao = db.ledgerTransactionDao()
     private val prefs = UserPreferencesManager(context)
 
     private val snapshotFile: File
@@ -90,6 +94,7 @@ class DatabaseBackupManager(private val context: Context) {
             val calcs = calculationDao.getHistoryCount()
             val sales = salesDao.getCount()
             val mixtures = mixtureDao.getCount()
+            val ledgerCount = ledgerDao.getCount()
             val lastBackup = prefs.lastBackupTimestamp
             val snapshotExists = snapshotFile.exists() && snapshotFile.length() > 10
             val snapshotTime = if (snapshotExists) snapshotFile.lastModified() else null
@@ -98,6 +103,7 @@ class DatabaseBackupManager(private val context: Context) {
                 calculationsCount = calcs,
                 salesTransactionsCount = sales,
                 mixtureRecipesCount = mixtures,
+                ledgerTransactionsCount = ledgerCount,
                 lastBackupTimestamp = lastBackup,
                 hasLocalSnapshot = snapshotExists,
                 localSnapshotTimestamp = snapshotTime
@@ -193,7 +199,27 @@ class DatabaseBackupManager(private val context: Context) {
         }
         root.put("mixtureRecipes", mixtureArray)
 
-        // 5. App Preferences & User Settings
+        // 5. Ledger Transactions (Daily Cashbook)
+        val ledgerList = ledgerDao.getAllList()
+        val ledgerArray = JSONArray()
+        for (l in ledgerList) {
+            val obj = JSONObject().apply {
+                put("id", l.id)
+                put("type", l.type)
+                put("amount", l.amount)
+                put("category", l.category)
+                put("paymentMode", l.paymentMode)
+                put("partyName", l.partyName)
+                put("remarks", l.remarks)
+                put("referenceNo", l.referenceNo)
+                put("dateMillis", l.dateMillis)
+                put("timestamp", l.timestamp)
+            }
+            ledgerArray.put(obj)
+        }
+        root.put("ledgerTransactions", ledgerArray)
+
+        // 6. App Preferences & User Settings
         val settingsObj = JSONObject().apply {
             put("themeMode", prefs.themeMode.name)
             put("accentTheme", prefs.accentTheme.name)
@@ -235,14 +261,16 @@ class DatabaseBackupManager(private val context: Context) {
             val calcArray = root.optJSONArray("calculations")
             val salesArray = root.optJSONArray("salesTransactions")
             val mixtureArray = root.optJSONArray("mixtureRecipes")
+            val ledgerArray = root.optJSONArray("ledgerTransactions")
             val settingsObj = root.optJSONObject("settings")
 
             val calcCount = calcArray?.length() ?: 0
             val salesCount = salesArray?.length() ?: 0
             val mixtureCount = mixtureArray?.length() ?: 0
+            val ledgerCount = ledgerArray?.length() ?: 0
             val hasSettings = settingsObj != null
 
-            if (calcCount == 0 && salesCount == 0 && mixtureCount == 0 && !hasSettings) {
+            if (calcCount == 0 && salesCount == 0 && mixtureCount == 0 && ledgerCount == 0 && !hasSettings) {
                 BackupValidationResult(
                     isValid = false,
                     errorMessage = "No valid data tables or settings found in this backup JSON."
@@ -255,6 +283,7 @@ class DatabaseBackupManager(private val context: Context) {
                     calculationsCount = calcCount,
                     salesTransactionsCount = salesCount,
                     mixtureRecipesCount = mixtureCount,
+                    ledgerTransactionsCount = ledgerCount,
                     hasPreferences = hasSettings
                 )
             }
@@ -298,6 +327,7 @@ class DatabaseBackupManager(private val context: Context) {
                 calculationDao.clearAllHistory()
                 salesDao.clearAllTransactions()
                 mixtureDao.clearAll()
+                ledgerDao.clearAllTransactions()
             }
 
             // 1. Calculations
@@ -391,7 +421,33 @@ class DatabaseBackupManager(private val context: Context) {
                 restoredMixtures = list.size
             }
 
-            // 4. Settings
+            // 4. Ledger Transactions
+            var restoredLedger = 0
+            val ledgerArray = root.optJSONArray("ledgerTransactions")
+            if (ledgerArray != null && ledgerArray.length() > 0) {
+                val list = mutableListOf<LedgerTransactionEntity>()
+                for (i in 0 until ledgerArray.length()) {
+                    val obj = ledgerArray.getJSONObject(i)
+                    list.add(
+                        LedgerTransactionEntity(
+                            id = if (mode == RestoreMode.OVERWRITE) obj.optLong("id", 0L) else 0L,
+                            type = obj.optString("type", "CASH_IN"),
+                            amount = obj.optDouble("amount", 0.0),
+                            category = obj.optString("category", "General"),
+                            paymentMode = obj.optString("paymentMode", "CASH"),
+                            partyName = obj.optString("partyName", ""),
+                            remarks = obj.optString("remarks", ""),
+                            referenceNo = obj.optString("referenceNo", ""),
+                            dateMillis = obj.optLong("dateMillis", System.currentTimeMillis()),
+                            timestamp = obj.optLong("timestamp", System.currentTimeMillis())
+                        )
+                    )
+                }
+                ledgerDao.insertAll(list)
+                restoredLedger = list.size
+            }
+
+            // 5. Settings
             var restoredSettingsFlag = false
             if (restoreSettings) {
                 val settingsObj = root.optJSONObject("settings")
@@ -437,8 +493,9 @@ class DatabaseBackupManager(private val context: Context) {
                 restoredCalculations = restoredCalcs,
                 restoredSales = restoredSales,
                 restoredMixtures = restoredMixtures,
+                restoredLedger = restoredLedger,
                 restoredSettings = restoredSettingsFlag,
-                message = "Database successfully $modeText: $restoredCalcs calculations, $restoredSales sales audits, $restoredMixtures mixtures."
+                message = "Database successfully $modeText: $restoredCalcs calculations, $restoredSales sales audits, $restoredMixtures mixtures, $restoredLedger ledger transactions."
             )
         } catch (e: Exception) {
             RestoreSummary(
@@ -451,12 +508,14 @@ class DatabaseBackupManager(private val context: Context) {
     suspend fun clearAllData(
         clearCalculations: Boolean = true,
         clearSales: Boolean = true,
-        clearMixtures: Boolean = true
+        clearMixtures: Boolean = true,
+        clearLedger: Boolean = true
     ): Boolean = withContext(Dispatchers.IO) {
         try {
             if (clearCalculations) calculationDao.clearAllHistory()
             if (clearSales) salesDao.clearAllTransactions()
             if (clearMixtures) mixtureDao.clearAll()
+            if (clearLedger) ledgerDao.clearAllTransactions()
             true
         } catch (e: Exception) {
             false

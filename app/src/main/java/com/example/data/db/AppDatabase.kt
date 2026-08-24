@@ -9,15 +9,17 @@ import androidx.room.RoomDatabase
     entities = [
         CalculationEntity::class,
         SalesTransactionEntity::class,
-        MixtureRecipeEntity::class
+        MixtureRecipeEntity::class,
+        LedgerTransactionEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun calculationDao(): CalculationDao
     abstract fun salesTransactionDao(): SalesTransactionDao
     abstract fun mixtureRecipeDao(): MixtureRecipeDao
+    abstract fun ledgerTransactionDao(): LedgerTransactionDao
 
     companion object {
         @Volatile
