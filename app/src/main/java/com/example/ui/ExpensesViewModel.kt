@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.db.AppDatabase
 import com.example.data.db.LedgerTransactionDao
 import com.example.data.db.LedgerTransactionEntity
+import com.example.domain.ledger.LedgerUnifiedDataManager
 import com.example.domain.util.IndianNumberFormatter
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,43 +20,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-
-private const val EXPENSES_PREFS = "expenses_preferences"
-private const val KEY_SAVED_BIZ_CATEGORIES = "saved_biz_categories"
-private const val KEY_SAVED_HOME_CATEGORIES = "saved_home_categories"
-private const val KEY_SAVED_EXPENSE_MODES = "saved_expense_modes"
-
-val DEFAULT_BUSINESS_CATEGORIES = listOf(
-    "Raw Materials",
-    "Salaries & Labor",
-    "Rent & Lease",
-    "Electricity / Power",
-    "Maintenance & Repairs",
-    "Transport & Fuel",
-    "Tea & Refreshment",
-    "Packaging Supplies",
-    "Office Supplies",
-    "Taxes & Govt Fees",
-    "Marketing & Ads",
-    "Miscellaneous Business"
-)
-
-val DEFAULT_HOME_CATEGORIES = listOf(
-    "Groceries & Food",
-    "Home Electricity & Gas",
-    "Water & Maintenance",
-    "Home Rent",
-    "School / Tuition Fees",
-    "Medical & Healthcare",
-    "House Help & Maid",
-    "Clothing & Shopping",
-    "Mobile & Internet",
-    "Home Repairs",
-    "Gifts & Charity",
-    "Miscellaneous Home"
-)
-
-val DEFAULT_EXPENSE_MODES = listOf("Cash", "Bank Transfer", "Easypaisa", "JazzCash", "Cheque")
 
 enum class ExpenseScope(val label: String, val shortName: String) {
     ALL("All Expenses", "All"),
@@ -111,16 +75,16 @@ data class ExpensesUiState(
     val allExpenses: List<LedgerTransactionEntity> = emptyList(),
     val filteredExpenses: List<LedgerTransactionEntity> = emptyList(),
     val summary: ExpensesSummary = ExpensesSummary(),
-    val businessCategories: List<String> = DEFAULT_BUSINESS_CATEGORIES,
-    val homeCategories: List<String> = DEFAULT_HOME_CATEGORIES,
-    val availableModes: List<String> = DEFAULT_EXPENSE_MODES
+    val businessCategories: List<String> = emptyList(),
+    val homeCategories: List<String> = emptyList(),
+    val availableModes: List<String> = emptyList()
 )
 
 class ExpensesViewModel(
     application: Application
 ) : AndroidViewModel(application) {
 
-    private val prefs = application.getSharedPreferences(EXPENSES_PREFS, Context.MODE_PRIVATE)
+    private val appContext: Context = application.applicationContext
     private val ledgerDao: LedgerTransactionDao = AppDatabase.getDatabase(application).ledgerTransactionDao()
 
     private val _uiState = MutableStateFlow(ExpensesUiState())
@@ -130,7 +94,7 @@ class ExpensesViewModel(
     val userMessage: SharedFlow<String> = _userMessage.asSharedFlow()
 
     init {
-        loadPersistedCategories()
+        loadSynchronizedCategories()
 
         viewModelScope.launch {
             ledgerDao.getAllTransactions().collect { allList ->
@@ -143,37 +107,31 @@ class ExpensesViewModel(
                         current.selectedTimeFilter,
                         current.searchQuery
                     )
+
+                    val dbCategories = expensesOnly.map { it.category.trim() }.filter { it.isNotEmpty() }
+                    val dbModes = expensesOnly.map { it.paymentMode.trim() }.filter { it.isNotEmpty() }
+
+                    val bizList = (LedgerUnifiedDataManager.getBusinessCategories(appContext) + dbCategories.filter { !isHomeExpenseItem(it, "") }).distinct()
+                    val homeList = (LedgerUnifiedDataManager.getHomeCategories(appContext) + dbCategories.filter { isHomeExpenseItem(it, "") }).distinct()
+                    val modesList = (LedgerUnifiedDataManager.getPaymentModes(appContext) + dbModes).distinct()
+
                     current.copy(
                         allExpenses = expensesOnly,
                         filteredExpenses = filtered,
-                        summary = summary
+                        summary = summary,
+                        businessCategories = bizList,
+                        homeCategories = homeList,
+                        availableModes = modesList
                     )
                 }
             }
         }
     }
 
-    private fun loadPersistedCategories() {
-        val savedBiz = prefs.getStringSet(KEY_SAVED_BIZ_CATEGORIES, null)
-        val bizList = if (savedBiz != null && savedBiz.isNotEmpty()) {
-            (DEFAULT_BUSINESS_CATEGORIES + savedBiz).distinct()
-        } else {
-            DEFAULT_BUSINESS_CATEGORIES
-        }
-
-        val savedHome = prefs.getStringSet(KEY_SAVED_HOME_CATEGORIES, null)
-        val homeList = if (savedHome != null && savedHome.isNotEmpty()) {
-            (DEFAULT_HOME_CATEGORIES + savedHome).distinct()
-        } else {
-            DEFAULT_HOME_CATEGORIES
-        }
-
-        val savedModes = prefs.getStringSet(KEY_SAVED_EXPENSE_MODES, null)
-        val modesList = if (savedModes != null && savedModes.isNotEmpty()) {
-            (DEFAULT_EXPENSE_MODES + savedModes).distinct()
-        } else {
-            DEFAULT_EXPENSE_MODES
-        }
+    private fun loadSynchronizedCategories() {
+        val bizList = LedgerUnifiedDataManager.getBusinessCategories(appContext)
+        val homeList = LedgerUnifiedDataManager.getHomeCategories(appContext)
+        val modesList = LedgerUnifiedDataManager.getPaymentModes(appContext)
 
         _uiState.update {
             it.copy(
@@ -184,39 +142,11 @@ class ExpensesViewModel(
         }
     }
 
-    private fun autoSaveCategoryIfNew(category: String, isBusiness: Boolean) {
-        val trimmed = category.trim()
-        if (trimmed.isEmpty()) return
-        if (isBusiness) {
-            val current = _uiState.value.businessCategories
-            if (current.none { it.equals(trimmed, ignoreCase = true) }) {
-                val updated = current + trimmed
-                prefs.edit().putStringSet(KEY_SAVED_BIZ_CATEGORIES, updated.toSet()).apply()
-                _uiState.update { it.copy(businessCategories = updated) }
-            }
-        } else {
-            val current = _uiState.value.homeCategories
-            if (current.none { it.equals(trimmed, ignoreCase = true) }) {
-                val updated = current + trimmed
-                prefs.edit().putStringSet(KEY_SAVED_HOME_CATEGORIES, updated.toSet()).apply()
-                _uiState.update { it.copy(homeCategories = updated) }
-            }
-        }
-    }
-
-    private fun autoSaveModeIfNew(mode: String) {
-        val trimmed = mode.trim()
-        if (trimmed.isEmpty()) return
-        val current = _uiState.value.availableModes
-        if (current.none { it.equals(trimmed, ignoreCase = true) }) {
-            val updated = current + trimmed
-            prefs.edit().putStringSet(KEY_SAVED_EXPENSE_MODES, updated.toSet()).apply()
-            _uiState.update { it.copy(availableModes = updated) }
-        }
+    private fun isHomeExpenseItem(category: String, scope: String): Boolean {
+        return LedgerUnifiedDataManager.isHomeExpense(category, scope)
     }
 
     private fun computeSummary(expenses: List<LedgerTransactionEntity>): ExpensesSummary {
-        val now = Calendar.getInstance()
         val todayStart = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
@@ -248,7 +178,7 @@ class ExpensesViewModel(
             if (item.dateMillis >= todayStart) todayTotal += item.amount
             if (item.dateMillis >= monthStart) monthTotal += item.amount
 
-            val isHome = isHomeCategory(item.category)
+            val isHome = isHomeExpenseItem(item.category, item.expenseScope)
             if (isHome) {
                 homeTotal += item.amount
                 homeCount++
@@ -276,23 +206,12 @@ class ExpensesViewModel(
         )
     }
 
-    private fun isHomeCategory(cat: String): Boolean {
-        val lower = cat.lowercase()
-        return lower.contains("home") || lower.contains("grocer") || lower.contains("school") ||
-                lower.contains("tuition") || lower.contains("maid") || lower.contains("doctor") ||
-                lower.contains("medical") || lower.contains("clothing") || lower.contains("personal") ||
-                lower.contains("family") || lower.contains("kitchen")
-    }
-
     private fun filterExpenses(
         list: List<LedgerTransactionEntity>,
         scope: ExpenseScope,
         timeFilter: ExpenseTimeFilter,
         query: String
     ): List<LedgerTransactionEntity> {
-        val now = System.currentTimeMillis()
-        val calendar = Calendar.getInstance()
-
         val todayStart = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
@@ -319,14 +238,13 @@ class ExpensesViewModel(
         val trimmedQuery = query.trim()
 
         return list.filter { item ->
-            // Scope match
+            val isHome = isHomeExpenseItem(item.category, item.expenseScope)
             val matchScope = when (scope) {
                 ExpenseScope.ALL -> true
-                ExpenseScope.BUSINESS -> !isHomeCategory(item.category)
-                ExpenseScope.HOME -> isHomeCategory(item.category)
+                ExpenseScope.BUSINESS -> !isHome
+                ExpenseScope.HOME -> isHome
             }
 
-            // Time match
             val matchTime = when (timeFilter) {
                 ExpenseTimeFilter.ALL_TIME -> true
                 ExpenseTimeFilter.TODAY -> item.dateMillis >= todayStart
@@ -334,7 +252,6 @@ class ExpensesViewModel(
                 ExpenseTimeFilter.THIS_MONTH -> item.dateMillis >= monthStart
             }
 
-            // Search match
             val matchQuery = trimmedQuery.isEmpty() ||
                     item.category.contains(trimmedQuery, ignoreCase = true) ||
                     item.partyName.contains(trimmedQuery, ignoreCase = true) ||
@@ -396,7 +313,7 @@ class ExpensesViewModel(
     }
 
     fun openEditExpense(expense: LedgerTransactionEntity) {
-        val isHome = isHomeCategory(expense.category)
+        val isHome = isHomeExpenseItem(expense.category, expense.expenseScope)
         _uiState.update {
             it.copy(
                 isAddSheetOpen = true,
@@ -419,9 +336,10 @@ class ExpensesViewModel(
 
     fun setFormScope(scope: ExpenseScope) {
         val currentCat = _uiState.value.formCategory
-        val newCat = if (scope == ExpenseScope.HOME && !isHomeCategory(currentCat)) {
+        val isHome = isHomeExpenseItem(currentCat, "")
+        val newCat = if (scope == ExpenseScope.HOME && !isHome) {
             "Groceries & Food"
-        } else if (scope == ExpenseScope.BUSINESS && isHomeCategory(currentCat)) {
+        } else if (scope == ExpenseScope.BUSINESS && isHome) {
             "Raw Materials"
         } else {
             currentCat
@@ -472,6 +390,7 @@ class ExpensesViewModel(
         }
 
         val isBiz = current.formScope == ExpenseScope.BUSINESS
+        val expenseScopeStr = if (isBiz) "BUSINESS" else "HOME"
         val category = current.formCategory.trim().ifBlank { if (isBiz) "Raw Materials" else "Groceries & Food" }
         val mode = current.formPaymentMode.trim().ifBlank { "Cash" }
         val paidTo = current.formPaidTo.trim()
@@ -479,9 +398,11 @@ class ExpensesViewModel(
         val refNo = current.formReferenceNo.trim()
         val dateMillis = current.formDateMillis
 
-        // Auto-save category & mode without extra prompt
-        autoSaveCategoryIfNew(category, isBiz)
-        autoSaveModeIfNew(mode)
+        // Auto-save category & mode into synchronized master manager
+        LedgerUnifiedDataManager.saveCategoryIfNew(appContext, category, expenseScopeStr)
+        LedgerUnifiedDataManager.savePaymentModeIfNew(appContext, mode)
+
+        loadSynchronizedCategories()
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true) }
@@ -492,26 +413,28 @@ class ExpensesViewModel(
                     amount = amount,
                     category = category,
                     paymentMode = mode,
+                    expenseScope = expenseScopeStr,
                     partyName = paidTo,
                     remarks = remarks,
                     referenceNo = refNo,
                     dateMillis = dateMillis
                 )
                 ledgerDao.updateTransaction(updated)
-                _userMessage.emit("Expense updated successfully.")
+                _userMessage.emit("Expense updated & synced with Daily Ledger.")
             } else {
                 val newExpense = LedgerTransactionEntity(
                     type = "CASH_OUT",
                     amount = amount,
                     category = category,
                     paymentMode = mode,
+                    expenseScope = expenseScopeStr,
                     partyName = paidTo,
                     remarks = remarks,
                     referenceNo = refNo,
                     dateMillis = dateMillis
                 )
                 ledgerDao.insertTransaction(newExpense)
-                _userMessage.emit("Expense of Rs. ${IndianNumberFormatter.formatIndianDouble(amount, 0)} recorded.")
+                _userMessage.emit("${current.formScope.shortName} Expense of Rs. ${IndianNumberFormatter.formatIndianDouble(amount, 0)} logged to Ledger.")
             }
             _uiState.update {
                 it.copy(
@@ -565,9 +488,10 @@ class ExpensesViewModel(
             }
             appendLine("EXPENSES LOG (${state.filteredExpenses.size} items):")
             state.filteredExpenses.forEachIndexed { i, exp ->
+                val scopeTag = if (exp.expenseScope == "HOME" || isHomeExpenseItem(exp.category, exp.expenseScope)) "[Home]" else "[Business]"
                 val party = if (exp.partyName.isNotBlank()) " | Paid to: ${exp.partyName}" else ""
                 val rem = if (exp.remarks.isNotBlank()) " (${exp.remarks})" else ""
-                appendLine("${i + 1}. [${dateFormat.format(Date(exp.dateMillis))}] ${exp.category}$party : Rs. ${IndianNumberFormatter.formatIndianDouble(exp.amount, 2)} [${exp.paymentMode}]$rem")
+                appendLine("${i + 1}. [${dateFormat.format(Date(exp.dateMillis))}] $scopeTag ${exp.category}$party : Rs. ${IndianNumberFormatter.formatIndianDouble(exp.amount, 2)} [${exp.paymentMode}]$rem")
             }
             appendLine("======================================")
         }

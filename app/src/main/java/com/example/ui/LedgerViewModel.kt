@@ -10,6 +10,7 @@ import com.example.data.db.LedgerTransactionEntity
 import com.example.domain.ledger.LedgerPaymentUtils
 import com.example.domain.ledger.LedgerSummary
 import com.example.domain.ledger.LedgerType
+import com.example.domain.ledger.LedgerUnifiedDataManager
 import com.example.domain.util.IndianNumberFormatter
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,16 +23,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private const val PREFS_NAME = "ledger_preferences"
-private const val KEY_SAVED_CATEGORIES = "saved_categories_set"
-private const val KEY_SAVED_MODES = "saved_modes_set"
-
-val DEFAULT_CATEGORIES = listOf("Sales", "Noran Shah", "Noman Shah", "Home")
-val DEFAULT_PAYMENT_MODES = listOf("Cash", "Bank Transfer")
-
 data class LedgerUiState(
     val searchQuery: String = "",
-    val selectedTypeFilter: String = "ALL",          // "ALL", "CASH_IN", "CASH_OUT"
+    val selectedTypeFilter: String = "ALL",          // "ALL", "CASH_IN", "CASH_OUT", "BUSINESS_EXPENSE", "HOME_EXPENSE"
     val selectedModeFilter: String = "ALL",          // "ALL", "CASH", "BANK", "OTHERS"
     val isAddSheetOpen: Boolean = false,
     val isHistoryPanelOpen: Boolean = false,
@@ -40,6 +34,7 @@ data class LedgerUiState(
     val editingTransaction: LedgerTransactionEntity? = null,
     // Custom Form Inputs
     val formType: LedgerType = LedgerType.CASH_IN,
+    val formExpenseScope: String = "BUSINESS",       // "BUSINESS", "HOME" (when formType is CASH_OUT)
     val formAmountText: String = "",
     val formCategory: String = "Sales",
     val formPaymentMode: String = "Cash",
@@ -53,15 +48,18 @@ data class LedgerUiState(
     val filteredTransactions: List<LedgerTransactionEntity> = emptyList(),
     val allTransactions: List<LedgerTransactionEntity> = emptyList(),
     val distinctParties: List<String> = emptyList(),
-    val availableCategories: List<String> = DEFAULT_CATEGORIES,
-    val availablePaymentModes: List<String> = DEFAULT_PAYMENT_MODES
+    val availableCategories: List<String> = emptyList(),
+    val businessCategories: List<String> = emptyList(),
+    val homeCategories: List<String> = emptyList(),
+    val incomeCategories: List<String> = emptyList(),
+    val availablePaymentModes: List<String> = emptyList()
 )
 
 class LedgerViewModel(
     application: Application
 ) : AndroidViewModel(application) {
 
-    private val prefs = application.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val appContext: Context = application.applicationContext
     private val ledgerDao: LedgerTransactionDao = AppDatabase.getDatabase(application).ledgerTransactionDao()
 
     private val _uiState = MutableStateFlow(LedgerUiState())
@@ -71,7 +69,7 @@ class LedgerViewModel(
     val userMessage: SharedFlow<String> = _userMessage.asSharedFlow()
 
     init {
-        loadPersistedLists()
+        loadSynchronizedLists()
 
         viewModelScope.launch {
             ledgerDao.getAllTransactions().collect { allList ->
@@ -88,76 +86,43 @@ class LedgerViewModel(
                         .distinct()
                         .take(20)
 
-                    // Merge DB categories and payment modes with current available
+                    // Merge DB categories and payment modes with synchronized master repository
                     val dbCategories = allList.map { it.category.trim() }.filter { it.isNotEmpty() }
                     val dbModes = allList.map { it.paymentMode.trim() }.filter { it.isNotEmpty() }
 
-                    val mergedCategories = (current.availableCategories + dbCategories).distinct()
-                    val mergedModes = (current.availablePaymentModes + dbModes).distinct()
+                    val allCats = (LedgerUnifiedDataManager.getAllCategories(appContext) + dbCategories).distinct()
+                    val allModes = (LedgerUnifiedDataManager.getPaymentModes(appContext) + dbModes).distinct()
 
                     current.copy(
                         allTransactions = allList,
                         summary = summary,
                         filteredTransactions = filtered,
                         distinctParties = distinctParties,
-                        availableCategories = mergedCategories,
-                        availablePaymentModes = mergedModes
+                        availableCategories = allCats,
+                        businessCategories = (LedgerUnifiedDataManager.getBusinessCategories(appContext) + dbCategories.filter { !LedgerUnifiedDataManager.isHomeExpense(it) }).distinct(),
+                        homeCategories = (LedgerUnifiedDataManager.getHomeCategories(appContext) + dbCategories.filter { LedgerUnifiedDataManager.isHomeExpense(it) }).distinct(),
+                        incomeCategories = (LedgerUnifiedDataManager.getIncomeCategories(appContext) + dbCategories).distinct(),
+                        availablePaymentModes = allModes
                     )
                 }
             }
         }
     }
 
-    private fun loadPersistedLists() {
-        val savedCatSet = prefs.getStringSet(KEY_SAVED_CATEGORIES, null)
-        val loadedCategories = if (savedCatSet != null && savedCatSet.isNotEmpty()) {
-            (DEFAULT_CATEGORIES + savedCatSet).distinct()
-        } else {
-            DEFAULT_CATEGORIES
-        }
-
-        val savedModeSet = prefs.getStringSet(KEY_SAVED_MODES, null)
-        val loadedModes = if (savedModeSet != null && savedModeSet.isNotEmpty()) {
-            (DEFAULT_PAYMENT_MODES + savedModeSet).distinct()
-        } else {
-            DEFAULT_PAYMENT_MODES
-        }
+    private fun loadSynchronizedLists() {
+        val biz = LedgerUnifiedDataManager.getBusinessCategories(appContext)
+        val home = LedgerUnifiedDataManager.getHomeCategories(appContext)
+        val income = LedgerUnifiedDataManager.getIncomeCategories(appContext)
+        val modes = LedgerUnifiedDataManager.getPaymentModes(appContext)
 
         _uiState.update {
             it.copy(
-                availableCategories = loadedCategories,
-                availablePaymentModes = loadedModes
+                availableCategories = (biz + home + income).distinct(),
+                businessCategories = biz,
+                homeCategories = home,
+                incomeCategories = income,
+                availablePaymentModes = modes
             )
-        }
-    }
-
-    private fun persistCategories(list: List<String>) {
-        prefs.edit().putStringSet(KEY_SAVED_CATEGORIES, list.toSet()).apply()
-    }
-
-    private fun persistPaymentModes(list: List<String>) {
-        prefs.edit().putStringSet(KEY_SAVED_MODES, list.toSet()).apply()
-    }
-
-    private fun autoSaveCategoryIfNew(category: String) {
-        val trimmed = category.trim()
-        if (trimmed.isEmpty()) return
-        val currentCategories = _uiState.value.availableCategories
-        if (currentCategories.none { it.equals(trimmed, ignoreCase = true) }) {
-            val updated = currentCategories + trimmed
-            persistCategories(updated)
-            _uiState.update { it.copy(availableCategories = updated) }
-        }
-    }
-
-    private fun autoSavePaymentModeIfNew(mode: String) {
-        val trimmed = mode.trim()
-        if (trimmed.isEmpty()) return
-        val currentModes = _uiState.value.availablePaymentModes
-        if (currentModes.none { it.equals(trimmed, ignoreCase = true) }) {
-            val updated = currentModes + trimmed
-            persistPaymentModes(updated)
-            _uiState.update { it.copy(availablePaymentModes = updated) }
         }
     }
 
@@ -258,12 +223,15 @@ class LedgerViewModel(
                     tx.referenceNo.contains(query, ignoreCase = true) ||
                     tx.category.contains(query, ignoreCase = true) ||
                     tx.paymentMode.contains(query, ignoreCase = true) ||
+                    tx.expenseScope.contains(query, ignoreCase = true) ||
                     tx.amount.toString().contains(query)
 
             val matchType = when (typeFilter) {
                 "ALL" -> true
                 "CASH_IN" -> tx.type != "CASH_OUT"
                 "CASH_OUT" -> tx.type == "CASH_OUT"
+                "BUSINESS_EXPENSE" -> tx.type == "CASH_OUT" && !LedgerUnifiedDataManager.isHomeExpense(tx.category, tx.expenseScope)
+                "HOME_EXPENSE" -> tx.type == "CASH_OUT" && LedgerUnifiedDataManager.isHomeExpense(tx.category, tx.expenseScope)
                 else -> true
             }
 
@@ -316,9 +284,33 @@ class LedgerViewModel(
         _uiState.update { it.copy(formPaymentMode = mode) }
     }
 
+    fun setFormExpenseScope(scope: String) {
+        val currentCategory = _uiState.value.formCategory
+        val isCurrentHome = LedgerUnifiedDataManager.isHomeExpense(currentCategory)
+
+        val newCategory = if (scope == "HOME" && !isCurrentHome) {
+            "Groceries & Food"
+        } else if (scope == "BUSINESS" && isCurrentHome) {
+            "Raw Materials"
+        } else {
+            currentCategory
+        }
+
+        _uiState.update {
+            it.copy(
+                formExpenseScope = scope,
+                formCategory = newCategory
+            )
+        }
+    }
+
     // --- Add / Edit Transaction Sheet & Form ---
-    fun openAddTransactionSheet(type: LedgerType = LedgerType.CASH_IN) {
-        val defaultCategory = if (type == LedgerType.CASH_OUT) "Home" else "Sales"
+    fun openAddTransactionSheet(type: LedgerType = LedgerType.CASH_IN, initialScope: String = "BUSINESS") {
+        val defaultCategory = if (type == LedgerType.CASH_OUT) {
+            if (initialScope == "HOME") "Groceries & Food" else "Raw Materials"
+        } else {
+            "Sales"
+        }
         val defaultPaymentMode = "Cash"
 
         _uiState.update {
@@ -326,6 +318,7 @@ class LedgerViewModel(
                 isAddSheetOpen = true,
                 editingTransaction = null,
                 formType = type,
+                formExpenseScope = initialScope,
                 formAmountText = "",
                 formCategory = defaultCategory,
                 formPaymentMode = defaultPaymentMode,
@@ -339,14 +332,20 @@ class LedgerViewModel(
 
     fun openEditTransaction(tx: LedgerTransactionEntity) {
         val type = if (tx.type == "CASH_OUT") LedgerType.CASH_OUT else LedgerType.CASH_IN
+        val scope = if (tx.type == "CASH_OUT") {
+            if (tx.expenseScope.isNotBlank()) tx.expenseScope else if (LedgerUnifiedDataManager.isHomeExpense(tx.category)) "HOME" else "BUSINESS"
+        } else {
+            "BUSINESS"
+        }
 
         _uiState.update {
             it.copy(
                 isAddSheetOpen = true,
                 editingTransaction = tx,
                 formType = type,
+                formExpenseScope = scope,
                 formAmountText = if (tx.amount % 1.0 == 0.0) tx.amount.toLong().toString() else tx.amount.toString(),
-                formCategory = tx.category.ifBlank { "Sales" },
+                formCategory = tx.category.ifBlank { if (type == LedgerType.CASH_OUT) "Raw Materials" else "Sales" },
                 formPaymentMode = tx.paymentMode.ifBlank { "Cash" },
                 formPartyName = tx.partyName,
                 formRemarks = tx.remarks,
@@ -366,7 +365,18 @@ class LedgerViewModel(
     }
 
     fun setFormType(type: LedgerType) {
-        _uiState.update { it.copy(formType = type) }
+        val current = _uiState.value
+        val defaultCategory = if (type == LedgerType.CASH_OUT) {
+            if (current.formExpenseScope == "HOME") "Groceries & Food" else "Raw Materials"
+        } else {
+            "Sales"
+        }
+        _uiState.update {
+            it.copy(
+                formType = type,
+                formCategory = defaultCategory
+            )
+        }
     }
 
     fun setFormAmountText(amount: String) {
@@ -398,16 +408,27 @@ class LedgerViewModel(
         }
 
         val typeStr = current.formType.name
-        val category = current.formCategory.trim().ifBlank { if (current.formType == LedgerType.CASH_OUT) "Home" else "Sales" }
+        val isCashOut = current.formType == LedgerType.CASH_OUT
+        val expenseScope = if (isCashOut) current.formExpenseScope else ""
+        val category = current.formCategory.trim().ifBlank {
+            if (isCashOut) {
+                if (expenseScope == "HOME") "Groceries & Food" else "Raw Materials"
+            } else {
+                "Sales"
+            }
+        }
         val mode = current.formPaymentMode.trim().ifBlank { "Cash" }
         val party = current.formPartyName.trim()
         val remarks = current.formRemarks.trim()
         val refNo = current.formReferenceNo.trim()
         val dateMillis = current.formDateMillis
 
-        // Auto-save new category and payment mode automatically without extra UI
-        autoSaveCategoryIfNew(category)
-        autoSavePaymentModeIfNew(mode)
+        // Auto-save category & payment mode into Unified Manager for 100% sync
+        val categoryScope = if (isCashOut) expenseScope else "INCOME"
+        LedgerUnifiedDataManager.saveCategoryIfNew(appContext, category, categoryScope)
+        LedgerUnifiedDataManager.savePaymentModeIfNew(appContext, mode)
+
+        loadSynchronizedLists()
 
         viewModelScope.launch {
             _uiState.update { it.copy(isFormSubmitting = true) }
@@ -418,6 +439,7 @@ class LedgerViewModel(
                     amount = amount,
                     category = category,
                     paymentMode = mode,
+                    expenseScope = expenseScope,
                     partyName = party,
                     remarks = remarks,
                     referenceNo = refNo,
@@ -431,13 +453,15 @@ class LedgerViewModel(
                     amount = amount,
                     category = category,
                     paymentMode = mode,
+                    expenseScope = expenseScope,
                     partyName = party,
                     remarks = remarks,
                     referenceNo = refNo,
                     dateMillis = dateMillis
                 )
                 ledgerDao.insertTransaction(newTx)
-                _userMessage.emit("${current.formType.title} entry saved.")
+                val scopeLabel = if (isCashOut) " (${if (expenseScope == "HOME") "Home Expense" else "Business Expense"})" else ""
+                _userMessage.emit("${current.formType.title}$scopeLabel saved.")
             }
             _uiState.update {
                 it.copy(
@@ -475,7 +499,13 @@ class LedgerViewModel(
     // --- Formatted Exports ---
     fun buildSingleTransactionReport(tx: LedgerTransactionEntity): String {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
-        val typeLabel = if (tx.type == "CASH_OUT") "CASH OUT (EXPENSE)" else "CASH IN (INCOME)"
+        val isOut = tx.type == "CASH_OUT"
+        val typeLabel = if (isOut) {
+            val scopeStr = if (tx.expenseScope == "HOME" || LedgerUnifiedDataManager.isHomeExpense(tx.category)) "HOME EXPENSE" else "BUSINESS EXPENSE"
+            "CASH OUT ($scopeStr)"
+        } else {
+            "CASH IN (INCOME / SALES)"
+        }
         return buildString {
             appendLine("=== CASHBOOK TRANSACTION VOUCHER ===")
             appendLine("Type: $typeLabel")
@@ -502,7 +532,7 @@ class LedgerViewModel(
             appendLine("TOTAL CASH IN HAND: ${summary.formattedCashInHand}")
             appendLine("Cash Mode Balance:  ${summary.formattedCashBalance}")
             appendLine("Bank Mode Balance:  ${summary.formattedBankBalance}")
-            appendLine("Others Balance:     ${summary.formattedOthersBalance} (${summary.otherModesCount} txns)")
+            appendLine("Others Balance:     ${summary.formattedOthersBalance}")
             appendLine("--------------------------------------")
             appendLine("TOTAL CASH IN:      ${summary.formattedCashIn} (${summary.cashInCount} txns)")
             appendLine("TOTAL CASH OUT:     ${summary.formattedCashOut} (${summary.cashOutCount} txns)")
@@ -527,7 +557,8 @@ class LedgerViewModel(
             state.filteredTransactions.forEachIndexed { i, tx ->
                 val sign = if (tx.type == "CASH_OUT") "-" else "+"
                 val party = if (tx.partyName.isNotBlank()) " | ${tx.partyName}" else ""
-                appendLine("${i + 1}. [${dateFormat.format(Date(tx.dateMillis))}] ${tx.category}$party : $sign Rs. ${IndianNumberFormatter.formatIndianDouble(tx.amount, 2)} (${tx.paymentMode})")
+                val scopeTag = if (tx.type == "CASH_OUT") " [${if (tx.expenseScope == "HOME" || LedgerUnifiedDataManager.isHomeExpense(tx.category)) "Home" else "Biz"}]" else ""
+                appendLine("${i + 1}. [${dateFormat.format(Date(tx.dateMillis))}] ${tx.category}$party$scopeTag : $sign Rs. ${IndianNumberFormatter.formatIndianDouble(tx.amount, 2)} (${tx.paymentMode})")
             }
             appendLine("======================================")
         }

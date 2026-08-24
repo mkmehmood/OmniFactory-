@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CheckCircle
@@ -39,6 +40,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
@@ -89,6 +91,7 @@ import com.example.data.db.LedgerTransactionEntity
 import com.example.domain.ledger.LedgerCategoryIcons
 import com.example.domain.ledger.LedgerSummary
 import com.example.domain.ledger.LedgerType
+import com.example.domain.ledger.LedgerUnifiedDataManager
 import com.example.domain.util.IndianNumberFormatter
 import com.example.ui.LedgerUiState
 import com.example.ui.LedgerViewModel
@@ -180,7 +183,7 @@ fun LedgerScreen(
             // 3. Fast Action Buttons: Only + Cash In and - Cash Out
             LedgerFastActionBar(
                 onAddCashIn = { viewModel.openAddTransactionSheet(LedgerType.CASH_IN) },
-                onAddCashOut = { viewModel.openAddTransactionSheet(LedgerType.CASH_OUT) }
+                onAddCashOut = { viewModel.openAddTransactionSheet(LedgerType.CASH_OUT, "BUSINESS") }
             )
 
             // 4. Payment Channel & Mode Distribution Card
@@ -219,6 +222,7 @@ fun LedgerScreen(
                 LedgerAddEditSheetContent(
                     uiState = uiState,
                     onTypeChange = { viewModel.setFormType(it) },
+                    onExpenseScopeChange = { viewModel.setFormExpenseScope(it) },
                     onAmountChange = { viewModel.setFormAmountText(it) },
                     onCategoryChange = { viewModel.setFormCategory(it) },
                     onPaymentModeChange = { viewModel.setFormPaymentMode(it) },
@@ -403,7 +407,7 @@ private fun LedgerHeroBalanceCard(
             HorizontalDivider(thickness = 0.8.dp, color = Color(0x22FFFFFF))
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Payment Mode Breakdown Pills: Cash, Bank, and OTHERS
+            // Payment Mode Breakdown Pills: Cash, Bank, and OTHERS (Clean, without txns text)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -425,7 +429,6 @@ private fun LedgerHeroBalanceCard(
                 ModeMiniPill(
                     label = "Others",
                     amount = summary.otherModesBalance,
-                    countSubtitle = "${summary.otherModesCount} txns",
                     icon = Icons.Default.MoreHoriz,
                     onClick = { onModePillClick("OTHERS") },
                     modifier = Modifier.weight(1f)
@@ -439,7 +442,6 @@ private fun LedgerHeroBalanceCard(
 private fun ModeMiniPill(
     label: String,
     amount: Double,
-    countSubtitle: String? = null,
     icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -483,13 +485,6 @@ private fun ModeMiniPill(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            if (countSubtitle != null) {
-                Text(
-                    text = countSubtitle,
-                    fontSize = 8.5.sp,
-                    color = Color(0xFF94A3B8)
-                )
-            }
         }
     }
 }
@@ -525,8 +520,8 @@ private fun LedgerMetricCard(
             ) {
                 Text(
                     text = title,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.SemiBold,
                     fontFamily = DigitalMonospaceFont,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -536,15 +531,15 @@ private fun LedgerMetricCard(
                     imageVector = icon,
                     contentDescription = null,
                     tint = accentColor,
-                    modifier = Modifier.size(13.dp)
+                    modifier = Modifier.size(14.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = amount,
-                fontSize = 13.sp,
+                fontSize = 13.5.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
                 color = accentColor,
@@ -557,14 +552,16 @@ private fun LedgerMetricCard(
             Text(
                 text = count,
                 fontSize = 9.5.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
 }
 
 // =========================================================================
-// 3. FAST ACTION BUTTONS (ONLY CASH IN & CASH OUT)
+// 3. FAST ACTION BUTTONS (+ CASH IN & - CASH OUT)
 // =========================================================================
 
 @Composable
@@ -576,64 +573,58 @@ private fun LedgerFastActionBar(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // + Cash In
+        // Cash In Button
         Button(
             onClick = onAddCashIn,
             modifier = Modifier
                 .weight(1f)
                 .height(48.dp)
-                .testTag("ledger_add_cash_in_btn"),
-            shape = RoundedCornerShape(14.dp),
+                .testTag("action_add_cash_in"),
+            shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF10B981),
                 contentColor = Color.White
-            ),
-            contentPadding = PaddingValues(horizontal = 12.dp)
+            )
         ) {
-            Icon(
-                imageVector = Icons.Default.ArrowDownward,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "+ Cash In",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(imageVector = Icons.Default.ArrowDownward, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "+ Cash In",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
         }
 
-        // - Cash Out
+        // Cash Out Button
         Button(
             onClick = onAddCashOut,
             modifier = Modifier
                 .weight(1f)
                 .height(48.dp)
-                .testTag("ledger_add_cash_out_btn"),
-            shape = RoundedCornerShape(14.dp),
+                .testTag("action_add_cash_out"),
+            shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFFEF4444),
                 contentColor = Color.White
-            ),
-            contentPadding = PaddingValues(horizontal = 12.dp)
+            )
         ) {
-            Icon(
-                imageVector = Icons.Default.ArrowUpward,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "- Cash Out",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(imageVector = Icons.Default.ArrowUpward, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "- Cash Out",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
         }
     }
 }
 
 // =========================================================================
-// 4. PAYMENT CHANNEL DISTRIBUTION CARD
+// 4. PAYMENT MODE BREAKDOWN CARD
 // =========================================================================
 
 @Composable
@@ -645,16 +636,16 @@ private fun LedgerPaymentModeBreakdownCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(14.dp)),
-        shape = RoundedCornerShape(14.dp),
+            .clip(RoundedCornerShape(16.dp))
+            .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
         color = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -663,9 +654,9 @@ private fun LedgerPaymentModeBreakdownCard(
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "PAYMENT CHANNELS SUMMARY",
+                        text = "PAYMENT CHANNELS",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.8.sp,
@@ -673,35 +664,46 @@ private fun LedgerPaymentModeBreakdownCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+
+                Text(
+                    text = "Tap to filter",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                modes.forEach { (modeName, netAmount) ->
-                    val isPositive = netAmount >= 0
-                    Row(
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(modes.entries.toList()) { entry ->
+                    val isPositive = entry.value >= 0
+                    Surface(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(6.dp))
-                            .clickable { onModeClick(modeName) }
-                            .padding(vertical = 4.dp, horizontal = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { onModeClick(entry.key) },
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000),
+                        border = BorderStroke(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000))
                     ) {
-                        Text(
-                            text = modeName,
-                            fontSize = 12.5.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "${if (isPositive) "+ " else "- "}Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(netAmount), 2)}",
-                            fontSize = 12.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            color = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
-                        )
+                        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                            Text(
+                                text = entry.key,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "${if (isPositive) "+" else "-"}Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(entry.value), 0)}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
+                            )
+                        }
                     }
                 }
             }
@@ -722,22 +724,25 @@ private fun LedgerCategoryBreakdownCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(14.dp)),
-        shape = RoundedCornerShape(14.dp),
+            .clip(RoundedCornerShape(16.dp))
+            .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
         color = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Icon(
                     imageVector = Icons.Default.Category,
                     contentDescription = null,
                     tint = primaryColor,
                     modifier = Modifier.size(16.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "CATEGORIES & ACCOUNTS SUMMARY",
+                    text = "CATEGORY ACCOUNTS SUMMARY",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.8.sp,
@@ -777,7 +782,7 @@ private fun LedgerCategoryBreakdownCard(
 
 // =========================================================================
 // 6. ADD / EDIT TRANSACTION BOTTOM SHEET CONTENT
-// (With seamless Auto-suggest & Auto-save for Categories and Payment Modes)
+// (With Scope Toggle for Cash Out & Seamless Auto-suggest / Auto-save)
 // =========================================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -785,6 +790,7 @@ private fun LedgerCategoryBreakdownCard(
 private fun LedgerAddEditSheetContent(
     uiState: LedgerUiState,
     onTypeChange: (LedgerType) -> Unit,
+    onExpenseScopeChange: (String) -> Unit,
     onAmountChange: (String) -> Unit,
     onCategoryChange: (String) -> Unit,
     onPaymentModeChange: (String) -> Unit,
@@ -804,6 +810,9 @@ private fun LedgerAddEditSheetContent(
     // Track focus for category and payment mode
     var isCategoryFocused by remember { mutableStateOf(false) }
     var isModeFocused by remember { mutableStateOf(false) }
+
+    val isCashIn = uiState.formType == LedgerType.CASH_IN
+    val isCashOut = uiState.formType == LedgerType.CASH_OUT
 
     Column(
         modifier = Modifier
@@ -832,7 +841,7 @@ private fun LedgerAddEditSheetContent(
             }
         }
 
-        // 1. Transaction Type Toggle: Only Cash In and Cash Out
+        // 1. Transaction Type Toggle: Cash In vs Cash Out
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -848,7 +857,6 @@ private fun LedgerAddEditSheetContent(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 // Cash In Tab
-                val isCashIn = uiState.formType == LedgerType.CASH_IN
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -868,7 +876,7 @@ private fun LedgerAddEditSheetContent(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Cash In",
+                            text = "Cash In (+)",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (isCashIn) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
@@ -877,7 +885,6 @@ private fun LedgerAddEditSheetContent(
                 }
 
                 // Cash Out Tab
-                val isCashOut = uiState.formType == LedgerType.CASH_OUT
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -897,7 +904,7 @@ private fun LedgerAddEditSheetContent(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Cash Out",
+                            text = "Cash Out (-)",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (isCashOut) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
@@ -907,7 +914,106 @@ private fun LedgerAddEditSheetContent(
             }
         }
 
-        // 2. Transaction Amount (Clean Input)
+        // =========================================================================
+        // EXPENSE SCOPE SELECTOR (BUSINESS VS HOME EXPENSE) - SHOWN FOR CASH OUT
+        // Clarifies the link between Daily Ledger and Expenses Module
+        // =========================================================================
+        if (isCashOut) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "EXPENSE CLASSIFICATION *",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = Color(0xFFEF4444)
+                    )
+                    Text(
+                        text = "Syncs with Expenses Manager",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(1.dp, Color(0x33EF4444), RoundedCornerShape(12.dp)),
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isDark) Color(0xFF1E1010) else Color(0xFFFEF2F2)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        val isBizScope = uiState.formExpenseScope == "BUSINESS"
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(38.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isBizScope) Color(0xFFEF4444) else Color.Transparent)
+                                .clickable { onExpenseScopeChange("BUSINESS") }
+                                .testTag("expense_scope_biz_toggle"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Business,
+                                    contentDescription = null,
+                                    tint = if (isBizScope) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Business Expense",
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isBizScope) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isBizScope) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        val isHomeScope = uiState.formExpenseScope == "HOME"
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(38.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isHomeScope) Color(0xFFF97316) else Color.Transparent)
+                                .clickable { onExpenseScopeChange("HOME") }
+                                .testTag("expense_scope_home_toggle"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Home,
+                                    contentDescription = null,
+                                    tint = if (isHomeScope) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Home / Personal",
+                                    fontSize = 12.sp,
+                                    fontWeight = if (isHomeScope) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isHomeScope) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Transaction Amount
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = "TRANSACTION AMOUNT (RS.) *",
@@ -951,23 +1057,35 @@ private fun LedgerAddEditSheetContent(
             )
         }
 
-        // 3. Category Field (Auto-suggests as user types, auto-saves on save, hidden until typed)
+        // 3. Category Field (Auto-suggests from synchronized business, home, or income lists)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            val categoryContextLabel = if (isCashOut) {
+                if (uiState.formExpenseScope == "HOME") "HOME EXPENSE CATEGORY *" else "BUSINESS EXPENSE CATEGORY *"
+            } else {
+                "INCOME / SALES CATEGORY *"
+            }
+
             Text(
-                text = "CATEGORY / HEAD OF ACCOUNT *",
+                text = categoryContextLabel,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            val placeholderText = if (isCashOut) {
+                if (uiState.formExpenseScope == "HOME") "e.g. Groceries & Food, Home Rent, Electricity..." else "e.g. Raw Materials, Salaries, Rent, Fuel..."
+            } else {
+                "e.g. Sales, Customer Payment, Recovery, Noran Shah..."
+            }
+
             OutlinedTextField(
                 value = uiState.formCategory,
                 onValueChange = onCategoryChange,
-                placeholder = { Text("Type category (e.g. Sales, Home, Noran Shah...)") },
+                placeholder = { Text(placeholderText, fontSize = 13.sp) },
                 leadingIcon = {
                     Icon(
-                        imageVector = LedgerCategoryIcons.getCategoryIcon(uiState.formCategory),
+                        imageVector = if (isCashOut && uiState.formExpenseScope == "HOME") Icons.Default.Home else LedgerCategoryIcons.getCategoryIcon(uiState.formCategory),
                         contentDescription = null,
                         tint = uiState.formType.color,
                         modifier = Modifier.size(20.dp)
@@ -992,13 +1110,19 @@ private fun LedgerAddEditSheetContent(
                     .testTag("form_category_input")
             )
 
-            // Dynamic Auto-suggestions: Shown ONLY when matching items exist as user types
-            val matchingCategories = remember(uiState.formCategory, uiState.availableCategories, isCategoryFocused) {
+            // Dynamic Auto-suggestions: Filtered from synchronized lists
+            val activeCategoryPool = if (isCashOut) {
+                if (uiState.formExpenseScope == "HOME") uiState.homeCategories else uiState.businessCategories
+            } else {
+                uiState.incomeCategories
+            }
+
+            val matchingCategories = remember(uiState.formCategory, activeCategoryPool, isCategoryFocused) {
                 val input = uiState.formCategory.trim()
                 if (input.isEmpty()) {
                     emptyList()
                 } else {
-                    uiState.availableCategories.filter {
+                    activeCategoryPool.filter {
                         it.contains(input, ignoreCase = true) && !it.equals(input, ignoreCase = true)
                     }
                 }
@@ -1006,7 +1130,7 @@ private fun LedgerAddEditSheetContent(
 
             if (matchingCategories.isNotEmpty()) {
                 Text(
-                    text = "Matching suggestions:",
+                    text = "Matching suggestions (tap to pick):",
                     fontSize = 10.5.sp,
                     color = primaryColor,
                     fontWeight = FontWeight.SemiBold
@@ -1046,7 +1170,7 @@ private fun LedgerAddEditSheetContent(
             }
         }
 
-        // 4. Payment Mode Field (Auto-suggests as user types, auto-saves on save, hidden until typed)
+        // 4. Payment Mode Field (Auto-suggests & auto-saves to shared repository)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = "PAYMENT MODE / CHANNEL *",
@@ -1087,7 +1211,7 @@ private fun LedgerAddEditSheetContent(
                     .testTag("form_payment_mode_input")
             )
 
-            // Dynamic Auto-suggestions for Payment Mode: Shown ONLY when matching items exist as user types
+            // Dynamic Auto-suggestions for Payment Mode
             val matchingModes = remember(uiState.formPaymentMode, uiState.availablePaymentModes, isModeFocused) {
                 val input = uiState.formPaymentMode.trim()
                 if (input.isEmpty()) {
@@ -1101,7 +1225,7 @@ private fun LedgerAddEditSheetContent(
 
             if (matchingModes.isNotEmpty()) {
                 Text(
-                    text = "Matching payment modes:",
+                    text = "Suggested channels:",
                     fontSize = 10.5.sp,
                     color = primaryColor,
                     fontWeight = FontWeight.SemiBold
@@ -1117,24 +1241,13 @@ private fun LedgerAddEditSheetContent(
                             border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f)),
                             modifier = Modifier.clickable { onPaymentModeChange(mode) }
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
+                            Text(
+                                text = mode,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = primaryColor,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Payments,
-                                    contentDescription = null,
-                                    tint = primaryColor,
-                                    modifier = Modifier.size(13.dp)
-                                )
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Text(
-                                    text = mode,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = primaryColor
-                                )
-                            }
+                            )
                         }
                     }
                 }
@@ -1154,39 +1267,50 @@ private fun LedgerAddEditSheetContent(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .border(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x28000000), RoundedCornerShape(10.dp))
-                    .clickable { showDatePicker = true },
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x28000000), RoundedCornerShape(12.dp))
+                    .clickable { showDatePicker = true }
+                    .testTag("form_date_picker_button"),
+                shape = RoundedCornerShape(12.dp),
                 color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
             ) {
                 Row(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarToday,
-                        contentDescription = null,
-                        tint = primaryColor,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarToday,
+                            contentDescription = null,
+                            tint = primaryColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = dateFormat.format(Date(uiState.formDateMillis)),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            fontFamily = DigitalMonospaceFont,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                     Text(
-                        text = dateFormat.format(Date(uiState.formDateMillis)),
-                        fontSize = 13.sp,
-                        fontFamily = DigitalMonospaceFont,
-                        color = MaterialTheme.colorScheme.onSurface
+                        text = "Change",
+                        fontSize = 12.sp,
+                        color = primaryColor,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }
         }
 
-        // 6. Party / Contact Name
+        // 6. Party / Customer / Vendor Name
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
-                text = "PARTY / CONTACT NAME (OPTIONAL)",
+                text = if (isCashOut) "PAID TO / VENDOR / PERSON (OPTIONAL)" else "CUSTOMER / PARTY NAME (OPTIONAL)",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
@@ -1196,7 +1320,7 @@ private fun LedgerAddEditSheetContent(
             OutlinedTextField(
                 value = uiState.formPartyName,
                 onValueChange = onPartyNameChange,
-                placeholder = { Text("Customer, Vendor, Employee name...") },
+                placeholder = { Text(if (isCashOut) "Supplier, Vendor, Shopkeeper name..." else "Customer, Buyer, Party name...") },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Person,
@@ -1480,21 +1604,21 @@ private fun LedgerHistoryPanelSheetContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Filter Pills: Type (All, Cash In, Cash Out)
+        // Filter Pills: Type (All, Cash In, Cash Out, Biz Expense, Home Expense)
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             item {
                 TypeFilterChip(
-                    label = "All Types",
+                    label = "All Entries",
                     isSelected = uiState.selectedTypeFilter == "ALL",
                     onClick = { viewModel.setTypeFilter("ALL") }
                 )
             }
             item {
                 TypeFilterChip(
-                    label = "Cash In",
+                    label = "Cash In (+)",
                     isSelected = uiState.selectedTypeFilter == "CASH_IN",
                     color = Color(0xFF10B981),
                     onClick = { viewModel.setTypeFilter("CASH_IN") }
@@ -1502,10 +1626,26 @@ private fun LedgerHistoryPanelSheetContent(
             }
             item {
                 TypeFilterChip(
-                    label = "Cash Out",
+                    label = "Cash Out (-)",
                     isSelected = uiState.selectedTypeFilter == "CASH_OUT",
                     color = Color(0xFFEF4444),
                     onClick = { viewModel.setTypeFilter("CASH_OUT") }
+                )
+            }
+            item {
+                TypeFilterChip(
+                    label = "🏢 Business Exp",
+                    isSelected = uiState.selectedTypeFilter == "BUSINESS_EXPENSE",
+                    color = Color(0xFFEF4444),
+                    onClick = { viewModel.setTypeFilter("BUSINESS_EXPENSE") }
+                )
+            }
+            item {
+                TypeFilterChip(
+                    label = "🏠 Home Exp",
+                    isSelected = uiState.selectedTypeFilter == "HOME_EXPENSE",
+                    color = Color(0xFFF97316),
+                    onClick = { viewModel.setTypeFilter("HOME_EXPENSE") }
                 )
             }
             item {
@@ -1636,6 +1776,7 @@ private fun LedgerTransactionRowItem(
     val isExpense = tx.type == "CASH_OUT"
     val accentColor = if (isExpense) Color(0xFFEF4444) else Color(0xFF10B981)
     val dateFormat = remember { SimpleDateFormat("dd MMM, hh:mm a", Locale.US) }
+    val isHome = isExpense && (tx.expenseScope == "HOME" || LedgerUnifiedDataManager.isHomeExpense(tx.category, tx.expenseScope))
 
     Surface(
         modifier = Modifier
@@ -1690,6 +1831,23 @@ private fun LedgerTransactionRowItem(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+
+                        if (isExpense) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = if (isHome) Color(0xFFF97316).copy(alpha = 0.18f) else Color(0xFFEF4444).copy(alpha = 0.18f)
+                            ) {
+                                Text(
+                                    text = if (isHome) "Home" else "Biz",
+                                    fontSize = 9.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isHome) Color(0xFFEA580C) else Color(0xFFDC2626),
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                )
+                            }
+                        }
+
                         if (tx.partyName.isNotBlank()) {
                             Text(
                                 text = " • ${tx.partyName}",
@@ -1779,6 +1937,7 @@ private fun LedgerDetailDialog(
     val isExpense = tx.type == "CASH_OUT"
     val accentColor = if (isExpense) Color(0xFFEF4444) else Color(0xFF10B981)
     val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy, hh:mm:ss a", Locale.US) }
+    val isHome = isExpense && (tx.expenseScope == "HOME" || LedgerUnifiedDataManager.isHomeExpense(tx.category, tx.expenseScope))
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1830,7 +1989,7 @@ private fun LedgerDetailDialog(
                             color = accentColor
                         )
                         Text(
-                            text = if (isExpense) "CASH OUTFLOW" else "CASH INFLOW",
+                            text = if (isExpense) (if (isHome) "HOME / PERSONAL EXPENSE" else "BUSINESS EXPENSE") else "CASH INFLOW / INCOME",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = DigitalMonospaceFont,
@@ -1839,9 +1998,12 @@ private fun LedgerDetailDialog(
                     }
                 }
 
+                if (isExpense) {
+                    DetailRow(label = "Expense Type", value = if (isHome) "Home / Personal Expense" else "Business Expense")
+                }
                 DetailRow(label = "Category", value = tx.category)
                 DetailRow(label = "Payment Mode", value = tx.paymentMode)
-                if (tx.partyName.isNotBlank()) DetailRow(label = "Party / Name", value = tx.partyName)
+                if (tx.partyName.isNotBlank()) DetailRow(label = if (isExpense) "Paid To" else "Party / Name", value = tx.partyName)
                 if (tx.referenceNo.isNotBlank()) DetailRow(label = "Reference #", value = tx.referenceNo)
                 if (tx.remarks.isNotBlank()) DetailRow(label = "Remarks", value = tx.remarks)
                 DetailRow(label = "Date & Time", value = dateFormat.format(Date(tx.dateMillis)))
