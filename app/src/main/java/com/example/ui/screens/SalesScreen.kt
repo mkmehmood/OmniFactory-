@@ -1,6 +1,11 @@
 package com.example.ui.screens
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -81,6 +86,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.db.SalesTransactionEntity
 import com.example.ui.components.SalesRepresentativesMatrixCard
 import com.example.ui.components.SimpleCalculatorDialog
+import com.example.ui.components.SmartStationKeypad
 import com.example.domain.sales.ReconciliationStatus
 import com.example.domain.sales.SalesReconciliationResult
 import com.example.domain.util.IndianNumberFormatter
@@ -626,6 +632,71 @@ private fun SalesInputFormCard(
     borderColor: Color,
     isDark: Boolean
 ) {
+    var focusedFieldId by remember { mutableStateOf<String?>(null) }
+
+    val activeFieldLabel = when (focusedFieldId) {
+        "total_sold" -> "Total Sold Qty"
+        "returned" -> "Returned Qty"
+        "expired" -> "Expired / Damage Qty"
+        "shared" -> "Shared Qty"
+        "credit_sales" -> "Credit Sales Qty"
+        "unit_price" -> "Unit Sale Price (Rs.)"
+        "commission_rate" -> "Commission / Unit (Rs.)"
+        "commission_paid" -> "Commission Paid Advance (Rs.)"
+        "recovered_credit" -> "Recovered Credit (Rs.)"
+        "expense" -> "Field Expenses (Rs.)"
+        "physical_cash" -> "Physical Cash Received (Rs.)"
+        else -> ""
+    }
+
+    val onActiveFieldDigit: (String) -> Unit = { digit ->
+        when (focusedFieldId) {
+            "total_sold" -> onSetTotalSoldQty(totalSoldQty + digit)
+            "returned" -> onSetReturnedQty(returnedQty + digit)
+            "expired" -> onSetExpiredQty(expiredQty + digit)
+            "shared" -> onSetSharedQty(sharedQty + digit)
+            "credit_sales" -> onSetCreditSalesQty(creditSalesQty + digit)
+            "unit_price" -> onSetUnitSalePrice(unitSalePrice + digit)
+            "commission_rate" -> onSetCommissionPerUnit(commissionPerUnit + digit)
+            "commission_paid" -> onSetCommissionPaid(commissionPaid + digit)
+            "recovered_credit" -> onSetRecoveredCredit(recoveredCredit + digit)
+            "expense" -> onSetExpense(expense + digit)
+            "physical_cash" -> onSetPhysicalCash(physicalCash + digit)
+        }
+    }
+
+    val onActiveFieldBackspace: () -> Unit = {
+        when (focusedFieldId) {
+            "total_sold" -> if (totalSoldQty.isNotEmpty()) onSetTotalSoldQty(totalSoldQty.dropLast(1))
+            "returned" -> if (returnedQty.isNotEmpty()) onSetReturnedQty(returnedQty.dropLast(1))
+            "expired" -> if (expiredQty.isNotEmpty()) onSetExpiredQty(expiredQty.dropLast(1))
+            "shared" -> if (sharedQty.isNotEmpty()) onSetSharedQty(sharedQty.dropLast(1))
+            "credit_sales" -> if (creditSalesQty.isNotEmpty()) onSetCreditSalesQty(creditSalesQty.dropLast(1))
+            "unit_price" -> if (unitSalePrice.isNotEmpty()) onSetUnitSalePrice(unitSalePrice.dropLast(1))
+            "commission_rate" -> if (commissionPerUnit.isNotEmpty()) onSetCommissionPerUnit(commissionPerUnit.dropLast(1))
+            "commission_paid" -> if (commissionPaid.isNotEmpty()) onSetCommissionPaid(commissionPaid.dropLast(1))
+            "recovered_credit" -> if (recoveredCredit.isNotEmpty()) onSetRecoveredCredit(recoveredCredit.dropLast(1))
+            "expense" -> if (expense.isNotEmpty()) onSetExpense(expense.dropLast(1))
+            "physical_cash" -> if (physicalCash.isNotEmpty()) onSetPhysicalCash(physicalCash.dropLast(1))
+        }
+    }
+
+    val onActiveFieldClear: () -> Unit = {
+        when (focusedFieldId) {
+            "total_sold" -> onSetTotalSoldQty("")
+            "returned" -> onSetReturnedQty("")
+            "expired" -> onSetExpiredQty("")
+            "shared" -> onSetSharedQty("")
+            "credit_sales" -> onSetCreditSalesQty("")
+            "unit_price" -> onSetUnitSalePrice("")
+            "commission_rate" -> onSetCommissionPerUnit("")
+            "commission_paid" -> onSetCommissionPaid("")
+            "recovered_credit" -> onSetRecoveredCredit("")
+            "expense" -> onSetExpense("")
+            "physical_cash" -> onSetPhysicalCash("")
+        }
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -633,7 +704,7 @@ private fun SalesInputFormCard(
         border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            // Header with Quick Calculator Icon
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -647,17 +718,6 @@ private fun SalesInputFormCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 0.8.sp
                 )
-                IconButton(
-                    onClick = onOpenCalculator,
-                    modifier = Modifier.size(26.dp).testTag("quick_form_calc_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Calculate,
-                        contentDescription = "Quick Calculator",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
             }
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -671,6 +731,8 @@ private fun SalesInputFormCard(
                     placeholder = "0",
                     value = totalSoldQty,
                     onValueChange = onSetTotalSoldQty,
+                    isSelected = focusedFieldId == "total_sold",
+                    onFocus = { focusedFieldId = if (focusedFieldId == "total_sold") null else "total_sold" },
                     testTag = "total_sold_qty_input",
                     primaryColor = primaryColor,
                     isDark = isDark,
@@ -681,6 +743,8 @@ private fun SalesInputFormCard(
                     placeholder = "0",
                     value = returnedQty,
                     onValueChange = onSetReturnedQty,
+                    isSelected = focusedFieldId == "returned",
+                    onFocus = { focusedFieldId = if (focusedFieldId == "returned") null else "returned" },
                     testTag = "returned_qty_input",
                     primaryColor = primaryColor,
                     isDark = isDark,
@@ -700,6 +764,8 @@ private fun SalesInputFormCard(
                     placeholder = "0",
                     value = expiredQty,
                     onValueChange = onSetExpiredQty,
+                    isSelected = focusedFieldId == "expired",
+                    onFocus = { focusedFieldId = if (focusedFieldId == "expired") null else "expired" },
                     testTag = "expired_qty_input",
                     primaryColor = primaryColor,
                     isDark = isDark,
@@ -710,6 +776,8 @@ private fun SalesInputFormCard(
                     placeholder = "0",
                     value = sharedQty,
                     onValueChange = onSetSharedQty,
+                    isSelected = focusedFieldId == "shared",
+                    onFocus = { focusedFieldId = if (focusedFieldId == "shared") null else "shared" },
                     testTag = "shared_qty_input",
                     primaryColor = primaryColor,
                     isDark = isDark,
@@ -725,6 +793,8 @@ private fun SalesInputFormCard(
                 placeholder = "0",
                 value = creditSalesQty,
                 onValueChange = onSetCreditSalesQty,
+                isSelected = focusedFieldId == "credit_sales",
+                onFocus = { focusedFieldId = if (focusedFieldId == "credit_sales") null else "credit_sales" },
                 testTag = "credit_sales_qty_input",
                 primaryColor = primaryColor,
                 isDark = isDark,
@@ -753,6 +823,8 @@ private fun SalesInputFormCard(
                     placeholder = "0.00",
                     value = unitSalePrice,
                     onValueChange = onSetUnitSalePrice,
+                    isSelected = focusedFieldId == "unit_price",
+                    onFocus = { focusedFieldId = if (focusedFieldId == "unit_price") null else "unit_price" },
                     testTag = "unit_sale_price_input",
                     primaryColor = primaryColor,
                     isDark = isDark,
@@ -763,6 +835,8 @@ private fun SalesInputFormCard(
                     placeholder = "0.00",
                     value = commissionPerUnit,
                     onValueChange = onSetCommissionPerUnit,
+                    isSelected = focusedFieldId == "commission_rate",
+                    onFocus = { focusedFieldId = if (focusedFieldId == "commission_rate") null else "commission_rate" },
                     testTag = "commission_per_unit_input",
                     primaryColor = primaryColor,
                     isDark = isDark,
@@ -778,6 +852,8 @@ private fun SalesInputFormCard(
                 placeholder = "0.00",
                 value = commissionPaid,
                 onValueChange = onSetCommissionPaid,
+                isSelected = focusedFieldId == "commission_paid",
+                onFocus = { focusedFieldId = if (focusedFieldId == "commission_paid") null else "commission_paid" },
                 testTag = "commission_paid_input",
                 primaryColor = primaryColor,
                 isDark = isDark,
@@ -806,6 +882,8 @@ private fun SalesInputFormCard(
                     placeholder = "0.00",
                     value = recoveredCredit,
                     onValueChange = onSetRecoveredCredit,
+                    isSelected = focusedFieldId == "recovered_credit",
+                    onFocus = { focusedFieldId = if (focusedFieldId == "recovered_credit") null else "recovered_credit" },
                     testTag = "recovered_credit_input",
                     primaryColor = primaryColor,
                     isDark = isDark,
@@ -816,6 +894,8 @@ private fun SalesInputFormCard(
                     placeholder = "0.00",
                     value = expense,
                     onValueChange = onSetExpense,
+                    isSelected = focusedFieldId == "expense",
+                    onFocus = { focusedFieldId = if (focusedFieldId == "expense") null else "expense" },
                     testTag = "expense_input",
                     primaryColor = primaryColor,
                     isDark = isDark,
@@ -830,11 +910,38 @@ private fun SalesInputFormCard(
                 placeholder = "0.00",
                 value = physicalCash,
                 onValueChange = onSetPhysicalCash,
+                isSelected = focusedFieldId == "physical_cash",
+                onFocus = { focusedFieldId = if (focusedFieldId == "physical_cash") null else "physical_cash" },
                 testTag = "physical_cash_input",
                 primaryColor = primaryColor,
                 isDark = isDark,
                 modifier = Modifier.fillMaxWidth()
             )
+
+            // Smart Keypad from bottom of the form
+            AnimatedVisibility(
+                visible = focusedFieldId != null,
+                enter = fadeIn() + slideInVertically(),
+                exit = fadeOut() + slideOutVertically()
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (isDark) Color(0xFF0F172A) else Color(0xFFF1F5F9),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp)
+                ) {
+                    SmartStationKeypad(
+                        activeFieldLabel = activeFieldLabel,
+                        onDigit = onActiveFieldDigit,
+                        onBackspace = onActiveFieldBackspace,
+                        onClear = onActiveFieldClear,
+                        onDone = { focusedFieldId = null },
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -845,40 +952,46 @@ private fun NumericGridInputField(
     placeholder: String,
     value: String,
     onValueChange: (String) -> Unit,
+    isSelected: Boolean = false,
+    onFocus: () -> Unit = {},
     testTag: String,
     primaryColor: Color,
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
     val inputShape = LocalShapeStructure.current.toInputShape()
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = {
-            Text(
-                text = label,
-                fontSize = 11.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+    Box(
+        modifier = modifier.clickable { onFocus() }
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            readOnly = true,
+            label = {
+                Text(
+                    text = label,
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            },
+            placeholder = { Text(placeholder, fontSize = 12.sp) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().testTag(testTag),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = if (isSelected) primaryColor else if (isDark) Color(0x28FFFFFF) else Color(0x20000000),
+                unfocusedBorderColor = if (isSelected) primaryColor else if (isDark) Color(0x28FFFFFF) else Color(0x20000000),
+                focusedContainerColor = if (isSelected) primaryColor.copy(alpha = 0.12f) else if (isDark) Color(0x1FFFFFFF) else Color(0x0E000000),
+                unfocusedContainerColor = if (isSelected) primaryColor.copy(alpha = 0.08f) else if (isDark) Color(0x10FFFFFF) else Color(0x06000000)
+            ),
+            shape = inputShape,
+            textStyle = androidx.compose.ui.text.TextStyle(
+                fontSize = 14.sp,
+                fontFamily = DigitalMonospaceFont,
+                fontWeight = FontWeight.SemiBold
             )
-        },
-        placeholder = { Text(placeholder, fontSize = 12.sp) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier = modifier.testTag(testTag),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = primaryColor,
-            unfocusedBorderColor = if (isDark) Color(0x28FFFFFF) else Color(0x20000000),
-            focusedContainerColor = if (isDark) Color(0x1FFFFFFF) else Color(0x0E000000),
-            unfocusedContainerColor = if (isDark) Color(0x10FFFFFF) else Color(0x06000000)
-        ),
-        shape = inputShape,
-        textStyle = androidx.compose.ui.text.TextStyle(
-            fontSize = 14.sp,
-            fontFamily = DigitalMonospaceFont,
-            fontWeight = FontWeight.SemiBold
         )
-    )
+    }
 }
 
 @Composable

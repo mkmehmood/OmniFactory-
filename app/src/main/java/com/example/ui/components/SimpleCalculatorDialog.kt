@@ -22,13 +22,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -145,13 +143,32 @@ fun SimpleCalculatorDialog(
                     historyRepo.insertCalculation(
                         expression = currentExpr,
                         result = formatted,
-                        tag = "Sales Settlement",
-                        note = "Sales Reconcile Calc"
+                        tag = "Ledger / Expense Quick Calc",
+                        note = "Quick Calculator input"
                     )
                 }
                 expression = formatted.replace(",", "")
                 resultText = null
             }
+        }
+    }
+
+    fun applyResultToField() {
+        var finalVal = resultText?.replace(",", "")?.trim()
+        if (finalVal.isNullOrBlank()) {
+            if (expression.isNotBlank()) {
+                val res = CalculatorEngine.evaluate(expression)
+                if (res is CalculationResult.Success) {
+                    val dbl = res.value.toDouble()
+                    finalVal = if (dbl % 1.0 == 0.0) dbl.toLong().toString() else res.value.stripTrailingZeros().toPlainString()
+                } else {
+                    finalVal = expression.replace(",", "").trim()
+                }
+            }
+        }
+        if (!finalVal.isNullOrBlank()) {
+            onResultSelected?.invoke(finalVal)
+            onDismiss()
         }
     }
 
@@ -180,34 +197,51 @@ fun SimpleCalculatorDialog(
                     .fillMaxWidth()
                     .padding(18.dp)
             ) {
-                // Header (No cross sign)
+                // Header with icon and Close button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(primaryColor.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(primaryColor.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Calculate,
+                                contentDescription = null,
+                                tint = primaryColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Text(
+                            text = "QUICK CALCULATOR",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(28.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Calculate,
-                            contentDescription = null,
-                            tint = primaryColor,
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
                         )
                     }
-                    Text(
-                        text = "QUICK CALCULATOR",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        letterSpacing = 0.5.sp
-                    )
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -318,6 +352,32 @@ fun SimpleCalculatorDialog(
                                 )
                             }
                         }
+                    }
+                }
+
+                // If launched from an amount field, show "Use Result / Apply" Button
+                if (onResultSelected != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = { applyResultToField() },
+                        enabled = expression.isNotBlank() || resultText != null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp)
+                            .testTag("apply_calculator_result_btn"),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = primaryColor,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Apply to Amount",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.5.sp
+                        )
                     }
                 }
             }

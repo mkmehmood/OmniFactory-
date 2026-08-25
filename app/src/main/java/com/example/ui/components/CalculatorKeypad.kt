@@ -20,9 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardHide
 import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material3.Icon
@@ -568,8 +566,8 @@ private fun LiquidGlassKey(
 }
 
 /**
- * Universal, high-efficiency Smart Station Keypad for dedicated inputs (Converter, Sales, Mixture, Batch, Ledger, Expenses, etc.)
- * Provides haptic/audio feedback, physics animations, double-zero key, quick denomination chips, and dismiss actions.
+ * Universal, high-efficiency Smart Station Keypad for dedicated inputs (Converter, Sales, Mixture, Batch, etc.)
+ * Provides haptic/audio feedback, physics animations, double-zero key, and dismiss actions.
  */
 @Composable
 fun SmartStationKeypad(
@@ -581,8 +579,6 @@ fun SmartStationKeypad(
     onClear: () -> Unit,
     onNegate: (() -> Unit)? = null,
     onDone: (() -> Unit)? = null,
-    quickAddChips: List<Long> = emptyList(),
-    onQuickAdd: ((Long) -> Unit)? = null,
     showDoubleZeroKey: Boolean = true,
     showNegateKey: Boolean = false,
     showDecimalKey: Boolean = true,
@@ -605,6 +601,8 @@ fun SmartStationKeypad(
 
     val spacing = 8.dp
     val cardShape = shapeStructureStyle.toCardShape()
+    val actualOnDoubleZero = onDoubleZero ?: { onDigit("00") }
+    val actualOnDecimal = onDecimal ?: { onDigit(".") }
 
     Surface(
         modifier = modifier
@@ -641,24 +639,13 @@ fun SmartStationKeypad(
                             color = primaryColor.copy(alpha = 0.12f),
                             border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Keyboard,
-                                    contentDescription = null,
-                                    tint = primaryColor,
-                                    modifier = Modifier.size(13.dp)
-                                )
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Text(
-                                    text = activeFieldLabel,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = primaryColor
-                                )
-                            }
+                            Text(
+                                text = "⌨️ $activeFieldLabel",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = primaryColor,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
                         }
                     } else {
                         Spacer(modifier = Modifier.width(1.dp))
@@ -692,46 +679,6 @@ fun SmartStationKeypad(
                                     contentDescription = "Hide Keypad",
                                     tint = primaryColor,
                                     modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Quick Denomination / Amount Addition Chips
-            if (quickAddChips.isNotEmpty() && onQuickAdd != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    quickAddChips.forEach { chipValue ->
-                        val formattedChip = when {
-                            chipValue >= 1000 && chipValue % 1000 == 0L -> "+${chipValue / 1000}k"
-                            else -> "+$chipValue"
-                        }
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable {
-                                    triggerFeedback()
-                                    onQuickAdd(chipValue)
-                                }
-                                .testTag("quick_chip_$chipValue"),
-                            shape = RoundedCornerShape(8.dp),
-                            color = primaryColor.copy(alpha = 0.10f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f))
-                        ) {
-                            Box(
-                                modifier = Modifier.padding(vertical = 6.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = formattedChip,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = primaryColor
                                 )
                             }
                         }
@@ -909,11 +856,11 @@ fun SmartStationKeypad(
                     shapeStructureStyle = shapeStructureStyle,
                     modifier = Modifier.weight(1f)
                 )
-                if (showDoubleZeroKey && onDoubleZero != null) {
+                if (showDoubleZeroKey) {
                     LiquidGlassKey(
                         text = "00",
                         type = KeyType.DOUBLE_ZERO,
-                        onClick = { triggerFeedback(); onDoubleZero() },
+                        onClick = { triggerFeedback(); actualOnDoubleZero() },
                         testTag = "key_double_zero",
                         animationIntensity = animationIntensity,
                         componentSizeStyle = componentSizeStyle,
@@ -933,11 +880,11 @@ fun SmartStationKeypad(
                     )
                 }
 
-                if (showDecimalKey && onDecimal != null) {
+                if (showDecimalKey) {
                     LiquidGlassKey(
                         text = ".",
                         type = KeyType.NUMBER,
-                        onClick = { triggerFeedback(); onDecimal() },
+                        onClick = { triggerFeedback(); actualOnDecimal() },
                         testTag = "key_decimal",
                         animationIntensity = animationIntensity,
                         componentSizeStyle = componentSizeStyle,
@@ -975,35 +922,3 @@ fun SmartStationKeypad(
         }
     }
 }
-
-/**
- * Universal helper functions for manipulating text values via the custom keypad/dialpad.
- */
-object KeypadInputHelper {
-    fun handleDigit(current: String, digit: String): String {
-        return if (current == "0" || current.isEmpty()) digit else current + digit
-    }
-
-    fun handleDoubleZero(current: String): String {
-        return if (current.isEmpty() || current == "0") "0" else current + "00"
-    }
-
-    fun handleDecimal(current: String): String {
-        return if (current.isEmpty()) "0." else if (!current.contains(".")) "$current." else current
-    }
-
-    fun handleBackspace(current: String): String {
-        return if (current.length <= 1) "" else current.dropLast(1)
-    }
-
-    fun handleClear(): String {
-        return ""
-    }
-
-    fun handleQuickAdd(current: String, addVal: Long): String {
-        val currentNum = current.toDoubleOrNull() ?: 0.0
-        val newNum = currentNum + addVal
-        return if (newNum % 1.0 == 0.0) newNum.toLong().toString() else "%.2f".format(newNum)
-    }
-}
-

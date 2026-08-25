@@ -2,6 +2,10 @@ package com.example.ui.screens
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,6 +34,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Category
@@ -41,7 +46,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Dialpad
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardHide
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
@@ -81,8 +85,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -97,12 +103,9 @@ import com.example.ui.ExpenseTimeFilter
 import com.example.ui.ExpensesSummary
 import com.example.ui.ExpensesUiState
 import com.example.ui.ExpensesViewModel
-import com.example.ui.components.KeypadInputHelper
+import com.example.ui.components.SimpleCalculatorDialog
 import com.example.ui.components.SmartStationKeypad
 import com.example.ui.theme.DigitalMonospaceFont
-import com.example.ui.theme.LocalAnimationIntensity
-import com.example.ui.theme.LocalComponentSizing
-import com.example.ui.theme.LocalShapeStructure
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -115,6 +118,7 @@ fun ExpensesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
 
     val isDark = MaterialTheme.colorScheme.background.red < 0.2f
     val primaryColor = MaterialTheme.colorScheme.primary
@@ -131,219 +135,121 @@ fun ExpensesScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .testTag("expenses_screen_container")
+            .background(MaterialTheme.colorScheme.background)
+            .testTag("expenses_screen")
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 10.dp)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 90.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // 1. Scope Tabs (All, Business, Home)
-            ExpenseScopeTabBar(
-                selectedScope = uiState.selectedScope,
-                onSelectScope = { viewModel.setScope(it) },
-                summary = uiState.summary,
-                primaryColor = primaryColor,
-                isDark = isDark
-            )
+            // 1. SCOPE FILTER TAB BAR (ALL / BUSINESS / HOME)
+            item {
+                ExpenseScopeTabBar(
+                    selectedScope = uiState.selectedScope,
+                    onSelectScope = { viewModel.setScope(it) },
+                    summary = uiState.summary,
+                    primaryColor = primaryColor,
+                    isDark = isDark
+                )
+            }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            // 2. HERO SUMMARY CARD WITH METRICS
+            item {
+                ExpenseHeroSummaryCard(
+                    selectedScope = uiState.selectedScope,
+                    summary = uiState.summary,
+                    selectedTimeFilter = uiState.selectedTimeFilter,
+                    onSelectTimeFilter = { viewModel.setTimeFilter(it) },
+                    onCopyAuditReport = {
+                        val report = viewModel.buildExpenseSummaryReport()
+                        clipboardManager.setText(AnnotatedString(report))
+                        Toast.makeText(context, "Expense audit report copied!", Toast.LENGTH_SHORT).show()
+                    },
+                    primaryColor = primaryColor,
+                    expenseAccent = expenseAccent,
+                    isDark = isDark
+                )
+            }
 
-            // 2. Main Scrollable Content
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Top Metrics Cards
+            // 3. SEARCH BAR & QUICK ACTION
+            item {
+                ExpenseSearchBarAndAction(
+                    searchQuery = uiState.searchQuery,
+                    onQueryChange = { viewModel.setSearchQuery(it) },
+                    onOpenAddSheet = { viewModel.openAddExpense(uiState.selectedScope) },
+                    onOpenCalc = { viewModel.openCalculator() },
+                    primaryColor = primaryColor,
+                    isDark = isDark
+                )
+            }
+
+            // 4. TOP EXPENSE CATEGORIES SUMMARY (IF AVAILABLE)
+            if (uiState.summary.topCategories.isNotEmpty()) {
                 item {
-                    ExpenseHeroSummaryCard(
-                        summary = uiState.summary,
-                        currentScope = uiState.selectedScope,
-                        onCopyReport = {
-                            val report = viewModel.buildExpenseSummaryReport()
-                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Expenses Report", report))
-                            Toast.makeText(context, "Expenses report copied to clipboard", Toast.LENGTH_SHORT).show()
-                        },
+                    ExpenseCategorySummaryCard(
+                        categories = uiState.summary.topCategories,
+                        primaryColor = primaryColor,
                         isDark = isDark
                     )
                 }
+            }
 
-                // Time Period Cards (Today, Month, Breakdown)
+            // 5. EXPENSES LIST HEADER
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "EXPENSES LOG (${uiState.filteredExpenses.size})",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp,
+                        fontFamily = DigitalMonospaceFont,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Text(
+                        text = "Synchronized with Ledger",
+                        fontSize = 10.5.sp,
+                        color = primaryColor,
+                        fontFamily = DigitalMonospaceFont
+                    )
+                }
+            }
+
+            // 6. EXPENSE LIST ITEMS
+            if (uiState.filteredExpenses.isEmpty()) {
                 item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        ExpenseStatPill(
-                            title = "Today's Expense",
-                            amount = uiState.summary.formattedToday,
-                            icon = Icons.Default.Today,
-                            accentColor = Color(0xFFF59E0B),
-                            isDark = isDark,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        ExpenseStatPill(
-                            title = "This Month",
-                            amount = uiState.summary.formattedMonth,
-                            icon = Icons.Default.CalendarMonth,
-                            accentColor = Color(0xFF38BDF8),
-                            isDark = isDark,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    ExpenseEmptyStateCard(
+                        scope = uiState.selectedScope,
+                        onAddExpense = { viewModel.openAddExpense(uiState.selectedScope) },
+                        primaryColor = primaryColor,
+                        isDark = isDark
+                    )
                 }
-
-                // Search and Time Filters
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = uiState.searchQuery,
-                            onValueChange = { viewModel.setSearchQuery(it) },
-                            placeholder = { Text("Search expense, category, vendor, mode...") },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = "Search",
-                                    tint = primaryColor,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            },
-                            trailingIcon = {
-                                if (uiState.searchQuery.isNotEmpty()) {
-                                    IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                        Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
-                                    }
-                                }
-                            },
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = primaryColor,
-                                unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp)
-                                .testTag("expense_search_input")
-                        )
-
-                        // Time Filter Chips
-                        LazyRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            items(ExpenseTimeFilter.values()) { timeFilter ->
-                                val isSelected = uiState.selectedTimeFilter == timeFilter
-                                Surface(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .clickable { viewModel.setTimeFilter(timeFilter) },
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (isSelected) primaryColor.copy(alpha = 0.2f) else if (isDark) Color(0x18FFFFFF) else Color(0x0C000000),
-                                    border = BorderStroke(1.dp, if (isSelected) primaryColor else if (isDark) Color(0x22FFFFFF) else Color(0x18000000))
-                                ) {
-                                    Text(
-                                        text = timeFilter.label,
-                                        fontSize = 11.5.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Category Summary Chips if available
-                if (uiState.summary.topCategories.isNotEmpty()) {
-                    item {
-                        ExpenseCategorySummaryCard(
-                            categories = uiState.summary.topCategories,
-                            primaryColor = primaryColor,
-                            isDark = isDark
-                        )
-                    }
-                }
-
-                // Section Header
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "EXPENSE LOG (${uiState.filteredExpenses.size})",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp,
-                            fontFamily = DigitalMonospaceFont,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                // Expense List Items
-                if (uiState.filteredExpenses.isEmpty()) {
-                    item {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 20.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isDark) Color(0x12FFFFFF) else Color(0x0A000000)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Receipt,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                    modifier = Modifier.size(42.dp)
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "No expenses recorded for this filter",
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    items(uiState.filteredExpenses, key = { it.id }) { expense ->
-                        ExpenseRowItem(
-                            expense = expense,
-                            onClick = { viewModel.openDetail(expense) },
-                            onEdit = { viewModel.openEditExpense(expense) },
-                            onDelete = { expenseToDelete = expense },
-                            isDark = isDark
-                        )
-                    }
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(70.dp))
+            } else {
+                items(uiState.filteredExpenses, key = { it.id }) { expense ->
+                    ExpenseRowItem(
+                        expense = expense,
+                        onClick = { viewModel.openDetail(expense) },
+                        onEdit = { viewModel.openEditExpense(expense) },
+                        onDelete = { expenseToDelete = expense },
+                        isDark = isDark
+                    )
                 }
             }
         }
 
-        // Floating Action Button to Add Expense
+        // ==========================================
+        // FLOATING ACTION BUTTON - LOG EXPENSE
+        // ==========================================
         FloatingActionButton(
-            onClick = {
-                viewModel.openAddExpense(
-                    initialScope = if (uiState.selectedScope == ExpenseScope.HOME) ExpenseScope.HOME else ExpenseScope.BUSINESS
-                )
-            },
+            onClick = { viewModel.openAddExpense(uiState.selectedScope) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(20.dp)
@@ -380,6 +286,10 @@ fun ExpensesScreen(
                     uiState = uiState,
                     onScopeChange = { viewModel.setFormScope(it) },
                     onAmountChange = { viewModel.setFormAmount(it) },
+                    onTokenAppend = { viewModel.appendTokenToAmount(it) },
+                    onBackspaceAmount = { viewModel.backspaceAmount() },
+                    onClearAmount = { viewModel.clearAmount() },
+                    onOpenCalculator = { viewModel.openCalculator() },
                     onCategoryChange = { viewModel.setFormCategory(it) },
                     onPaymentModeChange = { viewModel.setFormPaymentMode(it) },
                     onPaidToChange = { viewModel.setFormPaidTo(it) },
@@ -392,6 +302,18 @@ fun ExpensesScreen(
                     isDark = isDark
                 )
             }
+        }
+
+        // ==========================================
+        // QUICK CALCULATOR DIALOG
+        // ==========================================
+        if (uiState.isCalculatorOpen) {
+            SimpleCalculatorDialog(
+                onDismiss = { viewModel.closeCalculator() },
+                onResultSelected = { result ->
+                    viewModel.setFormAmount(result)
+                }
+            )
         }
 
         // ==========================================
@@ -611,36 +533,31 @@ private fun ExpenseScopeTabItem(
 
 @Composable
 private fun ExpenseHeroSummaryCard(
+    selectedScope: ExpenseScope,
     summary: ExpensesSummary,
-    currentScope: ExpenseScope,
-    onCopyReport: () -> Unit,
+    selectedTimeFilter: ExpenseTimeFilter,
+    onSelectTimeFilter: (ExpenseTimeFilter) -> Unit,
+    onCopyAuditReport: () -> Unit,
+    primaryColor: Color,
+    expenseAccent: Color,
     isDark: Boolean
 ) {
-    val cardColor = if (isDark) Color(0xFF1E1010) else Color(0xFF1A1A24)
-    val accentColor = Color(0xFFEF4444)
-
-    val activeTotal = when (currentScope) {
-        ExpenseScope.ALL -> summary.formattedTotal
-        ExpenseScope.BUSINESS -> summary.formattedBusiness
-        ExpenseScope.HOME -> summary.formattedHome
-    }
-
-    val activeLabel = when (currentScope) {
-        ExpenseScope.ALL -> "TOTAL EVERYDAY EXPENSES"
-        ExpenseScope.BUSINESS -> "TOTAL BUSINESS EXPENSES"
-        ExpenseScope.HOME -> "TOTAL HOME EXPENSES"
-    }
-
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .border(BorderStroke(1.dp, Color(0x33EF4444)), RoundedCornerShape(18.dp)),
-        shape = RoundedCornerShape(18.dp),
-        color = cardColor,
-        shadowElevation = 3.dp
+            .clip(RoundedCornerShape(20.dp))
+            .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(20.dp)),
+        shape = RoundedCornerShape(20.dp),
+        color = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF),
+        shadowElevation = if (isDark) 0.dp else 4.dp
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Header: Scope Title + Time Filter Chips
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -649,61 +566,112 @@ private fun ExpenseHeroSummaryCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(accentColor)
-                    )
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(expenseAccent.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.TrendingDown,
+                            contentDescription = null,
+                            tint = expenseAccent,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = activeLabel,
-                        fontSize = 11.sp,
+                        text = "${selectedScope.label.uppercase()} SUMMARY",
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
                         fontFamily = DigitalMonospaceFont,
-                        color = Color(0xFFFCA5A5)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                IconButton(onClick = onCopyReport, modifier = Modifier.size(28.dp)) {
+                IconButton(
+                    onClick = onCopyAuditReport,
+                    modifier = Modifier.size(28.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.ContentCopy,
-                        contentDescription = "Copy Report",
-                        tint = Color(0xFFFCA5A5),
+                        contentDescription = "Copy Audit",
+                        tint = primaryColor,
                         modifier = Modifier.size(16.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            // Total Amount Display
+            Column {
+                val totalDisplay = when (selectedScope) {
+                    ExpenseScope.ALL -> summary.formattedTotal
+                    ExpenseScope.BUSINESS -> summary.formattedBusiness
+                    ExpenseScope.HOME -> summary.formattedHome
+                }
+                Text(
+                    text = totalDisplay,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = DigitalMonospaceFont,
+                    color = expenseAccent
+                )
+                Text(
+                    text = "${summary.count} Total Expense Entries Recorded",
+                    fontSize = 11.sp,
+                    fontFamily = DigitalMonospaceFont,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
-            Text(
-                text = activeTotal,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.ExtraBold,
-                fontFamily = DigitalMonospaceFont,
-                color = Color(0xFFF87171)
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-            HorizontalDivider(thickness = 0.8.dp, color = Color(0x22FFFFFF))
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Business vs Home Split Row
+            // Time Filter Pills
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                ScopeMiniPill(
-                    title = "Business Expenses",
-                    amount = summary.formattedBusiness,
-                    icon = Icons.Default.Business,
+                ExpenseTimeFilter.values().forEach { filter ->
+                    val isSelected = selectedTimeFilter == filter
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onSelectTimeFilter(filter) },
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isSelected) primaryColor else if (isDark) Color(0x18FFFFFF) else Color(0x0C000000),
+                        border = BorderStroke(1.dp, if (isSelected) primaryColor else Color.Transparent)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = filter.label,
+                                fontSize = 10.5.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Metrics Grid: Today vs This Month
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                MetricSubCard(
+                    title = "TODAY'S EXPENSE",
+                    amount = summary.formattedToday,
+                    icon = Icons.Default.Today,
+                    color = Color(0xFFF59E0B),
+                    isDark = isDark,
                     modifier = Modifier.weight(1f)
                 )
 
-                ScopeMiniPill(
-                    title = "Home Expenses",
-                    amount = summary.formattedHome,
-                    icon = Icons.Default.Home,
+                MetricSubCard(
+                    title = "THIS MONTH",
+                    amount = summary.formattedMonth,
+                    icon = Icons.Default.CalendarMonth,
+                    color = Color(0xFF3B82F6),
+                    isDark = isDark,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -712,97 +680,125 @@ private fun ExpenseHeroSummaryCard(
 }
 
 @Composable
-private fun ScopeMiniPill(
+private fun MetricSubCard(
     title: String,
     amount: String,
     icon: ImageVector,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier.clip(RoundedCornerShape(8.dp)),
-        shape = RoundedCornerShape(8.dp),
-        color = Color(0x18FFFFFF)
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = Color(0xFFFCA5A5),
-                    modifier = Modifier.size(12.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = title,
-                    fontSize = 10.sp,
-                    fontFamily = DigitalMonospaceFont,
-                    color = Color(0xFFCBD5E1),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = amount,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = DigitalMonospaceFont,
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-private fun ExpenseStatPill(
-    title: String,
-    amount: String,
-    icon: ImageVector,
-    accentColor: Color,
+    color: Color,
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, accentColor.copy(alpha = 0.35f), RoundedCornerShape(12.dp)),
+            .border(1.dp, if (isDark) Color(0x18FFFFFF) else Color(0x10000000), RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        color = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF)
+        color = if (isDark) Color(0xFF0F1726) else Color(0xFFF8FAFC)
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Column(
+            modifier = Modifier.padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(13.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = title,
-                    fontSize = 10.sp,
+                    fontSize = 9.5.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = DigitalMonospaceFont,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Icon(imageVector = icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(14.dp))
             }
-            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = amount,
                 fontSize = 13.5.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
-                color = accentColor
+                color = color
             )
         }
     }
 }
 
 // =========================================================================
-// CATEGORY BREAKDOWN CARD
+// SEARCH BAR & QUICK ACTION
+// =========================================================================
+
+@Composable
+private fun ExpenseSearchBarAndAction(
+    searchQuery: String,
+    onQueryChange: (String) -> Unit,
+    onOpenAddSheet: () -> Unit,
+    onOpenCalc: () -> Unit,
+    primaryColor: Color,
+    isDark: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onQueryChange,
+            placeholder = { Text("Search expense, party, mode...", fontSize = 13.sp) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+            },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                    }
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = primaryColor,
+                unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .testTag("expense_search_input")
+        )
+
+        // Quick Calculator Button
+        Surface(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .border(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x28000000), RoundedCornerShape(12.dp))
+                .clickable { onOpenCalc() }
+                .testTag("expense_quick_calc_button"),
+            shape = RoundedCornerShape(12.dp),
+            color = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Default.Calculate,
+                    contentDescription = "Quick Calculator",
+                    tint = primaryColor,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
+    }
+}
+
+// =========================================================================
+// TOP CATEGORY BREAKDOWN CARD
 // =========================================================================
 
 @Composable
@@ -1003,7 +999,79 @@ private fun ExpenseRowItem(
 }
 
 // =========================================================================
-// ADD / EDIT EXPENSE SHEET CONTENT WITH AUTO-SUGGEST & AUTO-SAVE
+// EMPTY STATE CARD
+// =========================================================================
+
+@Composable
+private fun ExpenseEmptyStateCard(
+    scope: ExpenseScope,
+    onAddExpense: () -> Unit,
+    primaryColor: Color,
+    isDark: Boolean
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        color = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFEF4444).copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ShoppingCart,
+                    contentDescription = null,
+                    tint = Color(0xFFEF4444),
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+
+            Text(
+                text = "No ${scope.shortName} Expenses Found",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Text(
+                text = "Track your daily ${scope.label.lowercase()} expenses with automated categories, instant keypad calculations, and seamless ledger synchronization.",
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Button(
+                onClick = onAddExpense,
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFEF4444),
+                    contentColor = Color.White
+                )
+            ) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(text = "Log ${scope.shortName} Expense", fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+// =========================================================================
+// ADD / EDIT EXPENSE SHEET CONTENT WITH KEYPAD & AUTO-PICKUP/CREATE
 // =========================================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1012,6 +1080,10 @@ private fun ExpenseAddEditSheetContent(
     uiState: ExpensesUiState,
     onScopeChange: (ExpenseScope) -> Unit,
     onAmountChange: (String) -> Unit,
+    onTokenAppend: (String) -> Unit,
+    onBackspaceAmount: () -> Unit,
+    onClearAmount: () -> Unit,
+    onOpenCalculator: () -> Unit,
     onCategoryChange: (String) -> Unit,
     onPaymentModeChange: (String) -> Unit,
     onPaidToChange: (String) -> Unit,
@@ -1024,6 +1096,7 @@ private fun ExpenseAddEditSheetContent(
     isDark: Boolean
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
+    var isDialpadOpen by remember { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.US) }
     val isEditing = uiState.editingExpense != null
 
@@ -1111,7 +1184,7 @@ private fun ExpenseAddEditSheetContent(
                         .weight(1f)
                         .height(42.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(if (isHome) Color(0xFF0284C7) else Color.Transparent)
+                        .background(if (isHome) Color(0xFFF97316) else Color.Transparent)
                         .clickable { onScopeChange(ExpenseScope.HOME) }
                         .testTag("form_scope_home"),
                     contentAlignment = Alignment.Center
@@ -1135,113 +1208,79 @@ private fun ExpenseAddEditSheetContent(
             }
         }
 
-        // Amount Input with Custom Keypad / Dialpad
-        var showKeypad by remember { mutableStateOf(true) }
-
+        // Amount Input with Smart Keypad Integration
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "EXPENSE AMOUNT (RS.) *",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = DigitalMonospaceFont,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Surface(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .clickable { showKeypad = !showKeypad }
-                        .testTag("toggle_expense_keypad_button"),
-                    shape = RoundedCornerShape(6.dp),
-                    color = if (showKeypad) Color(0xFFEF4444).copy(alpha = 0.15f) else if (isDark) Color(0x15FFFFFF) else Color(0x0E000000),
-                    border = BorderStroke(1.dp, if (showKeypad) Color(0xFFEF4444).copy(alpha = 0.35f) else Color(0x20000000))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = if (showKeypad) Icons.Default.KeyboardHide else Icons.Default.Dialpad,
-                            contentDescription = if (showKeypad) "Hide Dialpad" else "Show Dialpad",
-                            tint = if (showKeypad) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = if (showKeypad) "Dialpad Active" else "Use Dialpad",
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (showKeypad) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            OutlinedTextField(
-                value = uiState.formAmountText,
-                onValueChange = onAmountChange,
-                placeholder = { Text("0.00", fontFamily = DigitalMonospaceFont) },
-                leadingIcon = {
-                    Text(
-                        text = "Rs.",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = Color(0xFFEF4444),
-                        modifier = Modifier.padding(start = 12.dp)
-                    )
-                },
-                trailingIcon = {
-                    if (uiState.formAmountText.isNotEmpty()) {
-                        IconButton(onClick = { onAmountChange("") }) {
-                            Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
-                        }
-                    }
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFFEF4444),
-                    unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("form_expense_amount_input")
+            Text(
+                text = "EXPENSE AMOUNT (RS.) *",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            // DEDICATED SMART DIALPAD / KEYPAD WITH PRESETS
-            AnimatedVisibility(visible = showKeypad) {
-                val animationIntensity = LocalAnimationIntensity.current
-                val componentSizeStyle = LocalComponentSizing.current
-                val shapeStructureStyle = LocalShapeStructure.current
-
-                SmartStationKeypad(
-                    activeFieldLabel = "Amount (Rs.)",
-                    onDigit = { d -> onAmountChange(KeypadInputHelper.handleDigit(uiState.formAmountText, d)) },
-                    onDoubleZero = { onAmountChange(KeypadInputHelper.handleDoubleZero(uiState.formAmountText)) },
-                    onDecimal = { onAmountChange(KeypadInputHelper.handleDecimal(uiState.formAmountText)) },
-                    onBackspace = { onAmountChange(KeypadInputHelper.handleBackspace(uiState.formAmountText)) },
-                    onClear = { onAmountChange(KeypadInputHelper.handleClear()) },
-                    quickAddChips = listOf(100L, 500L, 1000L, 5000L),
-                    onQuickAdd = { chip -> onAmountChange(KeypadInputHelper.handleQuickAdd(uiState.formAmountText, chip)) },
-                    onDone = { showKeypad = false },
-                    animationIntensity = animationIntensity,
-                    componentSizeStyle = componentSizeStyle,
-                    shapeStructureStyle = shapeStructureStyle,
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isDialpadOpen = true }
+            ) {
+                OutlinedTextField(
+                    value = uiState.formAmountText,
+                    onValueChange = onAmountChange,
+                    readOnly = true,
+                    placeholder = { Text("0.00", fontFamily = DigitalMonospaceFont) },
+                    leadingIcon = {
+                        Text(
+                            text = "Rs.",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = Color(0xFFEF4444),
+                            modifier = Modifier.padding(start = 12.dp)
+                        )
+                    },
+                    trailingIcon = {
+                        if (uiState.formAmountText.isNotEmpty()) {
+                            IconButton(onClick = onClearAmount, modifier = Modifier.size(28.dp)) {
+                                Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFEF4444),
+                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
+                        .testTag("form_expense_amount_input")
                 )
             }
         }
 
-        // Category Input with Auto-suggestions (hidden initially, suggested as user types, auto-saved)
+        // =========================================================================
+        // SMART STATION KEYPAD (POPS UP FROM BOTTOM LIKE UNIT CONVERTER)
+        // =========================================================================
+        AnimatedVisibility(
+            visible = isDialpadOpen,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+        ) {
+            SmartStationKeypad(
+                activeFieldLabel = "Expense Amount (Rs.)",
+                onDigit = { onTokenAppend(it) },
+                onDoubleZero = { onTokenAppend("00") },
+                onDecimal = { onTokenAppend(".") },
+                onBackspace = { onBackspaceAmount() },
+                onClear = { onClearAmount() },
+                onDone = { isDialpadOpen = false },
+                showDoubleZeroKey = true,
+                showDecimalKey = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        // Category Input with Dynamic Auto-pickup & Create (Shows suggestions when typing)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = "EXPENSE CATEGORY *",
@@ -1277,29 +1316,58 @@ private fun ExpenseAddEditSheetContent(
                     .testTag("form_expense_category_input")
             )
 
-            // Dynamic Auto-suggestions: Shown ONLY when matching items exist
+            // Dynamic Auto-suggestions & "➕ Add '[typed text]'" - Only shows when user types letters
+            val inputCat = uiState.formCategory.trim()
+            val isCustomCat = inputCat.isNotEmpty() && currentScopeCategories.none { it.equals(inputCat, ignoreCase = true) }
             val matchingCategories = remember(uiState.formCategory, currentScopeCategories) {
-                val input = uiState.formCategory.trim()
-                if (input.isEmpty()) {
+                if (inputCat.isEmpty()) {
                     emptyList()
                 } else {
                     currentScopeCategories.filter {
-                        it.contains(input, ignoreCase = true) && !it.equals(input, ignoreCase = true)
+                        it.contains(inputCat, ignoreCase = true) && !it.equals(inputCat, ignoreCase = true)
                     }
                 }
             }
 
-            if (matchingCategories.isNotEmpty()) {
-                Text(
-                    text = "Matching suggestions:",
-                    fontSize = 10.5.sp,
-                    color = primaryColor,
-                    fontWeight = FontWeight.SemiBold
-                )
+            AnimatedVisibility(
+                visible = inputCat.isNotEmpty() && (isCustomCat || matchingCategories.isNotEmpty()),
+                enter = fadeIn() + slideInVertically(),
+                exit = fadeOut() + slideOutVertically()
+            ) {
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    if (isCustomCat) {
+                        item {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF10B981).copy(alpha = 0.2f),
+                                border = BorderStroke(1.dp, Color(0xFF10B981)),
+                                modifier = Modifier.clickable { onCategoryChange(inputCat) }
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = null,
+                                        tint = Color(0xFF10B981),
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Create \"$inputCat\"",
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF10B981)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     items(matchingCategories) { cat ->
                         Surface(
                             shape = RoundedCornerShape(8.dp),
@@ -1331,7 +1399,7 @@ private fun ExpenseAddEditSheetContent(
             }
         }
 
-        // Payment Mode Input with Auto-suggestions
+        // Payment Mode Input with Automated Pickup & Create (Shows suggestions when typing)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = "PAID VIA / PAYMENT CHANNEL *",
@@ -1367,29 +1435,58 @@ private fun ExpenseAddEditSheetContent(
                     .testTag("form_expense_mode_input")
             )
 
-            // Dynamic Auto-suggestions for Payment Mode
+            // Dynamic Auto-suggestions & "➕ Add '[typed text]'" - Only shows when user types letters
+            val inputMode = uiState.formPaymentMode.trim()
+            val isCustomMode = inputMode.isNotEmpty() && uiState.availableModes.none { it.equals(inputMode, ignoreCase = true) }
             val matchingModes = remember(uiState.formPaymentMode, uiState.availableModes) {
-                val input = uiState.formPaymentMode.trim()
-                if (input.isEmpty()) {
+                if (inputMode.isEmpty()) {
                     emptyList()
                 } else {
                     uiState.availableModes.filter {
-                        it.contains(input, ignoreCase = true) && !it.equals(input, ignoreCase = true)
+                        it.contains(inputMode, ignoreCase = true) && !it.equals(inputMode, ignoreCase = true)
                     }
                 }
             }
 
-            if (matchingModes.isNotEmpty()) {
-                Text(
-                    text = "Matching payment channels:",
-                    fontSize = 10.5.sp,
-                    color = primaryColor,
-                    fontWeight = FontWeight.SemiBold
-                )
+            AnimatedVisibility(
+                visible = inputMode.isNotEmpty() && (isCustomMode || matchingModes.isNotEmpty()),
+                enter = fadeIn() + slideInVertically(),
+                exit = fadeOut() + slideOutVertically()
+            ) {
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    if (isCustomMode) {
+                        item {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF10B981).copy(alpha = 0.2f),
+                                border = BorderStroke(1.dp, Color(0xFF10B981)),
+                                modifier = Modifier.clickable { onPaymentModeChange(inputMode) }
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = null,
+                                        tint = Color(0xFF10B981),
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Create Mode \"$inputMode\"",
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF10B981)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     items(matchingModes) { mode ->
                         Surface(
                             shape = RoundedCornerShape(8.dp),

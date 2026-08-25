@@ -4,6 +4,8 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -55,7 +57,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -77,6 +81,7 @@ import com.example.domain.mixture.BatchDivisionResult
 import com.example.domain.mixture.RatioCalculationResult
 import com.example.domain.mixture.RecalibrationResult
 import com.example.domain.mixture.TargetIngredient
+import com.example.ui.components.SmartStationKeypad
 import com.example.ui.MixtureUiState
 import com.example.ui.MixtureViewModel
 import com.example.ui.theme.DigitalMonospaceFont
@@ -590,26 +595,35 @@ private fun Step1EnterTargetIngredients(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Two Side-by-Side Inputs: Quantity (numeric) and Unit (text, default "kg")
+                var isQtyKeypadOpen by remember { mutableStateOf(false) }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    OutlinedTextField(
-                        value = qtyInput,
-                        onValueChange = onQtyChange,
-                        label = { Text("Target Qty") },
-                        placeholder = { Text("0.00") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    Box(
                         modifier = Modifier
                             .weight(1.3f)
-                            .testTag("ingredient_qty_input"),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = primaryColor,
-                            unfocusedBorderColor = borderColor
+                            .clickable { isQtyKeypadOpen = !isQtyKeypadOpen }
+                    ) {
+                        OutlinedTextField(
+                            value = qtyInput,
+                            onValueChange = onQtyChange,
+                            readOnly = true,
+                            label = { Text("Target Qty") },
+                            placeholder = { Text("0.00") },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("ingredient_qty_input"),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = if (isQtyKeypadOpen) primaryColor else borderColor,
+                                unfocusedBorderColor = if (isQtyKeypadOpen) primaryColor else borderColor,
+                                focusedContainerColor = if (isQtyKeypadOpen) primaryColor.copy(alpha = 0.10f) else Color.Transparent
+                            )
                         )
-                    )
+                    }
 
                     OutlinedTextField(
                         value = unitInput,
@@ -628,11 +642,38 @@ private fun Step1EnterTargetIngredients(
                     )
                 }
 
+                AnimatedVisibility(
+                    visible = isQtyKeypadOpen,
+                    enter = fadeIn() + slideInVertically(),
+                    exit = fadeOut() + slideOutVertically()
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = if (isDark) Color(0xFF0F172A) else Color(0xFFF1F5F9),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp)
+                    ) {
+                        SmartStationKeypad(
+                            activeFieldLabel = "Target Quantity",
+                            onDigit = { onQtyChange(qtyInput + it) },
+                            onBackspace = { if (qtyInput.isNotEmpty()) onQtyChange(qtyInput.dropLast(1)) },
+                            onClear = { onQtyChange("") },
+                            onDone = { isQtyKeypadOpen = false },
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Full-Width Button: "+ Add to Target List"
                 Button(
-                    onClick = onAddIngredient,
+                    onClick = {
+                        isQtyKeypadOpen = false
+                        onAddIngredient()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(46.dp)
@@ -883,6 +924,9 @@ private fun Step3ReferenceAndActualAdded(
     borderColor: Color,
     isDark: Boolean
 ) {
+    var focusedItemId by remember { mutableStateOf<String?>(null) }
+    val focusedItem = ingredients.find { it.id == focusedItemId }
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "SELECT CALIBRATION ANCHOR & ACTUALS",
@@ -900,6 +944,7 @@ private fun Step3ReferenceAndActualAdded(
             ingredients.forEach { item ->
                 val isAnchor = item.id == anchorId
                 val actualText = actualAddedTexts[item.id] ?: ""
+                val isFocused = focusedItemId == item.id
 
                 val cardBg = if (isAnchor) primaryColor.copy(alpha = 0.12f) else surfaceBg
                 val cardBorder = if (isAnchor) primaryColor.copy(alpha = 0.6f) else borderColor
@@ -968,23 +1013,57 @@ private fun Step3ReferenceAndActualAdded(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         // Input field: Actual Added ([unit])
-                        OutlinedTextField(
-                            value = actualText,
-                            onValueChange = { onActualAddedChange(item.id, it) },
-                            label = { Text("Actual Added (${item.unit})") },
-                            placeholder = { Text(formatNumber(item.targetQuantity)) },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .testTag("actual_added_input_${item.id}"),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = primaryColor,
-                                unfocusedBorderColor = borderColor,
-                                focusedContainerColor = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
+                                .clickable {
+                                    focusedItemId = if (focusedItemId == item.id) null else item.id
+                                    onSelectAnchor(item.id)
+                                }
+                        ) {
+                            OutlinedTextField(
+                                value = actualText,
+                                onValueChange = { onActualAddedChange(item.id, it) },
+                                readOnly = true,
+                                label = { Text("Actual Added (${item.unit})") },
+                                placeholder = { Text(formatNumber(item.targetQuantity)) },
+                                singleLine = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("actual_added_input_${item.id}"),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = if (isFocused) primaryColor else borderColor,
+                                    unfocusedBorderColor = if (isFocused) primaryColor else borderColor,
+                                    focusedContainerColor = if (isFocused) primaryColor.copy(alpha = 0.12f) else if (isDark) Color(0x18FFFFFF) else Color(0x0C000000),
+                                    unfocusedContainerColor = if (isFocused) primaryColor.copy(alpha = 0.08f) else if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
+                                )
                             )
-                        )
+                        }
+
+                        AnimatedVisibility(
+                            visible = isFocused,
+                            enter = fadeIn() + slideInVertically(),
+                            exit = fadeOut() + slideOutVertically()
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (isDark) Color(0xFF0F172A) else Color(0xFFF1F5F9),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 10.dp)
+                            ) {
+                                SmartStationKeypad(
+                                    activeFieldLabel = "Actual ${item.name} (${item.unit})",
+                                    onDigit = { onActualAddedChange(item.id, actualText + it) },
+                                    onBackspace = { if (actualText.isNotEmpty()) onActualAddedChange(item.id, actualText.dropLast(1)) },
+                                    onClear = { onActualAddedChange(item.id, "") },
+                                    onDone = { focusedItemId = null },
+                                    modifier = Modifier.padding(8.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1278,6 +1357,8 @@ private fun Step5DivideIntoBatches(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                var isBatchKeypadOpen by remember { mutableStateOf(false) }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -1300,26 +1381,33 @@ private fun Step5DivideIntoBatches(
                     }
 
                     // Numeric input
-                    OutlinedTextField(
-                        value = batchCountText,
-                        onValueChange = onBatchCountChange,
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    Box(
                         modifier = Modifier
                             .weight(1f)
-                            .testTag("batch_count_input"),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = primaryColor,
-                            unfocusedBorderColor = borderColor
-                        ),
-                        textStyle = androidx.compose.ui.text.TextStyle(
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            textAlign = TextAlign.Center
+                            .clickable { isBatchKeypadOpen = !isBatchKeypadOpen }
+                    ) {
+                        OutlinedTextField(
+                            value = batchCountText,
+                            onValueChange = onBatchCountChange,
+                            readOnly = true,
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("batch_count_input"),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = if (isBatchKeypadOpen) primaryColor else borderColor,
+                                unfocusedBorderColor = if (isBatchKeypadOpen) primaryColor else borderColor,
+                                focusedContainerColor = if (isBatchKeypadOpen) primaryColor.copy(alpha = 0.10f) else Color.Transparent
+                            ),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                textAlign = TextAlign.Center
+                            )
                         )
-                    )
+                    }
 
                     // Increment Stepper
                     Surface(
@@ -1335,6 +1423,30 @@ private fun Step5DivideIntoBatches(
                         Box(contentAlignment = Alignment.Center) {
                             Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = primaryColor)
                         }
+                    }
+                }
+
+                AnimatedVisibility(
+                    visible = isBatchKeypadOpen,
+                    enter = fadeIn() + slideInVertically(),
+                    exit = fadeOut() + slideOutVertically()
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = if (isDark) Color(0xFF0F172A) else Color(0xFFF1F5F9),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp)
+                    ) {
+                        SmartStationKeypad(
+                            activeFieldLabel = "Batch Count",
+                            onDigit = { onBatchCountChange(batchCountText + it) },
+                            onBackspace = { if (batchCountText.isNotEmpty()) onBatchCountChange(batchCountText.dropLast(1)) },
+                            onClear = { onBatchCountChange("") },
+                            onDone = { isBatchKeypadOpen = false },
+                            modifier = Modifier.padding(8.dp)
+                        )
                     }
                 }
 

@@ -59,6 +59,7 @@ data class ExpensesUiState(
     val searchQuery: String = "",
     val isAddSheetOpen: Boolean = false,
     val isDetailDialogOpen: Boolean = false,
+    val isCalculatorOpen: Boolean = false,
     val selectedExpenseForDetail: LedgerTransactionEntity? = null,
     val editingExpense: LedgerTransactionEntity? = null,
     // Add/Edit Form state
@@ -98,7 +99,15 @@ class ExpensesViewModel(
 
         viewModelScope.launch {
             ledgerDao.getAllTransactions().collect { allList ->
-                val expensesOnly = allList.filter { it.type == "CASH_OUT" }
+                val expensesOnly = allList.filter {
+                    it.type.equals("CASH_OUT", ignoreCase = true) ||
+                    it.type.equals("EXPENSE", ignoreCase = true) ||
+                    it.type.equals("HOME_EXPENSE", ignoreCase = true) ||
+                    it.type.equals("BUSINESS_EXPENSE", ignoreCase = true) ||
+                    it.type.contains("OUT", ignoreCase = true) ||
+                    it.type.contains("EXPENSE", ignoreCase = true)
+                }
+
                 _uiState.update { current ->
                     val summary = computeSummary(expensesOnly)
                     val filtered = filterExpenses(
@@ -108,11 +117,20 @@ class ExpensesViewModel(
                         current.searchQuery
                     )
 
-                    val dbCategories = expensesOnly.map { it.category.trim() }.filter { it.isNotEmpty() }
+                    val dbBizCategories = expensesOnly
+                        .filter { !LedgerUnifiedDataManager.isHomeExpense(it.category, it.expenseScope) }
+                        .map { it.category.trim() }
+                        .filter { it.isNotEmpty() }
+
+                    val dbHomeCategories = expensesOnly
+                        .filter { LedgerUnifiedDataManager.isHomeExpense(it.category, it.expenseScope) }
+                        .map { it.category.trim() }
+                        .filter { it.isNotEmpty() }
+
                     val dbModes = expensesOnly.map { it.paymentMode.trim() }.filter { it.isNotEmpty() }
 
-                    val bizList = (LedgerUnifiedDataManager.getBusinessCategories(appContext) + dbCategories.filter { !isHomeExpenseItem(it, "") }).distinct()
-                    val homeList = (LedgerUnifiedDataManager.getHomeCategories(appContext) + dbCategories.filter { isHomeExpenseItem(it, "") }).distinct()
+                    val bizList = (LedgerUnifiedDataManager.getBusinessCategories(appContext) + dbBizCategories).distinct()
+                    val homeList = (LedgerUnifiedDataManager.getHomeCategories(appContext) + dbHomeCategories).distinct()
                     val modesList = (LedgerUnifiedDataManager.getPaymentModes(appContext) + dbModes).distinct()
 
                     current.copy(
@@ -291,6 +309,15 @@ class ExpensesViewModel(
         recomputeState()
     }
 
+    // --- Calculator Dialog ---
+    fun openCalculator() {
+        _uiState.update { it.copy(isCalculatorOpen = true) }
+    }
+
+    fun closeCalculator() {
+        _uiState.update { it.copy(isCalculatorOpen = false) }
+    }
+
     // --- Add / Edit Expense Sheet ---
     fun openAddExpense(initialScope: ExpenseScope = ExpenseScope.BUSINESS) {
         val defaultScope = if (initialScope == ExpenseScope.ALL) ExpenseScope.BUSINESS else initialScope
@@ -355,6 +382,34 @@ class ExpensesViewModel(
 
     fun setFormAmount(amount: String) {
         _uiState.update { it.copy(formAmountText = amount) }
+    }
+
+    fun appendTokenToAmount(token: String) {
+        val current = _uiState.value.formAmountText
+        if (token == ".") {
+            if (!current.contains(".")) {
+                val next = if (current.isEmpty()) "0." else "$current."
+                _uiState.update { it.copy(formAmountText = next) }
+            }
+        } else if (token == "00") {
+            if (current.isNotEmpty() && current != "0") {
+                _uiState.update { it.copy(formAmountText = "$current$token") }
+            }
+        } else {
+            val next = if (current == "0") token else "$current$token"
+            _uiState.update { it.copy(formAmountText = next) }
+        }
+    }
+
+    fun backspaceAmount() {
+        val current = _uiState.value.formAmountText
+        if (current.isNotEmpty()) {
+            _uiState.update { it.copy(formAmountText = current.dropLast(1)) }
+        }
+    }
+
+    fun clearAmount() {
+        _uiState.update { it.copy(formAmountText = "") }
     }
 
     fun setFormCategory(cat: String) {

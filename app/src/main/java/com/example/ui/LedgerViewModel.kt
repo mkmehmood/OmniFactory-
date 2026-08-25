@@ -339,7 +339,13 @@ class LedgerViewModel(
 
     // --- Form Inputs ---
     fun setFormCategory(category: String) {
-        _uiState.update { it.copy(formCategory = category) }
+        val isHome = LedgerUnifiedDataManager.isHomeExpense(category)
+        _uiState.update {
+            it.copy(
+                formCategory = category,
+                formExpenseScope = if (it.formType == LedgerType.CASH_OUT && isHome) "HOME" else it.formExpenseScope
+            )
+        }
     }
 
     fun setFormPaymentMode(mode: String) {
@@ -475,6 +481,34 @@ class LedgerViewModel(
         _uiState.update { it.copy(formAmountText = amount) }
     }
 
+    fun appendTokenToAmount(token: String) {
+        val current = _uiState.value.formAmountText
+        if (token == ".") {
+            if (!current.contains(".")) {
+                val next = if (current.isEmpty()) "0." else "$current."
+                _uiState.update { it.copy(formAmountText = next) }
+            }
+        } else if (token == "00") {
+            if (current.isNotEmpty() && current != "0") {
+                _uiState.update { it.copy(formAmountText = "$current$token") }
+            }
+        } else {
+            val next = if (current == "0") token else "$current$token"
+            _uiState.update { it.copy(formAmountText = next) }
+        }
+    }
+
+    fun backspaceAmount() {
+        val current = _uiState.value.formAmountText
+        if (current.isNotEmpty()) {
+            _uiState.update { it.copy(formAmountText = current.dropLast(1)) }
+        }
+    }
+
+    fun clearAmount() {
+        _uiState.update { it.copy(formAmountText = "") }
+    }
+
     fun setFormPartyName(partyName: String) {
         _uiState.update { it.copy(formPartyName = partyName) }
     }
@@ -512,8 +546,12 @@ class LedgerViewModel(
         }
 
         val typeStr = if (isTransfer) "TRANSFER" else current.formType.name
-        val expenseScope = if (isCashOut) current.formExpenseScope else ""
-        val category = current.formCategory.trim().ifBlank {
+        val categoryCandidate = current.formCategory.trim()
+        val isHomeExpense = LedgerUnifiedDataManager.isHomeExpense(categoryCandidate, current.formExpenseScope)
+        val expenseScope = if (isCashOut) {
+            if (isHomeExpense || current.formExpenseScope == "HOME") "HOME" else "BUSINESS"
+        } else ""
+        val category = categoryCandidate.ifBlank {
             when {
                 isTransfer -> "Account Transfer"
                 isCashOut -> if (expenseScope == "HOME") "Groceries & Food" else "Raw Materials"

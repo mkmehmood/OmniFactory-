@@ -39,7 +39,9 @@ object LedgerUnifiedDataManager {
         "Home Repairs",
         "Gifts & Charity",
         "Miscellaneous Home",
-        "Home"
+        "Home",
+        "Kitchen Supplies",
+        "Personal & Family"
     )
 
     val DEFAULT_INCOME_CATEGORIES = listOf(
@@ -61,7 +63,10 @@ object LedgerUnifiedDataManager {
         "Easypaisa",
         "JazzCash",
         "Cheque",
-        "Online Transfer"
+        "Online Transfer",
+        "UPI",
+        "Debit Card",
+        "Credit Card"
     )
 
     fun getBusinessCategories(context: Context): List<String> {
@@ -113,15 +118,16 @@ object LedgerUnifiedDataManager {
         if (trimmed.isEmpty()) return
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-        when (scope.uppercase()) {
-            "HOME" -> {
+        val upperScope = scope.trim().uppercase()
+        when {
+            upperScope.contains("HOME") || upperScope.contains("PERSONAL") -> {
                 val current = getHomeCategories(context)
                 if (current.none { it.equals(trimmed, ignoreCase = true) }) {
                     val updated = (current + trimmed).toSet()
                     prefs.edit().putStringSet(KEY_HOME_CATEGORIES, updated).apply()
                 }
             }
-            "INCOME", "CASH_IN" -> {
+            upperScope.contains("INCOME") || upperScope.contains("CASH_IN") -> {
                 val current = getIncomeCategories(context)
                 if (current.none { it.equals(trimmed, ignoreCase = true) }) {
                     val updated = (current + trimmed).toSet()
@@ -150,13 +156,24 @@ object LedgerUnifiedDataManager {
     }
 
     fun isHomeExpense(category: String, expenseScope: String = ""): Boolean {
-        if (expenseScope.equals("HOME", ignoreCase = true)) return true
-        if (expenseScope.equals("BUSINESS", ignoreCase = true)) return false
+        val scopeTrim = expenseScope.trim().uppercase()
+        if (scopeTrim.contains("HOME") || scopeTrim.contains("PERSONAL")) return true
 
         val lower = category.lowercase().trim()
-        return lower == "home" || lower.contains("home") || lower.contains("grocer") ||
+        if (lower.isEmpty()) return false
+
+        // Check if category is a known home category or contains home-related terms
+        val isKnownHome = lower == "home" || lower.contains("home") || lower.contains("grocer") ||
                 lower.contains("school") || lower.contains("tuition") || lower.contains("maid") ||
                 lower.contains("doctor") || lower.contains("medical") || lower.contains("clothing") ||
-                lower.contains("personal") || lower.contains("family") || lower.contains("kitchen")
+                lower.contains("personal") || lower.contains("family") || lower.contains("kitchen") ||
+                lower.contains("house") || lower.contains("gas") || lower.contains("water") ||
+                lower.contains("ration") || lower.contains("sabzi") || lower.contains("milk") ||
+                lower.contains("child") || lower.contains("domestic") || lower.contains("food") ||
+                lower.contains("shopping") || lower.contains("charity") || lower.contains("gift")
+
+        if (isKnownHome) return true
+        if (scopeTrim == "BUSINESS" || scopeTrim == "BUSINESS_EXPENSE") return false
+        return false
     }
 }

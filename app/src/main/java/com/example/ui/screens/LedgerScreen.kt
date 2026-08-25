@@ -2,6 +2,10 @@ package com.example.ui.screens
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,10 +34,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CheckCircle
@@ -45,7 +51,6 @@ import androidx.compose.material.icons.filled.Dialpad
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardHide
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Payments
@@ -104,12 +109,9 @@ import com.example.domain.ledger.LedgerUnifiedDataManager
 import com.example.domain.util.IndianNumberFormatter
 import com.example.ui.LedgerUiState
 import com.example.ui.LedgerViewModel
-import com.example.ui.components.KeypadInputHelper
+import com.example.ui.components.SimpleCalculatorDialog
 import com.example.ui.components.SmartStationKeypad
 import com.example.ui.theme.DigitalMonospaceFont
-import com.example.ui.theme.LocalAnimationIntensity
-import com.example.ui.theme.LocalComponentSizing
-import com.example.ui.theme.LocalShapeStructure
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -128,6 +130,7 @@ fun LedgerScreen(
     val primaryColor = MaterialTheme.colorScheme.primary
 
     var transactionToDelete by remember { mutableStateOf<LedgerTransactionEntity?>(null) }
+    var showQuickCalculatorDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.userMessage.collect { message ->
@@ -247,12 +250,29 @@ fun LedgerScreen(
                     onRemarksChange = { viewModel.setFormRemarks(it) },
                     onRefNoChange = { viewModel.setFormReferenceNo(it) },
                     onDateChange = { viewModel.setFormDateMillis(it) },
+                    onOpenCalculator = { showQuickCalculatorDialog = true },
+                    onTokenAppend = { viewModel.appendTokenToAmount(it) },
+                    onBackspaceAmount = { viewModel.backspaceAmount() },
+                    onClearAmount = { viewModel.clearAmount() },
                     onSave = { viewModel.saveFormTransaction() },
                     onCancel = { viewModel.closeAddSheet() },
                     primaryColor = primaryColor,
                     isDark = isDark
                 )
             }
+        }
+
+        // ==========================================
+        // QUICK CALCULATOR DIALOG
+        // ==========================================
+        if (showQuickCalculatorDialog) {
+            SimpleCalculatorDialog(
+                onDismiss = { showQuickCalculatorDialog = false },
+                onResultSelected = { result ->
+                    viewModel.setFormAmountText(result)
+                    showQuickCalculatorDialog = false
+                }
+            )
         }
 
         // ==========================================
@@ -860,12 +880,17 @@ private fun LedgerAddEditSheetContent(
     onRemarksChange: (String) -> Unit,
     onRefNoChange: (String) -> Unit,
     onDateChange: (Long) -> Unit,
+    onOpenCalculator: () -> Unit,
+    onTokenAppend: (String) -> Unit,
+    onBackspaceAmount: () -> Unit,
+    onClearAmount: () -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit,
     primaryColor: Color,
     isDark: Boolean
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
+    var isKeypadOpen by remember { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.US) }
     val isEditing = uiState.editingTransaction != null
 
@@ -1202,26 +1227,56 @@ private fun LedgerAddEditSheetContent(
                                 .testTag("transfer_from_mode_input")
                         )
 
-                        // Mode Chips for From Channel
-                        LazyRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        // Mode Chips for From Channel (Shows suggestions when typing)
+                        val typedFrom = uiState.formPaymentMode.trim()
+                        val isCustomFrom = typedFrom.isNotEmpty() && uiState.availablePaymentModes.none { it.equals(typedFrom, ignoreCase = true) }
+                        val matchingFromModes = remember(uiState.formPaymentMode, uiState.availablePaymentModes) {
+                            if (typedFrom.isEmpty()) emptyList() else uiState.availablePaymentModes.filter { it.contains(typedFrom, ignoreCase = true) && !it.equals(typedFrom, ignoreCase = true) }
+                        }
+
+                        AnimatedVisibility(
+                            visible = typedFrom.isNotEmpty() && (isCustomFrom || matchingFromModes.isNotEmpty()),
+                            enter = fadeIn() + slideInVertically(),
+                            exit = fadeOut() + slideOutVertically()
                         ) {
-                            items(uiState.availablePaymentModes) { mode ->
-                                val isSelected = mode.equals(uiState.formPaymentMode, ignoreCase = true)
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (isSelected) Color(0xFFEF4444).copy(alpha = 0.2f) else if (isDark) Color(0x15FFFFFF) else Color(0x0A000000),
-                                    border = BorderStroke(1.dp, if (isSelected) Color(0xFFEF4444) else Color(0x20000000)),
-                                    modifier = Modifier.clickable { onPaymentModeChange(mode) }
-                                ) {
-                                    Text(
-                                        text = mode,
-                                        fontSize = 10.5.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (isSelected) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
+                            LazyRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                if (isCustomFrom) {
+                                    item {
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = Color(0xFF3B82F6).copy(alpha = 0.2f),
+                                            border = BorderStroke(1.dp, Color(0xFF3B82F6)),
+                                            modifier = Modifier.clickable { onPaymentModeChange(typedFrom) }
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            ) {
+                                                Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = Color(0xFF3B82F6), modifier = Modifier.size(12.dp))
+                                                Spacer(modifier = Modifier.width(3.dp))
+                                                Text(text = "Use '$typedFrom'", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF3B82F6))
+                                            }
+                                        }
+                                    }
+                                }
+                                items(matchingFromModes) { mode ->
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color(0xFF3B82F6).copy(alpha = 0.15f),
+                                        border = BorderStroke(1.dp, Color(0xFF3B82F6).copy(alpha = 0.35f)),
+                                        modifier = Modifier.clickable { onPaymentModeChange(mode) }
+                                    ) {
+                                        Text(
+                                            text = mode,
+                                            fontSize = 10.5.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color(0xFF3B82F6),
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1260,26 +1315,56 @@ private fun LedgerAddEditSheetContent(
                                 .testTag("transfer_to_mode_input")
                         )
 
-                        // Mode Chips for To Channel
-                        LazyRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        // Mode Chips for To Channel (Shows suggestions when typing)
+                        val typedTo = uiState.formTransferToMode.trim()
+                        val isCustomTo = typedTo.isNotEmpty() && uiState.availablePaymentModes.none { it.equals(typedTo, ignoreCase = true) }
+                        val matchingToModes = remember(uiState.formTransferToMode, uiState.availablePaymentModes) {
+                            if (typedTo.isEmpty()) emptyList() else uiState.availablePaymentModes.filter { it.contains(typedTo, ignoreCase = true) && !it.equals(typedTo, ignoreCase = true) }
+                        }
+
+                        AnimatedVisibility(
+                            visible = typedTo.isNotEmpty() && (isCustomTo || matchingToModes.isNotEmpty()),
+                            enter = fadeIn() + slideInVertically(),
+                            exit = fadeOut() + slideOutVertically()
                         ) {
-                            items(uiState.availablePaymentModes) { mode ->
-                                val isSelected = mode.equals(uiState.formTransferToMode, ignoreCase = true)
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (isSelected) Color(0xFF10B981).copy(alpha = 0.2f) else if (isDark) Color(0x15FFFFFF) else Color(0x0A000000),
-                                    border = BorderStroke(1.dp, if (isSelected) Color(0xFF10B981) else Color(0x20000000)),
-                                    modifier = Modifier.clickable { onTransferToModeChange(mode) }
-                                ) {
-                                    Text(
-                                        text = mode,
-                                        fontSize = 10.5.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (isSelected) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
+                            LazyRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                if (isCustomTo) {
+                                    item {
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = Color(0xFF10B981).copy(alpha = 0.2f),
+                                            border = BorderStroke(1.dp, Color(0xFF10B981)),
+                                            modifier = Modifier.clickable { onTransferToModeChange(typedTo) }
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            ) {
+                                                Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(12.dp))
+                                                Spacer(modifier = Modifier.width(3.dp))
+                                                Text(text = "Use '$typedTo'", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                                            }
+                                        }
+                                    }
+                                }
+                                items(matchingToModes) { mode ->
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color(0xFF10B981).copy(alpha = 0.15f),
+                                        border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.35f)),
+                                        modifier = Modifier.clickable { onTransferToModeChange(mode) }
+                                    ) {
+                                        Text(
+                                            text = mode,
+                                            fontSize = 10.5.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color(0xFF10B981),
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1288,109 +1373,110 @@ private fun LedgerAddEditSheetContent(
             }
         }
 
-        // 2. Transaction Amount with Custom Keypad / Dialpad
-        var showKeypad by remember { mutableStateOf(true) }
-
+        // 2. Transaction Amount
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "TRANSACTION AMOUNT (RS.) *",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = DigitalMonospaceFont,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Text(
+                text = "TRANSACTION AMOUNT (RS.) *",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-                Surface(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .clickable { showKeypad = !showKeypad }
-                        .testTag("toggle_ledger_keypad_button"),
-                    shape = RoundedCornerShape(6.dp),
-                    color = if (showKeypad) uiState.formType.color.copy(alpha = 0.15f) else if (isDark) Color(0x15FFFFFF) else Color(0x0E000000),
-                    border = BorderStroke(1.dp, if (showKeypad) uiState.formType.color.copy(alpha = 0.35f) else Color(0x20000000))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = if (showKeypad) Icons.Default.KeyboardHide else Icons.Default.Dialpad,
-                            contentDescription = if (showKeypad) "Hide Dialpad" else "Show Dialpad",
-                            tint = if (showKeypad) uiState.formType.color else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isKeypadOpen = true }
+            ) {
+                OutlinedTextField(
+                    value = uiState.formAmountText,
+                    onValueChange = onAmountChange,
+                    readOnly = true,
+                    placeholder = { Text("0.00", fontFamily = DigitalMonospaceFont) },
+                    leadingIcon = {
                         Text(
-                            text = if (showKeypad) "Dialpad Active" else "Use Dialpad",
-                            fontSize = 10.5.sp,
+                            text = "Rs.",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = uiState.formType.color,
+                            modifier = Modifier.padding(start = 12.dp)
+                        )
+                    },
+                    trailingIcon = {
+                        if (uiState.formAmountText.isNotEmpty()) {
+                            IconButton(
+                                onClick = onClearAmount,
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = uiState.formType.color,
+                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("form_amount_input")
+                )
+            }
+
+            // Quick Preset Amount Chips (+500, +1000, +5000, +10000, +25000)
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                val increments = listOf(500, 1000, 2000, 5000, 10000, 25000, 50000)
+                items(increments) { inc ->
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000),
+                        border = BorderStroke(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000)),
+                        modifier = Modifier.clickable {
+                            val currentVal = uiState.formAmountText.toDoubleOrNull() ?: 0.0
+                            val newVal = currentVal + inc
+                            onAmountChange(if (newVal % 1.0 == 0.0) newVal.toLong().toString() else "%.2f".format(newVal))
+                        }
+                    ) {
+                        Text(
+                            text = "+${IndianNumberFormatter.formatIndianLong(inc.toLong())}",
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (showKeypad) uiState.formType.color else MaterialTheme.colorScheme.onSurfaceVariant
+                            fontFamily = DigitalMonospaceFont,
+                            color = primaryColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
                 }
             }
 
-            OutlinedTextField(
-                value = uiState.formAmountText,
-                onValueChange = onAmountChange,
-                placeholder = { Text("0.00", fontFamily = DigitalMonospaceFont) },
-                leadingIcon = {
-                    Text(
-                        text = "Rs.",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = uiState.formType.color,
-                        modifier = Modifier.padding(start = 12.dp)
-                    )
-                },
-                trailingIcon = {
-                    if (uiState.formAmountText.isNotEmpty()) {
-                        IconButton(onClick = { onAmountChange("") }) {
-                            Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
-                        }
-                    }
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = uiState.formType.color,
-                    unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("form_amount_input")
-            )
-
-            // DEDICATED SMART DIALPAD / KEYPAD WITH PRESETS
-            AnimatedVisibility(visible = showKeypad) {
-                val animationIntensity = LocalAnimationIntensity.current
-                val componentSizeStyle = LocalComponentSizing.current
-                val shapeStructureStyle = LocalShapeStructure.current
-
-                SmartStationKeypad(
-                    activeFieldLabel = "Amount (Rs.)",
-                    onDigit = { d -> onAmountChange(KeypadInputHelper.handleDigit(uiState.formAmountText, d)) },
-                    onDoubleZero = { onAmountChange(KeypadInputHelper.handleDoubleZero(uiState.formAmountText)) },
-                    onDecimal = { onAmountChange(KeypadInputHelper.handleDecimal(uiState.formAmountText)) },
-                    onBackspace = { onAmountChange(KeypadInputHelper.handleBackspace(uiState.formAmountText)) },
-                    onClear = { onAmountChange(KeypadInputHelper.handleClear()) },
-                    quickAddChips = listOf(100L, 500L, 1000L, 5000L),
-                    onQuickAdd = { chip -> onAmountChange(KeypadInputHelper.handleQuickAdd(uiState.formAmountText, chip)) },
-                    onDone = { showKeypad = false },
-                    animationIntensity = animationIntensity,
-                    componentSizeStyle = componentSizeStyle,
-                    shapeStructureStyle = shapeStructureStyle,
+            // Keypad (Dialpad at the bottom of Amount field like Unit Converter)
+            AnimatedVisibility(
+                visible = isKeypadOpen,
+                enter = fadeIn() + slideInVertically(),
+                exit = fadeOut() + slideOutVertically()
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (isDark) Color(0xFF0F172A) else Color(0xFFF1F5F9),
+                    border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                )
+                        .padding(top = 4.dp)
+                ) {
+                    SmartStationKeypad(
+                        activeFieldLabel = "Amount (Rs.)",
+                        onDigit = onTokenAppend,
+                        onBackspace = onBackspaceAmount,
+                        onClear = onClearAmount,
+                        onDone = { isKeypadOpen = false },
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
             }
         }
 
@@ -1448,85 +1534,96 @@ private fun LedgerAddEditSheetContent(
                         .testTag("form_category_input")
                 )
 
-                // Dynamic Auto-suggestions
+                // Dynamic Auto-suggestions & Automated Creation (Only shows when user types letters)
                 val activeCategoryPool = if (isCashOut) {
                     if (uiState.formExpenseScope == "HOME") uiState.homeCategories else uiState.businessCategories
                 } else {
                     uiState.incomeCategories
                 }
 
+                val trimmedInputCategory = uiState.formCategory.trim()
+                val isCustomNewCategory = trimmedInputCategory.isNotEmpty() &&
+                    activeCategoryPool.none { it.equals(trimmedInputCategory, ignoreCase = true) }
+
                 val matchingCategories = remember(uiState.formCategory, activeCategoryPool, isCategoryFocused) {
-                    val input = uiState.formCategory.trim()
-                    if (input.isEmpty()) {
+                    if (trimmedInputCategory.isEmpty()) {
                         emptyList()
                     } else {
                         activeCategoryPool.filter {
-                            it.contains(input, ignoreCase = true) && !it.equals(input, ignoreCase = true)
+                            it.contains(trimmedInputCategory, ignoreCase = true) && !it.equals(trimmedInputCategory, ignoreCase = true)
                         }
                     }
                 }
 
-                if (matchingCategories.isNotEmpty()) {
-                    Text(
-                        text = "Matching suggestions (tap to pick):",
-                        fontSize = 10.5.sp,
-                        color = primaryColor,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        items(matchingCategories) { cat ->
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = primaryColor.copy(alpha = 0.15f),
-                                border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f)),
-                                modifier = Modifier.clickable { onCategoryChange(cat) }
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = LedgerCategoryIcons.getCategoryIcon(cat),
-                                        contentDescription = null,
-                                        tint = primaryColor,
-                                        modifier = Modifier.size(12.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = cat,
-                                        fontSize = 11.5.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
+                // Show suggestion row or create new category chip when user types
+                AnimatedVisibility(
+                    visible = trimmedInputCategory.isNotEmpty() && (isCustomNewCategory || matchingCategories.isNotEmpty()),
+                    enter = fadeIn() + slideInVertically(),
+                    exit = fadeOut() + slideOutVertically()
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = if (isCustomNewCategory) "Automated Category Creation & Suggestions:" else "Matching suggestions (tap to pick):",
+                            fontSize = 10.5.sp,
+                            color = primaryColor,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            if (isCustomNewCategory) {
+                                item {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = primaryColor.copy(alpha = 0.2f),
+                                        border = BorderStroke(1.dp, primaryColor),
+                                        modifier = Modifier.clickable { onCategoryChange(trimmedInputCategory) }
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        ) {
+                                            Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = primaryColor, modifier = Modifier.size(13.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "Create '$trimmedInputCategory'",
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = primaryColor
+                                            )
+                                        }
+                                    }
                                 }
                             }
-                        }
-                    }
-                }
 
-                // Preset Category Chips
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    items(activeCategoryPool.take(10)) { cat ->
-                        val isSelected = cat.equals(uiState.formCategory, ignoreCase = true)
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (isSelected) primaryColor else if (isDark) Color(0x18FFFFFF) else Color(0x0A000000),
-                            border = BorderStroke(1.dp, if (isSelected) primaryColor else if (isDark) Color(0x22FFFFFF) else Color(0x18000000)),
-                            modifier = Modifier.clickable { onCategoryChange(cat) }
-                        ) {
-                            Text(
-                                text = cat,
-                                fontSize = 11.5.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                            )
+                            items(matchingCategories) { cat ->
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = primaryColor.copy(alpha = 0.15f),
+                                    border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f)),
+                                    modifier = Modifier.clickable { onCategoryChange(cat) }
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = LedgerCategoryIcons.getCategoryIcon(cat),
+                                            contentDescription = null,
+                                            tint = primaryColor,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = cat,
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -1574,36 +1671,88 @@ private fun LedgerAddEditSheetContent(
                         .testTag("form_payment_mode_input")
                 )
 
-                // Quick Mode Chips
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                // Dynamic Mode Suggestions & Automated Creation (Only shows when user types letters)
+                val typedPaymentMode = uiState.formPaymentMode.trim()
+                val isCustomNewMode = typedPaymentMode.isNotEmpty() &&
+                    uiState.availablePaymentModes.none { it.equals(typedPaymentMode, ignoreCase = true) }
+
+                val matchingModes = remember(uiState.formPaymentMode, uiState.availablePaymentModes) {
+                    if (typedPaymentMode.isEmpty()) {
+                        emptyList()
+                    } else {
+                        uiState.availablePaymentModes.filter {
+                            it.contains(typedPaymentMode, ignoreCase = true) && !it.equals(typedPaymentMode, ignoreCase = true)
+                        }
+                    }
+                }
+
+                AnimatedVisibility(
+                    visible = typedPaymentMode.isNotEmpty() && (isCustomNewMode || matchingModes.isNotEmpty()),
+                    enter = fadeIn() + slideInVertically(),
+                    exit = fadeOut() + slideOutVertically()
                 ) {
-                    items(uiState.availablePaymentModes) { mode ->
-                        val isSelected = mode.equals(uiState.formPaymentMode, ignoreCase = true)
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (isSelected) primaryColor else if (isDark) Color(0x18FFFFFF) else Color(0x0A000000),
-                            border = BorderStroke(1.dp, if (isSelected) primaryColor else if (isDark) Color(0x22FFFFFF) else Color(0x18000000)),
-                            modifier = Modifier.clickable { onPaymentModeChange(mode) }
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = if (isCustomNewMode) "Automated Payment Mode Creation:" else "Matching channels:",
+                            fontSize = 10.5.sp,
+                            color = primaryColor,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = if (LedgerPaymentUtils.isBankMode(mode)) Icons.Default.AccountBalance else Icons.Default.Payments,
-                                    contentDescription = null,
-                                    tint = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(13.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = mode,
-                                    fontSize = 11.5.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
-                                )
+                            if (isCustomNewMode) {
+                                item {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = primaryColor.copy(alpha = 0.2f),
+                                        border = BorderStroke(1.dp, primaryColor),
+                                        modifier = Modifier.clickable { onPaymentModeChange(typedPaymentMode) }
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        ) {
+                                            Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = primaryColor, modifier = Modifier.size(13.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "Create Mode '$typedPaymentMode'",
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = primaryColor
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            items(matchingModes) { mode ->
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = primaryColor.copy(alpha = 0.15f),
+                                    border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f)),
+                                    modifier = Modifier.clickable { onPaymentModeChange(mode) }
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (LedgerPaymentUtils.isBankMode(mode)) Icons.Default.AccountBalance else Icons.Default.Payments,
+                                            contentDescription = null,
+                                            tint = primaryColor,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = mode,
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

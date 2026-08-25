@@ -1,5 +1,10 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,6 +52,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,6 +74,7 @@ import com.example.domain.calculator.ScalingMode
 import com.example.ui.BatchScalingUiState
 import com.example.ui.ComponentInput
 import com.example.ui.ScalingPreset
+import com.example.ui.components.SmartStationKeypad
 import com.example.ui.theme.DigitalMonospaceFont
 
 @Composable
@@ -96,138 +106,241 @@ fun BatchScalingScreen(
     val surfaceBg = if (isDark) Color(0x14FFFFFF) else Color(0x0C000000)
     val cardBorderColor = if (isDark) Color(0x22FFFFFF) else Color(0x22000000)
 
-    Column(
+    var focusedFieldId by remember { mutableStateOf<String?>(null) }
+    var focusedFieldLabel by remember { mutableStateOf<String?>(null) }
+
+    fun appendNumericToken(current: String, token: String): String {
+        return when (token) {
+            "." -> if (current.contains(".")) current else if (current.isEmpty()) "0." else "$current."
+            "00" -> if (current.isEmpty() || current == "0") "0" else current + "00"
+            else -> if (current == "0") token else current + token
+        }
+    }
+
+    fun backspaceNumericToken(current: String): String {
+        return if (current.isNotEmpty()) current.dropLast(1) else ""
+    }
+
+    val handleAppend: (String) -> Unit = { token ->
+        val id = focusedFieldId
+        if (id != null) {
+            if (id.startsWith("comp_amount_")) {
+                val compId = id.removePrefix("comp_amount_")
+                val current = uiState.components.find { it.id == compId }?.amountText ?: ""
+                onUpdateComponentAmount(compId, appendNumericToken(current, token))
+            } else when (id) {
+                "target_total" -> onSetTargetTotal(appendNumericToken(uiState.targetTotalText, token))
+                "batch_size" -> onSetBatchSize(appendNumericToken(uiState.batchSizeText, token))
+                "batch_count" -> onSetBatchCount(appendNumericToken(uiState.batchCountText, token))
+                "available_amount" -> onSetAvailableAmount(appendNumericToken(uiState.availableAmountText, token))
+            }
+        }
+    }
+
+    val handleBackspace: () -> Unit = {
+        val id = focusedFieldId
+        if (id != null) {
+            if (id.startsWith("comp_amount_")) {
+                val compId = id.removePrefix("comp_amount_")
+                val current = uiState.components.find { it.id == compId }?.amountText ?: ""
+                onUpdateComponentAmount(compId, backspaceNumericToken(current))
+            } else when (id) {
+                "target_total" -> onSetTargetTotal(backspaceNumericToken(uiState.targetTotalText))
+                "batch_size" -> onSetBatchSize(backspaceNumericToken(uiState.batchSizeText))
+                "batch_count" -> onSetBatchCount(backspaceNumericToken(uiState.batchCountText))
+                "available_amount" -> onSetAvailableAmount(backspaceNumericToken(uiState.availableAmountText))
+            }
+        }
+    }
+
+    val handleClear: () -> Unit = {
+        val id = focusedFieldId
+        if (id != null) {
+            if (id.startsWith("comp_amount_")) {
+                val compId = id.removePrefix("comp_amount_")
+                onUpdateComponentAmount(compId, "")
+            } else when (id) {
+                "target_total" -> onSetTargetTotal("")
+                "batch_size" -> onSetBatchSize("")
+                "batch_count" -> onSetBatchCount("")
+                "available_amount" -> onSetAvailableAmount("")
+            }
+        }
+    }
+
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(horizontal = 16.dp, vertical = 12.dp)
             .testTag("batch_scaling_screen")
     ) {
-        // Top Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = if (focusedFieldId != null) 320.dp else 24.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(primaryColor.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
+            // Top Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(primaryColor.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Scale,
+                            contentDescription = null,
+                            tint = primaryColor,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "Batch Scaler",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Industrial Batch Distribution",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                TextButton(
+                    onClick = onClearAll,
+                    modifier = Modifier.testTag("clear_batch_components_button")
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Scale,
+                        imageVector = Icons.Default.Refresh,
                         contentDescription = null,
-                        tint = primaryColor,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Text(
-                        text = "Batch Scaler",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Industrial Batch Distribution",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Reset", fontSize = 12.sp)
                 }
             }
 
-            TextButton(
-                onClick = onClearAll,
-                modifier = Modifier.testTag("clear_batch_components_button")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Reset", fontSize = 12.sp)
-            }
-        }
+            Spacer(modifier = Modifier.height(14.dp))
 
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // 1. Mode Selector (Target Total vs Batch Size)
-        ModeTabSelector(
-            currentMode = uiState.scalingMode,
-            onSelectMode = onSetScalingMode,
-            primaryColor = primaryColor,
-            isDark = isDark
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // 2. Component Ingredients List Card
-        ComponentsEditorCard(
-            components = uiState.components,
-            originalTotal = uiState.calculationOutput.originalGrandTotal,
-            onAddComponent = onAddComponent,
-            onRemoveComponent = onRemoveComponent,
-            onUpdateName = onUpdateComponentName,
-            onUpdateAmount = onUpdateComponentAmount,
-            onToggleLock = onToggleComponentLock,
-            primaryColor = primaryColor,
-            surfaceBg = surfaceBg,
-            borderColor = cardBorderColor,
-            isDark = isDark
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // 3. Scaling Target / Batch Parameters Card
-        ScalingParametersCard(
-            scalingMode = uiState.scalingMode,
-            batchSubMode = uiState.batchSubMode,
-            targetTotalText = uiState.targetTotalText,
-            batchSizeText = uiState.batchSizeText,
-            batchCountText = uiState.batchCountText,
-            availableAmountText = uiState.availableAmountText,
-            output = uiState.calculationOutput,
-            onSetBatchSubMode = onSetBatchSubMode,
-            onSetTargetTotal = onSetTargetTotal,
-            onSetBatchSize = onSetBatchSize,
-            onSetBatchCount = onSetBatchCount,
-            onSetAvailableAmount = onSetAvailableAmount,
-            primaryColor = primaryColor,
-            surfaceBg = surfaceBg,
-            borderColor = cardBorderColor,
-            isDark = isDark
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Error message if invalid
-        if (!uiState.calculationOutput.isValid && uiState.calculationOutput.errorMessage != null) {
-            ErrorCard(
-                message = uiState.calculationOutput.errorMessage,
+            // 1. Mode Selector (Target Total vs Batch Size)
+            ModeTabSelector(
+                currentMode = uiState.scalingMode,
+                onSelectMode = onSetScalingMode,
+                primaryColor = primaryColor,
                 isDark = isDark
             )
-            Spacer(modifier = Modifier.height(14.dp))
-        }
 
-        // 4. Essential Results Tables
-        if (uiState.calculationOutput.isValid) {
-            ResultsSection(
-                output = uiState.calculationOutput,
-                onCopyResults = onCopyResults,
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 2. Component Ingredients List Card
+            ComponentsEditorCard(
+                components = uiState.components,
+                originalTotal = uiState.calculationOutput.originalGrandTotal,
+                focusedFieldId = focusedFieldId,
+                onFocusField = { id, label ->
+                    focusedFieldId = id
+                    focusedFieldLabel = label
+                },
+                onAddComponent = onAddComponent,
+                onRemoveComponent = onRemoveComponent,
+                onUpdateName = onUpdateComponentName,
+                onUpdateAmount = onUpdateComponentAmount,
+                onToggleLock = onToggleComponentLock,
                 primaryColor = primaryColor,
                 surfaceBg = surfaceBg,
                 borderColor = cardBorderColor,
                 isDark = isDark
             )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 3. Scaling Target / Batch Parameters Card
+            ScalingParametersCard(
+                scalingMode = uiState.scalingMode,
+                batchSubMode = uiState.batchSubMode,
+                targetTotalText = uiState.targetTotalText,
+                batchSizeText = uiState.batchSizeText,
+                batchCountText = uiState.batchCountText,
+                availableAmountText = uiState.availableAmountText,
+                output = uiState.calculationOutput,
+                focusedFieldId = focusedFieldId,
+                onFocusField = { id, label ->
+                    focusedFieldId = id
+                    focusedFieldLabel = label
+                },
+                onSetBatchSubMode = onSetBatchSubMode,
+                onSetTargetTotal = onSetTargetTotal,
+                onSetBatchSize = onSetBatchSize,
+                onSetBatchCount = onSetBatchCount,
+                onSetAvailableAmount = onSetAvailableAmount,
+                primaryColor = primaryColor,
+                surfaceBg = surfaceBg,
+                borderColor = cardBorderColor,
+                isDark = isDark
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Error message if invalid
+            if (!uiState.calculationOutput.isValid && uiState.calculationOutput.errorMessage != null) {
+                ErrorCard(
+                    message = uiState.calculationOutput.errorMessage,
+                    isDark = isDark
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+            }
+
+            // 4. Essential Results Tables
+            if (uiState.calculationOutput.isValid) {
+                ResultsSection(
+                    output = uiState.calculationOutput,
+                    onCopyResults = onCopyResults,
+                    primaryColor = primaryColor,
+                    surfaceBg = surfaceBg,
+                    borderColor = cardBorderColor,
+                    isDark = isDark
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        // SMART STATION KEYPAD POPUP FROM BOTTOM
+        AnimatedVisibility(
+            visible = focusedFieldId != null,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            SmartStationKeypad(
+                activeFieldLabel = focusedFieldLabel,
+                onDigit = { handleAppend(it) },
+                onDoubleZero = { handleAppend("00") },
+                onDecimal = { handleAppend(".") },
+                onBackspace = { handleBackspace() },
+                onClear = { handleClear() },
+                onDone = {
+                    focusedFieldId = null
+                    focusedFieldLabel = null
+                },
+                showDoubleZeroKey = true,
+                showDecimalKey = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp)
+            )
+        }
     }
 }
 
@@ -314,6 +427,8 @@ private fun ModeTabSelector(
 private fun ComponentsEditorCard(
     components: List<ComponentInput>,
     originalTotal: Double,
+    focusedFieldId: String?,
+    onFocusField: (String, String) -> Unit,
     onAddComponent: () -> Unit,
     onRemoveComponent: (String) -> Unit,
     onUpdateName: (String, String) -> Unit,
@@ -363,9 +478,15 @@ private fun ComponentsEditorCard(
 
             // Component Rows
             components.forEachIndexed { index, component ->
+                val fieldId = "comp_amount_${component.id}"
+                val isFocused = focusedFieldId == fieldId
+                val fieldLabel = "${component.name.ifBlank { "Component ${index + 1}" }} Amount"
+
                 ComponentRowItem(
                     index = index,
                     component = component,
+                    isAmountFocused = isFocused,
+                    onFocusAmount = { onFocusField(fieldId, fieldLabel) },
                     onNameChange = { onUpdateName(component.id, it) },
                     onAmountChange = { onUpdateAmount(component.id, it) },
                     onToggleLock = { onToggleLock(component.id) },
@@ -413,6 +534,8 @@ private fun ComponentsEditorCard(
 private fun ComponentRowItem(
     index: Int,
     component: ComponentInput,
+    isAmountFocused: Boolean,
+    onFocusAmount: () -> Unit,
     onNameChange: (String) -> Unit,
     onAmountChange: (String) -> Unit,
     onToggleLock: () -> Unit,
@@ -427,7 +550,7 @@ private fun ComponentRowItem(
             .clip(RoundedCornerShape(12.dp))
             .border(
                 1.dp,
-                if (component.isLocked) Color(0x66F59E0B) else (if (isDark) Color(0x18FFFFFF) else Color(0x12000000)),
+                if (isAmountFocused) primaryColor else if (component.isLocked) Color(0x66F59E0B) else (if (isDark) Color(0x18FFFFFF) else Color(0x12000000)),
                 RoundedCornerShape(12.dp)
             ),
         shape = RoundedCornerShape(12.dp),
@@ -475,28 +598,34 @@ private fun ComponentRowItem(
             Spacer(modifier = Modifier.width(6.dp))
 
             // Amount Field
-            OutlinedTextField(
-                value = component.amountText,
-                onValueChange = onAmountChange,
-                placeholder = { Text("0", fontSize = 12.sp) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            Box(
                 modifier = Modifier
                     .weight(0.9f)
-                    .testTag("component_amount_input_$index"),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = primaryColor,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedContainerColor = if (isDark) Color(0x22FFFFFF) else Color(0x10000000),
-                    unfocusedContainerColor = if (isDark) Color(0x14FFFFFF) else Color(0x08000000)
-                ),
-                shape = RoundedCornerShape(8.dp),
-                textStyle = androidx.compose.ui.text.TextStyle(
-                    fontSize = 13.sp,
-                    fontFamily = DigitalMonospaceFont,
-                    fontWeight = FontWeight.Bold
+                    .clickable { onFocusAmount() }
+            ) {
+                OutlinedTextField(
+                    value = component.amountText,
+                    onValueChange = onAmountChange,
+                    placeholder = { Text("0", fontSize = 12.sp) },
+                    singleLine = true,
+                    readOnly = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("component_amount_input_$index"),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = primaryColor,
+                        unfocusedBorderColor = if (isAmountFocused) primaryColor else Color.Transparent,
+                        focusedContainerColor = if (isDark) Color(0x22FFFFFF) else Color(0x10000000),
+                        unfocusedContainerColor = if (isDark) Color(0x14FFFFFF) else Color(0x08000000)
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        fontSize = 13.sp,
+                        fontFamily = DigitalMonospaceFont,
+                        fontWeight = FontWeight.Bold
+                    )
                 )
-            )
+            }
 
             Spacer(modifier = Modifier.width(4.dp))
 
@@ -546,6 +675,8 @@ private fun ScalingParametersCard(
     batchCountText: String,
     availableAmountText: String,
     output: BatchScalingOutput,
+    focusedFieldId: String?,
+    onFocusField: (String, String) -> Unit,
     onSetBatchSubMode: (BatchSubMode) -> Unit,
     onSetTargetTotal: (String) -> Unit,
     onSetBatchSize: (String) -> Unit,
@@ -575,50 +706,62 @@ private fun ScalingParametersCard(
 
             if (scalingMode == ScalingMode.TARGET_TOTAL) {
                 // Target Total Mode
-                OutlinedTextField(
-                    value = targetTotalText,
-                    onValueChange = onSetTargetTotal,
-                    label = { Text("Target Grand Total") },
-                    placeholder = { Text("0") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("target_total_input"),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = primaryColor,
-                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    textStyle = androidx.compose.ui.text.TextStyle(
-                        fontSize = 15.sp,
-                        fontFamily = DigitalMonospaceFont,
-                        fontWeight = FontWeight.Bold
+                        .clickable { onFocusField("target_total", "Target Grand Total") }
+                ) {
+                    OutlinedTextField(
+                        value = targetTotalText,
+                        onValueChange = onSetTargetTotal,
+                        label = { Text("Target Grand Total") },
+                        placeholder = { Text("0") },
+                        singleLine = true,
+                        readOnly = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("target_total_input"),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = primaryColor,
+                            unfocusedBorderColor = if (focusedFieldId == "target_total") primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            fontSize = 15.sp,
+                            fontFamily = DigitalMonospaceFont,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
-                )
+                }
             } else {
                 // Batch Size Mode
-                OutlinedTextField(
-                    value = batchSizeText,
-                    onValueChange = onSetBatchSize,
-                    label = { Text("Batch Size (weight/quantity per unit)") },
-                    placeholder = { Text("0") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("batch_size_input"),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = primaryColor,
-                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    textStyle = androidx.compose.ui.text.TextStyle(
-                        fontSize = 15.sp,
-                        fontFamily = DigitalMonospaceFont,
-                        fontWeight = FontWeight.Bold
+                        .clickable { onFocusField("batch_size", "Batch Size") }
+                ) {
+                    OutlinedTextField(
+                        value = batchSizeText,
+                        onValueChange = onSetBatchSize,
+                        label = { Text("Batch Size (weight/quantity per unit)") },
+                        placeholder = { Text("0") },
+                        singleLine = true,
+                        readOnly = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("batch_size_input"),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = primaryColor,
+                            unfocusedBorderColor = if (focusedFieldId == "batch_size") primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            fontSize = 15.sp,
+                            fontFamily = DigitalMonospaceFont,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
-                )
+                }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -663,49 +806,61 @@ private fun ScalingParametersCard(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 if (batchSubMode == BatchSubMode.BY_BATCH_COUNT) {
-                    OutlinedTextField(
-                        value = batchCountText,
-                        onValueChange = onSetBatchCount,
-                        label = { Text("Number of Batches") },
-                        placeholder = { Text("1") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .testTag("batch_count_input"),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = primaryColor,
-                            unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                        textStyle = androidx.compose.ui.text.TextStyle(
-                            fontSize = 15.sp,
-                            fontFamily = DigitalMonospaceFont,
-                            fontWeight = FontWeight.Bold
+                            .clickable { onFocusField("batch_count", "Number of Batches") }
+                    ) {
+                        OutlinedTextField(
+                            value = batchCountText,
+                            onValueChange = onSetBatchCount,
+                            label = { Text("Number of Batches") },
+                            placeholder = { Text("1") },
+                            singleLine = true,
+                            readOnly = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("batch_count_input"),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = primaryColor,
+                                unfocusedBorderColor = if (focusedFieldId == "batch_count") primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                fontSize = 15.sp,
+                                fontFamily = DigitalMonospaceFont,
+                                fontWeight = FontWeight.Bold
+                            )
                         )
-                    )
+                    }
                 } else {
-                    OutlinedTextField(
-                        value = availableAmountText,
-                        onValueChange = onSetAvailableAmount,
-                        label = { Text("Total Available Amount") },
-                        placeholder = { Text("0") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .testTag("available_amount_input"),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = primaryColor,
-                            unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                        textStyle = androidx.compose.ui.text.TextStyle(
-                            fontSize = 15.sp,
-                            fontFamily = DigitalMonospaceFont,
-                            fontWeight = FontWeight.Bold
+                            .clickable { onFocusField("available_amount", "Total Available Amount") }
+                    ) {
+                        OutlinedTextField(
+                            value = availableAmountText,
+                            onValueChange = onSetAvailableAmount,
+                            label = { Text("Total Available Amount") },
+                            placeholder = { Text("0") },
+                            singleLine = true,
+                            readOnly = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("available_amount_input"),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = primaryColor,
+                                unfocusedBorderColor = if (focusedFieldId == "available_amount") primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                fontSize = 15.sp,
+                                fontFamily = DigitalMonospaceFont,
+                                fontWeight = FontWeight.Bold
+                            )
                         )
-                    )
+                    }
 
                     if (output.remainderAmount != null) {
                         Spacer(modifier = Modifier.height(8.dp))

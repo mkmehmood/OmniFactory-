@@ -94,6 +94,10 @@ object IndianNumberFormatter {
         return formatIndianCurrency(value, showSign = showSign, symbol = "Rs.")
     }
 
+    fun formatIndianLong(value: Long): String {
+        return formatIntegerIndian(value.toString())
+    }
+
     /**
      * Splits integer string from right to left:
      * - First group of 3 digits
