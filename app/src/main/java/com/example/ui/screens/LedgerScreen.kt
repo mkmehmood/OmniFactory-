@@ -1375,18 +1375,59 @@ private fun LedgerAddEditSheetContent(
 
         // 2. Transaction Amount
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = "TRANSACTION AMOUNT (RS.) *",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = DigitalMonospaceFont,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "TRANSACTION AMOUNT (RS.) *",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = DigitalMonospaceFont,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Floating Quick Calculator Button (Icon button)
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = uiState.formType.color.copy(alpha = 0.15f),
+                        border = BorderStroke(1.dp, uiState.formType.color.copy(alpha = 0.4f)),
+                        modifier = Modifier.clickable { onOpenCalculator() }.testTag("floating_calc_button")
+                    ) {
+                        Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp), contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Calculate,
+                                contentDescription = "Quick Calculator",
+                                tint = uiState.formType.color,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                    // Floating Keypad Toggle Button
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isKeypadOpen) uiState.formType.color else if (isDark) Color(0x22FFFFFF) else Color(0x12000000),
+                        border = BorderStroke(1.dp, if (isKeypadOpen) uiState.formType.color else Color.Transparent),
+                        modifier = Modifier.clickable { isKeypadOpen = !isKeypadOpen }.testTag("floating_keypad_button")
+                    ) {
+                        Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp), contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (isKeypadOpen) Icons.Default.KeyboardHide else Icons.Default.Dialpad,
+                                contentDescription = "Toggle Keypad",
+                                tint = if (isKeypadOpen) (if (isDark) Color.Black else Color.White) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
 
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { isKeypadOpen = true }
+                modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
                     value = uiState.formAmountText,
@@ -1404,12 +1445,36 @@ private fun LedgerAddEditSheetContent(
                         )
                     },
                     trailingIcon = {
-                        if (uiState.formAmountText.isNotEmpty()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (uiState.formAmountText.isNotEmpty()) {
+                                IconButton(
+                                    onClick = onClearAmount,
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                                }
+                            }
                             IconButton(
-                                onClick = onClearAmount,
-                                modifier = Modifier.size(28.dp)
+                                onClick = onOpenCalculator,
+                                modifier = Modifier.size(28.dp).testTag("amount_calc_icon_button")
                             ) {
-                                Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Calculate,
+                                    contentDescription = "Quick Calculator",
+                                    tint = uiState.formType.color,
+                                    modifier = Modifier.size(17.dp)
+                                )
+                            }
+                            IconButton(
+                                onClick = { isKeypadOpen = !isKeypadOpen },
+                                modifier = Modifier.size(28.dp).testTag("amount_keypad_icon_button")
+                            ) {
+                                Icon(
+                                    imageVector = if (isKeypadOpen) Icons.Default.KeyboardHide else Icons.Default.Dialpad,
+                                    contentDescription = "Toggle Keypad",
+                                    tint = if (isKeypadOpen) uiState.formType.color else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(17.dp)
+                                )
                             }
                         }
                     },
@@ -1417,41 +1482,22 @@ private fun LedgerAddEditSheetContent(
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = uiState.formType.color,
-                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
+                        unfocusedBorderColor = if (isKeypadOpen) uiState.formType.color else if (isDark) Color(0x33FFFFFF) else Color(0x28000000),
+                        focusedContainerColor = if (isKeypadOpen) uiState.formType.color.copy(alpha = 0.08f) else Color.Transparent,
+                        unfocusedContainerColor = if (isKeypadOpen) uiState.formType.color.copy(alpha = 0.05f) else Color.Transparent
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("form_amount_input")
                 )
-            }
 
-            // Quick Preset Amount Chips (+500, +1000, +5000, +10000, +25000)
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                val increments = listOf(500, 1000, 2000, 5000, 10000, 25000, 50000)
-                items(increments) { inc ->
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000),
-                        border = BorderStroke(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000)),
-                        modifier = Modifier.clickable {
-                            val currentVal = uiState.formAmountText.toDoubleOrNull() ?: 0.0
-                            val newVal = currentVal + inc
-                            onAmountChange(if (newVal % 1.0 == 0.0) newVal.toLong().toString() else "%.2f".format(newVal))
-                        }
-                    ) {
-                        Text(
-                            text = "+${IndianNumberFormatter.formatIndianLong(inc.toLong())}",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            fontFamily = DigitalMonospaceFont,
-                            color = primaryColor,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-                }
+                // Direct Clickable overlay for input area (leaving trailing action buttons unobstructed)
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .padding(end = 92.dp)
+                        .clickable { isKeypadOpen = true }
+                )
             }
 
             // Keypad (Dialpad at the bottom of Amount field like Unit Converter)

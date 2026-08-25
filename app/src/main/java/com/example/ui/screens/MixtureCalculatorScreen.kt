@@ -602,9 +602,7 @@ private fun Step1EnterTargetIngredients(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Box(
-                        modifier = Modifier
-                            .weight(1.3f)
-                            .clickable { isQtyKeypadOpen = !isQtyKeypadOpen }
+                        modifier = Modifier.weight(1.3f)
                     ) {
                         OutlinedTextField(
                             value = qtyInput,
@@ -622,6 +620,12 @@ private fun Step1EnterTargetIngredients(
                                 unfocusedBorderColor = if (isQtyKeypadOpen) primaryColor else borderColor,
                                 focusedContainerColor = if (isQtyKeypadOpen) primaryColor.copy(alpha = 0.10f) else Color.Transparent
                             )
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable { isQtyKeypadOpen = !isQtyKeypadOpen }
                         )
                     }
 
@@ -1014,12 +1018,7 @@ private fun Step3ReferenceAndActualAdded(
 
                         // Input field: Actual Added ([unit])
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    focusedItemId = if (focusedItemId == item.id) null else item.id
-                                    onSelectAnchor(item.id)
-                                }
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             OutlinedTextField(
                                 value = actualText,
@@ -1038,6 +1037,15 @@ private fun Step3ReferenceAndActualAdded(
                                     focusedContainerColor = if (isFocused) primaryColor.copy(alpha = 0.12f) else if (isDark) Color(0x18FFFFFF) else Color(0x0C000000),
                                     unfocusedContainerColor = if (isFocused) primaryColor.copy(alpha = 0.08f) else if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
                                 )
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .clickable {
+                                        focusedItemId = if (focusedItemId == item.id) null else item.id
+                                        onSelectAnchor(item.id)
+                                    }
                             )
                         }
 
@@ -1382,9 +1390,7 @@ private fun Step5DivideIntoBatches(
 
                     // Numeric input
                     Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { isBatchKeypadOpen = !isBatchKeypadOpen }
+                        modifier = Modifier.weight(1f)
                     ) {
                         OutlinedTextField(
                             value = batchCountText,
@@ -1406,6 +1412,12 @@ private fun Step5DivideIntoBatches(
                                 fontFamily = DigitalMonospaceFont,
                                 textAlign = TextAlign.Center
                             )
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable { isBatchKeypadOpen = !isBatchKeypadOpen }
                         )
                     }
 

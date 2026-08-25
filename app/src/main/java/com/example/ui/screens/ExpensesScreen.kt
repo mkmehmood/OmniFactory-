@@ -1210,18 +1210,59 @@ private fun ExpenseAddEditSheetContent(
 
         // Amount Input with Smart Keypad Integration
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = "EXPENSE AMOUNT (RS.) *",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = DigitalMonospaceFont,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "EXPENSE AMOUNT (RS.) *",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = DigitalMonospaceFont,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Floating Quick Calculator Button (Icon button)
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFEF4444).copy(alpha = 0.15f),
+                        border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.4f)),
+                        modifier = Modifier.clickable { onOpenCalculator() }.testTag("floating_calc_button")
+                    ) {
+                        Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp), contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Calculate,
+                                contentDescription = "Quick Calculator",
+                                tint = Color(0xFFEF4444),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                    // Floating Keypad Toggle Button
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isDialpadOpen) Color(0xFFEF4444) else if (isDark) Color(0x22FFFFFF) else Color(0x12000000),
+                        border = BorderStroke(1.dp, if (isDialpadOpen) Color(0xFFEF4444) else Color.Transparent),
+                        modifier = Modifier.clickable { isDialpadOpen = !isDialpadOpen }.testTag("floating_keypad_button")
+                    ) {
+                        Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp), contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (isDialpadOpen) Icons.Default.KeyboardHide else Icons.Default.Dialpad,
+                                contentDescription = "Toggle Keypad",
+                                tint = if (isDialpadOpen) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
 
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { isDialpadOpen = true }
+                modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
                     value = uiState.formAmountText,
@@ -1239,9 +1280,33 @@ private fun ExpenseAddEditSheetContent(
                         )
                     },
                     trailingIcon = {
-                        if (uiState.formAmountText.isNotEmpty()) {
-                            IconButton(onClick = onClearAmount, modifier = Modifier.size(28.dp)) {
-                                Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (uiState.formAmountText.isNotEmpty()) {
+                                IconButton(onClick = onClearAmount, modifier = Modifier.size(28.dp)) {
+                                    Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                                }
+                            }
+                            IconButton(
+                                onClick = onOpenCalculator,
+                                modifier = Modifier.size(28.dp).testTag("form_calc_icon_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Calculate,
+                                    contentDescription = "Quick Calculator",
+                                    tint = Color(0xFFEF4444),
+                                    modifier = Modifier.size(17.dp)
+                                )
+                            }
+                            IconButton(
+                                onClick = { isDialpadOpen = !isDialpadOpen },
+                                modifier = Modifier.size(28.dp).testTag("form_keypad_icon_button")
+                            ) {
+                                Icon(
+                                    imageVector = if (isDialpadOpen) Icons.Default.KeyboardHide else Icons.Default.Dialpad,
+                                    contentDescription = "Toggle Keypad",
+                                    tint = if (isDialpadOpen) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(17.dp)
+                                )
                             }
                         }
                     },
@@ -1249,11 +1314,21 @@ private fun ExpenseAddEditSheetContent(
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFFEF4444),
-                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
+                        unfocusedBorderColor = if (isDialpadOpen) Color(0xFFEF4444) else if (isDark) Color(0x33FFFFFF) else Color(0x28000000),
+                        focusedContainerColor = if (isDialpadOpen) Color(0xFFEF4444).copy(alpha = 0.08f) else Color.Transparent,
+                        unfocusedContainerColor = if (isDialpadOpen) Color(0xFFEF4444).copy(alpha = 0.05f) else Color.Transparent
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("form_expense_amount_input")
+                )
+
+                // Direct clickable overlay so clicking the text field opens the dialpad
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .padding(end = 92.dp)
+                        .clickable { isDialpadOpen = true }
                 )
             }
         }

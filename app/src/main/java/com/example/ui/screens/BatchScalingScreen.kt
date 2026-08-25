@@ -599,9 +599,7 @@ private fun ComponentRowItem(
 
             // Amount Field
             Box(
-                modifier = Modifier
-                    .weight(0.9f)
-                    .clickable { onFocusAmount() }
+                modifier = Modifier.weight(0.9f)
             ) {
                 OutlinedTextField(
                     value = component.amountText,
@@ -624,6 +622,13 @@ private fun ComponentRowItem(
                         fontFamily = DigitalMonospaceFont,
                         fontWeight = FontWeight.Bold
                     )
+                )
+
+                // Clickable overlay
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { onFocusAmount() }
                 )
             }
 
@@ -707,9 +712,7 @@ private fun ScalingParametersCard(
             if (scalingMode == ScalingMode.TARGET_TOTAL) {
                 // Target Total Mode
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onFocusField("target_total", "Target Grand Total") }
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     OutlinedTextField(
                         value = targetTotalText,
@@ -732,13 +735,17 @@ private fun ScalingParametersCard(
                             fontWeight = FontWeight.Bold
                         )
                     )
+
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { onFocusField("target_total", "Target Grand Total") }
+                    )
                 }
             } else {
                 // Batch Size Mode
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onFocusField("batch_size", "Batch Size") }
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     OutlinedTextField(
                         value = batchSizeText,
@@ -760,6 +767,12 @@ private fun ScalingParametersCard(
                             fontFamily = DigitalMonospaceFont,
                             fontWeight = FontWeight.Bold
                         )
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { onFocusField("batch_size", "Batch Size") }
                     )
                 }
 
@@ -807,9 +820,7 @@ private fun ScalingParametersCard(
 
                 if (batchSubMode == BatchSubMode.BY_BATCH_COUNT) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onFocusField("batch_count", "Number of Batches") }
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         OutlinedTextField(
                             value = batchCountText,
@@ -832,12 +843,16 @@ private fun ScalingParametersCard(
                                 fontWeight = FontWeight.Bold
                             )
                         )
+
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable { onFocusField("batch_count", "Number of Batches") }
+                        )
                     }
                 } else {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onFocusField("available_amount", "Total Available Amount") }
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         OutlinedTextField(
                             value = availableAmountText,
@@ -859,6 +874,12 @@ private fun ScalingParametersCard(
                                 fontFamily = DigitalMonospaceFont,
                                 fontWeight = FontWeight.Bold
                             )
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable { onFocusField("available_amount", "Total Available Amount") }
                         )
                     }
 

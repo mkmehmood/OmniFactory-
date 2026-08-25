@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -718,6 +719,21 @@ private fun SalesInputFormCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 0.8.sp
                 )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = primaryColor.copy(alpha = 0.15f),
+                    border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.4f)),
+                    modifier = Modifier.clickable { onOpenCalculator() }.testTag("sales_form_calc_button")
+                ) {
+                    Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp), contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Calculate,
+                            contentDescription = "Quick Calculator",
+                            tint = primaryColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -961,7 +977,7 @@ private fun NumericGridInputField(
 ) {
     val inputShape = LocalShapeStructure.current.toInputShape()
     Box(
-        modifier = modifier.clickable { onFocus() }
+        modifier = modifier
     ) {
         OutlinedTextField(
             value = value,
@@ -990,6 +1006,13 @@ private fun NumericGridInputField(
                 fontFamily = DigitalMonospaceFont,
                 fontWeight = FontWeight.SemiBold
             )
+        )
+
+        // Clickable overlay over the input to ensure dialpad opens immediately on tap
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clickable { onFocus() }
         )
     }
 }
