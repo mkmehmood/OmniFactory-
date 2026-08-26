@@ -16,12 +16,15 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -63,6 +66,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -76,6 +81,7 @@ import com.example.domain.converter.UnitRegistry
 import com.example.ui.BmiUnitSystem
 import com.example.ui.ConverterUiState
 import com.example.ui.ConverterViewModel
+import com.example.ui.components.BlinkingCursorPointer
 import com.example.ui.components.CurrencySearchBottomSheet
 import com.example.ui.components.SmartStationKeypad
 import com.example.ui.theme.AnimationIntensity
@@ -85,7 +91,7 @@ import com.example.ui.theme.DigitalMonospaceFont
 import com.example.ui.theme.toCardShape
 import com.example.ui.theme.toInputShape
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ConverterScreen(
     viewModel: ConverterViewModel,
@@ -103,6 +109,14 @@ fun ConverterScreen(
     var focusedFieldId by remember { mutableStateOf<String?>(null) }
     var focusedFieldLabel by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
+
+    val isImeVisible = WindowInsets.isImeVisible
+    LaunchedEffect(isImeVisible) {
+        if (isImeVisible) {
+            focusedFieldId = null
+            focusedFieldLabel = null
+        }
+    }
 
     LaunchedEffect(listState.isScrollInProgress) {
         if (listState.isScrollInProgress) {

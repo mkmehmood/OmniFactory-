@@ -103,6 +103,12 @@ import com.example.ui.ExpenseTimeFilter
 import com.example.ui.ExpensesSummary
 import com.example.ui.ExpensesUiState
 import com.example.ui.ExpensesViewModel
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import com.example.ui.components.InputFieldCopyPasteMenu
 import com.example.ui.components.SimpleCalculatorDialog
 import com.example.ui.components.SmartStationKeypad
 import com.example.ui.theme.DigitalMonospaceFont
@@ -1107,10 +1113,13 @@ private fun ExpenseAddEditSheetContent(
     }
 
     val scrollState = rememberScrollState()
+    val density = LocalDensity.current
+    val isImeOpen = WindowInsets.ime.getBottom(density) > 0
+    var showAmountContextMenu by remember { mutableStateOf(false) }
 
-    // Dismiss keypad automatically whenever user scrolls the form
-    LaunchedEffect(scrollState.isScrollInProgress) {
-        if (scrollState.isScrollInProgress) {
+    // Dismiss keypad automatically whenever user scrolls the form or opens system keyboard for text
+    LaunchedEffect(scrollState.isScrollInProgress, isImeOpen) {
+        if (scrollState.isScrollInProgress || isImeOpen) {
             isDialpadOpen = false
         }
     }
@@ -1268,17 +1277,6 @@ private fun ExpenseAddEditSheetContent(
                                     modifier = Modifier.size(17.dp)
                                 )
                             }
-                            IconButton(
-                                onClick = { isDialpadOpen = !isDialpadOpen },
-                                modifier = Modifier.size(28.dp).testTag("form_keypad_icon_button")
-                            ) {
-                                Icon(
-                                    imageVector = if (isDialpadOpen) Icons.Default.KeyboardHide else Icons.Default.Dialpad,
-                                    contentDescription = "Toggle Keypad",
-                                    tint = if (isDialpadOpen) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(17.dp)
-                                )
-                            }
                         }
                     },
                     singleLine = true,
@@ -1294,12 +1292,24 @@ private fun ExpenseAddEditSheetContent(
                         .testTag("form_expense_amount_input")
                 )
 
-                // Direct clickable overlay so clicking the text field opens the dialpad
+                // Click and Long-Press overlay for input area (tap opens keypad, long-press opens Copy/Paste)
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .padding(end = 92.dp)
-                        .clickable { isDialpadOpen = true }
+                        .padding(end = 64.dp)
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onTap = { isDialpadOpen = true },
+                                onLongPress = { showAmountContextMenu = true }
+                            )
+                        }
+                )
+
+                InputFieldCopyPasteMenu(
+                    expanded = showAmountContextMenu,
+                    onDismissRequest = { showAmountContextMenu = false },
+                    value = uiState.formAmountText,
+                    onPaste = { onAmountChange(it) }
                 )
             }
         }

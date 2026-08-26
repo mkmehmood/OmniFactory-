@@ -109,6 +109,12 @@ import com.example.domain.ledger.LedgerUnifiedDataManager
 import com.example.domain.util.IndianNumberFormatter
 import com.example.ui.LedgerUiState
 import com.example.ui.LedgerViewModel
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import com.example.ui.components.InputFieldCopyPasteMenu
 import com.example.ui.components.SimpleCalculatorDialog
 import com.example.ui.components.SmartStationKeypad
 import com.example.ui.theme.DigitalMonospaceFont
@@ -903,10 +909,13 @@ private fun LedgerAddEditSheetContent(
     val isTransfer = uiState.formType == LedgerType.CASH_TRANSFER
 
     val scrollState = rememberScrollState()
+    val density = LocalDensity.current
+    val isImeOpen = WindowInsets.ime.getBottom(density) > 0
+    var showAmountContextMenu by remember { mutableStateOf(false) }
 
-    // Dismiss keypad automatically whenever user scrolls the form
-    LaunchedEffect(scrollState.isScrollInProgress) {
-        if (scrollState.isScrollInProgress) {
+    // Dismiss keypad automatically whenever user scrolls the form or opens system keyboard for text
+    LaunchedEffect(scrollState.isScrollInProgress, isImeOpen) {
+        if (scrollState.isScrollInProgress || isImeOpen) {
             isKeypadOpen = false
         }
     }
@@ -1436,17 +1445,6 @@ private fun LedgerAddEditSheetContent(
                                     modifier = Modifier.size(17.dp)
                                 )
                             }
-                            IconButton(
-                                onClick = { isKeypadOpen = !isKeypadOpen },
-                                modifier = Modifier.size(28.dp).testTag("amount_keypad_icon_button")
-                            ) {
-                                Icon(
-                                    imageVector = if (isKeypadOpen) Icons.Default.KeyboardHide else Icons.Default.Dialpad,
-                                    contentDescription = "Toggle Keypad",
-                                    tint = if (isKeypadOpen) uiState.formType.color else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(17.dp)
-                                )
-                            }
                         }
                     },
                     singleLine = true,
@@ -1462,12 +1460,24 @@ private fun LedgerAddEditSheetContent(
                         .testTag("form_amount_input")
                 )
 
-                // Direct Clickable overlay for input area (leaving trailing action buttons unobstructed)
+                // Click and Long-Press overlay for input area (tap opens keypad, long-press opens Copy/Paste)
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .padding(end = 92.dp)
-                        .clickable { isKeypadOpen = true }
+                        .padding(end = 64.dp)
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onTap = { isKeypadOpen = true },
+                                onLongPress = { showAmountContextMenu = true }
+                            )
+                        }
+                )
+
+                InputFieldCopyPasteMenu(
+                    expanded = showAmountContextMenu,
+                    onDismissRequest = { showAmountContextMenu = false },
+                    value = uiState.formAmountText,
+                    onPaste = { onAmountChange(it) }
                 )
             }
         }

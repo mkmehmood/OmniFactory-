@@ -69,6 +69,13 @@ import com.example.ui.theme.PureLightTextPrimary
 import com.example.ui.theme.ShapeStructureStyle
 import com.example.ui.theme.SoundIntensity
 import com.example.ui.theme.toButtonShape
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import android.widget.Toast
 import kotlinx.coroutines.launch
 
 enum class KeyType {
@@ -922,3 +929,96 @@ fun SmartStationKeypad(
         }
     }
 }
+
+/**
+ * Reusable Long-Press Context Menu for Copy and Paste across all numeric input fields.
+ */
+@Composable
+fun InputFieldCopyPasteMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    value: String,
+    onPaste: (String) -> Unit
+) {
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissRequest
+    ) {
+        if (value.isNotEmpty()) {
+            DropdownMenuItem(
+                text = { Text("Copy", fontSize = 13.sp, fontWeight = FontWeight.Medium) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = "Copy",
+                        modifier = Modifier.size(18.dp)
+                    )
+                },
+                onClick = {
+                    clipboardManager.setText(AnnotatedString(value))
+                    Toast.makeText(context, "Copied $value", Toast.LENGTH_SHORT).show()
+                    onDismissRequest()
+                }
+            )
+        }
+        DropdownMenuItem(
+            text = { Text("Paste", fontSize = 13.sp, fontWeight = FontWeight.Medium) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.ContentPaste,
+                    contentDescription = "Paste",
+                    modifier = Modifier.size(18.dp)
+                )
+            },
+            onClick = {
+                val clip = clipboardManager.getText()?.text
+                if (!clip.isNullOrBlank()) {
+                    val sanitized = clip.trim().filter { it.isDigit() || it == '.' || it == '-' }
+                    if (sanitized.isNotEmpty()) {
+                        onPaste(sanitized)
+                        Toast.makeText(context, "Pasted $sanitized", Toast.LENGTH_SHORT).show()
+                    } else {
+                        onPaste(clip.trim())
+                    }
+                }
+                onDismissRequest()
+            }
+        )
+    }
+}
+
+/**
+ * Animated Blinking Cursor Pointer for active numeric input fields.
+ * Clearly shows the user which field has active focus and pointer for key entry.
+ */
+@Composable
+fun BlinkingCursorPointer(
+    color: Color = MaterialTheme.colorScheme.primary,
+    modifier: Modifier = Modifier,
+    height: androidx.compose.ui.unit.Dp = 18.dp
+) {
+    val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "cursor_blink")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = androidx.compose.animation.core.tween(
+                durationMillis = 500,
+                easing = androidx.compose.animation.core.LinearEasing
+            ),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+        ),
+        label = "cursor_alpha"
+    )
+    Box(
+        modifier = modifier
+            .width(2.dp)
+            .height(height)
+            .graphicsLayer { this.alpha = alpha }
+            .background(color, RoundedCornerShape(1.dp))
+    )
+}
+

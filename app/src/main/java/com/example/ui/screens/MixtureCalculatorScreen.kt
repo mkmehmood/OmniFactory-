@@ -77,6 +77,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.runtime.LaunchedEffect
+import com.example.ui.components.BlinkingCursorPointer
+import com.example.ui.components.InputFieldCopyPasteMenu
 import com.example.domain.mixture.BatchDivisionResult
 import com.example.domain.mixture.RatioCalculationResult
 import com.example.domain.mixture.RecalibrationResult
@@ -99,6 +110,85 @@ fun MixtureCalculatorScreen(
     val primaryColor = MaterialTheme.colorScheme.primary
     val surfaceBg = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
     val cardBorderColor = if (isDark) Color(0x28FFFFFF) else Color(0x1E000000)
+
+    var focusedFieldId by remember { mutableStateOf<String?>(null) }
+    var focusedFieldLabel by remember { mutableStateOf<String?>(null) }
+    val scrollState = rememberScrollState()
+    val density = LocalDensity.current
+    val isImeOpen = WindowInsets.ime.getBottom(density) > 0
+
+    // Dismiss dialpad automatically on scroll or when system letter keyboard opens or on step switch
+    LaunchedEffect(scrollState.isScrollInProgress, isImeOpen, uiState.currentStep) {
+        if (scrollState.isScrollInProgress || isImeOpen) {
+            focusedFieldId = null
+            focusedFieldLabel = null
+        }
+    }
+
+    fun appendNumericToken(current: String, token: String): String {
+        return when (token) {
+            "." -> if (current.contains(".")) current else if (current.isEmpty()) "0." else "$current."
+            "00" -> if (current.isEmpty() || current == "0") "0" else current + "00"
+            else -> if (current == "0") token else current + token
+        }
+    }
+
+    val handleAppend: (String) -> Unit = { token ->
+        when {
+            focusedFieldId == "step1_qty" -> {
+                viewModel.setNewIngredientQty(appendNumericToken(uiState.newIngredientQty, token))
+            }
+            focusedFieldId?.startsWith("step3_actual_") == true -> {
+                val ingredientId = focusedFieldId!!.removePrefix("step3_actual_")
+                val currentVal = uiState.actualAddedTexts[ingredientId] ?: ""
+                viewModel.setActualAdded(ingredientId, appendNumericToken(currentVal, token))
+            }
+            focusedFieldId == "step5_batch_count" -> {
+                if (token != ".") {
+                    val currentVal = uiState.batchCountText
+                    val newVal = if (currentVal == "0" || currentVal.isEmpty()) token else currentVal + token
+                    viewModel.setBatchCountText(newVal)
+                }
+            }
+        }
+    }
+
+    val handleBackspace: () -> Unit = {
+        when {
+            focusedFieldId == "step1_qty" -> {
+                if (uiState.newIngredientQty.isNotEmpty()) {
+                    viewModel.setNewIngredientQty(uiState.newIngredientQty.dropLast(1))
+                }
+            }
+            focusedFieldId?.startsWith("step3_actual_") == true -> {
+                val ingredientId = focusedFieldId!!.removePrefix("step3_actual_")
+                val currentVal = uiState.actualAddedTexts[ingredientId] ?: ""
+                if (currentVal.isNotEmpty()) {
+                    viewModel.setActualAdded(ingredientId, currentVal.dropLast(1))
+                }
+            }
+            focusedFieldId == "step5_batch_count" -> {
+                if (uiState.batchCountText.isNotEmpty()) {
+                    viewModel.setBatchCountText(uiState.batchCountText.dropLast(1))
+                }
+            }
+        }
+    }
+
+    val handleClear: () -> Unit = {
+        when {
+            focusedFieldId == "step1_qty" -> {
+                viewModel.setNewIngredientQty("")
+            }
+            focusedFieldId?.startsWith("step3_actual_") == true -> {
+                val ingredientId = focusedFieldId!!.removePrefix("step3_actual_")
+                viewModel.setActualAdded(ingredientId, "")
+            }
+            focusedFieldId == "step5_batch_count" -> {
+                viewModel.setBatchCountText("")
+            }
+        }
+    }
 
     val stepTitles = listOf(
         "ENTER TARGET INGREDIENTS",
@@ -144,6 +234,7 @@ fun MixtureCalculatorScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(bottom = if (focusedFieldId != null) 300.dp else 0.dp)
         ) {
             // Top: Horizontal Step Indicator (6 circles in a row)
             HorizontalStepIndicator(
@@ -178,7 +269,7 @@ fun MixtureCalculatorScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
+                        .verticalScroll(scrollState)
                 ) {
                     when (uiState.currentStep) {
                         1 -> Step1EnterTargetIngredients(
@@ -186,10 +277,28 @@ fun MixtureCalculatorScreen(
                             nameInput = uiState.newIngredientName,
                             qtyInput = uiState.newIngredientQty,
                             unitInput = uiState.newIngredientUnit,
+                            isQtyFocused = focusedFieldId == "step1_qty",
+                            onFocusQty = {
+                                if (focusedFieldId == "step1_qty") {
+                                    focusedFieldId = null
+                                    focusedFieldLabel = null
+                                } else {
+                                    focusedFieldId = "step1_qty"
+                                    focusedFieldLabel = "Target Quantity"
+                                }
+                            },
+                            onDismissKeypad = {
+                                focusedFieldId = null
+                                focusedFieldLabel = null
+                            },
                             onNameChange = { viewModel.setNewIngredientName(it) },
                             onQtyChange = { viewModel.setNewIngredientQty(it) },
                             onUnitChange = { viewModel.setNewIngredientUnit(it) },
-                            onAddIngredient = { viewModel.addTargetIngredient() },
+                            onAddIngredient = {
+                                focusedFieldId = null
+                                focusedFieldLabel = null
+                                viewModel.addTargetIngredient()
+                            },
                             onRemoveIngredient = { viewModel.removeTargetIngredient(it) },
                             onLoadSample = { viewModel.loadDefaultSample() },
                             primaryColor = primaryColor,
@@ -213,6 +322,16 @@ fun MixtureCalculatorScreen(
                             ingredients = uiState.targetIngredients,
                             anchorId = uiState.anchorIngredientId,
                             actualAddedTexts = uiState.actualAddedTexts,
+                            focusedFieldId = focusedFieldId,
+                            onFocusField = { id, label ->
+                                if (focusedFieldId == id) {
+                                    focusedFieldId = null
+                                    focusedFieldLabel = null
+                                } else {
+                                    focusedFieldId = id
+                                    focusedFieldLabel = label
+                                }
+                            },
                             onSelectAnchor = { viewModel.setAnchorIngredient(it) },
                             onActualAddedChange = { id, text -> viewModel.setActualAdded(id, text) },
                             primaryColor = primaryColor,
@@ -237,6 +356,16 @@ fun MixtureCalculatorScreen(
                             batchDivisionResult = uiState.batchDivisionResult,
                             batchCountText = uiState.batchCountText,
                             batchCount = uiState.batchCount,
+                            isBatchCountFocused = focusedFieldId == "step5_batch_count",
+                            onFocusBatchCount = {
+                                if (focusedFieldId == "step5_batch_count") {
+                                    focusedFieldId = null
+                                    focusedFieldLabel = null
+                                } else {
+                                    focusedFieldId = "step5_batch_count"
+                                    focusedFieldLabel = "Batch Count"
+                                }
+                            },
                             onBatchCountChange = { viewModel.setBatchCountText(it) },
                             onIncrement = { viewModel.incrementBatchCount() },
                             onDecrement = { viewModel.decrementBatchCount() },
@@ -277,6 +406,8 @@ fun MixtureCalculatorScreen(
                             .clip(CircleShape)
                             .border(1.dp, cardBorderColor, CircleShape)
                             .clickable {
+                                focusedFieldId = null
+                                focusedFieldLabel = null
                                 if (uiState.currentStep > 1) {
                                     viewModel.prevStep()
                                 } else {
@@ -303,6 +434,8 @@ fun MixtureCalculatorScreen(
 
                     Button(
                         onClick = {
+                            focusedFieldId = null
+                            focusedFieldLabel = null
                             if (uiState.currentStep == 1 && uiState.targetIngredients.isEmpty()) {
                                 Toast.makeText(context, "Please add at least 1 target ingredient first", Toast.LENGTH_SHORT).show()
                             } else {
@@ -338,6 +471,28 @@ fun MixtureCalculatorScreen(
                     }
                 }
             }
+        }
+
+        // Bottom-docked Smart Dialpad (slides in from bottom, single consistent keypad)
+        AnimatedVisibility(
+            visible = focusedFieldId != null,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 6.dp)
+        ) {
+            SmartStationKeypad(
+                activeFieldLabel = focusedFieldLabel,
+                onDigit = handleAppend,
+                onBackspace = handleBackspace,
+                onClear = handleClear,
+                onDone = {
+                    focusedFieldId = null
+                    focusedFieldLabel = null
+                }
+            )
         }
     }
 }
@@ -437,6 +592,9 @@ private fun Step1EnterTargetIngredients(
     nameInput: String,
     qtyInput: String,
     unitInput: String,
+    isQtyFocused: Boolean,
+    onFocusQty: () -> Unit,
+    onDismissKeypad: () -> Unit = {},
     onNameChange: (String) -> Unit,
     onQtyChange: (String) -> Unit,
     onUnitChange: (String) -> Unit,
@@ -448,6 +606,9 @@ private fun Step1EnterTargetIngredients(
     borderColor: Color,
     isDark: Boolean
 ) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+
     Column(modifier = Modifier.fillMaxWidth()) {
         // Target Ingredients List Section
         Row(
@@ -584,7 +745,12 @@ private fun Step1EnterTargetIngredients(
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("ingredient_name_input"),
+                        .testTag("ingredient_name_input")
+                        .onFocusChanged {
+                            if (it.isFocused) {
+                                onDismissKeypad()
+                            }
+                        },
                     shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = primaryColor,
@@ -595,7 +761,7 @@ private fun Step1EnterTargetIngredients(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Two Side-by-Side Inputs: Quantity (numeric) and Unit (text, default "kg")
-                var isQtyKeypadOpen by remember { mutableStateOf(false) }
+                var showQtyCopyPasteMenu by remember { mutableStateOf(false) }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -610,22 +776,43 @@ private fun Step1EnterTargetIngredients(
                             readOnly = true,
                             label = { Text("Target Qty") },
                             placeholder = { Text("0.00") },
+                            suffix = {
+                                if (isQtyFocused) {
+                                    BlinkingCursorPointer(color = primaryColor)
+                                }
+                            },
                             singleLine = true,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("ingredient_qty_input"),
                             shape = RoundedCornerShape(10.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = if (isQtyKeypadOpen) primaryColor else borderColor,
-                                unfocusedBorderColor = if (isQtyKeypadOpen) primaryColor else borderColor,
-                                focusedContainerColor = if (isQtyKeypadOpen) primaryColor.copy(alpha = 0.10f) else Color.Transparent
+                                focusedBorderColor = if (isQtyFocused) primaryColor else borderColor,
+                                unfocusedBorderColor = if (isQtyFocused) primaryColor else borderColor,
+                                focusedContainerColor = if (isQtyFocused) primaryColor.copy(alpha = 0.10f) else Color.Transparent
                             )
                         )
 
                         Box(
                             modifier = Modifier
                                 .matchParentSize()
-                                .clickable { isQtyKeypadOpen = !isQtyKeypadOpen }
+                                .pointerInput(Unit) {
+                                    detectTapGestures(
+                                        onTap = {
+                                            focusManager.clearFocus()
+                                            keyboardController?.hide()
+                                            onFocusQty()
+                                        },
+                                        onLongPress = { showQtyCopyPasteMenu = true }
+                                    )
+                                }
+                        )
+
+                        InputFieldCopyPasteMenu(
+                            expanded = showQtyCopyPasteMenu,
+                            onDismissRequest = { showQtyCopyPasteMenu = false },
+                            value = qtyInput,
+                            onPaste = { onQtyChange(it) }
                         )
                     }
 
@@ -637,7 +824,12 @@ private fun Step1EnterTargetIngredients(
                         singleLine = true,
                         modifier = Modifier
                             .weight(1f)
-                            .testTag("ingredient_unit_input"),
+                            .testTag("ingredient_unit_input")
+                            .onFocusChanged {
+                                if (it.isFocused) {
+                                    onDismissKeypad()
+                                }
+                            },
                         shape = RoundedCornerShape(10.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = primaryColor,
@@ -646,36 +838,11 @@ private fun Step1EnterTargetIngredients(
                     )
                 }
 
-                AnimatedVisibility(
-                    visible = isQtyKeypadOpen,
-                    enter = fadeIn() + slideInVertically(),
-                    exit = fadeOut() + slideOutVertically()
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = if (isDark) Color(0xFF0F172A) else Color(0xFFF1F5F9),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 10.dp)
-                    ) {
-                        SmartStationKeypad(
-                            activeFieldLabel = "Target Quantity",
-                            onDigit = { onQtyChange(qtyInput + it) },
-                            onBackspace = { if (qtyInput.isNotEmpty()) onQtyChange(qtyInput.dropLast(1)) },
-                            onClear = { onQtyChange("") },
-                            onDone = { isQtyKeypadOpen = false },
-                            modifier = Modifier.padding(8.dp)
-                        )
-                    }
-                }
-
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Full-Width Button: "+ Add to Target List"
                 Button(
                     onClick = {
-                        isQtyKeypadOpen = false
                         onAddIngredient()
                     },
                     modifier = Modifier
@@ -921,6 +1088,8 @@ private fun Step3ReferenceAndActualAdded(
     ingredients: List<TargetIngredient>,
     anchorId: String,
     actualAddedTexts: Map<String, String>,
+    focusedFieldId: String?,
+    onFocusField: (id: String, label: String) -> Unit,
     onSelectAnchor: (String) -> Unit,
     onActualAddedChange: (String, String) -> Unit,
     primaryColor: Color,
@@ -928,9 +1097,6 @@ private fun Step3ReferenceAndActualAdded(
     borderColor: Color,
     isDark: Boolean
 ) {
-    var focusedItemId by remember { mutableStateOf<String?>(null) }
-    val focusedItem = ingredients.find { it.id == focusedItemId }
-
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "SELECT CALIBRATION ANCHOR & ACTUALS",
@@ -948,7 +1114,9 @@ private fun Step3ReferenceAndActualAdded(
             ingredients.forEach { item ->
                 val isAnchor = item.id == anchorId
                 val actualText = actualAddedTexts[item.id] ?: ""
-                val isFocused = focusedItemId == item.id
+                val fieldKey = "step3_actual_${item.id}"
+                val isFocused = focusedFieldId == fieldKey
+                var showCopyPasteMenu by remember { mutableStateOf(false) }
 
                 val cardBg = if (isAnchor) primaryColor.copy(alpha = 0.12f) else surfaceBg
                 val cardBorder = if (isAnchor) primaryColor.copy(alpha = 0.6f) else borderColor
@@ -1017,6 +1185,9 @@ private fun Step3ReferenceAndActualAdded(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         // Input field: Actual Added ([unit])
+                        val keyboardController = LocalSoftwareKeyboardController.current
+                        val focusManager = LocalFocusManager.current
+
                         Box(
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -1026,6 +1197,11 @@ private fun Step3ReferenceAndActualAdded(
                                 readOnly = true,
                                 label = { Text("Actual Added (${item.unit})") },
                                 placeholder = { Text(formatNumber(item.targetQuantity)) },
+                                suffix = {
+                                    if (isFocused) {
+                                        BlinkingCursorPointer(color = primaryColor)
+                                    }
+                                },
                                 singleLine = true,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -1042,35 +1218,25 @@ private fun Step3ReferenceAndActualAdded(
                             Box(
                                 modifier = Modifier
                                     .matchParentSize()
-                                    .clickable {
-                                        focusedItemId = if (focusedItemId == item.id) null else item.id
-                                        onSelectAnchor(item.id)
+                                    .pointerInput(item.id) {
+                                        detectTapGestures(
+                                            onTap = {
+                                                focusManager.clearFocus()
+                                                keyboardController?.hide()
+                                                onSelectAnchor(item.id)
+                                                onFocusField(fieldKey, "Actual ${item.name} (${item.unit})")
+                                            },
+                                            onLongPress = { showCopyPasteMenu = true }
+                                        )
                                     }
                             )
-                        }
 
-                        AnimatedVisibility(
-                            visible = isFocused,
-                            enter = fadeIn() + slideInVertically(),
-                            exit = fadeOut() + slideOutVertically()
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(14.dp),
-                                color = if (isDark) Color(0xFF0F172A) else Color(0xFFF1F5F9),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 10.dp)
-                            ) {
-                                SmartStationKeypad(
-                                    activeFieldLabel = "Actual ${item.name} (${item.unit})",
-                                    onDigit = { onActualAddedChange(item.id, actualText + it) },
-                                    onBackspace = { if (actualText.isNotEmpty()) onActualAddedChange(item.id, actualText.dropLast(1)) },
-                                    onClear = { onActualAddedChange(item.id, "") },
-                                    onDone = { focusedItemId = null },
-                                    modifier = Modifier.padding(8.dp)
-                                )
-                            }
+                            InputFieldCopyPasteMenu(
+                                expanded = showCopyPasteMenu,
+                                onDismissRequest = { showCopyPasteMenu = false },
+                                value = actualText,
+                                onPaste = { onActualAddedChange(item.id, it) }
+                            )
                         }
                     }
                 }
@@ -1326,6 +1492,8 @@ private fun Step5DivideIntoBatches(
     batchDivisionResult: BatchDivisionResult,
     batchCountText: String,
     batchCount: Int,
+    isBatchCountFocused: Boolean,
+    onFocusBatchCount: () -> Unit,
     onBatchCountChange: (String) -> Unit,
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
@@ -1365,7 +1533,7 @@ private fun Step5DivideIntoBatches(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                var isBatchKeypadOpen by remember { mutableStateOf(false) }
+                var showBatchCopyPasteMenu by remember { mutableStateOf(false) }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1389,6 +1557,9 @@ private fun Step5DivideIntoBatches(
                     }
 
                     // Numeric input
+                    val keyboardController = LocalSoftwareKeyboardController.current
+                    val focusManager = LocalFocusManager.current
+
                     Box(
                         modifier = Modifier.weight(1f)
                     ) {
@@ -1396,15 +1567,20 @@ private fun Step5DivideIntoBatches(
                             value = batchCountText,
                             onValueChange = onBatchCountChange,
                             readOnly = true,
+                            suffix = {
+                                if (isBatchCountFocused) {
+                                    BlinkingCursorPointer(color = primaryColor)
+                                }
+                            },
                             singleLine = true,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("batch_count_input"),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = if (isBatchKeypadOpen) primaryColor else borderColor,
-                                unfocusedBorderColor = if (isBatchKeypadOpen) primaryColor else borderColor,
-                                focusedContainerColor = if (isBatchKeypadOpen) primaryColor.copy(alpha = 0.10f) else Color.Transparent
+                                focusedBorderColor = if (isBatchCountFocused) primaryColor else borderColor,
+                                unfocusedBorderColor = if (isBatchCountFocused) primaryColor else borderColor,
+                                focusedContainerColor = if (isBatchCountFocused) primaryColor.copy(alpha = 0.10f) else Color.Transparent
                             ),
                             textStyle = androidx.compose.ui.text.TextStyle(
                                 fontSize = 18.sp,
@@ -1417,7 +1593,23 @@ private fun Step5DivideIntoBatches(
                         Box(
                             modifier = Modifier
                                 .matchParentSize()
-                                .clickable { isBatchKeypadOpen = !isBatchKeypadOpen }
+                                .pointerInput(Unit) {
+                                    detectTapGestures(
+                                        onTap = {
+                                            focusManager.clearFocus()
+                                            keyboardController?.hide()
+                                            onFocusBatchCount()
+                                        },
+                                        onLongPress = { showBatchCopyPasteMenu = true }
+                                    )
+                                }
+                        )
+
+                        InputFieldCopyPasteMenu(
+                            expanded = showBatchCopyPasteMenu,
+                            onDismissRequest = { showBatchCopyPasteMenu = false },
+                            value = batchCountText,
+                            onPaste = { onBatchCountChange(it) }
                         )
                     }
 
@@ -1435,30 +1627,6 @@ private fun Step5DivideIntoBatches(
                         Box(contentAlignment = Alignment.Center) {
                             Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = primaryColor)
                         }
-                    }
-                }
-
-                AnimatedVisibility(
-                    visible = isBatchKeypadOpen,
-                    enter = fadeIn() + slideInVertically(),
-                    exit = fadeOut() + slideOutVertically()
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = if (isDark) Color(0xFF0F172A) else Color(0xFFF1F5F9),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 10.dp)
-                    ) {
-                        SmartStationKeypad(
-                            activeFieldLabel = "Batch Count",
-                            onDigit = { onBatchCountChange(batchCountText + it) },
-                            onBackspace = { if (batchCountText.isNotEmpty()) onBatchCountChange(batchCountText.dropLast(1)) },
-                            onClear = { onBatchCountChange("") },
-                            onDone = { isBatchKeypadOpen = false },
-                            modifier = Modifier.padding(8.dp)
-                        )
                     }
                 }
 

@@ -197,51 +197,34 @@ fun SimpleCalculatorDialog(
                     .fillMaxWidth()
                     .padding(18.dp)
             ) {
-                // Header with icon and Close button
+                // Header with icon
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(primaryColor.copy(alpha = 0.15f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Calculate,
-                                contentDescription = null,
-                                tint = primaryColor,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Text(
-                            text = "QUICK CALCULATOR",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
-
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.size(28.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(primaryColor.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            imageVector = Icons.Default.Calculate,
+                            contentDescription = null,
+                            tint = primaryColor,
                             modifier = Modifier.size(18.dp)
                         )
                     }
+                    Text(
+                        text = "QUICK CALCULATOR",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        letterSpacing = 0.5.sp
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -352,32 +335,6 @@ fun SimpleCalculatorDialog(
                                 )
                             }
                         }
-                    }
-                }
-
-                // If launched from an amount field, show "Use Result / Apply" Button
-                if (onResultSelected != null) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(
-                        onClick = { applyResultToField() },
-                        enabled = expression.isNotBlank() || resultText != null,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(46.dp)
-                            .testTag("apply_calculator_result_btn"),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = primaryColor,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Apply to Amount",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.5.sp
-                        )
                     }
                 }
             }
