@@ -80,13 +80,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.runtime.LaunchedEffect
-import com.example.ui.components.BlinkingCursorPointer
 import com.example.ui.components.InputFieldCopyPasteMenu
 import com.example.domain.mixture.BatchDivisionResult
 import com.example.domain.mixture.RatioCalculationResult
@@ -286,10 +282,6 @@ fun MixtureCalculatorScreen(
                                     focusedFieldId = "step1_qty"
                                     focusedFieldLabel = "Target Quantity"
                                 }
-                            },
-                            onDismissKeypad = {
-                                focusedFieldId = null
-                                focusedFieldLabel = null
                             },
                             onNameChange = { viewModel.setNewIngredientName(it) },
                             onQtyChange = { viewModel.setNewIngredientQty(it) },
@@ -594,7 +586,6 @@ private fun Step1EnterTargetIngredients(
     unitInput: String,
     isQtyFocused: Boolean,
     onFocusQty: () -> Unit,
-    onDismissKeypad: () -> Unit = {},
     onNameChange: (String) -> Unit,
     onQtyChange: (String) -> Unit,
     onUnitChange: (String) -> Unit,
@@ -606,9 +597,6 @@ private fun Step1EnterTargetIngredients(
     borderColor: Color,
     isDark: Boolean
 ) {
-    val keyboardController = LocalSoftwareKeyboardController.current
-    val focusManager = LocalFocusManager.current
-
     Column(modifier = Modifier.fillMaxWidth()) {
         // Target Ingredients List Section
         Row(
@@ -745,12 +733,7 @@ private fun Step1EnterTargetIngredients(
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .testTag("ingredient_name_input")
-                        .onFocusChanged {
-                            if (it.isFocused) {
-                                onDismissKeypad()
-                            }
-                        },
+                        .testTag("ingredient_name_input"),
                     shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = primaryColor,
@@ -776,11 +759,6 @@ private fun Step1EnterTargetIngredients(
                             readOnly = true,
                             label = { Text("Target Qty") },
                             placeholder = { Text("0.00") },
-                            suffix = {
-                                if (isQtyFocused) {
-                                    BlinkingCursorPointer(color = primaryColor)
-                                }
-                            },
                             singleLine = true,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -798,11 +776,7 @@ private fun Step1EnterTargetIngredients(
                                 .matchParentSize()
                                 .pointerInput(Unit) {
                                     detectTapGestures(
-                                        onTap = {
-                                            focusManager.clearFocus()
-                                            keyboardController?.hide()
-                                            onFocusQty()
-                                        },
+                                        onTap = { onFocusQty() },
                                         onLongPress = { showQtyCopyPasteMenu = true }
                                     )
                                 }
@@ -824,12 +798,7 @@ private fun Step1EnterTargetIngredients(
                         singleLine = true,
                         modifier = Modifier
                             .weight(1f)
-                            .testTag("ingredient_unit_input")
-                            .onFocusChanged {
-                                if (it.isFocused) {
-                                    onDismissKeypad()
-                                }
-                            },
+                            .testTag("ingredient_unit_input"),
                         shape = RoundedCornerShape(10.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = primaryColor,
@@ -1185,9 +1154,6 @@ private fun Step3ReferenceAndActualAdded(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         // Input field: Actual Added ([unit])
-                        val keyboardController = LocalSoftwareKeyboardController.current
-                        val focusManager = LocalFocusManager.current
-
                         Box(
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -1197,11 +1163,6 @@ private fun Step3ReferenceAndActualAdded(
                                 readOnly = true,
                                 label = { Text("Actual Added (${item.unit})") },
                                 placeholder = { Text(formatNumber(item.targetQuantity)) },
-                                suffix = {
-                                    if (isFocused) {
-                                        BlinkingCursorPointer(color = primaryColor)
-                                    }
-                                },
                                 singleLine = true,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -1221,8 +1182,6 @@ private fun Step3ReferenceAndActualAdded(
                                     .pointerInput(item.id) {
                                         detectTapGestures(
                                             onTap = {
-                                                focusManager.clearFocus()
-                                                keyboardController?.hide()
                                                 onSelectAnchor(item.id)
                                                 onFocusField(fieldKey, "Actual ${item.name} (${item.unit})")
                                             },
@@ -1557,9 +1516,6 @@ private fun Step5DivideIntoBatches(
                     }
 
                     // Numeric input
-                    val keyboardController = LocalSoftwareKeyboardController.current
-                    val focusManager = LocalFocusManager.current
-
                     Box(
                         modifier = Modifier.weight(1f)
                     ) {
@@ -1567,11 +1523,6 @@ private fun Step5DivideIntoBatches(
                             value = batchCountText,
                             onValueChange = onBatchCountChange,
                             readOnly = true,
-                            suffix = {
-                                if (isBatchCountFocused) {
-                                    BlinkingCursorPointer(color = primaryColor)
-                                }
-                            },
                             singleLine = true,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1595,11 +1546,7 @@ private fun Step5DivideIntoBatches(
                                 .matchParentSize()
                                 .pointerInput(Unit) {
                                     detectTapGestures(
-                                        onTap = {
-                                            focusManager.clearFocus()
-                                            keyboardController?.hide()
-                                            onFocusBatchCount()
-                                        },
+                                        onTap = { onFocusBatchCount() },
                                         onLongPress = { showBatchCopyPasteMenu = true }
                                     )
                                 }

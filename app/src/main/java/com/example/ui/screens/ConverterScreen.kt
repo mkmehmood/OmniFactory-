@@ -66,8 +66,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -81,7 +79,6 @@ import com.example.domain.converter.UnitRegistry
 import com.example.ui.BmiUnitSystem
 import com.example.ui.ConverterUiState
 import com.example.ui.ConverterViewModel
-import com.example.ui.components.BlinkingCursorPointer
 import com.example.ui.components.CurrencySearchBottomSheet
 import com.example.ui.components.SmartStationKeypad
 import com.example.ui.theme.AnimationIntensity

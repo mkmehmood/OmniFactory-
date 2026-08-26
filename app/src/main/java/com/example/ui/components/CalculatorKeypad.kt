@@ -989,36 +989,3 @@ fun InputFieldCopyPasteMenu(
         )
     }
 }
-
-/**
- * Animated Blinking Cursor Pointer for active numeric input fields.
- * Clearly shows the user which field has active focus and pointer for key entry.
- */
-@Composable
-fun BlinkingCursorPointer(
-    color: Color = MaterialTheme.colorScheme.primary,
-    modifier: Modifier = Modifier,
-    height: androidx.compose.ui.unit.Dp = 18.dp
-) {
-    val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "cursor_blink")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 0f,
-        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
-            animation = androidx.compose.animation.core.tween(
-                durationMillis = 500,
-                easing = androidx.compose.animation.core.LinearEasing
-            ),
-            repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
-        ),
-        label = "cursor_alpha"
-    )
-    Box(
-        modifier = modifier
-            .width(2.dp)
-            .height(height)
-            .graphicsLayer { this.alpha = alpha }
-            .background(color, RoundedCornerShape(1.dp))
-    )
-}
-
