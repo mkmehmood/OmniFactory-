@@ -902,15 +902,29 @@ private fun LedgerAddEditSheetContent(
     val isCashOut = uiState.formType == LedgerType.CASH_OUT
     val isTransfer = uiState.formType == LedgerType.CASH_TRANSFER
 
-    Column(
+    val scrollState = rememberScrollState()
+
+    // Dismiss keypad automatically whenever user scrolls the form
+    LaunchedEffect(scrollState.isScrollInProgress) {
+        if (scrollState.isScrollInProgress) {
+            isKeypadOpen = false
+        }
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-            .testTag("ledger_add_edit_sheet"),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+            .testTag("ledger_add_edit_sheet")
     ) {
-        // Header Bar
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(scrollState)
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .padding(bottom = if (isKeypadOpen) 290.dp else 20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Header Bar
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1375,56 +1389,13 @@ private fun LedgerAddEditSheetContent(
 
         // 2. Transaction Amount
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "TRANSACTION AMOUNT (RS.) *",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = DigitalMonospaceFont,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Floating Quick Calculator Button (Icon button)
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = uiState.formType.color.copy(alpha = 0.15f),
-                        border = BorderStroke(1.dp, uiState.formType.color.copy(alpha = 0.4f)),
-                        modifier = Modifier.clickable { onOpenCalculator() }.testTag("floating_calc_button")
-                    ) {
-                        Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp), contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.Calculate,
-                                contentDescription = "Quick Calculator",
-                                tint = uiState.formType.color,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                    // Floating Keypad Toggle Button
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = if (isKeypadOpen) uiState.formType.color else if (isDark) Color(0x22FFFFFF) else Color(0x12000000),
-                        border = BorderStroke(1.dp, if (isKeypadOpen) uiState.formType.color else Color.Transparent),
-                        modifier = Modifier.clickable { isKeypadOpen = !isKeypadOpen }.testTag("floating_keypad_button")
-                    ) {
-                        Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp), contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = if (isKeypadOpen) Icons.Default.KeyboardHide else Icons.Default.Dialpad,
-                                contentDescription = "Toggle Keypad",
-                                tint = if (isKeypadOpen) (if (isDark) Color.Black else Color.White) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
-            }
+            Text(
+                text = "TRANSACTION AMOUNT (RS.) *",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             Box(
                 modifier = Modifier.fillMaxWidth()
@@ -1498,31 +1469,6 @@ private fun LedgerAddEditSheetContent(
                         .padding(end = 92.dp)
                         .clickable { isKeypadOpen = true }
                 )
-            }
-
-            // Keypad (Dialpad at the bottom of Amount field like Unit Converter)
-            AnimatedVisibility(
-                visible = isKeypadOpen,
-                enter = fadeIn() + slideInVertically(),
-                exit = fadeOut() + slideOutVertically()
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = if (isDark) Color(0xFF0F172A) else Color(0xFFF1F5F9),
-                    border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp)
-                ) {
-                    SmartStationKeypad(
-                        activeFieldLabel = "Amount (Rs.)",
-                        onDigit = onTokenAppend,
-                        onBackspace = onBackspaceAmount,
-                        onClear = onClearAmount,
-                        onDone = { isKeypadOpen = false },
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
             }
         }
 
@@ -1992,6 +1938,36 @@ private fun LedgerAddEditSheetContent(
             }
         }
     }
+
+    // Bottom-docked Smart Dialpad (slides up from the bottom of the screen, auto-dismisses on scroll)
+    AnimatedVisibility(
+        visible = isKeypadOpen,
+        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+        modifier = Modifier.align(Alignment.BottomCenter)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+            color = if (isDark) Color(0xFF0F172A) else Color(0xFFFFFFFF),
+            border = BorderStroke(1.dp, if (isDark) Color(0x3338BDF8) else Color(0x22000000)),
+            shadowElevation = 16.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            SmartStationKeypad(
+                activeFieldLabel = "Amount (Rs.)",
+                onDigit = onTokenAppend,
+                onDoubleZero = { onTokenAppend("00") },
+                onDecimal = { onTokenAppend(".") },
+                onBackspace = onBackspaceAmount,
+                onClear = onClearAmount,
+                onDone = { isKeypadOpen = false },
+                showDoubleZeroKey = true,
+                showDecimalKey = true,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+            )
+        }
+    }
+}
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = uiState.formDateMillis)

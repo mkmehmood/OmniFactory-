@@ -1106,15 +1106,29 @@ private fun ExpenseAddEditSheetContent(
         uiState.businessCategories
     }
 
-    Column(
+    val scrollState = rememberScrollState()
+
+    // Dismiss keypad automatically whenever user scrolls the form
+    LaunchedEffect(scrollState.isScrollInProgress) {
+        if (scrollState.isScrollInProgress) {
+            isDialpadOpen = false
+        }
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 12.dp)
-            .testTag("expense_add_edit_sheet"),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+            .testTag("expense_add_edit_sheet")
     ) {
-        // Header
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(scrollState)
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .padding(bottom = if (isDialpadOpen) 290.dp else 20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1210,56 +1224,13 @@ private fun ExpenseAddEditSheetContent(
 
         // Amount Input with Smart Keypad Integration
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "EXPENSE AMOUNT (RS.) *",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = DigitalMonospaceFont,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Floating Quick Calculator Button (Icon button)
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFEF4444).copy(alpha = 0.15f),
-                        border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.4f)),
-                        modifier = Modifier.clickable { onOpenCalculator() }.testTag("floating_calc_button")
-                    ) {
-                        Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp), contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.Calculate,
-                                contentDescription = "Quick Calculator",
-                                tint = Color(0xFFEF4444),
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                    // Floating Keypad Toggle Button
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = if (isDialpadOpen) Color(0xFFEF4444) else if (isDark) Color(0x22FFFFFF) else Color(0x12000000),
-                        border = BorderStroke(1.dp, if (isDialpadOpen) Color(0xFFEF4444) else Color.Transparent),
-                        modifier = Modifier.clickable { isDialpadOpen = !isDialpadOpen }.testTag("floating_keypad_button")
-                    ) {
-                        Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp), contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = if (isDialpadOpen) Icons.Default.KeyboardHide else Icons.Default.Dialpad,
-                                contentDescription = "Toggle Keypad",
-                                tint = if (isDialpadOpen) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
-            }
+            Text(
+                text = "EXPENSE AMOUNT (RS.) *",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             Box(
                 modifier = Modifier.fillMaxWidth()
@@ -1331,28 +1302,6 @@ private fun ExpenseAddEditSheetContent(
                         .clickable { isDialpadOpen = true }
                 )
             }
-        }
-
-        // =========================================================================
-        // SMART STATION KEYPAD (POPS UP FROM BOTTOM LIKE UNIT CONVERTER)
-        // =========================================================================
-        AnimatedVisibility(
-            visible = isDialpadOpen,
-            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
-        ) {
-            SmartStationKeypad(
-                activeFieldLabel = "Expense Amount (Rs.)",
-                onDigit = { onTokenAppend(it) },
-                onDoubleZero = { onTokenAppend("00") },
-                onDecimal = { onTokenAppend(".") },
-                onBackspace = { onBackspaceAmount() },
-                onClear = { onClearAmount() },
-                onDone = { isDialpadOpen = false },
-                showDoubleZeroKey = true,
-                showDecimalKey = true,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
 
         // Category Input with Dynamic Auto-pickup & Create (Shows suggestions when typing)
@@ -1757,6 +1706,36 @@ private fun ExpenseAddEditSheetContent(
 
         Spacer(modifier = Modifier.height(20.dp))
     }
+
+    // Bottom-docked Smart Dialpad (slides up from the bottom of the screen, auto-dismisses on scroll)
+    AnimatedVisibility(
+        visible = isDialpadOpen,
+        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+        modifier = Modifier.align(Alignment.BottomCenter)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+            color = if (isDark) Color(0xFF0F172A) else Color(0xFFFFFFFF),
+            border = BorderStroke(1.dp, if (isDark) Color(0x33EF4444) else Color(0x22000000)),
+            shadowElevation = 16.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            SmartStationKeypad(
+                activeFieldLabel = "Expense Amount (Rs.)",
+                onDigit = { onTokenAppend(it) },
+                onDoubleZero = { onTokenAppend("00") },
+                onDecimal = { onTokenAppend(".") },
+                onBackspace = { onBackspaceAmount() },
+                onClear = { onClearAmount() },
+                onDone = { isDialpadOpen = false },
+                showDoubleZeroKey = true,
+                showDecimalKey = true,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+            )
+        }
+    }
+}
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = uiState.formDateMillis)
