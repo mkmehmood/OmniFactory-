@@ -87,6 +87,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -106,8 +108,10 @@ import com.example.ui.ExpensesViewModel
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import com.example.ui.components.BlinkingCursorPointer
 import com.example.ui.components.InputFieldCopyPasteMenu
 import com.example.ui.components.SimpleCalculatorDialog
 import com.example.ui.components.SmartStationKeypad
@@ -1114,6 +1118,8 @@ private fun ExpenseAddEditSheetContent(
 
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
     val isImeOpen = WindowInsets.ime.getBottom(density) > 0
     var showAmountContextMenu by remember { mutableStateOf(false) }
 
@@ -1279,6 +1285,11 @@ private fun ExpenseAddEditSheetContent(
                             }
                         }
                     },
+                    suffix = {
+                        if (isDialpadOpen) {
+                            BlinkingCursorPointer(color = Color(0xFFEF4444))
+                        }
+                    },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -1299,7 +1310,11 @@ private fun ExpenseAddEditSheetContent(
                         .padding(end = 64.dp)
                         .pointerInput(Unit) {
                             detectTapGestures(
-                                onTap = { isDialpadOpen = true },
+                                onTap = {
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                    isDialpadOpen = true
+                                },
                                 onLongPress = { showAmountContextMenu = true }
                             )
                         }
@@ -1347,6 +1362,7 @@ private fun ExpenseAddEditSheetContent(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) isDialpadOpen = false }
                     .testTag("form_expense_category_input")
             )
 
@@ -1466,6 +1482,7 @@ private fun ExpenseAddEditSheetContent(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) isDialpadOpen = false }
                     .testTag("form_expense_mode_input")
             )
 
@@ -1618,7 +1635,9 @@ private fun ExpenseAddEditSheetContent(
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) isDialpadOpen = false }
             )
         }
 
@@ -1646,7 +1665,9 @@ private fun ExpenseAddEditSheetContent(
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) isDialpadOpen = false }
             )
         }
 
@@ -1666,7 +1687,9 @@ private fun ExpenseAddEditSheetContent(
                 placeholder = { Text("Add purchased items or notes...") },
                 maxLines = 3,
                 shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) isDialpadOpen = false }
             )
         }
 

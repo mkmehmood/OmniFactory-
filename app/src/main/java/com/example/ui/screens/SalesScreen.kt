@@ -94,7 +94,10 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.runtime.LaunchedEffect
+import com.example.ui.components.BlinkingCursorPointer
 import com.example.ui.components.InputFieldCopyPasteMenu
 import com.example.data.db.SalesTransactionEntity
 import com.example.ui.components.SalesRepresentativesMatrixCard
@@ -1004,6 +1007,8 @@ private fun NumericGridInputField(
 ) {
     val inputShape = LocalShapeStructure.current.toInputShape()
     var showContextMenu by remember { mutableStateOf(false) }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
     Box(
         modifier = modifier
@@ -1021,6 +1026,11 @@ private fun NumericGridInputField(
                 )
             },
             placeholder = { Text(placeholder, fontSize = 12.sp) },
+            suffix = {
+                if (isSelected) {
+                    BlinkingCursorPointer(color = primaryColor)
+                }
+            },
             singleLine = true,
             modifier = Modifier.fillMaxWidth().testTag(testTag),
             colors = OutlinedTextFieldDefaults.colors(
@@ -1043,7 +1053,11 @@ private fun NumericGridInputField(
                 .matchParentSize()
                 .pointerInput(Unit) {
                     detectTapGestures(
-                        onTap = { onFocus() },
+                        onTap = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                            onFocus()
+                        },
                         onLongPress = { showContextMenu = true }
                     )
                 }

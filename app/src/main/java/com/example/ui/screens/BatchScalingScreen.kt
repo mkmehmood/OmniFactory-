@@ -64,8 +64,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -80,6 +83,7 @@ import com.example.domain.calculator.ScalingMode
 import com.example.ui.BatchScalingUiState
 import com.example.ui.ComponentInput
 import com.example.ui.ScalingPreset
+import com.example.ui.components.BlinkingCursorPointer
 import com.example.ui.components.InputFieldCopyPasteMenu
 import com.example.ui.components.SmartStationKeypad
 import com.example.ui.theme.DigitalMonospaceFont
@@ -510,6 +514,7 @@ private fun ComponentsEditorCard(
                     component = component,
                     isAmountFocused = isFocused,
                     onFocusAmount = { onFocusField(fieldId, fieldLabel) },
+                    onDismissKeypad = { onFocusField("", "") },
                     onNameChange = { onUpdateName(component.id, it) },
                     onAmountChange = { onUpdateAmount(component.id, it) },
                     onToggleLock = { onToggleLock(component.id) },
@@ -559,6 +564,7 @@ private fun ComponentRowItem(
     component: ComponentInput,
     isAmountFocused: Boolean,
     onFocusAmount: () -> Unit,
+    onDismissKeypad: () -> Unit = {},
     onNameChange: (String) -> Unit,
     onAmountChange: (String) -> Unit,
     onToggleLock: () -> Unit,
@@ -568,6 +574,8 @@ private fun ComponentRowItem(
     isDark: Boolean
 ) {
     var showCopyPasteMenu by remember { mutableStateOf(false) }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
     Surface(
         modifier = Modifier
@@ -609,7 +617,12 @@ private fun ComponentRowItem(
                 singleLine = true,
                 modifier = Modifier
                     .weight(1.2f)
-                    .testTag("component_name_input_$index"),
+                    .testTag("component_name_input_$index")
+                    .onFocusChanged {
+                        if (it.isFocused) {
+                            onDismissKeypad()
+                        }
+                    },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = primaryColor,
                     unfocusedBorderColor = Color.Transparent,
@@ -630,6 +643,11 @@ private fun ComponentRowItem(
                     value = component.amountText,
                     onValueChange = onAmountChange,
                     placeholder = { Text("0", fontSize = 12.sp) },
+                    suffix = {
+                        if (isAmountFocused) {
+                            BlinkingCursorPointer(color = primaryColor)
+                        }
+                    },
                     singleLine = true,
                     readOnly = true,
                     modifier = Modifier
@@ -655,7 +673,11 @@ private fun ComponentRowItem(
                         .matchParentSize()
                         .pointerInput(component.id) {
                             detectTapGestures(
-                                onTap = { onFocusAmount() },
+                                onTap = {
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                    onFocusAmount()
+                                },
                                 onLongPress = { showCopyPasteMenu = true }
                             )
                         }
@@ -733,6 +755,8 @@ private fun ScalingParametersCard(
     var showBatchSizeCopyPaste by remember { mutableStateOf(false) }
     var showBatchCountCopyPaste by remember { mutableStateOf(false) }
     var showAvailableAmountCopyPaste by remember { mutableStateOf(false) }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -761,6 +785,11 @@ private fun ScalingParametersCard(
                         onValueChange = onSetTargetTotal,
                         label = { Text("Target Grand Total") },
                         placeholder = { Text("0") },
+                        suffix = {
+                            if (focusedFieldId == "target_total") {
+                                BlinkingCursorPointer(color = primaryColor)
+                            }
+                        },
                         singleLine = true,
                         readOnly = true,
                         modifier = Modifier
@@ -783,7 +812,11 @@ private fun ScalingParametersCard(
                             .matchParentSize()
                             .pointerInput(Unit) {
                                 detectTapGestures(
-                                    onTap = { onFocusField("target_total", "Target Grand Total") },
+                                    onTap = {
+                                        focusManager.clearFocus()
+                                        keyboardController?.hide()
+                                        onFocusField("target_total", "Target Grand Total")
+                                    },
                                     onLongPress = { showTargetTotalCopyPaste = true }
                                 )
                             }
@@ -806,6 +839,11 @@ private fun ScalingParametersCard(
                         onValueChange = onSetBatchSize,
                         label = { Text("Batch Size (weight/quantity per unit)") },
                         placeholder = { Text("0") },
+                        suffix = {
+                            if (focusedFieldId == "batch_size") {
+                                BlinkingCursorPointer(color = primaryColor)
+                            }
+                        },
                         singleLine = true,
                         readOnly = true,
                         modifier = Modifier
@@ -828,7 +866,11 @@ private fun ScalingParametersCard(
                             .matchParentSize()
                             .pointerInput(Unit) {
                                 detectTapGestures(
-                                    onTap = { onFocusField("batch_size", "Batch Size") },
+                                    onTap = {
+                                        focusManager.clearFocus()
+                                        keyboardController?.hide()
+                                        onFocusField("batch_size", "Batch Size")
+                                    },
                                     onLongPress = { showBatchSizeCopyPaste = true }
                                 )
                             }
@@ -893,6 +935,11 @@ private fun ScalingParametersCard(
                             onValueChange = onSetBatchCount,
                             label = { Text("Number of Batches") },
                             placeholder = { Text("1") },
+                            suffix = {
+                                if (focusedFieldId == "batch_count") {
+                                    BlinkingCursorPointer(color = primaryColor)
+                                }
+                            },
                             singleLine = true,
                             readOnly = true,
                             modifier = Modifier
@@ -915,7 +962,11 @@ private fun ScalingParametersCard(
                                 .matchParentSize()
                                 .pointerInput(Unit) {
                                     detectTapGestures(
-                                        onTap = { onFocusField("batch_count", "Number of Batches") },
+                                        onTap = {
+                                            focusManager.clearFocus()
+                                            keyboardController?.hide()
+                                            onFocusField("batch_count", "Number of Batches")
+                                        },
                                         onLongPress = { showBatchCountCopyPaste = true }
                                     )
                                 }
@@ -937,6 +988,11 @@ private fun ScalingParametersCard(
                             onValueChange = onSetAvailableAmount,
                             label = { Text("Total Available Amount") },
                             placeholder = { Text("0") },
+                            suffix = {
+                                if (focusedFieldId == "available_amount") {
+                                    BlinkingCursorPointer(color = primaryColor)
+                                }
+                            },
                             singleLine = true,
                             readOnly = true,
                             modifier = Modifier
@@ -959,7 +1015,11 @@ private fun ScalingParametersCard(
                                 .matchParentSize()
                                 .pointerInput(Unit) {
                                     detectTapGestures(
-                                        onTap = { onFocusField("available_amount", "Total Available Amount") },
+                                        onTap = {
+                                            focusManager.clearFocus()
+                                            keyboardController?.hide()
+                                            onFocusField("available_amount", "Total Available Amount")
+                                        },
                                         onLongPress = { showAvailableAmountCopyPaste = true }
                                     )
                                 }

@@ -93,6 +93,8 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -114,6 +116,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import com.example.ui.components.BlinkingCursorPointer
 import com.example.ui.components.InputFieldCopyPasteMenu
 import com.example.ui.components.SimpleCalculatorDialog
 import com.example.ui.components.SmartStationKeypad
@@ -910,6 +913,8 @@ private fun LedgerAddEditSheetContent(
 
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
     val isImeOpen = WindowInsets.ime.getBottom(density) > 0
     var showAmountContextMenu by remember { mutableStateOf(false) }
 
@@ -1246,7 +1251,10 @@ private fun LedgerAddEditSheetContent(
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .onFocusChanged { isFromModeFocused = it.isFocused }
+                                .onFocusChanged {
+                                    isFromModeFocused = it.isFocused
+                                    if (it.isFocused) isKeypadOpen = false
+                                }
                                 .testTag("transfer_from_mode_input")
                         )
 
@@ -1334,7 +1342,10 @@ private fun LedgerAddEditSheetContent(
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .onFocusChanged { isToModeFocused = it.isFocused }
+                                .onFocusChanged {
+                                    isToModeFocused = it.isFocused
+                                    if (it.isFocused) isKeypadOpen = false
+                                }
                                 .testTag("transfer_to_mode_input")
                         )
 
@@ -1447,6 +1458,11 @@ private fun LedgerAddEditSheetContent(
                             }
                         }
                     },
+                    suffix = {
+                        if (isKeypadOpen) {
+                            BlinkingCursorPointer(color = uiState.formType.color)
+                        }
+                    },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -1467,7 +1483,11 @@ private fun LedgerAddEditSheetContent(
                         .padding(end = 64.dp)
                         .pointerInput(Unit) {
                             detectTapGestures(
-                                onTap = { isKeypadOpen = true },
+                                onTap = {
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                    isKeypadOpen = true
+                                },
                                 onLongPress = { showAmountContextMenu = true }
                             )
                         }
@@ -1532,7 +1552,10 @@ private fun LedgerAddEditSheetContent(
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .onFocusChanged { isCategoryFocused = it.isFocused }
+                        .onFocusChanged {
+                            isCategoryFocused = it.isFocused
+                            if (it.isFocused) isKeypadOpen = false
+                        }
                         .testTag("form_category_input")
                 )
 
@@ -1670,6 +1693,7 @@ private fun LedgerAddEditSheetContent(
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .onFocusChanged { if (it.isFocused) isKeypadOpen = false }
                         .testTag("form_payment_mode_input")
                 )
 
@@ -1788,6 +1812,7 @@ private fun LedgerAddEditSheetContent(
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .onFocusChanged { if (it.isFocused) isKeypadOpen = false }
                         .testTag("form_party_name_input")
                 )
 
@@ -1879,6 +1904,7 @@ private fun LedgerAddEditSheetContent(
                 ),
                 modifier = Modifier
                     .weight(1f)
+                    .onFocusChanged { if (it.isFocused) isKeypadOpen = false }
                     .testTag("form_ref_no_input")
             )
 
@@ -1894,6 +1920,7 @@ private fun LedgerAddEditSheetContent(
                 ),
                 modifier = Modifier
                     .weight(1f)
+                    .onFocusChanged { if (it.isFocused) isKeypadOpen = false }
                     .testTag("form_remarks_input")
             )
         }

@@ -1,9 +1,15 @@
 package com.example.ui.components
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,10 +19,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
@@ -25,11 +34,9 @@ import androidx.compose.material.icons.filled.KeyboardHide
 import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Surface
 import com.example.ui.theme.toButtonShape
 import com.example.ui.theme.toCardShape
 import androidx.compose.runtime.Composable
@@ -989,3 +996,36 @@ fun InputFieldCopyPasteMenu(
         )
     }
 }
+
+/**
+ * Animated Blinking Cursor Pointer for active numeric input fields.
+ * Clearly shows the user which field has active focus and pointer for key entry.
+ */
+@Composable
+fun BlinkingCursorPointer(
+    color: Color = MaterialTheme.colorScheme.primary,
+    modifier: Modifier = Modifier,
+    cursorHeight: androidx.compose.ui.unit.Dp = 18.dp
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "cursor_blink")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 500,
+                easing = LinearEasing
+            ),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cursor_alpha"
+    )
+    Box(
+        modifier = modifier
+            .width(2.dp)
+            .height(cursorHeight)
+            .graphicsLayer { this.alpha = alpha }
+            .background(color, RoundedCornerShape(1.dp))
+    )
+}
+
