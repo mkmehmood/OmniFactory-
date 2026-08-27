@@ -5,7 +5,9 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -346,13 +348,17 @@ fun MyApplicationTheme(
         LocalShapeStructure provides shapeStructureStyle,
         LocalComponentSizing provides componentSizeStyle,
         LocalAnimationIntensity provides animationIntensity,
-        LocalAppFontStyle provides fontStyle
+        LocalAppFontStyle provides fontStyle,
+        LocalTextStyle provides appTypography.bodyMedium
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = appTypography,
-            shapes = m3Shapes,
-            content = content
-        )
+            shapes = m3Shapes
+        ) {
+            ProvideTextStyle(value = appTypography.bodyMedium) {
+                content()
+            }
+        }
     }
 }

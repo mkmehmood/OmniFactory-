@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.Draw
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.FormatBold
+import androidx.compose.material.icons.filled.FormatItalic
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.History
@@ -601,25 +602,51 @@ fun SettingsScreen(
                                         )
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = fontStyle.displayName,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                fontSize = 13.5.sp,
-                                                fontFamily = fontStyle.fontFamily,
-                                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
-                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Text(
+                                                    text = fontStyle.displayName,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                                    fontSize = 14.sp,
+                                                    fontFamily = fontStyle.fontFamily,
+                                                    color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Surface(
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    color = if (isSelected) primaryColor.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                                                ) {
+                                                    Text(
+                                                        text = fontStyle.category.uppercase(),
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                                                        letterSpacing = 0.5.sp
+                                                    )
+                                                }
+                                            }
                                             Text(
                                                 text = fontStyle.description,
-                                                fontSize = 10.5.sp,
+                                                fontSize = 11.sp,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Text(
-                                                text = fontStyle.previewSample,
-                                                fontFamily = fontStyle.fontFamily,
-                                                fontSize = 11.5.sp,
-                                                color = if (isSelected) primaryColor.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                            )
+                                            Spacer(modifier = Modifier.height(3.dp))
+                                            Surface(
+                                                shape = RoundedCornerShape(4.dp),
+                                                color = if (isSelected) primaryColor.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                                                border = BorderStroke(0.5.dp, if (isSelected) primaryColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Text(
+                                                    text = fontStyle.previewSample,
+                                                    fontFamily = fontStyle.fontFamily,
+                                                    fontSize = 12.sp,
+                                                    color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                                )
+                                            }
                                         }
                                         if (isSelected) {
                                             Icon(
@@ -1790,17 +1817,21 @@ private fun getShapeIcon(shape: ShapeStructureStyle): ImageVector {
 private fun getFontIcon(fontStyle: AppFontStyle): ImageVector {
     return when (fontStyle) {
         AppFontStyle.SYSTEM -> Icons.Default.Smartphone
-        AppFontStyle.SANS_SERIF -> Icons.Default.TextFields
-        AppFontStyle.CONDENSED -> Icons.Default.ViewCompact
-        AppFontStyle.LIGHT -> Icons.Default.LightMode
-        AppFontStyle.MEDIUM -> Icons.Default.FormatBold
-        AppFontStyle.HEAVY -> Icons.Default.DensityLarge
-        AppFontStyle.MONOSPACE -> Icons.Default.Calculate
-        AppFontStyle.SERIF_MONOSPACE -> Icons.Default.Terminal
-        AppFontStyle.SERIF -> Icons.Default.MenuBook
-        AppFontStyle.CASUAL -> Icons.Default.Draw
-        AppFontStyle.CURSIVE -> Icons.Default.Edit
-        AppFontStyle.SMALL_CAPS -> Icons.Default.Abc
+        AppFontStyle.CASUAL_HANDWRITING -> Icons.Default.Draw
+        AppFontStyle.BOLD_CASUAL -> Icons.Default.Edit
+        AppFontStyle.DANCING_CURSIVE -> Icons.Default.Palette
+        AppFontStyle.ROYAL_CALLIGRAPHY -> Icons.Default.Edit
+        AppFontStyle.CLASSIC_SERIF -> Icons.Default.MenuBook
+        AppFontStyle.LUXURY_SERIF_ITALIC -> Icons.Default.FormatItalic
+        AppFontStyle.VINTAGE_TYPEWRITER -> Icons.Default.History
+        AppFontStyle.CYBER_CONDENSED -> Icons.Default.Tune
+        AppFontStyle.CONDENSED_CLEAN -> Icons.Default.DensityMedium
+        AppFontStyle.MINIMALIST_LIGHT -> Icons.Default.LightMode
+        AppFontStyle.INDUSTRIAL_BLACK -> Icons.Default.DensityLarge
+        AppFontStyle.TERMINAL_MONOSPACE -> Icons.Default.Terminal
+        AppFontStyle.CLEAN_MONOSPACE -> Icons.Default.Calculate
+        AppFontStyle.SMALL_CAPS_LEDGER -> Icons.Default.Abc
+        AppFontStyle.GEOMETRIC_TECHNO -> Icons.Default.TextFields
     }
 }
 

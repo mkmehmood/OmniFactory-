@@ -2,6 +2,8 @@ package com.example.ui.theme
 
 import android.graphics.Typeface
 import androidx.compose.material3.Typography
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -10,6 +12,7 @@ import androidx.compose.ui.unit.sp
 
 enum class AppFontStyle(
     val displayName: String,
+    val category: String,
     val description: String,
     val previewSample: String,
     val fontFamily: FontFamily,
@@ -17,94 +20,141 @@ enum class AppFontStyle(
 ) {
     SYSTEM(
         displayName = "System Default",
-        description = "Standard device system font",
+        category = "Clean",
+        description = "Standard device system font with digital alignment",
         previewSample = "123,456.78 • Precision Suite",
         fontFamily = FontFamily.Default,
-        numberFontFamily = FontFamily.Monospace
+        numberFontFamily = FontFamily(Typeface.create("monospace", Typeface.NORMAL))
     ),
-    SANS_SERIF(
-        displayName = "Modern Sans-Serif",
-        description = "Clean, geometric and high-readability sans-serif",
+    CASUAL_HANDWRITING(
+        displayName = "Casual Handwriting",
+        category = "Handwritten",
+        description = "Friendly, informal human handwriting aesthetic",
         previewSample = "123,456.78 • Precision Suite",
-        fontFamily = FontFamily.SansSerif,
-        numberFontFamily = FontFamily.SansSerif
+        fontFamily = FontFamily(Typeface.create("casual", Typeface.NORMAL)),
+        numberFontFamily = FontFamily(Typeface.create("casual", Typeface.BOLD))
     ),
-    CONDENSED(
-        displayName = "Condensed Sans",
-        description = "Compact space-saving font for high data density",
+    BOLD_CASUAL(
+        displayName = "Bold Marker Sketch",
+        category = "Street Art",
+        description = "Chunky, expressive whiteboard marker typography",
         previewSample = "123,456.78 • Precision Suite",
-        fontFamily = FontFamily(Typeface.create("sans-serif-condensed", Typeface.NORMAL)),
-        numberFontFamily = FontFamily(Typeface.create("sans-serif-condensed", Typeface.NORMAL))
+        fontFamily = FontFamily(Typeface.create("casual", Typeface.BOLD)),
+        numberFontFamily = FontFamily(Typeface.create("casual", Typeface.BOLD))
     ),
-    LIGHT(
-        displayName = "Minimalist Light",
-        description = "Airy, modern, elegant clean aesthetic",
+    DANCING_CURSIVE(
+        displayName = "Dancing Cursive",
+        category = "Calligraphic",
+        description = "Flowing, elegant calligraphic script handwriting",
         previewSample = "123,456.78 • Precision Suite",
-        fontFamily = FontFamily(Typeface.create("sans-serif-light", Typeface.NORMAL)),
-        numberFontFamily = FontFamily(Typeface.create("sans-serif-light", Typeface.NORMAL))
+        fontFamily = FontFamily(Typeface.create("cursive", Typeface.NORMAL)),
+        numberFontFamily = FontFamily(Typeface.create("cursive", Typeface.BOLD))
     ),
-    MEDIUM(
-        displayName = "Geometric Medium",
-        description = "Strong contrast and well-balanced glyphs",
+    ROYAL_CALLIGRAPHY(
+        displayName = "Royal Script Bold",
+        category = "Artistic",
+        description = "Dramatic luxury cursive calligraphy with bold strokes",
         previewSample = "123,456.78 • Precision Suite",
-        fontFamily = FontFamily(Typeface.create("sans-serif-medium", Typeface.NORMAL)),
-        numberFontFamily = FontFamily(Typeface.create("sans-serif-medium", Typeface.NORMAL))
+        fontFamily = FontFamily(Typeface.create("cursive", Typeface.BOLD)),
+        numberFontFamily = FontFamily(Typeface.create("cursive", Typeface.BOLD))
     ),
-    HEAVY(
-        displayName = "Industrial Heavy",
-        description = "Bold, assertive punchy display typography",
+    CLASSIC_SERIF(
+        displayName = "Classic Editorial Serif",
+        category = "Editorial",
+        description = "Distinguished literary serif typography with refined serifs",
         previewSample = "123,456.78 • Precision Suite",
-        fontFamily = FontFamily(Typeface.create("sans-serif-black", Typeface.BOLD)),
-        numberFontFamily = FontFamily(Typeface.create("sans-serif-black", Typeface.BOLD))
+        fontFamily = FontFamily(Typeface.create("serif", Typeface.NORMAL)),
+        numberFontFamily = FontFamily(Typeface.create("serif", Typeface.NORMAL))
     ),
-    MONOSPACE(
-        displayName = "Digital Monospace",
-        description = "Fixed-width terminal code & scientific calculator font",
+    LUXURY_SERIF_ITALIC(
+        displayName = "Luxury Serif Italic",
+        category = "High Fashion",
+        description = "Dramatic, high-contrast italic serif for upscale aesthetics",
         previewSample = "123,456.78 • Precision Suite",
-        fontFamily = FontFamily.Monospace,
-        numberFontFamily = FontFamily.Monospace
+        fontFamily = FontFamily(Typeface.create("serif", Typeface.BOLD_ITALIC)),
+        numberFontFamily = FontFamily(Typeface.create("serif", Typeface.BOLD_ITALIC))
     ),
-    SERIF_MONOSPACE(
-        displayName = "Serif Monospace",
-        description = "Classic typewriter fixed-pitch font",
+    VINTAGE_TYPEWRITER(
+        displayName = "Vintage Typewriter",
+        category = "Vintage",
+        description = "Distressed mechanical typewriter slab-serif letterforms",
         previewSample = "123,456.78 • Precision Suite",
         fontFamily = FontFamily(Typeface.create("serif-monospace", Typeface.NORMAL)),
         numberFontFamily = FontFamily(Typeface.create("serif-monospace", Typeface.NORMAL))
     ),
-    SERIF(
-        displayName = "Classic Serif",
-        description = "Refined literary editorial serif with elegant strokes",
+    CYBER_CONDENSED(
+        displayName = "Cyberpunk Condensed",
+        category = "Futuristic",
+        description = "Ultra-tall, high-impact condensed sci-fi HUD geometry",
         previewSample = "123,456.78 • Precision Suite",
-        fontFamily = FontFamily.Serif,
-        numberFontFamily = FontFamily.Serif
+        fontFamily = FontFamily(Typeface.create("sans-serif-condensed", Typeface.BOLD)),
+        numberFontFamily = FontFamily(Typeface.create("sans-serif-condensed", Typeface.BOLD))
     ),
-    CASUAL(
-        displayName = "Casual Handwriting",
-        description = "Friendly, humanistic modern handwriting",
+    CONDENSED_CLEAN(
+        displayName = "Condensed Ledger",
+        category = "Finance",
+        description = "Compact space-saving font engineered for high data density",
         previewSample = "123,456.78 • Precision Suite",
-        fontFamily = FontFamily(Typeface.create("casual", Typeface.NORMAL)),
-        numberFontFamily = FontFamily(Typeface.create("casual", Typeface.NORMAL))
+        fontFamily = FontFamily(Typeface.create("sans-serif-condensed", Typeface.NORMAL)),
+        numberFontFamily = FontFamily(Typeface.create("sans-serif-condensed", Typeface.NORMAL))
     ),
-    CURSIVE(
-        displayName = "Creative Cursive",
-        description = "Artistic handwriting and calligraphic script aesthetic",
+    MINIMALIST_LIGHT(
+        displayName = "Minimalist Hairline",
+        category = "Minimalist",
+        description = "Ultra-thin, airy, Scandinavian architectural aesthetic",
         previewSample = "123,456.78 • Precision Suite",
-        fontFamily = FontFamily.Cursive,
-        numberFontFamily = FontFamily.Cursive
+        fontFamily = FontFamily(Typeface.create("sans-serif-light", Typeface.NORMAL)),
+        numberFontFamily = FontFamily(Typeface.create("sans-serif-light", Typeface.NORMAL))
     ),
-    SMALL_CAPS(
+    INDUSTRIAL_BLACK(
+        displayName = "Industrial Ultra-Black",
+        category = "Industrial",
+        description = "Massive punchy heavyweight typeface with bold presence",
+        previewSample = "123,456.78 • Precision Suite",
+        fontFamily = FontFamily(Typeface.create("sans-serif-black", Typeface.BOLD)),
+        numberFontFamily = FontFamily(Typeface.create("sans-serif-black", Typeface.BOLD))
+    ),
+    TERMINAL_MONOSPACE(
+        displayName = "Terminal Hacker Code",
+        category = "Developer",
+        description = "High-contrast bold monospace matrix terminal typography",
+        previewSample = "123,456.78 • Precision Suite",
+        fontFamily = FontFamily(Typeface.create("monospace", Typeface.BOLD)),
+        numberFontFamily = FontFamily(Typeface.create("monospace", Typeface.BOLD))
+    ),
+    CLEAN_MONOSPACE(
+        displayName = "Digital Monospace",
+        category = "Calculator",
+        description = "Standard clean fixed-width digital calculator font",
+        previewSample = "123,456.78 • Precision Suite",
+        fontFamily = FontFamily(Typeface.create("monospace", Typeface.NORMAL)),
+        numberFontFamily = FontFamily(Typeface.create("monospace", Typeface.NORMAL))
+    ),
+    SMALL_CAPS_LEDGER(
         displayName = "Small Caps Ledger",
-        description = "Distinguished financial accounting format",
+        category = "Accounting",
+        description = "Distinguished financial accounting format in small capital letters",
         previewSample = "123,456.78 • Precision Suite",
         fontFamily = FontFamily(Typeface.create("sans-serif-smallcaps", Typeface.NORMAL)),
         numberFontFamily = FontFamily(Typeface.create("sans-serif-smallcaps", Typeface.NORMAL))
+    ),
+    GEOMETRIC_TECHNO(
+        displayName = "Geometric Medium",
+        category = "Modern",
+        description = "Well-balanced geometric sans with modern contrast",
+        previewSample = "123,456.78 • Precision Suite",
+        fontFamily = FontFamily(Typeface.create("sans-serif-medium", Typeface.NORMAL)),
+        numberFontFamily = FontFamily(Typeface.create("sans-serif-medium", Typeface.NORMAL))
     )
 }
 
 val LocalAppFontStyle = staticCompositionLocalOf { AppFontStyle.SYSTEM }
 
-// Digital Calculator monospaced font family for clean numeric alignment and calculator-first aesthetics
-val DigitalMonospaceFont = FontFamily.Monospace
+// Dynamic reactive font family for numbers and display that follows user font selection
+val DigitalMonospaceFont: FontFamily
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalAppFontStyle.current.numberFontFamily
 
 fun createAppTypography(fontStyle: AppFontStyle = AppFontStyle.SYSTEM): Typography {
     val bodyFont = fontStyle.fontFamily

@@ -54,19 +54,19 @@ class ExampleRobolectricTest {
   fun `test font style preference persistence`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
     val prefs = com.example.data.preferences.UserPreferencesManager(context)
-    prefs.fontStyle = com.example.ui.theme.AppFontStyle.SERIF
-    assertEquals(com.example.ui.theme.AppFontStyle.SERIF, prefs.fontStyle)
+    prefs.fontStyle = com.example.ui.theme.AppFontStyle.CASUAL_HANDWRITING
+    assertEquals(com.example.ui.theme.AppFontStyle.CASUAL_HANDWRITING, prefs.fontStyle)
 
-    prefs.fontStyle = com.example.ui.theme.AppFontStyle.CONDENSED
-    assertEquals(com.example.ui.theme.AppFontStyle.CONDENSED, prefs.fontStyle)
+    prefs.fontStyle = com.example.ui.theme.AppFontStyle.DANCING_CURSIVE
+    assertEquals(com.example.ui.theme.AppFontStyle.DANCING_CURSIVE, prefs.fontStyle)
 
-    prefs.fontStyle = com.example.ui.theme.AppFontStyle.CASUAL
-    assertEquals(com.example.ui.theme.AppFontStyle.CASUAL, prefs.fontStyle)
+    prefs.fontStyle = com.example.ui.theme.AppFontStyle.CYBER_CONDENSED
+    assertEquals(com.example.ui.theme.AppFontStyle.CYBER_CONDENSED, prefs.fontStyle)
 
-    prefs.fontStyle = com.example.ui.theme.AppFontStyle.SMALL_CAPS
-    assertEquals(com.example.ui.theme.AppFontStyle.SMALL_CAPS, prefs.fontStyle)
+    prefs.fontStyle = com.example.ui.theme.AppFontStyle.CLASSIC_SERIF
+    assertEquals(com.example.ui.theme.AppFontStyle.CLASSIC_SERIF, prefs.fontStyle)
 
-    prefs.fontStyle = com.example.ui.theme.AppFontStyle.MONOSPACE
-    assertEquals(com.example.ui.theme.AppFontStyle.MONOSPACE, prefs.fontStyle)
+    prefs.fontStyle = com.example.ui.theme.AppFontStyle.TERMINAL_MONOSPACE
+    assertEquals(com.example.ui.theme.AppFontStyle.TERMINAL_MONOSPACE, prefs.fontStyle)
   }
 }
