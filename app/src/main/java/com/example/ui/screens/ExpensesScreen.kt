@@ -1254,7 +1254,7 @@ private fun ExpenseAddEditSheetContent(
                     value = uiState.formAmountText,
                     onValueChange = onAmountChange,
                     readOnly = true,
-                    placeholder = { Text("0.00", fontFamily = DigitalMonospaceFont) },
+                    placeholder = { Text("0", fontFamily = DigitalMonospaceFont) },
                     leadingIcon = {
                         Text(
                             text = "Rs.",

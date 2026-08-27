@@ -168,7 +168,7 @@ data class RepMatrixSummary(
 
     val formattedDiscrepancy: String
         get() = when {
-            kotlin.math.abs(netDiscrepancy) < 0.01 -> "Rs. 0.00"
+            kotlin.math.abs(netDiscrepancy) < 0.01 -> "Rs. 0"
             netDiscrepancy > 0.0 -> "+Rs. ${IndianNumberFormatter.formatIndianDouble(netDiscrepancy, 2)}"
             else -> "-Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(netDiscrepancy), 2)}"
         }
@@ -1531,7 +1531,7 @@ private fun buildMatrixExecutiveReport(
             appendLine("Fleet Commission Paid: ${IndianNumberFormatter.formatIndianCurrency(fleetCommPaid)}")
         }
         val varianceStr = when {
-            kotlin.math.abs(fleetVariance) < 0.01 -> "Rs. 0.00 (Balanced)"
+            kotlin.math.abs(fleetVariance) < 0.01 -> "Rs. 0 (Balanced)"
             fleetVariance > 0 -> "+Rs. ${IndianNumberFormatter.formatIndianDouble(fleetVariance, 2)} (Surplus)"
             else -> "-Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(fleetVariance), 2)} (Shortage)"
         }

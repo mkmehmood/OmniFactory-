@@ -45,9 +45,10 @@ object IndianNumberFormatter {
     }
 
     /**
-     * Formats a Double value to Indian numbering format with specified decimal places (e.g. 10,70,500.00).
+     * Formats a Double value to Indian numbering format with clean representation (e.g. 10,70,500 instead of 10,70,500.00).
+     * If decimals exist (e.g. 123.45), formats with up to specified decimals without redundant trailing zeros.
      */
-    fun formatIndianDouble(value: Double, decimals: Int = 2): String {
+    fun formatIndianDouble(value: Double, decimals: Int = 2, stripTrailingZeros: Boolean = true): String {
         if (value.isNaN() || value.isInfinite()) return "0"
         val isNegative = value < 0
         val absVal = kotlin.math.abs(value)
@@ -59,9 +60,9 @@ object IndianNumberFormatter {
         val fracPart = if (parts.size > 1) parts[1] else ""
 
         val formattedInt = formatIntegerIndian(integerPart)
-        val result = if (decimals > 0) {
-            val paddedFrac = fracPart.padEnd(decimals, '0')
-            "$formattedInt.$paddedFrac"
+        val result = if (decimals > 0 && fracPart.isNotEmpty()) {
+            val processedFrac = if (stripTrailingZeros) fracPart.trimEnd('0') else fracPart.padEnd(decimals, '0')
+            if (processedFrac.isNotEmpty()) "$formattedInt.$processedFrac" else formattedInt
         } else {
             formattedInt
         }
@@ -70,17 +71,18 @@ object IndianNumberFormatter {
     }
 
     /**
-     * Formats a Double as Pakistani Rupee in Indian number grouping format (e.g. Rs. 10,70,500.00).
+     * Formats a Double as Pakistani Rupee in Indian number grouping format (e.g. Rs. 10,70,500 instead of Rs. 10,70,500.00).
      */
     fun formatIndianCurrency(
         value: Double,
         showSign: Boolean = false,
         symbol: String = "Rs."
     ): String {
-        if (value.isNaN() || value.isInfinite()) return "$symbol 0.00"
-        val absFormatted = formatIndianDouble(kotlin.math.abs(value), 2)
+        if (value.isNaN() || value.isInfinite()) return "$symbol 0"
+        val absVal = kotlin.math.abs(value)
+        if (absVal < 0.005) return "$symbol 0"
+        val absFormatted = formatIndianDouble(absVal, decimals = 2, stripTrailingZeros = true)
         return when {
-            kotlin.math.abs(value) < 0.005 -> "$symbol 0.00"
             value < 0 -> "-$symbol $absFormatted"
             showSign -> "+$symbol $absFormatted"
             else -> "$symbol $absFormatted"

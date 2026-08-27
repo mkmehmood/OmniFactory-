@@ -302,7 +302,7 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
             salesRepository.insertTransaction(entity)
             _uiState.update { it.copy(isSavedSuccess = true) }
             val statusDescription = when (result.status) {
-                ReconciliationStatus.BALANCED -> "Balanced (₹ 0.00 discrepancy)"
+                ReconciliationStatus.BALANCED -> "Balanced (₹ 0 discrepancy)"
                 ReconciliationStatus.OVER -> "Surplus of ${result.formattedDiscrepancy}"
                 ReconciliationStatus.SHORT -> "Deficit of ${result.formattedDiscrepancy}"
             }

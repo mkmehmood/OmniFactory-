@@ -133,6 +133,7 @@ import com.example.ui.theme.AnimationIntensity
 import com.example.ui.theme.AppFontStyle
 import com.example.ui.theme.ComponentSizeStyle
 import com.example.ui.theme.DigitalMonospaceFont
+import com.example.ui.theme.FontType
 import com.example.ui.theme.HapticIntensity
 import com.example.ui.theme.LocalShapeStructure
 import com.example.ui.theme.ShapeStructureStyle
@@ -198,6 +199,7 @@ fun SettingsScreen(
     var shapeDropdownExpanded by remember { mutableStateOf(false) }
     var sizeDropdownExpanded by remember { mutableStateOf(false) }
     var fontDropdownExpanded by remember { mutableStateOf(false) }
+    var selectedFontTypeTab by remember { mutableStateOf(FontType.ALL) }
     var animDropdownExpanded by remember { mutableStateOf(false) }
     var hapticDropdownExpanded by remember { mutableStateOf(false) }
     var soundDropdownExpanded by remember { mutableStateOf(false) }
@@ -546,17 +548,92 @@ fun SettingsScreen(
             // ==========================================
             // SECTION: App & System Font Typography Dropdown
             // ==========================================
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "App & System Font Typography",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "Override app and system typography with custom font styles",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "App & System Font Typography",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "Choose from Digital LED displays & Text typography styles",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = primaryColor.copy(alpha = 0.15f),
+                        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
+                    ) {
+                        Text(
+                            text = currentFontStyle.fontType.displayName.uppercase(),
+                            fontSize = 9.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = primaryColor,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                }
+
+                // Category Filter Tabs: All Fonts, Digital & LED, Text & Typography
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    FontType.entries.forEach { type ->
+                        val isTabSelected = selectedFontTypeTab == type
+                        val count = if (type == FontType.ALL) {
+                            AppFontStyle.entries.size
+                        } else {
+                            AppFontStyle.entries.count { it.fontType == type }
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (isTabSelected) primaryColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isTabSelected) primaryColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { selectedFontTypeTab = type }
+                                .testTag("font_tab_${type.name.lowercase()}")
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (type == FontType.DIGITAL) "Digital" else if (type == FontType.TEXT) "Text" else "All",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = if (isTabSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isTabSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (isTabSelected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f) else primaryColor.copy(alpha = 0.15f)
+                                ) {
+                                    Text(
+                                        text = "$count",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isTabSelected) MaterialTheme.colorScheme.onPrimary else primaryColor,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
 
                 Box(modifier = Modifier.fillMaxWidth().testTag("font_style_dropdown_box")) {
                     GlassDropdownTrigger(
@@ -572,7 +649,7 @@ fun SettingsScreen(
                             )
                         },
                         title = currentFontStyle.displayName,
-                        subtitle = currentFontStyle.description
+                        subtitle = "${currentFontStyle.fontType.displayName} • ${currentFontStyle.category}"
                     )
 
                     DropdownMenu(
@@ -580,12 +657,18 @@ fun SettingsScreen(
                         onDismissRequest = { fontDropdownExpanded = false },
                         modifier = Modifier
                             .fillMaxWidth(0.92f)
-                            .heightIn(max = 440.dp)
+                            .heightIn(max = 460.dp)
                             .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
                             .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
                             .testTag("font_style_dropdown_menu")
                     ) {
-                        AppFontStyle.entries.forEach { fontStyle ->
+                        val filteredFonts = if (selectedFontTypeTab == FontType.ALL) {
+                            AppFontStyle.entries
+                        } else {
+                            AppFontStyle.entries.filter { it.fontType == selectedFontTypeTab }
+                        }
+
+                        filteredFonts.forEach { fontStyle ->
                             val isSelected = currentFontStyle == fontStyle
 
                             DropdownMenuItem(
@@ -668,7 +751,7 @@ fun SettingsScreen(
                     }
                 }
 
-                // Live Typography Interactive Preview Card
+                // Live Typography Interactive Preview Card (Formatted cleanly without .00)
                 Surface(
                     shape = shapeStructure.toCardShape(),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -692,21 +775,21 @@ fun SettingsScreen(
                                 letterSpacing = 1.sp
                             )
                             Text(
-                                text = currentFontStyle.displayName,
+                                text = "${currentFontStyle.displayName} (${currentFontStyle.fontType.displayName})",
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontFamily = currentFontStyle.fontFamily
                             )
                         }
                         Text(
-                            text = "1,248,590.50 + 75.00%",
+                            text = "123,456 + 75% = 216,048",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = currentFontStyle.numberFontFamily,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Scientific Calculations • Daily Ledger • Currency Engine",
+                            text = "Scientific Calculations • Daily Ledger • Currency Engine • Simple 123 Formatting",
                             fontSize = 12.sp,
                             fontFamily = currentFontStyle.fontFamily,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1816,6 +1899,13 @@ private fun getShapeIcon(shape: ShapeStructureStyle): ImageVector {
 
 private fun getFontIcon(fontStyle: AppFontStyle): ImageVector {
     return when (fontStyle) {
+        AppFontStyle.CLEAN_MONOSPACE -> Icons.Default.Calculate
+        AppFontStyle.LCD_DIGITAL_BOLD -> Icons.Default.Tune
+        AppFontStyle.CYBER_CONDENSED -> Icons.Default.GraphicEq
+        AppFontStyle.TERMINAL_MONOSPACE -> Icons.Default.Terminal
+        AppFontStyle.CONDENSED_DIGITAL -> Icons.Default.DensityMedium
+        AppFontStyle.TYPEWRITER_DIGITAL -> Icons.Default.History
+        AppFontStyle.INDUSTRIAL_DIGITAL -> Icons.Default.DensityLarge
         AppFontStyle.SYSTEM -> Icons.Default.Smartphone
         AppFontStyle.CASUAL_HANDWRITING -> Icons.Default.Draw
         AppFontStyle.BOLD_CASUAL -> Icons.Default.Edit
@@ -1824,12 +1914,8 @@ private fun getFontIcon(fontStyle: AppFontStyle): ImageVector {
         AppFontStyle.CLASSIC_SERIF -> Icons.Default.MenuBook
         AppFontStyle.LUXURY_SERIF_ITALIC -> Icons.Default.FormatItalic
         AppFontStyle.VINTAGE_TYPEWRITER -> Icons.Default.History
-        AppFontStyle.CYBER_CONDENSED -> Icons.Default.Tune
-        AppFontStyle.CONDENSED_CLEAN -> Icons.Default.DensityMedium
         AppFontStyle.MINIMALIST_LIGHT -> Icons.Default.LightMode
         AppFontStyle.INDUSTRIAL_BLACK -> Icons.Default.DensityLarge
-        AppFontStyle.TERMINAL_MONOSPACE -> Icons.Default.Terminal
-        AppFontStyle.CLEAN_MONOSPACE -> Icons.Default.Calculate
         AppFontStyle.SMALL_CAPS_LEDGER -> Icons.Default.Abc
         AppFontStyle.GEOMETRIC_TECHNO -> Icons.Default.TextFields
     }

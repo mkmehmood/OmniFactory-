@@ -891,7 +891,7 @@ private fun SalesInputFormCard(
             ) {
                 NumericGridInputField(
                     label = "Unit Sale Price",
-                    placeholder = "0.00",
+                    placeholder = "0",
                     value = unitSalePrice,
                     onValueChange = onSetUnitSalePrice,
                     isSelected = focusedFieldId == "unit_price",
@@ -903,7 +903,7 @@ private fun SalesInputFormCard(
                 )
                 NumericGridInputField(
                     label = "Commission / Unit",
-                    placeholder = "0.00",
+                    placeholder = "0",
                     value = commissionPerUnit,
                     onValueChange = onSetCommissionPerUnit,
                     isSelected = focusedFieldId == "commission_rate",
@@ -920,7 +920,7 @@ private fun SalesInputFormCard(
             // Commission Paid (Deducts from commission, adds to expected cash)
             NumericGridInputField(
                 label = "Commission Paid (Advance/Paid)",
-                placeholder = "0.00",
+                placeholder = "0",
                 value = commissionPaid,
                 onValueChange = onSetCommissionPaid,
                 isSelected = focusedFieldId == "commission_paid",
@@ -950,7 +950,7 @@ private fun SalesInputFormCard(
             ) {
                 NumericGridInputField(
                     label = "Recovered Credit",
-                    placeholder = "0.00",
+                    placeholder = "0",
                     value = recoveredCredit,
                     onValueChange = onSetRecoveredCredit,
                     isSelected = focusedFieldId == "recovered_credit",
@@ -962,7 +962,7 @@ private fun SalesInputFormCard(
                 )
                 NumericGridInputField(
                     label = "Field Expenses",
-                    placeholder = "0.00",
+                    placeholder = "0",
                     value = expense,
                     onValueChange = onSetExpense,
                     isSelected = focusedFieldId == "expense",
@@ -978,7 +978,7 @@ private fun SalesInputFormCard(
 
             NumericGridInputField(
                 label = "Physical Cash Received from Rep",
-                placeholder = "0.00",
+                placeholder = "0",
                 value = physicalCash,
                 onValueChange = onSetPhysicalCash,
                 isSelected = focusedFieldId == "physical_cash",
@@ -2049,7 +2049,7 @@ private fun buildSingleTransactionAuditText(tx: SalesTransactionEntity): String 
         appendLine("• Net Commission Payable: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.totalCommission, 2)}")
         appendLine("• Expected Cash Receivable: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.expectedCash, 2)}")
         val discrepancy = tx.physicalCashInHand - tx.expectedCash
-        val discStr = if (kotlin.math.abs(discrepancy) < 0.01) "Rs. 0.00 (Balanced)"
+        val discStr = if (kotlin.math.abs(discrepancy) < 0.01) "Rs. 0 (Balanced)"
         else if (discrepancy > 0) "+Rs. ${IndianNumberFormatter.formatIndianDouble(discrepancy, 2)} (Surplus)"
         else "-Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(discrepancy), 2)} (Shortage)"
         appendLine("• Variance / Discrepancy: $discStr")

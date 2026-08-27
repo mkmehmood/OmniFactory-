@@ -775,7 +775,7 @@ private fun Step1EnterTargetIngredients(
                             onValueChange = onQtyChange,
                             readOnly = true,
                             label = { Text("Target Qty") },
-                            placeholder = { Text("0.00") },
+                            placeholder = { Text("0") },
                             suffix = {
                                 if (isQtyFocused) {
                                     BlinkingCursorPointer(color = primaryColor)
