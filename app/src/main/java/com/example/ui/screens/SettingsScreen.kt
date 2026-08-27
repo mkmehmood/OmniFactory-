@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Animation
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.Abc
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Calculate
@@ -37,13 +39,19 @@ import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.DensityLarge
 import androidx.compose.material.icons.filled.DensityMedium
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Draw
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FolderZip
+import androidx.compose.material.icons.filled.FormatBold
+import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LinearScale
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PanoramaFishEye
 import androidx.compose.material.icons.filled.PlayArrow
@@ -56,15 +64,15 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material.icons.filled.ViewCompact
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -571,6 +579,7 @@ fun SettingsScreen(
                         onDismissRequest = { fontDropdownExpanded = false },
                         modifier = Modifier
                             .fillMaxWidth(0.92f)
+                            .heightIn(max = 440.dp)
                             .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
                             .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
                             .testTag("font_style_dropdown_menu")
@@ -1782,9 +1791,16 @@ private fun getFontIcon(fontStyle: AppFontStyle): ImageVector {
     return when (fontStyle) {
         AppFontStyle.SYSTEM -> Icons.Default.Smartphone
         AppFontStyle.SANS_SERIF -> Icons.Default.TextFields
+        AppFontStyle.CONDENSED -> Icons.Default.ViewCompact
+        AppFontStyle.LIGHT -> Icons.Default.LightMode
+        AppFontStyle.MEDIUM -> Icons.Default.FormatBold
+        AppFontStyle.HEAVY -> Icons.Default.DensityLarge
         AppFontStyle.MONOSPACE -> Icons.Default.Calculate
+        AppFontStyle.SERIF_MONOSPACE -> Icons.Default.Terminal
         AppFontStyle.SERIF -> Icons.Default.MenuBook
+        AppFontStyle.CASUAL -> Icons.Default.Draw
         AppFontStyle.CURSIVE -> Icons.Default.Edit
+        AppFontStyle.SMALL_CAPS -> Icons.Default.Abc
     }
 }
 

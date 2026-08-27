@@ -57,6 +57,15 @@ class ExampleRobolectricTest {
     prefs.fontStyle = com.example.ui.theme.AppFontStyle.SERIF
     assertEquals(com.example.ui.theme.AppFontStyle.SERIF, prefs.fontStyle)
 
+    prefs.fontStyle = com.example.ui.theme.AppFontStyle.CONDENSED
+    assertEquals(com.example.ui.theme.AppFontStyle.CONDENSED, prefs.fontStyle)
+
+    prefs.fontStyle = com.example.ui.theme.AppFontStyle.CASUAL
+    assertEquals(com.example.ui.theme.AppFontStyle.CASUAL, prefs.fontStyle)
+
+    prefs.fontStyle = com.example.ui.theme.AppFontStyle.SMALL_CAPS
+    assertEquals(com.example.ui.theme.AppFontStyle.SMALL_CAPS, prefs.fontStyle)
+
     prefs.fontStyle = com.example.ui.theme.AppFontStyle.MONOSPACE
     assertEquals(com.example.ui.theme.AppFontStyle.MONOSPACE, prefs.fontStyle)
   }

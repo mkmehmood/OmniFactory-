@@ -1,5 +1,6 @@
 package com.example.ui.theme
 
+import android.graphics.Typeface
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.text.TextStyle
@@ -28,12 +29,47 @@ enum class AppFontStyle(
         fontFamily = FontFamily.SansSerif,
         numberFontFamily = FontFamily.SansSerif
     ),
+    CONDENSED(
+        displayName = "Condensed Sans",
+        description = "Compact space-saving font for high data density",
+        previewSample = "123,456.78 • Precision Suite",
+        fontFamily = FontFamily(Typeface.create("sans-serif-condensed", Typeface.NORMAL)),
+        numberFontFamily = FontFamily(Typeface.create("sans-serif-condensed", Typeface.NORMAL))
+    ),
+    LIGHT(
+        displayName = "Minimalist Light",
+        description = "Airy, modern, elegant clean aesthetic",
+        previewSample = "123,456.78 • Precision Suite",
+        fontFamily = FontFamily(Typeface.create("sans-serif-light", Typeface.NORMAL)),
+        numberFontFamily = FontFamily(Typeface.create("sans-serif-light", Typeface.NORMAL))
+    ),
+    MEDIUM(
+        displayName = "Geometric Medium",
+        description = "Strong contrast and well-balanced glyphs",
+        previewSample = "123,456.78 • Precision Suite",
+        fontFamily = FontFamily(Typeface.create("sans-serif-medium", Typeface.NORMAL)),
+        numberFontFamily = FontFamily(Typeface.create("sans-serif-medium", Typeface.NORMAL))
+    ),
+    HEAVY(
+        displayName = "Industrial Heavy",
+        description = "Bold, assertive punchy display typography",
+        previewSample = "123,456.78 • Precision Suite",
+        fontFamily = FontFamily(Typeface.create("sans-serif-black", Typeface.BOLD)),
+        numberFontFamily = FontFamily(Typeface.create("sans-serif-black", Typeface.BOLD))
+    ),
     MONOSPACE(
         displayName = "Digital Monospace",
         description = "Fixed-width terminal code & scientific calculator font",
         previewSample = "123,456.78 • Precision Suite",
         fontFamily = FontFamily.Monospace,
         numberFontFamily = FontFamily.Monospace
+    ),
+    SERIF_MONOSPACE(
+        displayName = "Serif Monospace",
+        description = "Classic typewriter fixed-pitch font",
+        previewSample = "123,456.78 • Precision Suite",
+        fontFamily = FontFamily(Typeface.create("serif-monospace", Typeface.NORMAL)),
+        numberFontFamily = FontFamily(Typeface.create("serif-monospace", Typeface.NORMAL))
     ),
     SERIF(
         displayName = "Classic Serif",
@@ -42,12 +78,26 @@ enum class AppFontStyle(
         fontFamily = FontFamily.Serif,
         numberFontFamily = FontFamily.Serif
     ),
+    CASUAL(
+        displayName = "Casual Handwriting",
+        description = "Friendly, humanistic modern handwriting",
+        previewSample = "123,456.78 • Precision Suite",
+        fontFamily = FontFamily(Typeface.create("casual", Typeface.NORMAL)),
+        numberFontFamily = FontFamily(Typeface.create("casual", Typeface.NORMAL))
+    ),
     CURSIVE(
         displayName = "Creative Cursive",
         description = "Artistic handwriting and calligraphic script aesthetic",
         previewSample = "123,456.78 • Precision Suite",
         fontFamily = FontFamily.Cursive,
         numberFontFamily = FontFamily.Cursive
+    ),
+    SMALL_CAPS(
+        displayName = "Small Caps Ledger",
+        description = "Distinguished financial accounting format",
+        previewSample = "123,456.78 • Precision Suite",
+        fontFamily = FontFamily(Typeface.create("sans-serif-smallcaps", Typeface.NORMAL)),
+        numberFontFamily = FontFamily(Typeface.create("sans-serif-smallcaps", Typeface.NORMAL))
     )
 }
 
