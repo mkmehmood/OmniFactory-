@@ -12,6 +12,7 @@ import com.example.domain.calculator.CalculatorEngine
 import com.example.ui.components.HistoryTimeSplit
 import com.example.ui.theme.AccentTheme
 import com.example.ui.theme.AnimationIntensity
+import com.example.ui.theme.AppFontStyle
 import com.example.ui.theme.ComponentSizeStyle
 import com.example.ui.theme.HapticIntensity
 import com.example.ui.theme.ShapeStructureStyle
@@ -33,6 +34,7 @@ data class CalculatorUiState(
     val isEvaluated: Boolean = false,
     val memory: BigDecimal = BigDecimal.ZERO,
     val showDoubleZeroKey: Boolean = true,
+    val fontStyle: AppFontStyle = AppFontStyle.SYSTEM,
     val animationIntensity: AnimationIntensity = AnimationIntensity.BALANCED,
     val hapticIntensity: HapticIntensity = HapticIntensity.MEDIUM,
     val soundIntensity: SoundIntensity = SoundIntensity.STANDARD,
@@ -59,6 +61,7 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
 
     private val _uiState = MutableStateFlow(
         CalculatorUiState(
+            fontStyle = userPreferencesManager.fontStyle,
             shapeStructureStyle = userPreferencesManager.shapeStructureStyle,
             componentSizeStyle = userPreferencesManager.componentSizeStyle,
             themeMode = userPreferencesManager.themeMode,
@@ -377,6 +380,11 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
         _uiState.update { it.copy(soundIntensity = intensity) }
     }
 
+    fun setFontStyle(style: AppFontStyle) {
+        userPreferencesManager.fontStyle = style
+        _uiState.update { it.copy(fontStyle = style) }
+    }
+
     fun setThemeMode(mode: ThemeMode) {
         userPreferencesManager.themeMode = mode
         _uiState.update { it.copy(themeMode = mode) }
@@ -395,6 +403,7 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     fun reloadPreferences() {
         _uiState.update {
             it.copy(
+                fontStyle = userPreferencesManager.fontStyle,
                 shapeStructureStyle = userPreferencesManager.shapeStructureStyle,
                 componentSizeStyle = userPreferencesManager.componentSizeStyle,
                 themeMode = userPreferencesManager.themeMode,

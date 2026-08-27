@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.example.ui.components.HistoryTimeSplit
 import com.example.ui.theme.AccentTheme
 import com.example.ui.theme.AnimationIntensity
+import com.example.ui.theme.AppFontStyle
 import com.example.ui.theme.ComponentSizeStyle
 import com.example.ui.theme.HapticIntensity
 import com.example.ui.theme.ShapeStructureStyle
@@ -17,6 +18,20 @@ class UserPreferencesManager(context: Context) {
         PREFS_NAME,
         Context.MODE_PRIVATE
     )
+
+    var fontStyle: AppFontStyle
+        get() {
+            val name = prefs.getString(KEY_FONT_STYLE, AppFontStyle.SYSTEM.name)
+                ?: AppFontStyle.SYSTEM.name
+            return try {
+                AppFontStyle.valueOf(name)
+            } catch (e: Exception) {
+                AppFontStyle.SYSTEM
+            }
+        }
+        set(value) {
+            prefs.edit().putString(KEY_FONT_STYLE, value.name).apply()
+        }
 
     var shapeStructureStyle: ShapeStructureStyle
         get() {
@@ -157,6 +172,7 @@ class UserPreferencesManager(context: Context) {
 
     companion object {
         private const val PREFS_NAME = "calculator_user_prefs"
+        private const val KEY_FONT_STYLE = "pref_font_style"
         private const val KEY_SHAPE_STRUCTURE = "pref_shape_structure"
         private const val KEY_COMPONENT_SIZE = "pref_component_size"
         private const val KEY_THEME_MODE = "pref_theme_mode"

@@ -49,4 +49,15 @@ class ExampleRobolectricTest {
     assertTrue(result is CalculationResult.Success)
     assertEquals(0, BigDecimal("75").compareTo((result as CalculationResult.Success).value))
   }
+
+  @Test
+  fun `test font style preference persistence`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val prefs = com.example.data.preferences.UserPreferencesManager(context)
+    prefs.fontStyle = com.example.ui.theme.AppFontStyle.SERIF
+    assertEquals(com.example.ui.theme.AppFontStyle.SERIF, prefs.fontStyle)
+
+    prefs.fontStyle = com.example.ui.theme.AppFontStyle.MONOSPACE
+    assertEquals(com.example.ui.theme.AppFontStyle.MONOSPACE, prefs.fontStyle)
+  }
 }

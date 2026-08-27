@@ -199,7 +199,8 @@ class MainActivity : ComponentActivity() {
                 accentTheme = uiState.accentTheme,
                 shapeStructureStyle = uiState.shapeStructureStyle,
                 componentSizeStyle = uiState.componentSizeStyle,
-                animationIntensity = uiState.animationIntensity
+                animationIntensity = uiState.animationIntensity,
+                fontStyle = uiState.fontStyle
             ) {
                 ModalNavigationDrawer(
                     drawerState = drawerState,
@@ -231,6 +232,7 @@ class MainActivity : ComponentActivity() {
                             currentShapeStructure = uiState.shapeStructureStyle,
                             currentComponentSize = uiState.componentSizeStyle,
                             currentAnimationIntensity = uiState.animationIntensity,
+                            currentFontStyle = uiState.fontStyle,
                             currentHapticIntensity = uiState.hapticIntensity,
                             currentSoundIntensity = uiState.soundIntensity,
                             showDoubleZeroKey = uiState.showDoubleZeroKey,
@@ -239,6 +241,7 @@ class MainActivity : ComponentActivity() {
                             onShapeStructureChange = { calculatorViewModel.setShapeStructureStyle(it) },
                             onComponentSizeChange = { calculatorViewModel.setComponentSizeStyle(it) },
                             onAnimationIntensityChange = { calculatorViewModel.setAnimationIntensity(it) },
+                            onFontStyleChange = { calculatorViewModel.setFontStyle(it) },
                             onHapticIntensityChange = { calculatorViewModel.setHapticIntensity(it) },
                             onSoundIntensityChange = { calculatorViewModel.setSoundIntensity(it) },
                             onToggleDoubleZero = { calculatorViewModel.setShowDoubleZeroKey(it) },

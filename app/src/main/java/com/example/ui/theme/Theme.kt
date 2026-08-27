@@ -278,6 +278,7 @@ fun MyApplicationTheme(
     shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     componentSizeStyle: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
     animationIntensity: AnimationIntensity = AnimationIntensity.BALANCED,
+    fontStyle: AppFontStyle = AppFontStyle.SYSTEM,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
@@ -339,14 +340,17 @@ fun MyApplicationTheme(
         extraLarge = shapeStructureStyle.toButtonShape()
     )
 
+    val appTypography = createAppTypography(fontStyle)
+
     CompositionLocalProvider(
         LocalShapeStructure provides shapeStructureStyle,
         LocalComponentSizing provides componentSizeStyle,
-        LocalAnimationIntensity provides animationIntensity
+        LocalAnimationIntensity provides animationIntensity,
+        LocalAppFontStyle provides fontStyle
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = Typography,
+            typography = appTypography,
             shapes = m3Shapes,
             content = content
         )

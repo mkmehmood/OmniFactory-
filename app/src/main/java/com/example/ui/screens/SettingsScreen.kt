@@ -56,12 +56,15 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -118,6 +121,7 @@ import com.example.ui.BackupDialogType
 import com.example.ui.SettingsViewModel
 import com.example.ui.theme.AccentTheme
 import com.example.ui.theme.AnimationIntensity
+import com.example.ui.theme.AppFontStyle
 import com.example.ui.theme.ComponentSizeStyle
 import com.example.ui.theme.DigitalMonospaceFont
 import com.example.ui.theme.HapticIntensity
@@ -137,6 +141,7 @@ fun SettingsScreen(
     currentShapeStructure: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     currentComponentSize: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
     currentAnimationIntensity: AnimationIntensity = AnimationIntensity.BALANCED,
+    currentFontStyle: AppFontStyle = AppFontStyle.SYSTEM,
     currentHapticIntensity: HapticIntensity = HapticIntensity.MEDIUM,
     currentSoundIntensity: SoundIntensity = SoundIntensity.STANDARD,
     showDoubleZeroKey: Boolean,
@@ -145,6 +150,7 @@ fun SettingsScreen(
     onShapeStructureChange: (ShapeStructureStyle) -> Unit = {},
     onComponentSizeChange: (ComponentSizeStyle) -> Unit = {},
     onAnimationIntensityChange: (AnimationIntensity) -> Unit = {},
+    onFontStyleChange: (AppFontStyle) -> Unit = {},
     onHapticIntensityChange: (HapticIntensity) -> Unit = {},
     onSoundIntensityChange: (SoundIntensity) -> Unit = {},
     onToggleDoubleZero: (Boolean) -> Unit,
@@ -182,6 +188,7 @@ fun SettingsScreen(
     var colorDropdownExpanded by remember { mutableStateOf(false) }
     var shapeDropdownExpanded by remember { mutableStateOf(false) }
     var sizeDropdownExpanded by remember { mutableStateOf(false) }
+    var fontDropdownExpanded by remember { mutableStateOf(false) }
     var animDropdownExpanded by remember { mutableStateOf(false) }
     var hapticDropdownExpanded by remember { mutableStateOf(false) }
     var soundDropdownExpanded by remember { mutableStateOf(false) }
@@ -521,6 +528,153 @@ fun SettingsScreen(
                                 modifier = Modifier.testTag("size_item_${sizeStyle.name.lowercase()}")
                             )
                         }
+                    }
+                }
+            }
+
+            HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
+
+            // ==========================================
+            // SECTION: App & System Font Typography Dropdown
+            // ==========================================
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "App & System Font Typography",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Override app and system typography with custom font styles",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Box(modifier = Modifier.fillMaxWidth().testTag("font_style_dropdown_box")) {
+                    GlassDropdownTrigger(
+                        isExpanded = fontDropdownExpanded,
+                        onClick = { fontDropdownExpanded = !fontDropdownExpanded },
+                        testTag = "font_style_dropdown_trigger",
+                        leadingContent = {
+                            Icon(
+                                imageVector = getFontIcon(currentFontStyle),
+                                contentDescription = null,
+                                tint = primaryColor,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        },
+                        title = currentFontStyle.displayName,
+                        subtitle = currentFontStyle.description
+                    )
+
+                    DropdownMenu(
+                        expanded = fontDropdownExpanded,
+                        onDismissRequest = { fontDropdownExpanded = false },
+                        modifier = Modifier
+                            .fillMaxWidth(0.92f)
+                            .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
+                            .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                            .testTag("font_style_dropdown_menu")
+                    ) {
+                        AppFontStyle.entries.forEach { fontStyle ->
+                            val isSelected = currentFontStyle == fontStyle
+
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Icon(
+                                            imageVector = getFontIcon(fontStyle),
+                                            contentDescription = null,
+                                            tint = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = fontStyle.displayName,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                fontSize = 13.5.sp,
+                                                fontFamily = fontStyle.fontFamily,
+                                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = fontStyle.description,
+                                                fontSize = 10.5.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = fontStyle.previewSample,
+                                                fontFamily = fontStyle.fontFamily,
+                                                fontSize = 11.5.sp,
+                                                color = if (isSelected) primaryColor.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                            )
+                                        }
+                                        if (isSelected) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Selected",
+                                                tint = primaryColor,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    onFontStyleChange(fontStyle)
+                                    fontDropdownExpanded = false
+                                },
+                                modifier = Modifier.testTag("font_item_${fontStyle.name.lowercase()}")
+                            )
+                        }
+                    }
+                }
+
+                // Live Typography Interactive Preview Card
+                Surface(
+                    shape = shapeStructure.toCardShape(),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
+                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "LIVE TYPOGRAPHY PREVIEW",
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = primaryColor,
+                                letterSpacing = 1.sp
+                            )
+                            Text(
+                                text = currentFontStyle.displayName,
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontFamily = currentFontStyle.fontFamily
+                            )
+                        }
+                        Text(
+                            text = "1,248,590.50 + 75.00%",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = currentFontStyle.numberFontFamily,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Scientific Calculations • Daily Ledger • Currency Engine",
+                            fontSize = 12.sp,
+                            fontFamily = currentFontStyle.fontFamily,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
@@ -1621,6 +1775,16 @@ private fun getShapeIcon(shape: ShapeStructureStyle): ImageVector {
         ShapeStructureStyle.TEARDROP -> Icons.Default.PanoramaFishEye
         ShapeStructureStyle.OVAL_STADIUM -> Icons.Default.PanoramaFishEye
         ShapeStructureStyle.SOFT_BUBBLE -> Icons.Default.RoundedCorner
+    }
+}
+
+private fun getFontIcon(fontStyle: AppFontStyle): ImageVector {
+    return when (fontStyle) {
+        AppFontStyle.SYSTEM -> Icons.Default.Smartphone
+        AppFontStyle.SANS_SERIF -> Icons.Default.TextFields
+        AppFontStyle.MONOSPACE -> Icons.Default.Calculate
+        AppFontStyle.SERIF -> Icons.Default.MenuBook
+        AppFontStyle.CURSIVE -> Icons.Default.Edit
     }
 }
 
