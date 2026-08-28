@@ -73,6 +73,7 @@ import com.example.ui.SalesViewModel
 import com.example.ui.SettingsViewModel
 import com.example.ui.components.AppNavigationDrawer
 import com.example.ui.components.DrawerDestination
+import com.example.ui.components.OrnamentalThemeBackground
 import com.example.ui.components.SimpleCalculatorDialog
 import com.example.ui.components.TapeHistorySheet
 import com.example.ui.screens.BasicCalculatorScreen
@@ -195,6 +196,7 @@ class MainActivity : ComponentActivity() {
             }
 
             MyApplicationTheme(
+                appThemeSkin = uiState.appThemeSkin,
                 themeMode = uiState.themeMode,
                 accentTheme = uiState.accentTheme,
                 shapeStructureStyle = uiState.shapeStructureStyle,
@@ -225,120 +227,126 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 ) {
-                    if (currentDestination == DrawerDestination.SETTINGS) {
-                        SettingsScreen(
-                            currentThemeMode = uiState.themeMode,
-                            currentAccent = uiState.accentTheme,
-                            currentShapeStructure = uiState.shapeStructureStyle,
-                            currentComponentSize = uiState.componentSizeStyle,
-                            currentAnimationIntensity = uiState.animationIntensity,
-                            currentFontStyle = uiState.fontStyle,
-                            currentHapticIntensity = uiState.hapticIntensity,
-                            currentSoundIntensity = uiState.soundIntensity,
-                            showDoubleZeroKey = uiState.showDoubleZeroKey,
-                            onThemeModeChange = { calculatorViewModel.setThemeMode(it) },
-                            onAccentChange = { calculatorViewModel.setAccentTheme(it) },
-                            onShapeStructureChange = { calculatorViewModel.setShapeStructureStyle(it) },
-                            onComponentSizeChange = { calculatorViewModel.setComponentSizeStyle(it) },
-                            onAnimationIntensityChange = { calculatorViewModel.setAnimationIntensity(it) },
-                            onFontStyleChange = { calculatorViewModel.setFontStyle(it) },
-                            onHapticIntensityChange = { calculatorViewModel.setHapticIntensity(it) },
-                            onSoundIntensityChange = { calculatorViewModel.setSoundIntensity(it) },
-                            onToggleDoubleZero = { calculatorViewModel.setShowDoubleZeroKey(it) },
-                            settingsViewModel = settingsViewModel,
-                            onPreferencesReload = { calculatorViewModel.reloadPreferences() },
-                            onCopyToClipboard = copyToClipboard,
-                            onNavigateBack = {
-                                currentDestination = DrawerDestination.CALCULATOR
-                            }
-                        )
-                    } else {
-                        Scaffold(
-                            modifier = Modifier.fillMaxSize(),
-                            topBar = {
-                                val topBarTitle = when (currentDestination) {
-                                    DrawerDestination.CALCULATOR -> "Calculator"
-                                    DrawerDestination.LEDGER -> "Daily Ledger"
-                                    DrawerDestination.EXPENSES -> "Expenses"
-                                    DrawerDestination.SALES -> "Sales Reconciliation"
-                                    DrawerDestination.MIXTURE_CALCULATOR -> "Mixture Calculator"
-                                    DrawerDestination.BATCH_SCALING -> "Batch Scaler"
-                                    DrawerDestination.CONVERTER -> {
-                                        if (converterUiState.isCategoryGridActive) "Units Converter"
-                                        else "Units: ${converterUiState.activeCategory.shortName}"
-                                    }
-                                    else -> "Calculator"
+                    OrnamentalThemeBackground(
+                        appThemeSkin = uiState.appThemeSkin,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        if (currentDestination == DrawerDestination.SETTINGS) {
+                            SettingsScreen(
+                                currentAppThemeSkin = uiState.appThemeSkin,
+                                currentThemeMode = uiState.themeMode,
+                                currentAccent = uiState.accentTheme,
+                                currentShapeStructure = uiState.shapeStructureStyle,
+                                currentComponentSize = uiState.componentSizeStyle,
+                                currentAnimationIntensity = uiState.animationIntensity,
+                                currentFontStyle = uiState.fontStyle,
+                                currentHapticIntensity = uiState.hapticIntensity,
+                                currentSoundIntensity = uiState.soundIntensity,
+                                showDoubleZeroKey = uiState.showDoubleZeroKey,
+                                onAppThemeSkinChange = { calculatorViewModel.setAppThemeSkin(it) },
+                                onThemeModeChange = { calculatorViewModel.setThemeMode(it) },
+                                onAccentChange = { calculatorViewModel.setAccentTheme(it) },
+                                onShapeStructureChange = { calculatorViewModel.setShapeStructureStyle(it) },
+                                onComponentSizeChange = { calculatorViewModel.setComponentSizeStyle(it) },
+                                onAnimationIntensityChange = { calculatorViewModel.setAnimationIntensity(it) },
+                                onFontStyleChange = { calculatorViewModel.setFontStyle(it) },
+                                onHapticIntensityChange = { calculatorViewModel.setHapticIntensity(it) },
+                                onSoundIntensityChange = { calculatorViewModel.setSoundIntensity(it) },
+                                onToggleDoubleZero = { calculatorViewModel.setShowDoubleZeroKey(it) },
+                                settingsViewModel = settingsViewModel,
+                                onPreferencesReload = { calculatorViewModel.reloadPreferences() },
+                                onCopyToClipboard = copyToClipboard,
+                                onNavigateBack = {
+                                    currentDestination = DrawerDestination.CALCULATOR
                                 }
-                                val topBarIcon = when (currentDestination) {
-                                    DrawerDestination.CALCULATOR -> Icons.Default.Calculate
-                                    DrawerDestination.LEDGER -> Icons.Default.AccountBalanceWallet
-                                    DrawerDestination.EXPENSES -> Icons.Default.Receipt
-                                    DrawerDestination.SALES -> Icons.Default.ReceiptLong
-                                    DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Science
-                                    DrawerDestination.BATCH_SCALING -> Icons.Default.Scale
-                                    DrawerDestination.CONVERTER -> {
-                                        if (converterUiState.isCategoryGridActive) Icons.Default.Category
-                                        else converterUiState.activeCategory.icon
+                            )
+                        } else {
+                            Scaffold(
+                                modifier = Modifier.fillMaxSize(),
+                                topBar = {
+                                    val topBarTitle = when (currentDestination) {
+                                        DrawerDestination.CALCULATOR -> "Calculator"
+                                        DrawerDestination.LEDGER -> "Daily Ledger"
+                                        DrawerDestination.EXPENSES -> "Expenses"
+                                        DrawerDestination.SALES -> "Sales Reconciliation"
+                                        DrawerDestination.MIXTURE_CALCULATOR -> "Mixture Calculator"
+                                        DrawerDestination.BATCH_SCALING -> "Batch Scaler"
+                                        DrawerDestination.CONVERTER -> {
+                                            if (converterUiState.isCategoryGridActive) "Units Converter"
+                                            else "Units: ${converterUiState.activeCategory.shortName}"
+                                        }
+                                        else -> "Calculator"
                                     }
-                                    else -> Icons.Default.Calculate
-                                }
-                                val actionIcon = when (currentDestination) {
-                                    DrawerDestination.CALCULATOR -> Icons.Default.History
-                                    DrawerDestination.LEDGER -> Icons.Default.History
-                                    DrawerDestination.EXPENSES -> Icons.Default.Add
-                                    DrawerDestination.SALES -> Icons.Default.ReceiptLong
-                                    DrawerDestination.CONVERTER -> Icons.Default.Calculate
-                                    DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Calculate
-                                    DrawerDestination.BATCH_SCALING -> Icons.Default.Scale
-                                    else -> Icons.Default.History
-                                }
-                                val actionDescription = when (currentDestination) {
-                                    DrawerDestination.CALCULATOR -> "History Tape"
-                                    DrawerDestination.LEDGER -> "Transaction History"
-                                    DrawerDestination.EXPENSES -> "Log Expense"
-                                    DrawerDestination.SALES -> "Saved Sales"
-                                    DrawerDestination.CONVERTER -> "Quick Calculator"
-                                    DrawerDestination.MIXTURE_CALCULATOR -> "Quick Calculator"
-                                    DrawerDestination.BATCH_SCALING -> "Quick Calculator"
-                                    else -> "Settings"
-                                }
-                                val onActionClick: () -> Unit = when (currentDestination) {
-                                    DrawerDestination.CALCULATOR -> {
-                                        { calculatorViewModel.setTapeOpen(true) }
+                                    val topBarIcon = when (currentDestination) {
+                                        DrawerDestination.CALCULATOR -> Icons.Default.Calculate
+                                        DrawerDestination.LEDGER -> Icons.Default.AccountBalanceWallet
+                                        DrawerDestination.EXPENSES -> Icons.Default.Receipt
+                                        DrawerDestination.SALES -> Icons.Default.ReceiptLong
+                                        DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Science
+                                        DrawerDestination.BATCH_SCALING -> Icons.Default.Scale
+                                        DrawerDestination.CONVERTER -> {
+                                            if (converterUiState.isCategoryGridActive) Icons.Default.Category
+                                            else converterUiState.activeCategory.icon
+                                        }
+                                        else -> Icons.Default.Calculate
                                     }
-                                    DrawerDestination.LEDGER -> {
-                                        { ledgerViewModel.setHistoryPanelOpen(true) }
+                                    val actionIcon = when (currentDestination) {
+                                        DrawerDestination.CALCULATOR -> Icons.Default.History
+                                        DrawerDestination.LEDGER -> Icons.Default.History
+                                        DrawerDestination.EXPENSES -> Icons.Default.Add
+                                        DrawerDestination.SALES -> Icons.Default.ReceiptLong
+                                        DrawerDestination.CONVERTER -> Icons.Default.Calculate
+                                        DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Calculate
+                                        DrawerDestination.BATCH_SCALING -> Icons.Default.Scale
+                                        else -> Icons.Default.History
                                     }
-                                    DrawerDestination.EXPENSES -> {
-                                        { expensesViewModel.openAddExpense() }
+                                    val actionDescription = when (currentDestination) {
+                                        DrawerDestination.CALCULATOR -> "History Tape"
+                                        DrawerDestination.LEDGER -> "Transaction History"
+                                        DrawerDestination.EXPENSES -> "Log Expense"
+                                        DrawerDestination.SALES -> "Saved Sales"
+                                        DrawerDestination.CONVERTER -> "Quick Calculator"
+                                        DrawerDestination.MIXTURE_CALCULATOR -> "Quick Calculator"
+                                        DrawerDestination.BATCH_SCALING -> "Quick Calculator"
+                                        else -> "Settings"
                                     }
-                                    DrawerDestination.SALES -> {
-                                        { salesViewModel.setSavedHistorySheetOpen(true) }
+                                    val onActionClick: () -> Unit = when (currentDestination) {
+                                        DrawerDestination.CALCULATOR -> {
+                                            { calculatorViewModel.setTapeOpen(true) }
+                                        }
+                                        DrawerDestination.LEDGER -> {
+                                            { ledgerViewModel.setHistoryPanelOpen(true) }
+                                        }
+                                        DrawerDestination.EXPENSES -> {
+                                            { expensesViewModel.openAddExpense() }
+                                        }
+                                        DrawerDestination.SALES -> {
+                                            { salesViewModel.setSavedHistorySheetOpen(true) }
+                                        }
+                                        DrawerDestination.CONVERTER,
+                                        DrawerDestination.MIXTURE_CALCULATOR,
+                                        DrawerDestination.BATCH_SCALING -> {
+                                            { showQuickCalculatorDialog = true }
+                                        }
+                                        else -> {
+                                            { currentDestination = DrawerDestination.SETTINGS }
+                                        }
                                     }
-                                    DrawerDestination.CONVERTER,
-                                    DrawerDestination.MIXTURE_CALCULATOR,
-                                    DrawerDestination.BATCH_SCALING -> {
-                                        { showQuickCalculatorDialog = true }
-                                    }
-                                    else -> {
-                                        { currentDestination = DrawerDestination.SETTINGS }
-                                    }
-                                }
 
-                                LiquidGlassTopBar(
-                                    title = topBarTitle,
-                                    icon = topBarIcon,
-                                    actionIcon = actionIcon,
-                                    actionDescription = actionDescription,
-                                    onOpenDrawer = {
-                                        scope.launch { drawerState.open() }
-                                    },
-                                    onActionClick = onActionClick
-                                )
-                            },
-                            snackbarHost = { SnackbarHost(snackbarHostState) },
-                            containerColor = MaterialTheme.colorScheme.background
-                        ) { innerPadding ->
+                                    LiquidGlassTopBar(
+                                        title = topBarTitle,
+                                        icon = topBarIcon,
+                                        actionIcon = actionIcon,
+                                        actionDescription = actionDescription,
+                                        onOpenDrawer = {
+                                            scope.launch { drawerState.open() }
+                                        },
+                                        onActionClick = onActionClick
+                                    )
+                                },
+                                snackbarHost = { SnackbarHost(snackbarHostState) },
+                                containerColor = Color.Transparent
+                            ) { innerPadding ->
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -490,6 +498,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+                }
 
                     // Clean, Unlimited and Persistent History Sheet with All Time, Today, Weekly, Monthly, Yearly separation
                     if (uiState.isTapeOpen) {

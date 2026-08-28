@@ -6,6 +6,7 @@ import com.example.ui.components.HistoryTimeSplit
 import com.example.ui.theme.AccentTheme
 import com.example.ui.theme.AnimationIntensity
 import com.example.ui.theme.AppFontStyle
+import com.example.ui.theme.AppThemeSkin
 import com.example.ui.theme.ComponentSizeStyle
 import com.example.ui.theme.HapticIntensity
 import com.example.ui.theme.ShapeStructureStyle
@@ -18,6 +19,20 @@ class UserPreferencesManager(context: Context) {
         PREFS_NAME,
         Context.MODE_PRIVATE
     )
+
+    var appThemeSkin: AppThemeSkin
+        get() {
+            val name = prefs.getString(KEY_APP_THEME_SKIN, AppThemeSkin.DARK_OBSIDIAN.name)
+                ?: AppThemeSkin.DARK_OBSIDIAN.name
+            return try {
+                AppThemeSkin.valueOf(name)
+            } catch (e: Exception) {
+                AppThemeSkin.DARK_OBSIDIAN
+            }
+        }
+        set(value) {
+            prefs.edit().putString(KEY_APP_THEME_SKIN, value.name).apply()
+        }
 
     var fontStyle: AppFontStyle
         get() {
@@ -172,6 +187,7 @@ class UserPreferencesManager(context: Context) {
 
     companion object {
         private const val PREFS_NAME = "calculator_user_prefs"
+        private const val KEY_APP_THEME_SKIN = "pref_app_theme_skin"
         private const val KEY_FONT_STYLE = "pref_font_style"
         private const val KEY_SHAPE_STRUCTURE = "pref_shape_structure"
         private const val KEY_COMPONENT_SIZE = "pref_component_size"

@@ -7,6 +7,7 @@ import com.example.ui.components.HistoryTimeSplit
 import com.example.ui.theme.AccentTheme
 import com.example.ui.theme.AnimationIntensity
 import com.example.ui.theme.AppFontStyle
+import com.example.ui.theme.AppThemeSkin
 import com.example.ui.theme.ComponentSizeStyle
 import com.example.ui.theme.HapticIntensity
 import com.example.ui.theme.ShapeStructureStyle
@@ -222,6 +223,7 @@ class DatabaseBackupManager(private val context: Context) {
 
         // 6. App Preferences & User Settings
         val settingsObj = JSONObject().apply {
+            put("appThemeSkin", prefs.appThemeSkin.name)
             put("fontStyle", prefs.fontStyle.name)
             put("themeMode", prefs.themeMode.name)
             put("accentTheme", prefs.accentTheme.name)
@@ -455,6 +457,9 @@ class DatabaseBackupManager(private val context: Context) {
                 val settingsObj = root.optJSONObject("settings")
                 if (settingsObj != null) {
                     try {
+                        settingsObj.optString("appThemeSkin").takeIf { it.isNotBlank() }?.let {
+                            prefs.appThemeSkin = AppThemeSkin.valueOf(it)
+                        }
                         settingsObj.optString("fontStyle").takeIf { it.isNotBlank() }?.let {
                             prefs.fontStyle = AppFontStyle.valueOf(it)
                         }

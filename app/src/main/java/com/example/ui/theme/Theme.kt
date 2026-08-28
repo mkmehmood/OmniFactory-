@@ -19,9 +19,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 enum class ThemeMode {
     SYSTEM,
@@ -29,180 +27,559 @@ enum class ThemeMode {
     LIGHT
 }
 
+enum class OrnamentalPatternStyle(
+    val displayName: String,
+    val description: String
+) {
+    NONE("Clean Minimal", "Clean surface without ornamental textures"),
+    AROMATIC_LAVENDER("Provence Lavender & Botanical", "Delicate lavender sprigs, blooming buds and floral vine filigree"),
+    SACRED_MANDALA("Sacred Mandala & Oud Arabesque", "Intricate 12-fold geometric mandala lace, incense wisps and arabesque filigree"),
+    BAROQUE_JASMINE("Baroque Jasmine Lace", "Delicate 5-petal star jasmine blossoms and royal French lace flourishes"),
+    VICTORIAN_DAMASK("Victorian Damask Crests", "Royal tapestry damask fleurons, acanthus leaf scrolls and ornate heart curls"),
+    BYZANTINE_GOLD("Byzantine Golden Arabesque", "Majestic 8-point Islamic sacred stars, incense smoke coils and golden filigree"),
+    MEDITERRANEAN_NEROLI("Mediterranean Majolica Tiles", "Sunlit citrus blossom wreaths, ornate ceramic tile corners and sunbursts"),
+    FESTIVE_RIBBON("Festive Gift Ribbons & Sparkles", "Gift box satin diagonal ribbon sash, bow knots and holiday twinkle stars"),
+    SAKURA_PETALS("Sakura Blossom Petals", "Cascading cherry blossoms with gentle organic wind trails"),
+    ROYAL_FLEUR_DE_LIS("Imperial Fleur-de-Lis", "Regal French monarchy heraldic fleurons, crown arches and imperial emblems"),
+    CYBER_CIRCUITS("Cyber Matrix Circuit Lattice", "Futuristic printed circuit nodes, hex grid corners and laser traces"),
+    CONSTELLATION_NEBULA("Celestial Nebula & Constellations", "Starry night galaxy coordinates, cosmic stardust and constellation charts"),
+    MINIMALIST_AURA("Ambient Aura Glow", "Soft luminous radial aura glow")
+}
+
+enum class AppThemeSkin(
+    val displayName: String,
+    val categoryTag: String,
+    val description: String,
+    val isDark: Boolean,
+    val background: Color,
+    val surface: Color,
+    val surfaceVariant: Color,
+    val surfacePressed: Color,
+    val outline: Color,
+    val textPrimary: Color,
+    val textSecondary: Color,
+    val defaultAccent: Color,
+    val previewColors: List<Color>,
+    val badgeLabel: String,
+    val ornamentalPattern: OrnamentalPatternStyle = OrnamentalPatternStyle.NONE,
+    val ornamentalTintColor: Color = Color(0x33FFD700)
+) {
+    // ==========================================
+    // 1. AROMATIC & ORNAMENTAL MASTERPIECES
+    // ==========================================
+    AROMATIC_LAVENDER(
+        displayName = "Aromatic Lavender Botanical",
+        categoryTag = "Aromatic",
+        description = "French Provence lavender sprigs, calming lilac mist & ornamental botanical vine filigree backdrop",
+        isDark = true,
+        background = Color(0xFF130B21),
+        surface = Color(0xFF1F1235),
+        surfaceVariant = Color(0x33C084FC),
+        surfacePressed = Color(0x55C084FC),
+        outline = Color(0x55C084FC),
+        textPrimary = Color(0xFFFAF5FF),
+        textSecondary = Color(0xFFE9D5FF),
+        defaultAccent = Color(0xFFC084FC),
+        previewColors = listOf(Color(0xFF130B21), Color(0xFF9333EA), Color(0xFFC084FC)),
+        badgeLabel = "AROMATIC VINES",
+        ornamentalPattern = OrnamentalPatternStyle.AROMATIC_LAVENDER,
+        ornamentalTintColor = Color(0xFFC084FC)
+    ),
+    AROMATIC_SANDALWOOD_OUD(
+        displayName = "Aromatic Sandalwood & Oud",
+        categoryTag = "Aromatic",
+        description = "Sacred Mysore sandalwood incense, aged royal oud resin & intricate ornamental mandala lace backdrop",
+        isDark = true,
+        background = Color(0xFF170C06),
+        surface = Color(0xFF27150A),
+        surfaceVariant = Color(0x33F59E0B),
+        surfacePressed = Color(0x55F59E0B),
+        outline = Color(0x55F59E0B),
+        textPrimary = Color(0xFFFFFBEB),
+        textSecondary = Color(0xFFFDE68A),
+        defaultAccent = Color(0xFFF59E0B),
+        previewColors = listOf(Color(0xFF170C06), Color(0xFFB45309), Color(0xFFF59E0B)),
+        badgeLabel = "SACRED MANDALA",
+        ornamentalPattern = OrnamentalPatternStyle.SACRED_MANDALA,
+        ornamentalTintColor = Color(0xFFF59E0B)
+    ),
+    AROMATIC_JASMINE_TEA(
+        displayName = "Aromatic Jasmine & White Tea",
+        categoryTag = "Aromatic",
+        description = "Luminous star jasmine petals, fragrant imperial white tea & delicate baroque floral lace background",
+        isDark = false,
+        background = Color(0xFFFAF8F5),
+        surface = Color(0xFFFFFFFF),
+        surfaceVariant = Color(0x99F1EADF),
+        surfacePressed = Color(0xBFE7DCCC),
+        outline = Color(0x55D97706),
+        textPrimary = Color(0xFF292524),
+        textSecondary = Color(0xFF57534E),
+        defaultAccent = Color(0xFFD97706),
+        previewColors = listOf(Color(0xFFFAF8F5), Color(0xFFFDE047), Color(0xFFD97706)),
+        badgeLabel = "JASMINE LACE",
+        ornamentalPattern = OrnamentalPatternStyle.BAROQUE_JASMINE,
+        ornamentalTintColor = Color(0xFFD97706)
+    ),
+    AROMATIC_ROSE_DAMASK(
+        displayName = "Aromatic Rose Oud & Damask",
+        categoryTag = "Aromatic",
+        description = "Persian Ispahan damask rose, precious rosewood & regal ornamental Victorian damask crests",
+        isDark = true,
+        background = Color(0xFF1D0813),
+        surface = Color(0xFF2E0D1F),
+        surfaceVariant = Color(0x38F43F5E),
+        surfacePressed = Color(0x59F43F5E),
+        outline = Color(0x59F43F5E),
+        textPrimary = Color(0xFFFFF1F2),
+        textSecondary = Color(0xFFFECDD3),
+        defaultAccent = Color(0xFFF43F5E),
+        previewColors = listOf(Color(0xFF1D0813), Color(0xFFBE123C), Color(0xFFF43F5E)),
+        badgeLabel = "ROYAL DAMASK",
+        ornamentalPattern = OrnamentalPatternStyle.VICTORIAN_DAMASK,
+        ornamentalTintColor = Color(0xFFF43F5E)
+    ),
+    AROMATIC_FRANKINCENSE_MYRRH(
+        displayName = "Aromatic Frankincense & Gold",
+        categoryTag = "Aromatic",
+        description = "Sacred Arabian frankincense, golden myrrh resin & majestic Byzantine arabesque ornamental stars",
+        isDark = true,
+        background = Color(0xFF140D04),
+        surface = Color(0xFF231707),
+        surfaceVariant = Color(0x33FFD700),
+        surfacePressed = Color(0x55FFD700),
+        outline = Color(0x66FFD700),
+        textPrimary = Color(0xFFFFFBEB),
+        textSecondary = Color(0xFFFFE082),
+        defaultAccent = Color(0xFFFFD700),
+        previewColors = listOf(Color(0xFF140D04), Color(0xFFCA8A04), Color(0xFFFFD700)),
+        badgeLabel = "BYZANTINE GOLD",
+        ornamentalPattern = OrnamentalPatternStyle.BYZANTINE_GOLD,
+        ornamentalTintColor = Color(0xFFFFD700)
+    ),
+    AROMATIC_NEROLI_BLOSSOM(
+        displayName = "Aromatic Neroli Citrus Blossom",
+        categoryTag = "Aromatic",
+        description = "Sunlit Sicilian orange blossom, fresh neroli essence & Mediterranean ornate majolica ceramic tile art",
+        isDark = false,
+        background = Color(0xFFFFFDF8),
+        surface = Color(0xFFFFFFFF),
+        surfaceVariant = Color(0x99FFE8D6),
+        surfacePressed = Color(0xBFFFD0B5),
+        outline = Color(0x55EA580C),
+        textPrimary = Color(0xFF1C1917),
+        textSecondary = Color(0xFF44403C),
+        defaultAccent = Color(0xFFEA580C),
+        previewColors = listOf(Color(0xFFFFFDF8), Color(0xFF38BDF8), Color(0xFFEA580C)),
+        badgeLabel = "NEROLI TILES",
+        ornamentalPattern = OrnamentalPatternStyle.MEDITERRANEAN_NEROLI,
+        ornamentalTintColor = Color(0xFFEA580C)
+    ),
+
+    // ==========================================
+    // 2. FESTIVE GIFT WRAP & HOLIDAY CELEBRATION
+    // ==========================================
+    GIFT_CELEBRATION(
+        displayName = "Festive Gift Box & Ribbon",
+        categoryTag = "Gift Style",
+        description = "Celebratory gift wrap with rich ruby velvet, gold foil ribbon accents & festive holiday sparkle",
+        isDark = true,
+        background = Color(0xFF1E0A12),
+        surface = Color(0xFF2E101D),
+        surfaceVariant = Color(0x38FF2A55),
+        surfacePressed = Color(0x55FF2A55),
+        outline = Color(0x66FFD700),
+        textPrimary = Color(0xFFFFF7EB),
+        textSecondary = Color(0xFFFFD180),
+        defaultAccent = Color(0xFFFF2A55),
+        previewColors = listOf(Color(0xFFFF2A55), Color(0xFFFFD700), Color(0xFF1E0A12)),
+        badgeLabel = "GIFT STYLE",
+        ornamentalPattern = OrnamentalPatternStyle.FESTIVE_RIBBON,
+        ornamentalTintColor = Color(0xFFFFD700)
+    ),
+
+    // ==========================================
+    // 3. CLASSIC & MODERN DARK SKINS
+    // ==========================================
+    DARK_OBSIDIAN(
+        displayName = "Obsidian Liquid Dark",
+        categoryTag = "Dark Mode",
+        description = "Classic deep midnight obsidian glass with subtle starry constellations and luminous cyan accents",
+        isDark = true,
+        background = Color(0xFF0A0E17),
+        surface = Color(0xFF0F172A),
+        surfaceVariant = Color(0x1AFFFFFF),
+        surfacePressed = Color(0x33FFFFFF),
+        outline = Color(0x2EFFFFFF),
+        textPrimary = Color(0xFFF8FAFC),
+        textSecondary = Color(0xFF94A3B8),
+        defaultAccent = Color(0xFF00E5FF),
+        previewColors = listOf(Color(0xFF0A0E17), Color(0xFF1E293B), Color(0xFF00E5FF)),
+        badgeLabel = "CLASSIC DARK",
+        ornamentalPattern = OrnamentalPatternStyle.CONSTELLATION_NEBULA,
+        ornamentalTintColor = Color(0xFF00E5FF)
+    ),
+    OLED_TRUE_BLACK(
+        displayName = "OLED True Pitch Black",
+        categoryTag = "Dark Mode",
+        description = "Pure 100% true black canvas with high-efficiency luminescent edges and battery saving",
+        isDark = true,
+        background = Color(0xFF000000),
+        surface = Color(0xFF080808),
+        surfaceVariant = Color(0x1FFFFFFF),
+        surfacePressed = Color(0x3BFFFFFF),
+        outline = Color(0x38FFFFFF),
+        textPrimary = Color(0xFFFFFFFF),
+        textSecondary = Color(0xFFA1A1AA),
+        defaultAccent = Color(0xFFF4F4F5),
+        previewColors = listOf(Color(0xFF000000), Color(0xFF18181B), Color(0xFFFFFFFF)),
+        badgeLabel = "OLED BLACK",
+        ornamentalPattern = OrnamentalPatternStyle.NONE
+    ),
+
+    // ==========================================
+    // 4. CLASSIC & MODERN LIGHT SKINS
+    // ==========================================
+    LIGHT_PORCELAIN(
+        displayName = "Porcelain Crystal Light",
+        categoryTag = "Light Mode",
+        description = "Ultra-clean alabaster porcelain with crystalline glass reflections and crisp legibility",
+        isDark = false,
+        background = Color(0xFFF1F5F9),
+        surface = Color(0xFFFFFFFF),
+        surfaceVariant = Color(0x80FFFFFF),
+        surfacePressed = Color(0xB3FFFFFF),
+        outline = Color(0x4D000000),
+        textPrimary = Color(0xFF0F172A),
+        textSecondary = Color(0xFF475569),
+        defaultAccent = Color(0xFF0091EA),
+        previewColors = listOf(Color(0xFFFFFFFF), Color(0xFFE2E8F0), Color(0xFF0284C7)),
+        badgeLabel = "CLASSIC LIGHT",
+        ornamentalPattern = OrnamentalPatternStyle.MINIMALIST_AURA,
+        ornamentalTintColor = Color(0xFF0284C7)
+    ),
+
+    // ==========================================
+    // 5. ARTISTIC & CREATIVE DESIGN
+    // ==========================================
+    ARTISTIC_STUDIO(
+        displayName = "Artistic Studio Color Design",
+        categoryTag = "Color Design",
+        description = "Contemporary Bauhaus creative design studio with vibrant pop-art color accents",
+        isDark = false,
+        background = Color(0xFFF8FAFC),
+        surface = Color(0xFFFFFFFF),
+        surfaceVariant = Color(0x52E2E8F0),
+        surfacePressed = Color(0x80CBD5E1),
+        outline = Color(0x4D2563EB),
+        textPrimary = Color(0xFF0F172A),
+        textSecondary = Color(0xFF334155),
+        defaultAccent = Color(0xFF2563EB),
+        previewColors = listOf(Color(0xFFEF4444), Color(0xFFF59E0B), Color(0xFF2563EB)),
+        badgeLabel = "COLOR DESIGN",
+        ornamentalPattern = OrnamentalPatternStyle.MINIMALIST_AURA,
+        ornamentalTintColor = Color(0xFF2563EB)
+    ),
+
+    // ==========================================
+    // 6. SCI-FI & CYBERPUNK
+    // ==========================================
+    CYBER_MATRIX(
+        displayName = "Cyberpunk Neon Matrix",
+        categoryTag = "Sci-Fi",
+        description = "Electric hacker terminal with glowing neon emerald grid & synthwave cyan highlights",
+        isDark = true,
+        background = Color(0xFF05120B),
+        surface = Color(0xFF0A2014),
+        surfaceVariant = Color(0x2E00E676),
+        surfacePressed = Color(0x4D00E676),
+        outline = Color(0x5900E676),
+        textPrimary = Color(0xFFE0FFE9),
+        textSecondary = Color(0xFF6EE7B7),
+        defaultAccent = Color(0xFF00E676),
+        previewColors = listOf(Color(0xFF05120B), Color(0xFF00E676), Color(0xFF00E5FF)),
+        badgeLabel = "CYBER MATRIX",
+        ornamentalPattern = OrnamentalPatternStyle.CYBER_CIRCUITS,
+        ornamentalTintColor = Color(0xFF00E676)
+    ),
+    RETRO_SYNTHWAVE(
+        displayName = "Retro Synthwave 80s",
+        categoryTag = "Retro",
+        description = "Nostalgic 1980s neon synthwave with chromatic magenta, laser cyan and twilight purple",
+        isDark = true,
+        background = Color(0xFF150024),
+        surface = Color(0xFF25003E),
+        surfaceVariant = Color(0x38FF007F),
+        surfacePressed = Color(0x59FF007F),
+        outline = Color(0x5500F0FF),
+        textPrimary = Color(0xFFFFF0FA),
+        textSecondary = Color(0xFFFF80DF),
+        defaultAccent = Color(0xFFFF007F),
+        previewColors = listOf(Color(0xFFFF007F), Color(0xFF00F0FF), Color(0xFF150024)),
+        badgeLabel = "SYNTHWAVE 80S",
+        ornamentalPattern = OrnamentalPatternStyle.CYBER_CIRCUITS,
+        ornamentalTintColor = Color(0xFFFF007F)
+    ),
+
+    // ==========================================
+    // 7. PASTEL & ROMANTIC
+    // ==========================================
+    CHERRY_BLOSSOM(
+        displayName = "Cherry Blossom Pastel",
+        categoryTag = "Pastel",
+        description = "Soft delicate Japanese Sakura pink with dreamy pastel frosted milk glass & falling petals",
+        isDark = false,
+        background = Color(0xFFFFF0F5),
+        surface = Color(0xFFFFFFFF),
+        surfaceVariant = Color(0x99FFE4E6),
+        surfacePressed = Color(0xBFFECDD3),
+        outline = Color(0x4DF43F5E),
+        textPrimary = Color(0xFF4C0519),
+        textSecondary = Color(0xFF9F1239),
+        defaultAccent = Color(0xFFFB7185),
+        previewColors = listOf(Color(0xFFFFF0F5), Color(0xFFFDA4AF), Color(0xFFFB7185)),
+        badgeLabel = "PASTEL BLOSSOM",
+        ornamentalPattern = OrnamentalPatternStyle.SAKURA_PETALS,
+        ornamentalTintColor = Color(0xFFFB7185)
+    ),
+    ROSE_GOLD_LUXURY(
+        displayName = "Rose Gold Champagne",
+        categoryTag = "Luxury",
+        description = "Sophisticated champagne rose gold metal with sparkling jewelry gloss and warm bronze",
+        isDark = true,
+        background = Color(0xFF190F14),
+        surface = Color(0xFF2B1922),
+        surfaceVariant = Color(0x33FB7185),
+        surfacePressed = Color(0x52FB7185),
+        outline = Color(0x59FB7185),
+        textPrimary = Color(0xFFFFF1F2),
+        textSecondary = Color(0xFFFECDD3),
+        defaultAccent = Color(0xFFFB7185),
+        previewColors = listOf(Color(0xFF190F14), Color(0xFFBE123C), Color(0xFFFDA4AF)),
+        badgeLabel = "ROSE GOLD",
+        ornamentalPattern = OrnamentalPatternStyle.VICTORIAN_DAMASK,
+        ornamentalTintColor = Color(0xFFFB7185)
+    ),
+
+    // ==========================================
+    // 8. ROYAL & IMPERIAL
+    // ==========================================
+    ROYAL_AMETHYST(
+        displayName = "Royal Amethyst Velvet",
+        categoryTag = "Royalty",
+        description = "Deep majestic imperial purple with glowing ultraviolet glass crystals and gold fleur-de-lis",
+        isDark = true,
+        background = Color(0xFF13091F),
+        surface = Color(0xFF200F35),
+        surfaceVariant = Color(0x33D500F9),
+        surfacePressed = Color(0x54D500F9),
+        outline = Color(0x59D500F9),
+        textPrimary = Color(0xFFFDF4FF),
+        textSecondary = Color(0xFFD8B4FE),
+        defaultAccent = Color(0xFFD500F9),
+        previewColors = listOf(Color(0xFF13091F), Color(0xFF7E22CE), Color(0xFFD500F9)),
+        badgeLabel = "ROYAL AMETHYST",
+        ornamentalPattern = OrnamentalPatternStyle.ROYAL_FLEUR_DE_LIS,
+        ornamentalTintColor = Color(0xFFFFD700)
+    ),
+
+    // ==========================================
+    // 9. NATURE & ORGANIC
+    // ==========================================
+    EMERALD_FOREST(
+        displayName = "Nordic Emerald Forest",
+        categoryTag = "Nature",
+        description = "Enchanting deep pine forest with soothing misty jade crystalline surfaces",
+        isDark = true,
+        background = Color(0xFF061712),
+        surface = Color(0xFF0D281E),
+        surfaceVariant = Color(0x3310B981),
+        surfacePressed = Color(0x5210B981),
+        outline = Color(0x4D10B981),
+        textPrimary = Color(0xFFECFDF5),
+        textSecondary = Color(0xFFA7F3D0),
+        defaultAccent = Color(0xFF10B981),
+        previewColors = listOf(Color(0xFF061712), Color(0xFF047857), Color(0xFF34D399)),
+        badgeLabel = "NORDIC FOREST",
+        ornamentalPattern = OrnamentalPatternStyle.AROMATIC_LAVENDER,
+        ornamentalTintColor = Color(0xFF34D399)
+    ),
+    MATCHA_ZEN(
+        displayName = "Zen Matcha Garden",
+        categoryTag = "Nature",
+        description = "Harmonious Japanese Kyoto green tea with calming bamboo minimalist aesthetic",
+        isDark = false,
+        background = Color(0xFFF4F7F2),
+        surface = Color(0xFFFFFFFF),
+        surfaceVariant = Color(0x99E2EBDD),
+        surfacePressed = Color(0xBFD1DFC8),
+        outline = Color(0x4D65A30D),
+        textPrimary = Color(0xFF1E2D18),
+        textSecondary = Color(0xFF455A38),
+        defaultAccent = Color(0xFF65A30D),
+        previewColors = listOf(Color(0xFFF4F7F2), Color(0xFFA3E635), Color(0xFF4D7C0F)),
+        badgeLabel = "ZEN MATCHA",
+        ornamentalPattern = OrnamentalPatternStyle.BAROQUE_JASMINE,
+        ornamentalTintColor = Color(0xFF65A30D)
+    ),
+
+    // ==========================================
+    // 10. WARM EARTH & SUNSET
+    // ==========================================
+    SUNSET_AMBER(
+        displayName = "Golden Sunset Mirage",
+        categoryTag = "Warm Horizon",
+        description = "Warm glowing horizon amber with molten golden desert sunset gradients & arabesque star rays",
+        isDark = true,
+        background = Color(0xFF1C1004),
+        surface = Color(0xFF2E1906),
+        surfaceVariant = Color(0x33FFB300),
+        surfacePressed = Color(0x54FFB300),
+        outline = Color(0x59FFB300),
+        textPrimary = Color(0xFFFFFBEB),
+        textSecondary = Color(0xFFFDE68A),
+        defaultAccent = Color(0xFFFFB300),
+        previewColors = listOf(Color(0xFF1C1004), Color(0xFFD97706), Color(0xFFFFB300)),
+        badgeLabel = "SUNSET GLOW",
+        ornamentalPattern = OrnamentalPatternStyle.BYZANTINE_GOLD,
+        ornamentalTintColor = Color(0xFFFFB300)
+    ),
+    MOCHA_ESPRESSO(
+        displayName = "Warm Mocha Espresso",
+        categoryTag = "Warm Earth",
+        description = "Artisan roasted coffee beans with warm caramel latte crema glass & aroma curves",
+        isDark = true,
+        background = Color(0xFF170F0B),
+        surface = Color(0xFF261A13),
+        surfaceVariant = Color(0x33D97706),
+        surfacePressed = Color(0x52D97706),
+        outline = Color(0x4DD97706),
+        textPrimary = Color(0xFFFEF3C7),
+        textSecondary = Color(0xFFD4B896),
+        defaultAccent = Color(0xFFD97706),
+        previewColors = listOf(Color(0xFF170F0B), Color(0xFF78350F), Color(0xFFD4B896)),
+        badgeLabel = "WARM MOCHA",
+        ornamentalPattern = OrnamentalPatternStyle.SACRED_MANDALA,
+        ornamentalTintColor = Color(0xFFD97706)
+    ),
+
+    // ==========================================
+    // 11. OCEAN & TITANIUM
+    // ==========================================
+    DEEP_OCEAN(
+        displayName = "Deep Oceanic Abyss",
+        categoryTag = "Ocean",
+        description = "Bioluminescent abyssal navy with vibrant electric aqua reef glass",
+        isDark = true,
+        background = Color(0xFF04101E),
+        surface = Color(0xFF091F38),
+        surfaceVariant = Color(0x3300E5FF),
+        surfacePressed = Color(0x5200E5FF),
+        outline = Color(0x4D00E5FF),
+        textPrimary = Color(0xFFF0F9FF),
+        textSecondary = Color(0xFFBAE6FD),
+        defaultAccent = Color(0xFF00E5FF),
+        previewColors = listOf(Color(0xFF04101E), Color(0xFF0369A1), Color(0xFF38BDF8)),
+        badgeLabel = "OCEAN ABYSS",
+        ornamentalPattern = OrnamentalPatternStyle.CONSTELLATION_NEBULA,
+        ornamentalTintColor = Color(0xFF00E5FF)
+    ),
+    TITANIUM_SLATE(
+        displayName = "Titanium Industrial Slate",
+        categoryTag = "Industrial",
+        description = "Brushed aircraft titanium monochrome with sleek metallic satin glass",
+        isDark = true,
+        background = Color(0xFF0F1216),
+        surface = Color(0xFF1A1F26),
+        surfaceVariant = Color(0x2B94A3B8),
+        surfacePressed = Color(0x4794A3B8),
+        outline = Color(0x4094A3B8),
+        textPrimary = Color(0xFFF1F5F9),
+        textSecondary = Color(0xFF94A3B8),
+        defaultAccent = Color(0xFF94A3B8),
+        previewColors = listOf(Color(0xFF0F1216), Color(0xFF475569), Color(0xFF94A3B8)),
+        badgeLabel = "TITANIUM",
+        ornamentalPattern = OrnamentalPatternStyle.MINIMALIST_AURA,
+        ornamentalTintColor = Color(0xFF94A3B8)
+    )
+}
+
 enum class AccentTheme(
     val displayName: String,
-    val category: String,
     val description: String,
     val darkPrimary: Color,
     val lightPrimary: Color,
     val previewGradient: List<Color>
 ) {
-    // ==========================================
-    // GIFT & FESTIVE STYLES
-    // ==========================================
-    GIFT_BIRTHDAY_PARTY(
-        "Birthday Gift Party",
-        "Gift Style",
-        "Festive party magenta, confetti sparkle & celebration gold",
-        Color(0xFFFF2A85),
-        Color(0xFFD81B60),
-        listOf(Color(0xFFFF2A85), Color(0xFFFFD700), Color(0xFFFF6EC7))
-    ),
-    GIFT_GOLDEN_RIBBON(
-        "Golden Ribbon Gift",
-        "Gift Style",
-        "Opulent champagne gold, silk ribbon sheen & warm amber glow",
-        Color(0xFFFFD700),
-        Color(0xFFC59B27),
-        listOf(Color(0xFFFFE082), Color(0xFFFFD700), Color(0xFFFF8F00))
-    ),
-    GIFT_HOLIDAY_WRAP(
-        "Festive Holiday Wrap",
-        "Gift Style",
-        "Cranberry red ribbon, spruce emerald & festive golden bow",
-        Color(0xFFFF3366),
-        Color(0xFFC2185B),
-        listOf(Color(0xFFFF3366), Color(0xFF00E676), Color(0xFFFFD700))
-    ),
-    GIFT_ROSE_GOLD_BOX(
-        "Rose Gold Gift Box",
-        "Gift Style",
-        "Blush rose gold metallic jewelry gift & diamond sheen",
-        Color(0xFFF472B6),
-        Color(0xFFDB2777),
-        listOf(Color(0xFFFBCFE8), Color(0xFFF472B6), Color(0xFFFDA4AF))
-    ),
-    GIFT_SILVER_FROST(
-        "Silver Frost Ribbon",
-        "Gift Style",
-        "Glacial platinum silver, winter gift wrap & icy sparkle",
-        Color(0xFFE2E8F0),
-        Color(0xFF64748B),
-        listOf(Color(0xFFFFFFFF), Color(0xFFCBD5E1), Color(0xFF94A3B8))
-    ),
-    GIFT_VALENTINE_HEART(
-        "Valentine Sweetheart Gift",
-        "Gift Style",
-        "Passionate ruby red velvet, heart candy pink & romance box",
-        Color(0xFFFF1744),
-        Color(0xFFD50000),
-        listOf(Color(0xFFFF1744), Color(0xFFFF4081), Color(0xFF880E4F))
-    ),
-
-    // ==========================================
-    // COLOR DESIGN & GLASS STYLES
-    // ==========================================
     AQUA(
-        "Aqua Cyan Glass",
-        "Color Design",
-        "Vibrant cyan crystal glow & liquid electric water glass",
+        "Aqua Cyan",
+        "Vibrant cyan crystal glow",
         GlassAccents.AquaGlassPrimary,
         GlassAccents.AquaGlassLight,
         listOf(Color(0xFF00E5FF), Color(0xFF00B0FF))
     ),
     VIOLET(
         "Electric Violet",
-        "Color Design",
-        "Deep amethyst & neon ultraviolet glow",
+        "Deep amethyst & neon violet",
         GlassAccents.VioletGlassPrimary,
         GlassAccents.VioletGlassLight,
         listOf(Color(0xFFD500F9), Color(0xFF8E24AA))
     ),
     AMBER(
         "Molten Amber",
-        "Color Design",
-        "Warm radiant solar amber & golden honey glow",
+        "Warm golden amber glow",
         GlassAccents.AmberGlassPrimary,
         GlassAccents.AmberGlassLight,
         listOf(Color(0xFFFFB300), Color(0xFFFF6F00))
     ),
     EMERALD(
         "Emerald Mint",
-        "Color Design",
-        "Vivid neon emerald green & luminous jade matrix",
+        "Vivid neon emerald green",
         GlassAccents.EmeraldGlassPrimary,
         GlassAccents.EmeraldGlassLight,
         listOf(Color(0xFF00E676), Color(0xFF00B0FF))
     ),
     ICE(
-        "Arctic Sky Glacier",
-        "Color Design",
-        "Crisp glacial sky blue & cool polar atmosphere",
+        "Arctic Sky",
+        "Crisp glacial sky blue",
         GlassAccents.IceGlassPrimary,
         GlassAccents.IceGlassLight,
         listOf(Color(0xFF38BDF8), Color(0xFF0284C7))
     ),
     ROSE(
-        "Crimson Rose Velvet",
-        "Color Design",
-        "Radiant ruby rose pink & deep luxury crimson velvet",
+        "Crimson Rose",
+        "Radiant ruby rose pink",
         GlassAccents.RoseGlassPrimary,
         GlassAccents.RoseGlassLight,
         listOf(Color(0xFFF43F5E), Color(0xFFBE123C))
     ),
     INDIGO(
         "Royal Sapphire",
-        "Color Design",
-        "Deep ultramarine & royal indigo crystal glow",
+        "Deep ultramarine & indigo",
         GlassAccents.IndigoGlassPrimary,
         GlassAccents.IndigoGlassLight,
         listOf(Color(0xFF6366F1), Color(0xFF4338CA))
     ),
     CORAL(
-        "Sunset Coral Peach",
-        "Color Design",
-        "Warm luminous sunset coral orange & twilight peach",
+        "Sunset Coral",
+        "Warm luminous coral orange",
         GlassAccents.CoralGlassPrimary,
         GlassAccents.CoralGlassLight,
         listOf(Color(0xFFFB923C), Color(0xFFEA580C))
     ),
     LIME(
-        "Cyber Lime Matrix",
-        "Color Design",
-        "High-contrast neon acid lime & futuristic cyberpunk pulse",
+        "Cyber Lime",
+        "High-contrast neon acid lime",
         GlassAccents.LimeGlassPrimary,
         GlassAccents.LimeGlassLight,
         listOf(Color(0xFFA3E635), Color(0xFF65A30D))
     ),
     SLATE(
         "Titanium Slate",
-        "Color Design",
-        "Minimalist industrial monochrome titanium slate",
+        "Minimalist titanium monochrome",
         GlassAccents.SlateGlassPrimary,
         GlassAccents.SlateGlassLight,
         listOf(Color(0xFF94A3B8), Color(0xFF475569))
-    ),
-    DARK_CHOCOLATE(
-        "Dark Chocolate Mocha",
-        "Color Design",
-        "Rich roasted espresso, cocoa bronze & warm caramel velvet",
-        Color(0xFFD97706),
-        Color(0xFF92400E),
-        listOf(Color(0xFFB45309), Color(0xFF78350F), Color(0xFF451A03))
-    ),
-    MIDNIGHT_OLED(
-        "Midnight Noir OLED",
-        "Color Design",
-        "Pure obsidian noir black & radiant electric diamond white",
-        Color(0xFFF8FAFC),
-        Color(0xFF0F172A),
-        listOf(Color(0xFFFFFFFF), Color(0xFF64748B), Color(0xFF0F172A))
-    ),
-    NEON_CYBERPUNK(
-        "Neon Cyberpunk Drive",
-        "Color Design",
-        "High-voltage electric hot pink & neon cyan synthwave",
-        Color(0xFFFF007F),
-        Color(0xFFC50060),
-        listOf(Color(0xFFFF007F), Color(0xFF00F0FF))
-    ),
-    PASTEL_LAVENDER(
-        "Pastel Lavender Bloom",
-        "Color Design",
-        "Soft soothing pastel lilac, spring blossom & gentle violet",
-        Color(0xFFC084FC),
-        Color(0xFF9333EA),
-        listOf(Color(0xFFE9D5FF), Color(0xFFC084FC), Color(0xFFA855F7))
     )
 }
 
@@ -370,9 +747,11 @@ enum class SoundIntensity(
 val LocalShapeStructure = staticCompositionLocalOf { ShapeStructureStyle.ROUNDED }
 val LocalComponentSizing = staticCompositionLocalOf { ComponentSizeStyle.STANDARD }
 val LocalAnimationIntensity = staticCompositionLocalOf { AnimationIntensity.BALANCED }
+val LocalAppThemeSkin = staticCompositionLocalOf { AppThemeSkin.DARK_OBSIDIAN }
 
 @Composable
 fun MyApplicationTheme(
+    appThemeSkin: AppThemeSkin = AppThemeSkin.DARK_OBSIDIAN,
     themeMode: ThemeMode = ThemeMode.DARK,
     accentTheme: AccentTheme = AccentTheme.AQUA,
     shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
@@ -382,54 +761,76 @@ fun MyApplicationTheme(
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    val isSystemDark = isSystemInDarkTheme()
     val isDark = when (themeMode) {
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.SYSTEM -> isSystemDark
         ThemeMode.DARK -> true
         ThemeMode.LIGHT -> false
     }
 
-    val primary = if (isDark) accentTheme.darkPrimary else accentTheme.lightPrimary
+    val primary = if (appThemeSkin.isDark == isDark) {
+        if (accentTheme == AccentTheme.AQUA) appThemeSkin.defaultAccent
+        else (if (isDark) accentTheme.darkPrimary else accentTheme.lightPrimary)
+    } else {
+        if (isDark) accentTheme.darkPrimary else accentTheme.lightPrimary
+    }
+
     val onPrimary = if (isDark) Color.Black else Color.White
 
-    val darkScheme = darkColorScheme(
-        primary = primary,
-        onPrimary = onPrimary,
-        primaryContainer = primary.copy(alpha = 0.2f),
-        onPrimaryContainer = primary,
-        secondary = primary.copy(alpha = 0.85f),
-        onSecondary = onPrimary,
-        background = PureDarkBackground,
-        onBackground = PureDarkTextPrimary,
-        surface = PureDarkSurface,
-        onSurface = PureDarkTextPrimary,
-        surfaceVariant = PureDarkGlassSurface,
-        onSurfaceVariant = PureDarkTextSecondary,
-        outline = PureDarkGlassBorder
-    )
+    val skinColorScheme = if (isDark) {
+        val baseBackground = if (appThemeSkin.isDark) appThemeSkin.background else PureDarkBackground
+        val baseSurface = if (appThemeSkin.isDark) appThemeSkin.surface else PureDarkSurface
+        val baseSurfaceVariant = if (appThemeSkin.isDark) appThemeSkin.surfaceVariant else PureDarkGlassSurface
+        val baseOutline = if (appThemeSkin.isDark) appThemeSkin.outline else PureDarkGlassBorder
+        val baseTextPrimary = if (appThemeSkin.isDark) appThemeSkin.textPrimary else PureDarkTextPrimary
+        val baseTextSecondary = if (appThemeSkin.isDark) appThemeSkin.textSecondary else PureDarkTextSecondary
 
-    val lightScheme = lightColorScheme(
-        primary = primary,
-        onPrimary = onPrimary,
-        primaryContainer = primary.copy(alpha = 0.15f),
-        onPrimaryContainer = primary,
-        secondary = primary.copy(alpha = 0.85f),
-        onSecondary = onPrimary,
-        background = PureLightBackground,
-        onBackground = PureLightTextPrimary,
-        surface = PureLightSurface,
-        onSurface = PureLightTextPrimary,
-        surfaceVariant = PureLightGlassSurface,
-        onSurfaceVariant = PureLightTextSecondary,
-        outline = PureLightGlassBorder
-    )
+        darkColorScheme(
+            primary = primary,
+            onPrimary = onPrimary,
+            primaryContainer = primary.copy(alpha = 0.2f),
+            onPrimaryContainer = primary,
+            secondary = primary.copy(alpha = 0.85f),
+            onSecondary = onPrimary,
+            background = baseBackground,
+            onBackground = baseTextPrimary,
+            surface = baseSurface,
+            onSurface = baseTextPrimary,
+            surfaceVariant = baseSurfaceVariant,
+            onSurfaceVariant = baseTextSecondary,
+            outline = baseOutline
+        )
+    } else {
+        val baseBackground = if (!appThemeSkin.isDark) appThemeSkin.background else PureLightBackground
+        val baseSurface = if (!appThemeSkin.isDark) appThemeSkin.surface else PureLightSurface
+        val baseSurfaceVariant = if (!appThemeSkin.isDark) appThemeSkin.surfaceVariant else PureLightGlassSurface
+        val baseOutline = if (!appThemeSkin.isDark) appThemeSkin.outline else PureLightGlassBorder
+        val baseTextPrimary = if (!appThemeSkin.isDark) appThemeSkin.textPrimary else PureLightTextPrimary
+        val baseTextSecondary = if (!appThemeSkin.isDark) appThemeSkin.textSecondary else PureLightTextSecondary
+
+        lightColorScheme(
+            primary = primary,
+            onPrimary = onPrimary,
+            primaryContainer = primary.copy(alpha = 0.15f),
+            onPrimaryContainer = primary,
+            secondary = primary.copy(alpha = 0.85f),
+            onSecondary = onPrimary,
+            background = baseBackground,
+            onBackground = baseTextPrimary,
+            surface = baseSurface,
+            onSurface = baseTextPrimary,
+            surfaceVariant = baseSurfaceVariant,
+            onSurfaceVariant = baseTextSecondary,
+            outline = baseOutline
+        )
+    }
 
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        isDark -> darkScheme
-        else -> lightScheme
+        else -> skinColorScheme
     }
 
     val m3Shapes = Shapes(
@@ -443,6 +844,7 @@ fun MyApplicationTheme(
     val appTypography = createAppTypography(fontStyle)
 
     CompositionLocalProvider(
+        LocalAppThemeSkin provides appThemeSkin,
         LocalShapeStructure provides shapeStructureStyle,
         LocalComponentSizing provides componentSizeStyle,
         LocalAnimationIntensity provides animationIntensity,
