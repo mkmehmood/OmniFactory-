@@ -10,15 +10,8 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-enum class FontType(val displayName: String) {
-    ALL("All Fonts"),
-    DIGITAL("Digital & LED"),
-    TEXT("Text & Typography")
-}
-
 enum class AppFontStyle(
     val displayName: String,
-    val fontType: FontType,
     val category: String,
     val description: String,
     val previewSample: String,
@@ -29,24 +22,159 @@ enum class AppFontStyle(
     val fontFeatureSettings: String? = null
 ) {
     // ==========================================
-    // DIGITAL & ELECTRONIC DISPLAY STYLES
+    // MODERN CALLIGRAPHY & SCRIPT FONTS
+    // ==========================================
+    MODERN_CALLIGRAPHY(
+        displayName = "Modern Flow Calligraphy",
+        category = "Modern Calligraphy",
+        description = "Contemporary chic calligraphy with flowing organic flourishes",
+        previewSample = "123,456 • Modern Calligraphy 789",
+        fontFamily = FontFamily.Cursive,
+        numberFontFamily = FontFamily.Cursive,
+        defaultFontWeight = FontWeight.Medium
+    ),
+    LUXURY_RIBBON_SCRIPT(
+        displayName = "Luxury Ribbon Script",
+        category = "Ribbon Flourish",
+        description = "High-contrast elegant ribbon script with dramatic graceful loops",
+        previewSample = "123,456 • Ribbon Script 789",
+        fontFamily = FontFamily.Cursive,
+        numberFontFamily = FontFamily.Cursive,
+        defaultFontWeight = FontWeight.Bold
+    ),
+    PARISIAN_SIGNATURE(
+        displayName = "Parisian Chic Signature",
+        category = "Signature Script",
+        description = "Modern boutique signature hand-lettered calligraphy with chic slant",
+        previewSample = "123,456 • Parisian Calligraphy 789",
+        fontFamily = FontFamily.Cursive,
+        numberFontFamily = FontFamily.Cursive,
+        defaultFontWeight = FontWeight.SemiBold,
+        defaultFontStyle = FontStyle.Italic
+    ),
+    NASTALIQ_CALLIGRAPHY(
+        displayName = "Harmonic Nastaliq Script",
+        category = "Eastern Calligraphy",
+        description = "Harmonic rhythmic cursive strokes inspired by Persian & Nastaliq calligraphy",
+        previewSample = "123,456 • Nastaliq Calligraphy 789",
+        fontFamily = FontFamily.Cursive,
+        numberFontFamily = FontFamily.Cursive,
+        defaultFontWeight = FontWeight.Bold
+    ),
+    GOTHIC_CALLIGRAPHY(
+        displayName = "Gothic Blackletter Calligraphy",
+        category = "Broad-Nib Gothic",
+        description = "Structured architectural broad-nib blackletter calligraphy",
+        previewSample = "123,456 • Gothic Calligraphy 789",
+        fontFamily = FontFamily.Serif,
+        numberFontFamily = FontFamily.Serif,
+        defaultFontWeight = FontWeight.ExtraBold
+    ),
+    BRUSH_PEN_CALLIGRAPHY(
+        displayName = "Zen Brush Pen Calligraphy",
+        category = "Brush Script",
+        description = "Expressive organic Japanese sumi-e & modern brush pen strokes",
+        previewSample = "123,456 • Brush Calligraphy 789",
+        fontFamily = FontFamily.Cursive,
+        numberFontFamily = FontFamily.Cursive,
+        defaultFontWeight = FontWeight.Black
+    ),
+    COPPERPLATE_FLOURISH(
+        displayName = "Copperplate Formal Calligraphy",
+        category = "Spencerian Flourish",
+        description = "Classic 19th-century pointed-pen Spencerian & Copperplate script",
+        previewSample = "123,456 • Copperplate Script 789",
+        fontFamily = FontFamily.Cursive,
+        numberFontFamily = FontFamily.Cursive,
+        defaultFontWeight = FontWeight.Normal,
+        defaultFontStyle = FontStyle.Italic
+    ),
+    BOHEMIAN_HAND_LETTERING(
+        displayName = "Boho Aesthetic Calligraphy",
+        category = "Hand Lettering",
+        description = "Artistic warm casual modern calligraphy with bespoke character",
+        previewSample = "123,456 • Boho Lettering 789",
+        fontFamily = FontFamily.Cursive,
+        numberFontFamily = FontFamily.Cursive,
+        defaultFontWeight = FontWeight.SemiBold
+    ),
+    ROYAL_CALLIGRAPHY(
+        displayName = "Royal Majestic Calligraphy",
+        category = "Court Calligraphy",
+        description = "Dramatic luxury cursive calligraphy with bold commanding strokes",
+        previewSample = "123,456 • Royal Calligraphy 789",
+        fontFamily = FontFamily.Cursive,
+        numberFontFamily = FontFamily.Cursive,
+        defaultFontWeight = FontWeight.ExtraBold
+    ),
+    DANCING_CURSIVE(
+        displayName = "Dancing Cursive Script",
+        category = "Dancing Script",
+        description = "Lively flowing rhythmic calligraphic cursive handwriting",
+        previewSample = "123,456 • Dancing Script 789",
+        fontFamily = FontFamily.Cursive,
+        numberFontFamily = FontFamily.Cursive,
+        defaultFontWeight = FontWeight.Medium
+    ),
+    CASUAL_HANDWRITING(
+        displayName = "Casual Human Script",
+        category = "Handwritten",
+        description = "Friendly, informal human handwriting aesthetic",
+        previewSample = "123,456 • Human Script 789",
+        fontFamily = FontFamily.Cursive,
+        numberFontFamily = FontFamily.Cursive,
+        defaultFontWeight = FontWeight.Normal
+    ),
+    BOLD_CASUAL(
+        displayName = "Bold Marker Sketch",
+        category = "Marker Script",
+        description = "Chunky, expressive whiteboard marker hand-drawn typography",
+        previewSample = "123,456 • Marker Script 789",
+        fontFamily = FontFamily.Cursive,
+        numberFontFamily = FontFamily.Cursive,
+        defaultFontWeight = FontWeight.Bold
+    ),
+
+    // ==========================================
+    // EDITORIAL & SERIF FONTS
+    // ==========================================
+    CLASSIC_SERIF(
+        displayName = "Classic Editorial Serif",
+        category = "Editorial",
+        description = "Distinguished literary serif typography with refined serifs",
+        previewSample = "123,456 • Editorial Serif 789",
+        fontFamily = FontFamily.Serif,
+        numberFontFamily = FontFamily.Serif,
+        defaultFontWeight = FontWeight.Normal
+    ),
+    LUXURY_SERIF_ITALIC(
+        displayName = "Luxury Serif Italic",
+        category = "High Fashion",
+        description = "Dramatic, high-contrast italic serif for upscale aesthetics",
+        previewSample = "123,456 • Luxury Italic 789",
+        fontFamily = FontFamily.Serif,
+        numberFontFamily = FontFamily.Serif,
+        defaultFontWeight = FontWeight.Bold,
+        defaultFontStyle = FontStyle.Italic
+    ),
+
+    // ==========================================
+    // DIGITAL, MATRIX & MONOSPACE FONTS
     // ==========================================
     CLEAN_MONOSPACE(
         displayName = "Digital Monospace",
-        fontType = FontType.DIGITAL,
         category = "Digital LED",
         description = "Standard digital fixed-width calculator typography",
-        previewSample = "123,456 • 123 + 456 = 579",
+        previewSample = "123,456 • Monospace 789",
         fontFamily = FontFamily.Monospace,
         numberFontFamily = FontFamily.Monospace,
         defaultFontWeight = FontWeight.Normal
     ),
     LCD_DIGITAL_BOLD(
         displayName = "LCD 7-Segment Bold",
-        fontType = FontType.DIGITAL,
         category = "7-Segment",
         description = "High-contrast segmented electronic calculator display",
-        previewSample = "123,456 • 123 456 789",
+        previewSample = "123,456 • Segment Bold 789",
         fontFamily = FontFamily.Monospace,
         numberFontFamily = FontFamily.Monospace,
         defaultFontWeight = FontWeight.ExtraBold,
@@ -54,10 +182,9 @@ enum class AppFontStyle(
     ),
     CYBER_CONDENSED(
         displayName = "Cyberpunk HUD Matrix",
-        fontType = FontType.DIGITAL,
         category = "Sci-Fi HUD",
         description = "Ultra-tall condensed digital geometry for sci-fi displays",
-        previewSample = "123,456 • 123 MATRIX",
+        previewSample = "123,456 • Matrix HUD 789",
         fontFamily = FontFamily.Monospace,
         numberFontFamily = FontFamily.Monospace,
         defaultFontWeight = FontWeight.Bold,
@@ -65,20 +192,18 @@ enum class AppFontStyle(
     ),
     TERMINAL_MONOSPACE(
         displayName = "Retro Terminal Code",
-        fontType = FontType.DIGITAL,
         category = "Hacker Terminal",
         description = "Bold developer terminal monospace commands",
-        previewSample = "123,456 • 123 ROOT EXEC",
+        previewSample = "123,456 • Terminal 789",
         fontFamily = FontFamily.Monospace,
         numberFontFamily = FontFamily.Monospace,
         defaultFontWeight = FontWeight.Bold
     ),
     CONDENSED_DIGITAL(
         displayName = "Compact Digital Ledger",
-        fontType = FontType.DIGITAL,
         category = "Matrix Display",
         description = "Space-saving high-density numeric matrix typography",
-        previewSample = "123,456 • 123 DATA LOG",
+        previewSample = "123,456 • Ledger Matrix 789",
         fontFamily = FontFamily.Monospace,
         numberFontFamily = FontFamily.Monospace,
         defaultFontWeight = FontWeight.Medium,
@@ -86,149 +211,80 @@ enum class AppFontStyle(
     ),
     TYPEWRITER_DIGITAL(
         displayName = "Vintage Slab Matrix",
-        fontType = FontType.DIGITAL,
         category = "Mechanical",
-        description = "Mechanical slab-serif monospace matrix numbers",
-        previewSample = "123,456 • 123 SLAB TECH",
+        description = "Mechanical slab-serif monospace matrix letterforms",
+        previewSample = "123,456 • Slab Matrix 789",
         fontFamily = FontFamily.Monospace,
         numberFontFamily = FontFamily.Monospace,
         defaultFontWeight = FontWeight.SemiBold
     ),
     INDUSTRIAL_DIGITAL(
         displayName = "Industrial Heavy LCD",
-        fontType = FontType.DIGITAL,
         category = "Heavy Matrix",
         description = "Massive punchy digital display for industrial hardware",
-        previewSample = "123,456 • 123 POWER ON",
+        previewSample = "123,456 • Heavy LCD 789",
         fontFamily = FontFamily.Monospace,
         numberFontFamily = FontFamily.Monospace,
         defaultFontWeight = FontWeight.Black,
         fontFeatureSettings = "zero"
     ),
-
-    // ==========================================
-    // TEXT & EDITORIAL TYPOGRAPHY STYLES
-    // ==========================================
-    SYSTEM(
-        displayName = "System Clean Sans",
-        fontType = FontType.TEXT,
-        category = "Modern Sans",
-        description = "Clean standard Android device system typography",
-        previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily.Default,
-        numberFontFamily = FontFamily.Monospace,
-        defaultFontWeight = FontWeight.Normal
-    ),
-    CASUAL_HANDWRITING(
-        displayName = "Casual Human Script",
-        fontType = FontType.TEXT,
-        category = "Handwritten",
-        description = "Friendly, informal human handwriting aesthetic",
-        previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily.Cursive,
-        numberFontFamily = FontFamily.Cursive,
-        defaultFontWeight = FontWeight.Normal
-    ),
-    BOLD_CASUAL(
-        displayName = "Bold Marker Sketch",
-        fontType = FontType.TEXT,
-        category = "Street Art",
-        description = "Chunky, expressive whiteboard marker typography",
-        previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily.Cursive,
-        numberFontFamily = FontFamily.Cursive,
-        defaultFontWeight = FontWeight.Bold
-    ),
-    DANCING_CURSIVE(
-        displayName = "Dancing Cursive Script",
-        fontType = FontType.TEXT,
-        category = "Calligraphic",
-        description = "Flowing, elegant calligraphic script handwriting",
-        previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily.Cursive,
-        numberFontFamily = FontFamily.Cursive,
-        defaultFontWeight = FontWeight.Medium
-    ),
-    ROYAL_CALLIGRAPHY(
-        displayName = "Royal Script Bold",
-        fontType = FontType.TEXT,
-        category = "Luxury Script",
-        description = "Dramatic luxury cursive calligraphy with bold strokes",
-        previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily.Cursive,
-        numberFontFamily = FontFamily.Cursive,
-        defaultFontWeight = FontWeight.ExtraBold
-    ),
-    CLASSIC_SERIF(
-        displayName = "Classic Editorial Serif",
-        fontType = FontType.TEXT,
-        category = "Editorial",
-        description = "Distinguished literary serif typography with refined serifs",
-        previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily.Serif,
-        numberFontFamily = FontFamily.Serif,
-        defaultFontWeight = FontWeight.Normal
-    ),
-    LUXURY_SERIF_ITALIC(
-        displayName = "Luxury Serif Italic",
-        fontType = FontType.TEXT,
-        category = "High Fashion",
-        description = "Dramatic, high-contrast italic serif for upscale aesthetics",
-        previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily.Serif,
-        numberFontFamily = FontFamily.Serif,
-        defaultFontWeight = FontWeight.Bold,
-        defaultFontStyle = FontStyle.Italic
-    ),
     VINTAGE_TYPEWRITER(
         displayName = "Vintage Typewriter",
-        fontType = FontType.TEXT,
         category = "Vintage",
         description = "Distressed mechanical typewriter slab-serif letterforms",
-        previewSample = "123,456 • Precision 123",
+        previewSample = "123,456 • Typewriter 789",
         fontFamily = FontFamily.Monospace,
         numberFontFamily = FontFamily.Monospace,
         defaultFontWeight = FontWeight.Medium
     ),
+
+    // ==========================================
+    // MODERN SANS & MINIMALIST FONTS
+    // ==========================================
+    SYSTEM(
+        displayName = "System Clean Sans",
+        category = "Modern Sans",
+        description = "Clean standard Android device system typography",
+        previewSample = "123,456 • Clean Sans 789",
+        fontFamily = FontFamily.SansSerif,
+        numberFontFamily = FontFamily.SansSerif,
+        defaultFontWeight = FontWeight.Normal
+    ),
     MINIMALIST_LIGHT(
         displayName = "Minimalist Hairline",
-        fontType = FontType.TEXT,
         category = "Minimalist",
         description = "Ultra-thin, airy, Scandinavian architectural aesthetic",
-        previewSample = "123,456 • Precision 123",
+        previewSample = "123,456 • Hairline Sans 789",
         fontFamily = FontFamily.SansSerif,
         numberFontFamily = FontFamily.SansSerif,
         defaultFontWeight = FontWeight.Light
     ),
     INDUSTRIAL_BLACK(
         displayName = "Industrial Ultra-Black",
-        fontType = FontType.TEXT,
         category = "Display Bold",
         description = "Massive punchy heavyweight typeface with bold presence",
-        previewSample = "123,456 • Precision 123",
+        previewSample = "123,456 • Heavy Black 789",
         fontFamily = FontFamily.SansSerif,
         numberFontFamily = FontFamily.SansSerif,
         defaultFontWeight = FontWeight.Black
     ),
     SMALL_CAPS_LEDGER(
         displayName = "Small Caps Ledger",
-        fontType = FontType.TEXT,
         category = "Accounting",
         description = "Distinguished financial accounting in small capital letters",
-        previewSample = "123,456 • Precision 123",
+        previewSample = "123,456 • Small Caps 789",
         fontFamily = FontFamily.Serif,
-        numberFontFamily = FontFamily.Monospace,
+        numberFontFamily = FontFamily.Serif,
         defaultFontWeight = FontWeight.Normal,
         fontFeatureSettings = "smcp, c2sc"
     ),
     GEOMETRIC_TECHNO(
         displayName = "Geometric Modern Sans",
-        fontType = FontType.TEXT,
         category = "Neo-Modern",
         description = "Well-balanced geometric sans with modern contrast",
-        previewSample = "123,456 • Precision 123",
+        previewSample = "123,456 • Neo Sans 789",
         fontFamily = FontFamily.SansSerif,
-        numberFontFamily = FontFamily.Monospace,
+        numberFontFamily = FontFamily.SansSerif,
         defaultFontWeight = FontWeight.Medium
     )
 }
@@ -377,4 +433,5 @@ fun createAppTypography(fontStyle: AppFontStyle = AppFontStyle.SYSTEM): Typograp
 }
 
 val Typography = createAppTypography(AppFontStyle.SYSTEM)
+
 

@@ -133,7 +133,6 @@ import com.example.ui.theme.AnimationIntensity
 import com.example.ui.theme.AppFontStyle
 import com.example.ui.theme.ComponentSizeStyle
 import com.example.ui.theme.DigitalMonospaceFont
-import com.example.ui.theme.FontType
 import com.example.ui.theme.HapticIntensity
 import com.example.ui.theme.LocalShapeStructure
 import com.example.ui.theme.ShapeStructureStyle
@@ -199,7 +198,6 @@ fun SettingsScreen(
     var shapeDropdownExpanded by remember { mutableStateOf(false) }
     var sizeDropdownExpanded by remember { mutableStateOf(false) }
     var fontDropdownExpanded by remember { mutableStateOf(false) }
-    var selectedFontTypeTab by remember { mutableStateOf(FontType.ALL) }
     var animDropdownExpanded by remember { mutableStateOf(false) }
     var hapticDropdownExpanded by remember { mutableStateOf(false) }
     var soundDropdownExpanded by remember { mutableStateOf(false) }
@@ -261,36 +259,58 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // ==========================================
-            // SECTION 1: Color Palette Scheme Dropdown
+            // SECTION 1: App Theme Dropdown (Gift Styles, Color Designs & All Categories)
             // ==========================================
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "Color Palette Scheme",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "Select accent glowing glass colors from the dropdown",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "App Theme & Visual Styling",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "Choose gift style, color design, holiday wrap & luxury themes",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = primaryColor.copy(alpha = 0.15f),
+                        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
+                    ) {
+                        Text(
+                            text = currentAccent.category.uppercase(),
+                            fontSize = 9.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = primaryColor,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                }
 
-                Box(modifier = Modifier.fillMaxWidth().testTag("color_scheme_dropdown_box")) {
+                Box(modifier = Modifier.fillMaxWidth().testTag("app_theme_dropdown_box")) {
                     GlassDropdownTrigger(
                         isExpanded = colorDropdownExpanded,
                         onClick = { colorDropdownExpanded = !colorDropdownExpanded },
-                        testTag = "color_scheme_dropdown_trigger",
+                        testTag = "app_theme_dropdown_trigger",
                         leadingContent = {
                             Box(
                                 modifier = Modifier
-                                    .size(24.dp)
+                                    .size(26.dp)
                                     .clip(CircleShape)
                                     .background(Brush.linearGradient(currentAccent.previewGradient))
-                                    .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
+                                    .border(1.5.dp, Color.White.copy(alpha = 0.6f), CircleShape)
                             )
                         },
                         title = currentAccent.displayName,
-                        subtitle = currentAccent.description
+                        subtitle = "${currentAccent.category} • ${currentAccent.description}"
                     )
 
                     DropdownMenu(
@@ -298,9 +318,10 @@ fun SettingsScreen(
                         onDismissRequest = { colorDropdownExpanded = false },
                         modifier = Modifier
                             .fillMaxWidth(0.92f)
+                            .heightIn(max = 480.dp)
                             .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
                             .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                            .testTag("color_scheme_dropdown_menu")
+                            .testTag("app_theme_dropdown_menu")
                     ) {
                         AccentTheme.entries.forEach { accent ->
                             val isSelected = currentAccent == accent
@@ -314,22 +335,40 @@ fun SettingsScreen(
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(20.dp)
+                                                .size(24.dp)
                                                 .clip(CircleShape)
                                                 .background(Brush.linearGradient(accent.previewGradient))
-                                                .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
+                                                .border(1.2.dp, Color.White.copy(alpha = 0.6f), CircleShape)
                                         )
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = accent.displayName,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                fontSize = 13.sp,
-                                                color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
-                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Text(
+                                                    text = accent.displayName,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                                    fontSize = 13.5.sp,
+                                                    color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = if (isSelected) accentColor.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                                                ) {
+                                                    Text(
+                                                        text = accent.category.uppercase(),
+                                                        fontSize = 8.5.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.5.dp),
+                                                        letterSpacing = 0.4.sp
+                                                    )
+                                                }
+                                            }
                                             Text(
                                                 text = accent.description,
-                                                fontSize = 10.sp,
+                                                fontSize = 10.5.sp,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
@@ -347,7 +386,7 @@ fun SettingsScreen(
                                     onAccentChange(accent)
                                     colorDropdownExpanded = false
                                 },
-                                modifier = Modifier.testTag("color_item_${accent.name.lowercase()}")
+                                modifier = Modifier.testTag("theme_item_${accent.name.lowercase()}")
                             )
                         }
                     }
@@ -561,7 +600,7 @@ fun SettingsScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = "Choose from Digital LED displays & Text typography styles",
+                            text = "Modern calligraphy, editorial, digital LED & script applied across text & numbers",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -572,66 +611,13 @@ fun SettingsScreen(
                         border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
                     ) {
                         Text(
-                            text = currentFontStyle.fontType.displayName.uppercase(),
+                            text = "${AppFontStyle.entries.size} STYLES",
                             fontSize = 9.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = primaryColor,
                             modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
                             letterSpacing = 0.5.sp
                         )
-                    }
-                }
-
-                // Category Filter Tabs: All Fonts, Digital & LED, Text & Typography
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    FontType.entries.forEach { type ->
-                        val isTabSelected = selectedFontTypeTab == type
-                        val count = if (type == FontType.ALL) {
-                            AppFontStyle.entries.size
-                        } else {
-                            AppFontStyle.entries.count { it.fontType == type }
-                        }
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = if (isTabSelected) primaryColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                            border = BorderStroke(
-                                1.dp,
-                                if (isTabSelected) primaryColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                            ),
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { selectedFontTypeTab = type }
-                                .testTag("font_tab_${type.name.lowercase()}")
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = if (type == FontType.DIGITAL) "Digital" else if (type == FontType.TEXT) "Text" else "All",
-                                    fontSize = 11.5.sp,
-                                    fontWeight = if (isTabSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isTabSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Surface(
-                                    shape = CircleShape,
-                                    color = if (isTabSelected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f) else primaryColor.copy(alpha = 0.15f)
-                                ) {
-                                    Text(
-                                        text = "$count",
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isTabSelected) MaterialTheme.colorScheme.onPrimary else primaryColor,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
 
@@ -649,7 +635,7 @@ fun SettingsScreen(
                             )
                         },
                         title = currentFontStyle.displayName,
-                        subtitle = "${currentFontStyle.fontType.displayName} • ${currentFontStyle.category}"
+                        subtitle = currentFontStyle.category
                     )
 
                     DropdownMenu(
@@ -657,18 +643,12 @@ fun SettingsScreen(
                         onDismissRequest = { fontDropdownExpanded = false },
                         modifier = Modifier
                             .fillMaxWidth(0.92f)
-                            .heightIn(max = 460.dp)
+                            .heightIn(max = 480.dp)
                             .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
                             .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
                             .testTag("font_style_dropdown_menu")
                     ) {
-                        val filteredFonts = if (selectedFontTypeTab == FontType.ALL) {
-                            AppFontStyle.entries
-                        } else {
-                            AppFontStyle.entries.filter { it.fontType == selectedFontTypeTab }
-                        }
-
-                        filteredFonts.forEach { fontStyle ->
+                        AppFontStyle.entries.forEach { fontStyle ->
                             val isSelected = currentFontStyle == fontStyle
 
                             DropdownMenuItem(
@@ -777,7 +757,7 @@ fun SettingsScreen(
                                 letterSpacing = 1.sp
                             )
                             Text(
-                                text = "${currentFontStyle.displayName} (${currentFontStyle.fontType.displayName})",
+                                text = "${currentFontStyle.displayName} • ${currentFontStyle.category}",
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontFamily = currentFontStyle.fontFamily,
@@ -1904,6 +1884,23 @@ private fun getShapeIcon(shape: ShapeStructureStyle): ImageVector {
 
 private fun getFontIcon(fontStyle: AppFontStyle): ImageVector {
     return when (fontStyle) {
+        // Modern Calligraphy & Flourished Script
+        AppFontStyle.MODERN_CALLIGRAPHY -> Icons.Default.Draw
+        AppFontStyle.LUXURY_RIBBON_SCRIPT -> Icons.Default.Palette
+        AppFontStyle.PARISIAN_SIGNATURE -> Icons.Default.Edit
+        AppFontStyle.NASTALIQ_CALLIGRAPHY -> Icons.Default.Draw
+        AppFontStyle.GOTHIC_CALLIGRAPHY -> Icons.Default.MenuBook
+        AppFontStyle.BRUSH_PEN_CALLIGRAPHY -> Icons.Default.Draw
+        AppFontStyle.COPPERPLATE_FLOURISH -> Icons.Default.FormatItalic
+        AppFontStyle.BOHEMIAN_HAND_LETTERING -> Icons.Default.Edit
+        AppFontStyle.ROYAL_CALLIGRAPHY -> Icons.Default.Palette
+        AppFontStyle.DANCING_CURSIVE -> Icons.Default.Draw
+        AppFontStyle.CASUAL_HANDWRITING -> Icons.Default.Draw
+        AppFontStyle.BOLD_CASUAL -> Icons.Default.Edit
+        AppFontStyle.CLASSIC_SERIF -> Icons.Default.MenuBook
+        AppFontStyle.LUXURY_SERIF_ITALIC -> Icons.Default.FormatItalic
+
+        // Digital, Monospace & Engineering
         AppFontStyle.CLEAN_MONOSPACE -> Icons.Default.Calculate
         AppFontStyle.LCD_DIGITAL_BOLD -> Icons.Default.Tune
         AppFontStyle.CYBER_CONDENSED -> Icons.Default.GraphicEq
@@ -1911,18 +1908,12 @@ private fun getFontIcon(fontStyle: AppFontStyle): ImageVector {
         AppFontStyle.CONDENSED_DIGITAL -> Icons.Default.DensityMedium
         AppFontStyle.TYPEWRITER_DIGITAL -> Icons.Default.History
         AppFontStyle.INDUSTRIAL_DIGITAL -> Icons.Default.DensityLarge
-        AppFontStyle.SYSTEM -> Icons.Default.Smartphone
-        AppFontStyle.CASUAL_HANDWRITING -> Icons.Default.Draw
-        AppFontStyle.BOLD_CASUAL -> Icons.Default.Edit
-        AppFontStyle.DANCING_CURSIVE -> Icons.Default.Palette
-        AppFontStyle.ROYAL_CALLIGRAPHY -> Icons.Default.Edit
-        AppFontStyle.CLASSIC_SERIF -> Icons.Default.MenuBook
-        AppFontStyle.LUXURY_SERIF_ITALIC -> Icons.Default.FormatItalic
         AppFontStyle.VINTAGE_TYPEWRITER -> Icons.Default.History
-        AppFontStyle.MINIMALIST_LIGHT -> Icons.Default.LightMode
-        AppFontStyle.INDUSTRIAL_BLACK -> Icons.Default.DensityLarge
-        AppFontStyle.SMALL_CAPS_LEDGER -> Icons.Default.Abc
         AppFontStyle.GEOMETRIC_TECHNO -> Icons.Default.TextFields
+        AppFontStyle.SMALL_CAPS_LEDGER -> Icons.Default.Abc
+        AppFontStyle.INDUSTRIAL_BLACK -> Icons.Default.DensityLarge
+        AppFontStyle.MINIMALIST_LIGHT -> Icons.Default.LightMode
+        AppFontStyle.SYSTEM -> Icons.Default.Smartphone
     }
 }
 

@@ -31,80 +31,178 @@ enum class ThemeMode {
 
 enum class AccentTheme(
     val displayName: String,
+    val category: String,
     val description: String,
     val darkPrimary: Color,
     val lightPrimary: Color,
     val previewGradient: List<Color>
 ) {
+    // ==========================================
+    // GIFT & FESTIVE STYLES
+    // ==========================================
+    GIFT_BIRTHDAY_PARTY(
+        "Birthday Gift Party",
+        "Gift Style",
+        "Festive party magenta, confetti sparkle & celebration gold",
+        Color(0xFFFF2A85),
+        Color(0xFFD81B60),
+        listOf(Color(0xFFFF2A85), Color(0xFFFFD700), Color(0xFFFF6EC7))
+    ),
+    GIFT_GOLDEN_RIBBON(
+        "Golden Ribbon Gift",
+        "Gift Style",
+        "Opulent champagne gold, silk ribbon sheen & warm amber glow",
+        Color(0xFFFFD700),
+        Color(0xFFC59B27),
+        listOf(Color(0xFFFFE082), Color(0xFFFFD700), Color(0xFFFF8F00))
+    ),
+    GIFT_HOLIDAY_WRAP(
+        "Festive Holiday Wrap",
+        "Gift Style",
+        "Cranberry red ribbon, spruce emerald & festive golden bow",
+        Color(0xFFFF3366),
+        Color(0xFFC2185B),
+        listOf(Color(0xFFFF3366), Color(0xFF00E676), Color(0xFFFFD700))
+    ),
+    GIFT_ROSE_GOLD_BOX(
+        "Rose Gold Gift Box",
+        "Gift Style",
+        "Blush rose gold metallic jewelry gift & diamond sheen",
+        Color(0xFFF472B6),
+        Color(0xFFDB2777),
+        listOf(Color(0xFFFBCFE8), Color(0xFFF472B6), Color(0xFFFDA4AF))
+    ),
+    GIFT_SILVER_FROST(
+        "Silver Frost Ribbon",
+        "Gift Style",
+        "Glacial platinum silver, winter gift wrap & icy sparkle",
+        Color(0xFFE2E8F0),
+        Color(0xFF64748B),
+        listOf(Color(0xFFFFFFFF), Color(0xFFCBD5E1), Color(0xFF94A3B8))
+    ),
+    GIFT_VALENTINE_HEART(
+        "Valentine Sweetheart Gift",
+        "Gift Style",
+        "Passionate ruby red velvet, heart candy pink & romance box",
+        Color(0xFFFF1744),
+        Color(0xFFD50000),
+        listOf(Color(0xFFFF1744), Color(0xFFFF4081), Color(0xFF880E4F))
+    ),
+
+    // ==========================================
+    // COLOR DESIGN & GLASS STYLES
+    // ==========================================
     AQUA(
-        "Aqua Cyan",
-        "Vibrant cyan crystal glow",
+        "Aqua Cyan Glass",
+        "Color Design",
+        "Vibrant cyan crystal glow & liquid electric water glass",
         GlassAccents.AquaGlassPrimary,
         GlassAccents.AquaGlassLight,
         listOf(Color(0xFF00E5FF), Color(0xFF00B0FF))
     ),
     VIOLET(
         "Electric Violet",
-        "Deep amethyst & neon violet",
+        "Color Design",
+        "Deep amethyst & neon ultraviolet glow",
         GlassAccents.VioletGlassPrimary,
         GlassAccents.VioletGlassLight,
         listOf(Color(0xFFD500F9), Color(0xFF8E24AA))
     ),
     AMBER(
         "Molten Amber",
-        "Warm golden amber glow",
+        "Color Design",
+        "Warm radiant solar amber & golden honey glow",
         GlassAccents.AmberGlassPrimary,
         GlassAccents.AmberGlassLight,
         listOf(Color(0xFFFFB300), Color(0xFFFF6F00))
     ),
     EMERALD(
         "Emerald Mint",
-        "Vivid neon emerald green",
+        "Color Design",
+        "Vivid neon emerald green & luminous jade matrix",
         GlassAccents.EmeraldGlassPrimary,
         GlassAccents.EmeraldGlassLight,
         listOf(Color(0xFF00E676), Color(0xFF00B0FF))
     ),
     ICE(
-        "Arctic Sky",
-        "Crisp glacial sky blue",
+        "Arctic Sky Glacier",
+        "Color Design",
+        "Crisp glacial sky blue & cool polar atmosphere",
         GlassAccents.IceGlassPrimary,
         GlassAccents.IceGlassLight,
         listOf(Color(0xFF38BDF8), Color(0xFF0284C7))
     ),
     ROSE(
-        "Crimson Rose",
-        "Radiant ruby rose pink",
+        "Crimson Rose Velvet",
+        "Color Design",
+        "Radiant ruby rose pink & deep luxury crimson velvet",
         GlassAccents.RoseGlassPrimary,
         GlassAccents.RoseGlassLight,
         listOf(Color(0xFFF43F5E), Color(0xFFBE123C))
     ),
     INDIGO(
         "Royal Sapphire",
-        "Deep ultramarine & indigo",
+        "Color Design",
+        "Deep ultramarine & royal indigo crystal glow",
         GlassAccents.IndigoGlassPrimary,
         GlassAccents.IndigoGlassLight,
         listOf(Color(0xFF6366F1), Color(0xFF4338CA))
     ),
     CORAL(
-        "Sunset Coral",
-        "Warm luminous coral orange",
+        "Sunset Coral Peach",
+        "Color Design",
+        "Warm luminous sunset coral orange & twilight peach",
         GlassAccents.CoralGlassPrimary,
         GlassAccents.CoralGlassLight,
         listOf(Color(0xFFFB923C), Color(0xFFEA580C))
     ),
     LIME(
-        "Cyber Lime",
-        "High-contrast neon acid lime",
+        "Cyber Lime Matrix",
+        "Color Design",
+        "High-contrast neon acid lime & futuristic cyberpunk pulse",
         GlassAccents.LimeGlassPrimary,
         GlassAccents.LimeGlassLight,
         listOf(Color(0xFFA3E635), Color(0xFF65A30D))
     ),
     SLATE(
         "Titanium Slate",
-        "Minimalist titanium monochrome",
+        "Color Design",
+        "Minimalist industrial monochrome titanium slate",
         GlassAccents.SlateGlassPrimary,
         GlassAccents.SlateGlassLight,
         listOf(Color(0xFF94A3B8), Color(0xFF475569))
+    ),
+    DARK_CHOCOLATE(
+        "Dark Chocolate Mocha",
+        "Color Design",
+        "Rich roasted espresso, cocoa bronze & warm caramel velvet",
+        Color(0xFFD97706),
+        Color(0xFF92400E),
+        listOf(Color(0xFFB45309), Color(0xFF78350F), Color(0xFF451A03))
+    ),
+    MIDNIGHT_OLED(
+        "Midnight Noir OLED",
+        "Color Design",
+        "Pure obsidian noir black & radiant electric diamond white",
+        Color(0xFFF8FAFC),
+        Color(0xFF0F172A),
+        listOf(Color(0xFFFFFFFF), Color(0xFF64748B), Color(0xFF0F172A))
+    ),
+    NEON_CYBERPUNK(
+        "Neon Cyberpunk Drive",
+        "Color Design",
+        "High-voltage electric hot pink & neon cyan synthwave",
+        Color(0xFFFF007F),
+        Color(0xFFC50060),
+        listOf(Color(0xFFFF007F), Color(0xFF00F0FF))
+    ),
+    PASTEL_LAVENDER(
+        "Pastel Lavender Bloom",
+        "Color Design",
+        "Soft soothing pastel lilac, spring blossom & gentle violet",
+        Color(0xFFC084FC),
+        Color(0xFF9333EA),
+        listOf(Color(0xFFE9D5FF), Color(0xFFC084FC), Color(0xFFA855F7))
     )
 }
 
