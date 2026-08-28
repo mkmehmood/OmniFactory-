@@ -57,6 +57,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.luminance
 import com.example.data.db.CalculationEntity
 import com.example.ui.theme.DigitalMonospaceFont
 import java.text.SimpleDateFormat
@@ -133,13 +134,13 @@ fun TapeHistorySheet(
             .sum()
     }
 
-    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val primaryColor = MaterialTheme.colorScheme.primary
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = if (isDark) Color(0xFF0D1524) else Color(0xFFF0F7FD),
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
         modifier = Modifier.testTag("tape_history_sheet")
     ) {
@@ -466,7 +467,7 @@ private fun TapeItemCard(
         color = if (isSelected) {
             primaryColor.copy(alpha = 0.22f)
         } else {
-            if (isDark) Color(0x331E293B) else Color(0x66FFFFFF)
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.45f else 0.6f)
         },
         shape = RoundedCornerShape(20.dp)
     ) {

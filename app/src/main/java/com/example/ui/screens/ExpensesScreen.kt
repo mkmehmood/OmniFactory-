@@ -84,6 +84,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -130,7 +131,7 @@ fun ExpensesScreen(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
 
-    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val primaryColor = MaterialTheme.colorScheme.primary
     val expenseAccent = Color(0xFFEF4444)
 

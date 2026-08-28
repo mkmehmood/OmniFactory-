@@ -47,8 +47,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.luminance
 import com.example.ui.theme.DigitalMonospaceFont
 import com.example.ui.theme.LocalAppFontStyle
+import com.example.ui.theme.LocalAppThemeSkin
 
 @Composable
 fun CalculatorDisplay(
@@ -60,7 +62,8 @@ fun CalculatorDisplay(
     modifier: Modifier = Modifier
 ) {
     val exprScrollState = rememberScrollState()
-    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val currentSkin = LocalAppThemeSkin.current
     val primaryColor = MaterialTheme.colorScheme.primary
     var isClipboardActionsVisible by remember { mutableStateOf(false) }
 
@@ -106,7 +109,7 @@ fun CalculatorDisplay(
                     )
                     .testTag("clipboard_popup_bubble"),
                 shape = RoundedCornerShape(20.dp),
-                color = if (isDark) Color(0xDD0E1726) else Color(0xEEFFFFFF)
+                color = currentSkin.surface.copy(alpha = if (isDark) 0.92f else 0.95f)
             ) {
                 Row(
                     modifier = Modifier
@@ -232,7 +235,7 @@ fun CalculatorDisplay(
         // Clean Hairline Glass Divider
         HorizontalDivider(
             thickness = 1.dp,
-            color = if (isDark) Color(0x26FFFFFF) else Color(0x26000000),
+            color = currentSkin.outline.copy(alpha = if (isDark) 0.30f else 0.20f),
             modifier = Modifier.fillMaxWidth()
         )
     }

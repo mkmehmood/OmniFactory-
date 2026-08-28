@@ -66,6 +66,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -106,7 +107,7 @@ fun MixtureCalculatorScreen(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
 
-    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val primaryColor = MaterialTheme.colorScheme.primary
     val surfaceBg = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
     val cardBorderColor = if (isDark) Color(0x28FFFFFF) else Color(0x1E000000)

@@ -59,6 +59,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.util.HapticFeedbackHelper
 import com.example.domain.util.SoundFeedbackHelper
+import androidx.compose.ui.graphics.luminance
+import com.example.ui.theme.LocalAppThemeSkin
+import com.example.ui.theme.AppThemeSkin
 import com.example.ui.theme.AnimationIntensity
 import com.example.ui.theme.ComponentSizeStyle
 import com.example.ui.theme.HapticIntensity
@@ -122,7 +125,8 @@ fun CalculatorKeypad(
         SoundFeedbackHelper.playClickSound(context, view, soundIntensity)
     }
 
-    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val currentSkin = LocalAppThemeSkin.current
     val spacing = componentSizeStyle.keypadSpacing
     val padH = componentSizeStyle.keypadPaddingH
     val padV = componentSizeStyle.keypadPaddingV
@@ -133,13 +137,19 @@ fun CalculatorKeypad(
             .fillMaxWidth()
             .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
             .background(
-                if (isDark) Color(0x14FFFFFF) else Color(0x33FFFFFF)
+                if (currentSkin == AppThemeSkin.OLED_TRUE_BLACK) {
+                    Color(0xFF000000).copy(alpha = 0.7f)
+                } else if (isDark) {
+                    currentSkin.surface.copy(alpha = 0.5f)
+                } else {
+                    currentSkin.surfaceVariant.copy(alpha = 0.65f)
+                }
             )
             .border(
                 width = 1.dp,
                 brush = Brush.verticalGradient(
                     listOf(
-                        if (isDark) Color(0x33FFFFFF) else Color(0x40000000),
+                        currentSkin.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
                         Color.Transparent
                     )
                 ),
@@ -417,7 +427,8 @@ private fun LiquidGlassKey(
     shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     modifier: Modifier = Modifier
 ) {
-    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val currentSkin = LocalAppThemeSkin.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scope = rememberCoroutineScope()
@@ -451,25 +462,18 @@ private fun LiquidGlassKey(
     )
 
     val primaryColor = MaterialTheme.colorScheme.primary
+    val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
 
     val (glassBg, contentColor, glassBorder) = when (type) {
         KeyType.NUMBER -> {
-            val bg = if (isDark) {
-                if (isPressed) PureDarkGlassSurfacePressed else PureDarkGlassSurface
-            } else {
-                if (isPressed) PureLightGlassSurfacePressed else PureLightGlassSurface
-            }
-            val textCol = if (isDark) PureDarkTextPrimary else PureLightTextPrimary
-            val border = if (isDark) {
-                if (isPressed) primaryColor.copy(alpha = 0.6f) else PureDarkGlassBorder
-            } else {
-                if (isPressed) primaryColor.copy(alpha = 0.5f) else PureLightGlassBorder
-            }
+            val bg = if (isPressed) currentSkin.surfacePressed else currentSkin.surfaceVariant
+            val textCol = currentSkin.textPrimary
+            val border = if (isPressed) primaryColor.copy(alpha = 0.65f) else currentSkin.outline
             Triple(bg, textCol, border)
         }
         KeyType.DOUBLE_ZERO -> {
             val bg = if (isDark) {
-                if (isPressed) primaryColor.copy(alpha = 0.40f) else primaryColor.copy(alpha = 0.15f)
+                if (isPressed) primaryColor.copy(alpha = 0.40f) else primaryColor.copy(alpha = 0.16f)
             } else {
                 if (isPressed) primaryColor.copy(alpha = 0.30f) else primaryColor.copy(alpha = 0.12f)
             }
@@ -479,32 +483,24 @@ private fun LiquidGlassKey(
         }
         KeyType.OPERATOR -> {
             val bg = if (isDark) {
-                if (isPressed) primaryColor.copy(alpha = 0.50f) else primaryColor.copy(alpha = 0.25f)
+                if (isPressed) primaryColor.copy(alpha = 0.50f) else primaryColor.copy(alpha = 0.22f)
             } else {
-                if (isPressed) primaryColor.copy(alpha = 0.35f) else primaryColor.copy(alpha = 0.18f)
+                if (isPressed) primaryColor.copy(alpha = 0.35f) else primaryColor.copy(alpha = 0.16f)
             }
             val textCol = primaryColor
             val border = primaryColor.copy(alpha = if (isPressed) 0.9f else 0.5f)
             Triple(bg, textCol, border)
         }
         KeyType.EQUALS -> {
-            val bg = if (isPressed) primaryColor.copy(alpha = 0.85f) else primaryColor
-            val textCol = if (isDark) Color.Black else Color.White
+            val bg = if (isPressed) primaryColor.copy(alpha = 0.88f) else primaryColor
+            val textCol = onPrimaryColor
             val border = if (isDark) Color(0x80FFFFFF) else Color(0x33000000)
             Triple(bg, textCol, border)
         }
         KeyType.ACTION -> {
-            val bg = if (isDark) {
-                if (isPressed) Color(0x44FFFFFF) else Color(0x24FFFFFF)
-            } else {
-                if (isPressed) Color(0x77CBD5E1) else Color(0x4DCBD5E1)
-            }
-            val textCol = if (isDark) PureDarkTextPrimary else PureLightTextPrimary
-            val border = if (isDark) {
-                if (isPressed) primaryColor.copy(alpha = 0.5f) else PureDarkGlassBorder
-            } else {
-                if (isPressed) primaryColor.copy(alpha = 0.4f) else PureLightGlassBorder
-            }
+            val bg = if (isPressed) currentSkin.surfacePressed else currentSkin.surfaceVariant
+            val textCol = currentSkin.textPrimary
+            val border = if (isPressed) primaryColor.copy(alpha = 0.55f) else currentSkin.outline
             Triple(bg, textCol, border)
         }
     }
@@ -608,7 +604,8 @@ fun SmartStationKeypad(
 ) {
     val context = LocalContext.current
     val view = LocalView.current
-    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val currentSkin = LocalAppThemeSkin.current
     val primaryColor = MaterialTheme.colorScheme.primary
 
     val triggerFeedback = {
@@ -627,12 +624,12 @@ fun SmartStationKeypad(
             .clip(cardShape)
             .border(
                 1.dp,
-                if (isDark) Color(0x22FFFFFF) else Color(0x18000000),
+                currentSkin.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
                 cardShape
             )
             .testTag("smart_station_keypad"),
         shape = cardShape,
-        color = if (isDark) Color(0xFF131C2E) else Color(0xFFFFFFFF),
+        color = currentSkin.surface,
         shadowElevation = if (isDark) 0.dp else 4.dp
     ) {
         Column(

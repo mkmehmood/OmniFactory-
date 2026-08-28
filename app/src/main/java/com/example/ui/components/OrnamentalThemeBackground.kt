@@ -68,29 +68,31 @@ fun OrnamentalThemeBackground(
             val canvasW = size.width
             val canvasH = size.height
 
-            // 1. Base ambient radial lighting for depth
-            drawRect(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        tint.copy(alpha = if (appThemeSkin.isDark) 0.12f * pulseGlow else 0.08f * pulseGlow),
-                        Color.Transparent
-                    ),
-                    center = Offset(canvasW * 0.5f, canvasH * 0.35f),
-                    radius = canvasW * 0.85f
+            // 1. Base ambient radial lighting for depth (skip for true black OLED)
+            if (appThemeSkin != AppThemeSkin.OLED_TRUE_BLACK) {
+                drawRect(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            tint.copy(alpha = if (appThemeSkin.isDark) 0.12f * pulseGlow else 0.08f * pulseGlow),
+                            Color.Transparent
+                        ),
+                        center = Offset(canvasW * 0.5f, canvasH * 0.35f),
+                        radius = canvasW * 0.85f
+                    )
                 )
-            )
 
-            // Secondary corner ambient warm glow
-            drawRect(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        appThemeSkin.defaultAccent.copy(alpha = if (appThemeSkin.isDark) 0.08f else 0.05f),
-                        Color.Transparent
-                    ),
-                    center = Offset(canvasW * 0.85f, canvasH * 0.85f),
-                    radius = canvasW * 0.65f
+                // Secondary corner ambient warm glow
+                drawRect(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            appThemeSkin.defaultAccent.copy(alpha = if (appThemeSkin.isDark) 0.08f else 0.05f),
+                            Color.Transparent
+                        ),
+                        center = Offset(canvasW * 0.85f, canvasH * 0.85f),
+                        radius = canvasW * 0.65f
+                    )
                 )
-            )
+            }
 
             // 2. Draw pattern specific ornamental layers
             when (pattern) {
@@ -127,8 +129,7 @@ fun OrnamentalThemeBackground(
                 OrnamentalPatternStyle.CONSTELLATION_NEBULA -> {
                     drawConstellationsBackground(canvasW, canvasH, tint, appThemeSkin.isDark)
                 }
-                OrnamentalPatternStyle.MINIMALIST_AURA,
-                OrnamentalPatternStyle.NONE -> {
+                OrnamentalPatternStyle.MINIMALIST_AURA -> {
                     // Subtle ambient gradient circles
                     drawCircle(
                         brush = Brush.radialGradient(
@@ -139,6 +140,9 @@ fun OrnamentalThemeBackground(
                         radius = canvasW * 0.4f,
                         center = Offset(canvasW * 0.15f, canvasH * 0.15f)
                     )
+                }
+                OrnamentalPatternStyle.NONE -> {
+                    // No pattern or glow for pure minimalist & OLED true black
                 }
             }
         }

@@ -2,6 +2,13 @@ package com.example.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,7 +16,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -112,12 +121,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
@@ -175,7 +186,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val view = LocalView.current
-    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val primaryColor = MaterialTheme.colorScheme.primary
     val shapeStructure = LocalShapeStructure.current
     val clipboardManager = LocalClipboardManager.current
@@ -300,7 +311,7 @@ fun SettingsScreen(
                     }
                 }
 
-                Box(modifier = Modifier.fillMaxWidth().testTag("app_theme_skin_dropdown_box")) {
+                Column(modifier = Modifier.fillMaxWidth().testTag("app_theme_skin_dropdown_box")) {
                     GlassDropdownTrigger(
                         isExpanded = themeSkinDropdownExpanded,
                         onClick = { themeSkinDropdownExpanded = !themeSkinDropdownExpanded },
@@ -325,88 +336,76 @@ fun SettingsScreen(
                         subtitle = "${currentAppThemeSkin.categoryTag} • ${currentAppThemeSkin.description}"
                     )
 
-                    DropdownMenu(
+                    GlassExpandablePanel(
                         expanded = themeSkinDropdownExpanded,
-                        onDismissRequest = { themeSkinDropdownExpanded = false },
-                        properties = PopupProperties(focusable = true, dismissOnClickOutside = true, dismissOnBackPress = true),
-                        modifier = Modifier
-                            .fillMaxWidth(0.92f)
-                            .heightIn(max = 480.dp)
-                            .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
-                            .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                            .testTag("app_theme_skin_dropdown_menu")
+                        maxHeight = 440.dp,
+                        modifier = Modifier.testTag("app_theme_skin_dropdown_menu")
                     ) {
                         AppThemeSkin.entries.forEach { skin ->
                             val isSelected = currentAppThemeSkin == skin
 
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            skin.previewColors.take(3).forEach { color ->
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(13.dp)
-                                                        .clip(CircleShape)
-                                                        .background(color)
-                                                        .border(0.5.dp, Color.White.copy(alpha = 0.6f), CircleShape)
-                                                )
-                                            }
-                                        }
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                            ) {
-                                                Text(
-                                                    text = skin.displayName,
-                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                                                    fontSize = 13.5.sp,
-                                                    color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
-                                                )
-                                                Surface(
-                                                    shape = RoundedCornerShape(6.dp),
-                                                    color = if (isSelected) primaryColor.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
-                                                ) {
-                                                    Text(
-                                                        text = skin.categoryTag,
-                                                        fontSize = 8.5.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                                                        letterSpacing = 0.5.sp
-                                                    )
-                                                }
-                                            }
-                                            Text(
-                                                text = skin.description,
-                                                fontSize = 10.5.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                        if (isSelected) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                                tint = primaryColor,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    }
-                                },
+                            GlassDropdownItem(
                                 onClick = {
                                     onAppThemeSkinChange(skin)
                                     themeSkinDropdownExpanded = false
                                 },
                                 modifier = Modifier.testTag("skin_item_${skin.name.lowercase()}")
-                            )
+                            ) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    skin.previewColors.take(3).forEach { color ->
+                                        Box(
+                                            modifier = Modifier
+                                                .size(13.dp)
+                                                .clip(CircleShape)
+                                                .background(color)
+                                                .border(0.5.dp, Color.White.copy(alpha = 0.6f), CircleShape)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = skin.displayName,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                            fontSize = 13.5.sp,
+                                            color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = if (isSelected) primaryColor.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                                        ) {
+                                            Text(
+                                                text = skin.categoryTag,
+                                                fontSize = 8.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                                                letterSpacing = 0.5.sp
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = skin.description,
+                                        fontSize = 10.5.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selected",
+                                        tint = primaryColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -429,7 +428,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Box(modifier = Modifier.fillMaxWidth().testTag("color_scheme_dropdown_box")) {
+                Column(modifier = Modifier.fillMaxWidth().testTag("color_scheme_dropdown_box")) {
                     GlassDropdownTrigger(
                         isExpanded = colorDropdownExpanded,
                         onClick = { colorDropdownExpanded = !colorDropdownExpanded },
@@ -447,62 +446,52 @@ fun SettingsScreen(
                         subtitle = currentAccent.description
                     )
 
-                    DropdownMenu(
+                    GlassExpandablePanel(
                         expanded = colorDropdownExpanded,
-                        onDismissRequest = { colorDropdownExpanded = false },
-                        modifier = Modifier
-                            .fillMaxWidth(0.92f)
-                            .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
-                            .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                            .testTag("color_scheme_dropdown_menu")
+                        maxHeight = 360.dp,
+                        modifier = Modifier.testTag("color_scheme_dropdown_menu")
                     ) {
                         AccentTheme.entries.forEach { accent ->
                             val isSelected = currentAccent == accent
                             val accentColor = if (isDark) accent.darkPrimary else accent.lightPrimary
 
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(20.dp)
-                                                .clip(CircleShape)
-                                                .background(Brush.linearGradient(accent.previewGradient))
-                                                .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
-                                        )
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = accent.displayName,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                fontSize = 13.sp,
-                                                color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Text(
-                                                text = accent.description,
-                                                fontSize = 10.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                        if (isSelected) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                                tint = accentColor,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    }
-                                },
+                            GlassDropdownItem(
                                 onClick = {
                                     onAccentChange(accent)
                                     colorDropdownExpanded = false
                                 },
                                 modifier = Modifier.testTag("color_item_${accent.name.lowercase()}")
-                            )
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .clip(CircleShape)
+                                        .background(Brush.linearGradient(accent.previewGradient))
+                                        .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = accent.displayName,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 13.sp,
+                                        color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = accent.description,
+                                        fontSize = 10.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selected",
+                                        tint = accentColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -525,7 +514,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Box(modifier = Modifier.fillMaxWidth().testTag("shape_structure_dropdown_box")) {
+                Column(modifier = Modifier.fillMaxWidth().testTag("shape_structure_dropdown_box")) {
                     val currentShapeIcon = getShapeIcon(currentShapeStructure)
 
                     GlassDropdownTrigger(
@@ -544,61 +533,51 @@ fun SettingsScreen(
                         subtitle = currentShapeStructure.description
                     )
 
-                    DropdownMenu(
+                    GlassExpandablePanel(
                         expanded = shapeDropdownExpanded,
-                        onDismissRequest = { shapeDropdownExpanded = false },
-                        modifier = Modifier
-                            .fillMaxWidth(0.92f)
-                            .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
-                            .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                            .testTag("shape_structure_dropdown_menu")
+                        maxHeight = 360.dp,
+                        modifier = Modifier.testTag("shape_structure_dropdown_menu")
                     ) {
                         ShapeStructureStyle.entries.forEach { shapeStyle ->
                             val isSelected = currentShapeStructure == shapeStyle
                             val icon = getShapeIcon(shapeStyle)
 
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Icon(
-                                            imageVector = icon,
-                                            contentDescription = null,
-                                            tint = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = shapeStyle.displayName,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                fontSize = 13.sp,
-                                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Text(
-                                                text = shapeStyle.description,
-                                                fontSize = 10.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                        if (isSelected) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                                tint = primaryColor,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    }
-                                },
+                            GlassDropdownItem(
                                 onClick = {
                                     onShapeStructureChange(shapeStyle)
                                     shapeDropdownExpanded = false
                                 },
                                 modifier = Modifier.testTag("shape_item_${shapeStyle.name.lowercase()}")
-                            )
+                            ) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    tint = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = shapeStyle.displayName,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 13.sp,
+                                        color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = shapeStyle.description,
+                                        fontSize = 10.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selected",
+                                        tint = primaryColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -621,7 +600,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Box(modifier = Modifier.fillMaxWidth().testTag("size_dropdown_box")) {
+                Column(modifier = Modifier.fillMaxWidth().testTag("size_dropdown_box")) {
                     GlassDropdownTrigger(
                         isExpanded = sizeDropdownExpanded,
                         onClick = { sizeDropdownExpanded = !sizeDropdownExpanded },
@@ -638,61 +617,50 @@ fun SettingsScreen(
                         subtitle = currentComponentSize.description
                     )
 
-                    DropdownMenu(
+                    GlassExpandablePanel(
                         expanded = sizeDropdownExpanded,
-                        onDismissRequest = { sizeDropdownExpanded = false },
-                        properties = PopupProperties(focusable = true, dismissOnClickOutside = true, dismissOnBackPress = true),
-                        modifier = Modifier
-                            .fillMaxWidth(0.92f)
-                            .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
-                            .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                            .testTag("size_dropdown_menu")
+                        maxHeight = 360.dp,
+                        modifier = Modifier.testTag("size_dropdown_menu")
                     ) {
                         ComponentSizeStyle.entries.forEach { sizeStyle ->
                             val isSelected = currentComponentSize == sizeStyle
 
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.AspectRatio,
-                                            contentDescription = null,
-                                            tint = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = sizeStyle.displayName,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                fontSize = 13.sp,
-                                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Text(
-                                                text = sizeStyle.description,
-                                                fontSize = 10.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                        if (isSelected) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                                tint = primaryColor,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    }
-                                },
+                            GlassDropdownItem(
                                 onClick = {
                                     onComponentSizeChange(sizeStyle)
                                     sizeDropdownExpanded = false
                                 },
                                 modifier = Modifier.testTag("size_item_${sizeStyle.name.lowercase()}")
-                            )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AspectRatio,
+                                    contentDescription = null,
+                                    tint = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = sizeStyle.displayName,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 13.sp,
+                                        color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = sizeStyle.description,
+                                        fontSize = 10.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selected",
+                                        tint = primaryColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -737,7 +705,7 @@ fun SettingsScreen(
                     }
                 }
 
-                Box(modifier = Modifier.fillMaxWidth().testTag("font_style_dropdown_box")) {
+                Column(modifier = Modifier.fillMaxWidth().testTag("font_style_dropdown_box")) {
                     GlassDropdownTrigger(
                         isExpanded = fontDropdownExpanded,
                         onClick = { fontDropdownExpanded = !fontDropdownExpanded },
@@ -754,80 +722,68 @@ fun SettingsScreen(
                         subtitle = currentFontStyle.description
                     )
 
-                    DropdownMenu(
+                    GlassExpandablePanel(
                         expanded = fontDropdownExpanded,
-                        onDismissRequest = { fontDropdownExpanded = false },
-                        properties = PopupProperties(focusable = true, dismissOnClickOutside = true, dismissOnBackPress = true),
-                        modifier = Modifier
-                            .fillMaxWidth(0.92f)
-                            .heightIn(max = 480.dp)
-                            .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
-                            .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                            .testTag("font_style_dropdown_menu")
+                        maxHeight = 440.dp,
+                        modifier = Modifier.testTag("font_style_dropdown_menu")
                     ) {
                         AppFontStyle.entries.forEach { fontStyle ->
                             val isSelected = currentFontStyle == fontStyle
 
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Icon(
-                                            imageVector = getFontIcon(fontStyle),
-                                            contentDescription = null,
-                                            tint = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = fontStyle.displayName,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                                                fontSize = 14.sp,
-                                                fontFamily = fontStyle.fontFamily,
-                                                fontStyle = fontStyle.defaultFontStyle,
-                                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Text(
-                                                text = fontStyle.description,
-                                                fontSize = 11.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            Spacer(modifier = Modifier.height(3.dp))
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = if (isSelected) primaryColor.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                                                border = BorderStroke(0.5.dp, if (isSelected) primaryColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Text(
-                                                    text = fontStyle.previewSample,
-                                                    fontFamily = fontStyle.fontFamily,
-                                                    fontStyle = fontStyle.defaultFontStyle,
-                                                    fontSize = 12.sp,
-                                                    color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface,
-                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                                )
-                                            }
-                                        }
-                                        if (isSelected) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                                tint = primaryColor,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    }
-                                },
+                            GlassDropdownItem(
                                 onClick = {
                                     onFontStyleChange(fontStyle)
                                     fontDropdownExpanded = false
                                 },
                                 modifier = Modifier.testTag("font_item_${fontStyle.name.lowercase()}")
-                            )
+                            ) {
+                                Icon(
+                                    imageVector = getFontIcon(fontStyle),
+                                    contentDescription = null,
+                                    tint = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = fontStyle.displayName,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                        fontSize = 14.sp,
+                                        fontFamily = fontStyle.fontFamily,
+                                        fontStyle = fontStyle.defaultFontStyle,
+                                        color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = fontStyle.description,
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(3.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = if (isSelected) primaryColor.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                                        border = BorderStroke(0.5.dp, if (isSelected) primaryColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = fontStyle.previewSample,
+                                            fontFamily = fontStyle.fontFamily,
+                                            fontStyle = fontStyle.defaultFontStyle,
+                                            fontSize = 12.sp,
+                                            color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                }
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selected",
+                                        tint = primaryColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -948,7 +904,7 @@ fun SettingsScreen(
                     }
                 }
 
-                Box(modifier = Modifier.fillMaxWidth().testTag("anim_dropdown_box")) {
+                Column(modifier = Modifier.fillMaxWidth().testTag("anim_dropdown_box")) {
                     GlassDropdownTrigger(
                         isExpanded = animDropdownExpanded,
                         onClick = { animDropdownExpanded = !animDropdownExpanded },
@@ -965,54 +921,43 @@ fun SettingsScreen(
                         subtitle = currentAnimationIntensity.description
                     )
 
-                    DropdownMenu(
+                    GlassExpandablePanel(
                         expanded = animDropdownExpanded,
-                        onDismissRequest = { animDropdownExpanded = false },
-                        properties = PopupProperties(focusable = true, dismissOnClickOutside = true, dismissOnBackPress = true),
-                        modifier = Modifier
-                            .fillMaxWidth(0.92f)
-                            .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
-                            .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                            .testTag("anim_dropdown_menu")
+                        maxHeight = 300.dp,
+                        modifier = Modifier.testTag("anim_dropdown_menu")
                     ) {
                         AnimationIntensity.entries.forEach { anim ->
                             val isSelected = currentAnimationIntensity == anim
 
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = anim.displayName,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                fontSize = 13.sp,
-                                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Text(
-                                                text = anim.description,
-                                                fontSize = 10.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                        if (isSelected) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                                tint = primaryColor,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    }
-                                },
+                            GlassDropdownItem(
                                 onClick = {
                                     onAnimationIntensityChange(anim)
                                     animDropdownExpanded = false
                                 },
                                 modifier = Modifier.testTag("anim_item_${anim.name.lowercase()}")
-                            )
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = anim.displayName,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 13.sp,
+                                        color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = anim.description,
+                                        fontSize = 10.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selected",
+                                        tint = primaryColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -1051,7 +996,7 @@ fun SettingsScreen(
                     }
                 }
 
-                Box(modifier = Modifier.fillMaxWidth().testTag("haptic_dropdown_box")) {
+                Column(modifier = Modifier.fillMaxWidth().testTag("haptic_dropdown_box")) {
                     GlassDropdownTrigger(
                         isExpanded = hapticDropdownExpanded,
                         onClick = { hapticDropdownExpanded = !hapticDropdownExpanded },
@@ -1068,48 +1013,15 @@ fun SettingsScreen(
                         subtitle = currentHapticIntensity.description
                     )
 
-                    DropdownMenu(
+                    GlassExpandablePanel(
                         expanded = hapticDropdownExpanded,
-                        onDismissRequest = { hapticDropdownExpanded = false },
-                        properties = PopupProperties(focusable = true, dismissOnClickOutside = true, dismissOnBackPress = true),
-                        modifier = Modifier
-                            .fillMaxWidth(0.92f)
-                            .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
-                            .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                            .testTag("haptic_dropdown_menu")
+                        maxHeight = 300.dp,
+                        modifier = Modifier.testTag("haptic_dropdown_menu")
                     ) {
                         HapticIntensity.entries.forEach { haptic ->
                             val isSelected = currentHapticIntensity == haptic
 
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = haptic.displayName,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                fontSize = 13.sp,
-                                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Text(
-                                                text = haptic.description,
-                                                fontSize = 10.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                        if (isSelected) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                                tint = primaryColor,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    }
-                                },
+                            GlassDropdownItem(
                                 onClick = {
                                     onHapticIntensityChange(haptic)
                                     hapticDropdownExpanded = false
@@ -1117,7 +1029,29 @@ fun SettingsScreen(
                                     HapticFeedbackHelper.performKeypadTap(context, view, haptic)
                                 },
                                 modifier = Modifier.testTag("haptic_item_${haptic.name.lowercase()}")
-                            )
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = haptic.displayName,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 13.sp,
+                                        color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = haptic.description,
+                                        fontSize = 10.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selected",
+                                        tint = primaryColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -1156,7 +1090,7 @@ fun SettingsScreen(
                     }
                 }
 
-                Box(modifier = Modifier.fillMaxWidth().testTag("sound_dropdown_box")) {
+                Column(modifier = Modifier.fillMaxWidth().testTag("sound_dropdown_box")) {
                     GlassDropdownTrigger(
                         isExpanded = soundDropdownExpanded,
                         onClick = { soundDropdownExpanded = !soundDropdownExpanded },
@@ -1173,48 +1107,15 @@ fun SettingsScreen(
                         subtitle = currentSoundIntensity.description
                     )
 
-                    DropdownMenu(
+                    GlassExpandablePanel(
                         expanded = soundDropdownExpanded,
-                        onDismissRequest = { soundDropdownExpanded = false },
-                        properties = PopupProperties(focusable = true, dismissOnClickOutside = true, dismissOnBackPress = true),
-                        modifier = Modifier
-                            .fillMaxWidth(0.92f)
-                            .background(if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC))
-                            .border(1.dp, primaryColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                            .testTag("sound_dropdown_menu")
+                        maxHeight = 300.dp,
+                        modifier = Modifier.testTag("sound_dropdown_menu")
                     ) {
                         SoundIntensity.entries.forEach { sound ->
                             val isSelected = currentSoundIntensity == sound
 
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = sound.displayName,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                fontSize = 13.sp,
-                                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Text(
-                                                text = sound.description,
-                                                fontSize = 10.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                        if (isSelected) {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Selected",
-                                                tint = primaryColor,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    }
-                                },
+                            GlassDropdownItem(
                                 onClick = {
                                     onSoundIntensityChange(sound)
                                     soundDropdownExpanded = false
@@ -1222,7 +1123,29 @@ fun SettingsScreen(
                                     SoundFeedbackHelper.playClickSound(context, view, sound)
                                 },
                                 modifier = Modifier.testTag("sound_item_${sound.name.lowercase()}")
-                            )
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = sound.displayName,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 13.sp,
+                                        color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = sound.description,
+                                        fontSize = 10.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selected",
+                                        tint = primaryColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -1968,6 +1891,67 @@ private fun GlassDropdownTrigger(
                 modifier = Modifier.size(24.dp)
             )
         }
+    }
+}
+
+@Composable
+private fun GlassExpandablePanel(
+    expanded: Boolean,
+    modifier: Modifier = Modifier,
+    maxHeight: Dp = 380.dp,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val shapeStructure = LocalShapeStructure.current
+
+    AnimatedVisibility(
+        visible = expanded,
+        enter = expandVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
+        exit = shrinkVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut()
+    ) {
+        Surface(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .clip(shapeStructure.toCardShape())
+                .border(1.dp, primaryColor.copy(alpha = 0.35f), shapeStructure.toCardShape()),
+            shape = shapeStructure.toCardShape(),
+            color = if (isDark) Color(0xFF161F30).copy(alpha = 0.95f) else Color(0xFFF8FAFC).copy(alpha = 0.98f),
+            shadowElevation = 3.dp
+        ) {
+            val scrollState = rememberScrollState()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = maxHeight)
+                    .verticalScroll(scrollState)
+                    .padding(vertical = 4.dp),
+                content = content
+            )
+        }
+    }
+}
+
+@Composable
+private fun GlassDropdownItem(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        color = Color.Transparent
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            content = content
+        )
     }
 }
 

@@ -47,8 +47,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.luminance
 import com.example.domain.converter.ConverterCategory
 import com.example.ui.theme.DigitalMonospaceFont
+import com.example.ui.theme.LocalAppThemeSkin
 
 enum class DrawerDestination {
     CALCULATOR,
@@ -72,11 +74,12 @@ fun AppNavigationDrawer(
     onCloseDrawer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val currentSkin = LocalAppThemeSkin.current
     val primaryColor = MaterialTheme.colorScheme.primary
 
     ModalDrawerSheet(
-        drawerContainerColor = if (isDark) Color(0xFF090E17) else Color(0xFFF1F5F9),
+        drawerContainerColor = currentSkin.surface,
         drawerShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp),
         modifier = modifier
             .width(320.dp)
@@ -127,7 +130,7 @@ fun AppNavigationDrawer(
 
             HorizontalDivider(
                 thickness = 1.dp,
-                color = if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
+                color = currentSkin.outline.copy(alpha = if (isDark) 0.30f else 0.20f),
                 modifier = Modifier.padding(vertical = 12.dp)
             )
 
@@ -283,11 +286,11 @@ fun AppNavigationDrawer(
                     .clip(RoundedCornerShape(16.dp))
                 .border(
                     1.dp,
-                    if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
+                    currentSkin.outline.copy(alpha = if (isDark) 0.35f else 0.20f),
                     RoundedCornerShape(16.dp)
                 )
                 .testTag("sidebar_footer_mahmood_khan"),
-                color = if (isDark) Color(0x14FFFFFF) else Color(0x10000000),
+                color = currentSkin.surfaceVariant.copy(alpha = if (isDark) 0.5f else 0.6f),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Row(
@@ -325,15 +328,16 @@ private fun DrawerNavItem(
     primaryColor: Color,
     isDark: Boolean
 ) {
+    val currentSkin = LocalAppThemeSkin.current
     val containerBg = if (isSelected) {
         primaryColor.copy(alpha = 0.16f)
     } else {
-        if (isDark) Color(0x0EFFFFFF) else Color(0x08000000)
+        currentSkin.surfaceVariant.copy(alpha = if (isDark) 0.4f else 0.5f)
     }
     val borderColor = if (isSelected) {
-        primaryColor.copy(alpha = 0.45f)
+        primaryColor.copy(alpha = 0.55f)
     } else {
-        if (isDark) Color(0x14FFFFFF) else Color(0x10000000)
+        currentSkin.outline.copy(alpha = if (isDark) 0.25f else 0.15f)
     }
 
     Surface(

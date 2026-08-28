@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -763,7 +764,7 @@ fun MyApplicationTheme(
 ) {
     val isSystemDark = isSystemInDarkTheme()
     val isDark = when (themeMode) {
-        ThemeMode.SYSTEM -> isSystemDark
+        ThemeMode.SYSTEM -> if (appThemeSkin == AppThemeSkin.DARK_OBSIDIAN) isSystemDark else appThemeSkin.isDark
         ThemeMode.DARK -> true
         ThemeMode.LIGHT -> false
     }
@@ -775,7 +776,7 @@ fun MyApplicationTheme(
         if (isDark) accentTheme.darkPrimary else accentTheme.lightPrimary
     }
 
-    val onPrimary = if (isDark) Color.Black else Color.White
+    val onPrimary = if (primary.luminance() > 0.5f) Color(0xFF0F172A) else Color(0xFFFFFFFF)
 
     val skinColorScheme = if (isDark) {
         val baseBackground = if (appThemeSkin.isDark) appThemeSkin.background else PureDarkBackground

@@ -48,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,7 +73,7 @@ fun CurrencySearchBottomSheet(
     var searchQuery by remember { mutableStateOf("") }
     var selectedRegionFilter by remember { mutableStateOf("All") }
 
-    val isDark = MaterialTheme.colorScheme.background.red < 0.2f
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val primaryColor = MaterialTheme.colorScheme.primary
 
     val filteredCurrencies = remember(searchQuery, selectedRegionFilter) {
@@ -97,7 +98,7 @@ fun CurrencySearchBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        containerColor = if (isDark) Color(0xFF111827) else Color(0xFFFFFFFF),
+        containerColor = MaterialTheme.colorScheme.surface,
         dragHandle = null,
         modifier = modifier.testTag("currency_search_bottom_sheet")
     ) {
@@ -265,7 +266,7 @@ fun CurrencySearchBottomSheet(
                                 .testTag("currency_item_${currency.code}"),
                             shape = RoundedCornerShape(12.dp),
                             color = if (isSelected) primaryColor.copy(alpha = 0.15f)
-                            else if (isDark) Color(0xFF172033) else Color(0xFFF8FAFC)
+                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.5f else 0.6f)
                         ) {
                             Row(
                                 modifier = Modifier

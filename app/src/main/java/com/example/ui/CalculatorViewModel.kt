@@ -385,7 +385,9 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
 
     fun setAppThemeSkin(skin: AppThemeSkin) {
         userPreferencesManager.appThemeSkin = skin
-        _uiState.update { it.copy(appThemeSkin = skin) }
+        val targetMode = if (skin.isDark) ThemeMode.DARK else ThemeMode.LIGHT
+        userPreferencesManager.themeMode = targetMode
+        _uiState.update { it.copy(appThemeSkin = skin, themeMode = targetMode) }
     }
 
     fun setFontStyle(style: AppFontStyle) {
