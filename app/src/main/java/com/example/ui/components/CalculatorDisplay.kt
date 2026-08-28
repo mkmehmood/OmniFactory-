@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.DigitalMonospaceFont
+import com.example.ui.theme.LocalAppFontStyle
 
 @Composable
 fun CalculatorDisplay(
@@ -167,6 +168,7 @@ fun CalculatorDisplay(
                     else -> 23.sp
                 },
                 fontFamily = DigitalMonospaceFont,
+                fontStyle = LocalAppFontStyle.current.defaultFontStyle,
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.8.sp,
                 lineHeight = when {
@@ -201,7 +203,8 @@ fun CalculatorDisplay(
                     displayText.length > 9 -> 40.sp
                     else -> 52.sp
                 },
-                fontWeight = FontWeight.Light,
+                fontWeight = LocalAppFontStyle.current.defaultFontWeight,
+                fontStyle = LocalAppFontStyle.current.defaultFontStyle,
                 letterSpacing = 1.2.sp,
                 fontFamily = DigitalMonospaceFont,
                 textAlign = TextAlign.End
@@ -216,6 +219,7 @@ fun CalculatorDisplay(
                         else -> 52.sp
                     },
                     fontWeight = FontWeight.Normal,
+                    fontStyle = LocalAppFontStyle.current.defaultFontStyle,
                     letterSpacing = 1.2.sp,
                     fontFamily = DigitalMonospaceFont,
                     textAlign = TextAlign.End

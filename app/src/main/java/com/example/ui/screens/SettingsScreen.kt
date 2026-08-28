@@ -694,6 +694,7 @@ fun SettingsScreen(
                                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
                                                     fontSize = 14.sp,
                                                     fontFamily = fontStyle.fontFamily,
+                                                    fontStyle = fontStyle.defaultFontStyle,
                                                     color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
                                                 )
                                                 Surface(
@@ -725,6 +726,7 @@ fun SettingsScreen(
                                                 Text(
                                                     text = fontStyle.previewSample,
                                                     fontFamily = fontStyle.fontFamily,
+                                                    fontStyle = fontStyle.defaultFontStyle,
                                                     fontSize = 12.sp,
                                                     color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface,
                                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
@@ -778,20 +780,23 @@ fun SettingsScreen(
                                 text = "${currentFontStyle.displayName} (${currentFontStyle.fontType.displayName})",
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontFamily = currentFontStyle.fontFamily
+                                fontFamily = currentFontStyle.fontFamily,
+                                fontStyle = currentFontStyle.defaultFontStyle
                             )
                         }
                         Text(
                             text = "123,456 + 75% = 216,048",
                             fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = currentFontStyle.defaultFontWeight,
                             fontFamily = currentFontStyle.numberFontFamily,
+                            fontStyle = currentFontStyle.defaultFontStyle,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "Scientific Calculations • Daily Ledger • Currency Engine • Simple 123 Formatting",
                             fontSize = 12.sp,
                             fontFamily = currentFontStyle.fontFamily,
+                            fontStyle = currentFontStyle.defaultFontStyle,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }

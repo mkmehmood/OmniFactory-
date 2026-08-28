@@ -1,12 +1,12 @@
 package com.example.ui.theme
 
-import android.graphics.Typeface
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
@@ -23,7 +23,10 @@ enum class AppFontStyle(
     val description: String,
     val previewSample: String,
     val fontFamily: FontFamily,
-    val numberFontFamily: FontFamily
+    val numberFontFamily: FontFamily,
+    val defaultFontWeight: FontWeight = FontWeight.Normal,
+    val defaultFontStyle: FontStyle = FontStyle.Normal,
+    val fontFeatureSettings: String? = null
 ) {
     // ==========================================
     // DIGITAL & ELECTRONIC DISPLAY STYLES
@@ -34,8 +37,9 @@ enum class AppFontStyle(
         category = "Digital LED",
         description = "Standard digital fixed-width calculator typography",
         previewSample = "123,456 • 123 + 456 = 579",
-        fontFamily = FontFamily(Typeface.create("monospace", Typeface.NORMAL)),
-        numberFontFamily = FontFamily(Typeface.create("monospace", Typeface.NORMAL))
+        fontFamily = FontFamily.Monospace,
+        numberFontFamily = FontFamily.Monospace,
+        defaultFontWeight = FontWeight.Normal
     ),
     LCD_DIGITAL_BOLD(
         displayName = "LCD 7-Segment Bold",
@@ -43,8 +47,10 @@ enum class AppFontStyle(
         category = "7-Segment",
         description = "High-contrast segmented electronic calculator display",
         previewSample = "123,456 • 123 456 789",
-        fontFamily = FontFamily(Typeface.create("monospace", Typeface.BOLD)),
-        numberFontFamily = FontFamily(Typeface.create("monospace", Typeface.BOLD))
+        fontFamily = FontFamily.Monospace,
+        numberFontFamily = FontFamily.Monospace,
+        defaultFontWeight = FontWeight.ExtraBold,
+        fontFeatureSettings = "tnum, zero"
     ),
     CYBER_CONDENSED(
         displayName = "Cyberpunk HUD Matrix",
@@ -52,17 +58,20 @@ enum class AppFontStyle(
         category = "Sci-Fi HUD",
         description = "Ultra-tall condensed digital geometry for sci-fi displays",
         previewSample = "123,456 • 123 MATRIX",
-        fontFamily = FontFamily(Typeface.create("sans-serif-condensed", Typeface.BOLD)),
-        numberFontFamily = FontFamily(Typeface.create("monospace", Typeface.BOLD))
+        fontFamily = FontFamily.Monospace,
+        numberFontFamily = FontFamily.Monospace,
+        defaultFontWeight = FontWeight.Bold,
+        fontFeatureSettings = "tnum"
     ),
     TERMINAL_MONOSPACE(
         displayName = "Retro Terminal Code",
         fontType = FontType.DIGITAL,
         category = "Hacker Terminal",
-        description = "Bold green developer terminal monospace commands",
+        description = "Bold developer terminal monospace commands",
         previewSample = "123,456 • 123 ROOT EXEC",
-        fontFamily = FontFamily(Typeface.create("monospace", Typeface.BOLD)),
-        numberFontFamily = FontFamily(Typeface.create("monospace", Typeface.BOLD))
+        fontFamily = FontFamily.Monospace,
+        numberFontFamily = FontFamily.Monospace,
+        defaultFontWeight = FontWeight.Bold
     ),
     CONDENSED_DIGITAL(
         displayName = "Compact Digital Ledger",
@@ -70,8 +79,10 @@ enum class AppFontStyle(
         category = "Matrix Display",
         description = "Space-saving high-density numeric matrix typography",
         previewSample = "123,456 • 123 DATA LOG",
-        fontFamily = FontFamily(Typeface.create("sans-serif-condensed", Typeface.NORMAL)),
-        numberFontFamily = FontFamily(Typeface.create("monospace", Typeface.NORMAL))
+        fontFamily = FontFamily.Monospace,
+        numberFontFamily = FontFamily.Monospace,
+        defaultFontWeight = FontWeight.Medium,
+        fontFeatureSettings = "tnum"
     ),
     TYPEWRITER_DIGITAL(
         displayName = "Vintage Slab Matrix",
@@ -79,8 +90,9 @@ enum class AppFontStyle(
         category = "Mechanical",
         description = "Mechanical slab-serif monospace matrix numbers",
         previewSample = "123,456 • 123 SLAB TECH",
-        fontFamily = FontFamily(Typeface.create("serif-monospace", Typeface.NORMAL)),
-        numberFontFamily = FontFamily(Typeface.create("serif-monospace", Typeface.BOLD))
+        fontFamily = FontFamily.Monospace,
+        numberFontFamily = FontFamily.Monospace,
+        defaultFontWeight = FontWeight.SemiBold
     ),
     INDUSTRIAL_DIGITAL(
         displayName = "Industrial Heavy LCD",
@@ -88,8 +100,10 @@ enum class AppFontStyle(
         category = "Heavy Matrix",
         description = "Massive punchy digital display for industrial hardware",
         previewSample = "123,456 • 123 POWER ON",
-        fontFamily = FontFamily(Typeface.create("sans-serif-black", Typeface.BOLD)),
-        numberFontFamily = FontFamily(Typeface.create("monospace", Typeface.BOLD))
+        fontFamily = FontFamily.Monospace,
+        numberFontFamily = FontFamily.Monospace,
+        defaultFontWeight = FontWeight.Black,
+        fontFeatureSettings = "zero"
     ),
 
     // ==========================================
@@ -102,7 +116,8 @@ enum class AppFontStyle(
         description = "Clean standard Android device system typography",
         previewSample = "123,456 • Precision 123",
         fontFamily = FontFamily.Default,
-        numberFontFamily = FontFamily(Typeface.create("monospace", Typeface.NORMAL))
+        numberFontFamily = FontFamily.Monospace,
+        defaultFontWeight = FontWeight.Normal
     ),
     CASUAL_HANDWRITING(
         displayName = "Casual Human Script",
@@ -110,8 +125,9 @@ enum class AppFontStyle(
         category = "Handwritten",
         description = "Friendly, informal human handwriting aesthetic",
         previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily(Typeface.create("casual", Typeface.NORMAL)),
-        numberFontFamily = FontFamily(Typeface.create("casual", Typeface.BOLD))
+        fontFamily = FontFamily.Cursive,
+        numberFontFamily = FontFamily.Cursive,
+        defaultFontWeight = FontWeight.Normal
     ),
     BOLD_CASUAL(
         displayName = "Bold Marker Sketch",
@@ -119,8 +135,9 @@ enum class AppFontStyle(
         category = "Street Art",
         description = "Chunky, expressive whiteboard marker typography",
         previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily(Typeface.create("casual", Typeface.BOLD)),
-        numberFontFamily = FontFamily(Typeface.create("casual", Typeface.BOLD))
+        fontFamily = FontFamily.Cursive,
+        numberFontFamily = FontFamily.Cursive,
+        defaultFontWeight = FontWeight.Bold
     ),
     DANCING_CURSIVE(
         displayName = "Dancing Cursive Script",
@@ -128,8 +145,9 @@ enum class AppFontStyle(
         category = "Calligraphic",
         description = "Flowing, elegant calligraphic script handwriting",
         previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily(Typeface.create("cursive", Typeface.NORMAL)),
-        numberFontFamily = FontFamily(Typeface.create("cursive", Typeface.BOLD))
+        fontFamily = FontFamily.Cursive,
+        numberFontFamily = FontFamily.Cursive,
+        defaultFontWeight = FontWeight.Medium
     ),
     ROYAL_CALLIGRAPHY(
         displayName = "Royal Script Bold",
@@ -137,8 +155,9 @@ enum class AppFontStyle(
         category = "Luxury Script",
         description = "Dramatic luxury cursive calligraphy with bold strokes",
         previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily(Typeface.create("cursive", Typeface.BOLD)),
-        numberFontFamily = FontFamily(Typeface.create("cursive", Typeface.BOLD))
+        fontFamily = FontFamily.Cursive,
+        numberFontFamily = FontFamily.Cursive,
+        defaultFontWeight = FontWeight.ExtraBold
     ),
     CLASSIC_SERIF(
         displayName = "Classic Editorial Serif",
@@ -146,8 +165,9 @@ enum class AppFontStyle(
         category = "Editorial",
         description = "Distinguished literary serif typography with refined serifs",
         previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily(Typeface.create("serif", Typeface.NORMAL)),
-        numberFontFamily = FontFamily(Typeface.create("serif", Typeface.NORMAL))
+        fontFamily = FontFamily.Serif,
+        numberFontFamily = FontFamily.Serif,
+        defaultFontWeight = FontWeight.Normal
     ),
     LUXURY_SERIF_ITALIC(
         displayName = "Luxury Serif Italic",
@@ -155,8 +175,10 @@ enum class AppFontStyle(
         category = "High Fashion",
         description = "Dramatic, high-contrast italic serif for upscale aesthetics",
         previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily(Typeface.create("serif", Typeface.BOLD_ITALIC)),
-        numberFontFamily = FontFamily(Typeface.create("serif", Typeface.BOLD_ITALIC))
+        fontFamily = FontFamily.Serif,
+        numberFontFamily = FontFamily.Serif,
+        defaultFontWeight = FontWeight.Bold,
+        defaultFontStyle = FontStyle.Italic
     ),
     VINTAGE_TYPEWRITER(
         displayName = "Vintage Typewriter",
@@ -164,8 +186,9 @@ enum class AppFontStyle(
         category = "Vintage",
         description = "Distressed mechanical typewriter slab-serif letterforms",
         previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily(Typeface.create("serif-monospace", Typeface.NORMAL)),
-        numberFontFamily = FontFamily(Typeface.create("serif-monospace", Typeface.NORMAL))
+        fontFamily = FontFamily.Monospace,
+        numberFontFamily = FontFamily.Monospace,
+        defaultFontWeight = FontWeight.Medium
     ),
     MINIMALIST_LIGHT(
         displayName = "Minimalist Hairline",
@@ -173,8 +196,9 @@ enum class AppFontStyle(
         category = "Minimalist",
         description = "Ultra-thin, airy, Scandinavian architectural aesthetic",
         previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily(Typeface.create("sans-serif-light", Typeface.NORMAL)),
-        numberFontFamily = FontFamily(Typeface.create("sans-serif-light", Typeface.NORMAL))
+        fontFamily = FontFamily.SansSerif,
+        numberFontFamily = FontFamily.SansSerif,
+        defaultFontWeight = FontWeight.Light
     ),
     INDUSTRIAL_BLACK(
         displayName = "Industrial Ultra-Black",
@@ -182,8 +206,9 @@ enum class AppFontStyle(
         category = "Display Bold",
         description = "Massive punchy heavyweight typeface with bold presence",
         previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily(Typeface.create("sans-serif-black", Typeface.BOLD)),
-        numberFontFamily = FontFamily(Typeface.create("sans-serif-black", Typeface.BOLD))
+        fontFamily = FontFamily.SansSerif,
+        numberFontFamily = FontFamily.SansSerif,
+        defaultFontWeight = FontWeight.Black
     ),
     SMALL_CAPS_LEDGER(
         displayName = "Small Caps Ledger",
@@ -191,8 +216,10 @@ enum class AppFontStyle(
         category = "Accounting",
         description = "Distinguished financial accounting in small capital letters",
         previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily(Typeface.create("sans-serif-smallcaps", Typeface.NORMAL)),
-        numberFontFamily = FontFamily(Typeface.create("sans-serif-smallcaps", Typeface.NORMAL))
+        fontFamily = FontFamily.Serif,
+        numberFontFamily = FontFamily.Monospace,
+        defaultFontWeight = FontWeight.Normal,
+        fontFeatureSettings = "smcp, c2sc"
     ),
     GEOMETRIC_TECHNO(
         displayName = "Geometric Modern Sans",
@@ -200,8 +227,9 @@ enum class AppFontStyle(
         category = "Neo-Modern",
         description = "Well-balanced geometric sans with modern contrast",
         previewSample = "123,456 • Precision 123",
-        fontFamily = FontFamily(Typeface.create("sans-serif-medium", Typeface.NORMAL)),
-        numberFontFamily = FontFamily(Typeface.create("sans-serif-medium", Typeface.NORMAL))
+        fontFamily = FontFamily.SansSerif,
+        numberFontFamily = FontFamily.Monospace,
+        defaultFontWeight = FontWeight.Medium
     )
 }
 
@@ -216,25 +244,33 @@ val DigitalMonospaceFont: FontFamily
 fun createAppTypography(fontStyle: AppFontStyle = AppFontStyle.SYSTEM): Typography {
     val bodyFont = fontStyle.fontFamily
     val numFont = fontStyle.numberFontFamily
+    val fStyle = fontStyle.defaultFontStyle
+    val fSettings = fontStyle.fontFeatureSettings
 
     return Typography(
         displayLarge = TextStyle(
             fontFamily = numFont,
-            fontWeight = FontWeight.Light,
+            fontWeight = fontStyle.defaultFontWeight,
+            fontStyle = fStyle,
+            fontFeatureSettings = fSettings,
             fontSize = 54.sp,
             lineHeight = 60.sp,
             letterSpacing = 1.sp
         ),
         displayMedium = TextStyle(
             fontFamily = numFont,
-            fontWeight = FontWeight.Normal,
+            fontWeight = fontStyle.defaultFontWeight,
+            fontStyle = fStyle,
+            fontFeatureSettings = fSettings,
             fontSize = 42.sp,
             lineHeight = 48.sp,
             letterSpacing = 0.5.sp
         ),
         displaySmall = TextStyle(
             fontFamily = numFont,
-            fontWeight = FontWeight.Medium,
+            fontWeight = fontStyle.defaultFontWeight,
+            fontStyle = fStyle,
+            fontFeatureSettings = fSettings,
             fontSize = 28.sp,
             lineHeight = 34.sp,
             letterSpacing = 0.5.sp
@@ -242,61 +278,81 @@ fun createAppTypography(fontStyle: AppFontStyle = AppFontStyle.SYSTEM): Typograp
         headlineLarge = TextStyle(
             fontFamily = bodyFont,
             fontWeight = FontWeight.Bold,
+            fontStyle = fStyle,
+            fontFeatureSettings = fSettings,
             fontSize = 24.sp,
             lineHeight = 32.sp
         ),
         headlineMedium = TextStyle(
             fontFamily = bodyFont,
             fontWeight = FontWeight.SemiBold,
+            fontStyle = fStyle,
+            fontFeatureSettings = fSettings,
             fontSize = 20.sp,
             lineHeight = 28.sp
         ),
         headlineSmall = TextStyle(
             fontFamily = bodyFont,
             fontWeight = FontWeight.SemiBold,
+            fontStyle = fStyle,
+            fontFeatureSettings = fSettings,
             fontSize = 18.sp,
             lineHeight = 26.sp
         ),
         titleLarge = TextStyle(
             fontFamily = bodyFont,
             fontWeight = FontWeight.SemiBold,
+            fontStyle = fStyle,
+            fontFeatureSettings = fSettings,
             fontSize = 18.sp,
             lineHeight = 24.sp
         ),
         titleMedium = TextStyle(
             fontFamily = bodyFont,
             fontWeight = FontWeight.Medium,
+            fontStyle = fStyle,
+            fontFeatureSettings = fSettings,
             fontSize = 16.sp,
             lineHeight = 22.sp
         ),
         titleSmall = TextStyle(
             fontFamily = bodyFont,
             fontWeight = FontWeight.Medium,
+            fontStyle = fStyle,
+            fontFeatureSettings = fSettings,
             fontSize = 14.sp,
             lineHeight = 20.sp
         ),
         bodyLarge = TextStyle(
             fontFamily = bodyFont,
-            fontWeight = FontWeight.Normal,
+            fontWeight = fontStyle.defaultFontWeight,
+            fontStyle = fStyle,
+            fontFeatureSettings = fSettings,
             fontSize = 16.sp,
             lineHeight = 24.sp,
             letterSpacing = 0.25.sp
         ),
         bodyMedium = TextStyle(
             fontFamily = bodyFont,
-            fontWeight = FontWeight.Normal,
+            fontWeight = fontStyle.defaultFontWeight,
+            fontStyle = fStyle,
+            fontFeatureSettings = fSettings,
             fontSize = 14.sp,
             lineHeight = 20.sp
         ),
         bodySmall = TextStyle(
             fontFamily = bodyFont,
-            fontWeight = FontWeight.Normal,
+            fontWeight = fontStyle.defaultFontWeight,
+            fontStyle = fStyle,
+            fontFeatureSettings = fSettings,
             fontSize = 12.sp,
             lineHeight = 16.sp
         ),
         labelLarge = TextStyle(
             fontFamily = numFont,
             fontWeight = FontWeight.SemiBold,
+            fontStyle = fStyle,
+            fontFeatureSettings = fSettings,
             fontSize = 15.sp,
             lineHeight = 20.sp,
             letterSpacing = 0.5.sp
@@ -304,12 +360,16 @@ fun createAppTypography(fontStyle: AppFontStyle = AppFontStyle.SYSTEM): Typograp
         labelMedium = TextStyle(
             fontFamily = bodyFont,
             fontWeight = FontWeight.Medium,
+            fontStyle = fStyle,
+            fontFeatureSettings = fSettings,
             fontSize = 12.sp,
             lineHeight = 16.sp
         ),
         labelSmall = TextStyle(
             fontFamily = bodyFont,
             fontWeight = FontWeight.Medium,
+            fontStyle = fStyle,
+            fontFeatureSettings = fSettings,
             fontSize = 10.sp,
             lineHeight = 14.sp
         )

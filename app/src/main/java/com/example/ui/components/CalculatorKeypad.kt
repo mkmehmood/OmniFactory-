@@ -65,6 +65,8 @@ import com.example.ui.theme.HapticIntensity
 import com.example.ui.theme.LocalAnimationIntensity
 import com.example.ui.theme.LocalComponentSizing
 import com.example.ui.theme.LocalShapeStructure
+import com.example.ui.theme.DigitalMonospaceFont
+import com.example.ui.theme.LocalAppFontStyle
 import com.example.ui.theme.PureDarkGlassBorder
 import com.example.ui.theme.PureDarkGlassSurface
 import com.example.ui.theme.PureDarkGlassSurfacePressed
@@ -573,7 +575,8 @@ private fun LiquidGlassKey(
                 color = contentColor,
                 fontSize = (baseFontSize * fontScale).sp,
                 fontWeight = if (type == KeyType.EQUALS || type == KeyType.OPERATOR || type == KeyType.DOUBLE_ZERO) FontWeight.Bold else FontWeight.Medium,
-                fontFamily = FontFamily.SansSerif
+                fontFamily = DigitalMonospaceFont,
+                fontStyle = LocalAppFontStyle.current.defaultFontStyle
             )
         }
     }
