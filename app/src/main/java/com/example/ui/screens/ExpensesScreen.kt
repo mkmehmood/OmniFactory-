@@ -101,6 +101,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.db.LedgerTransactionEntity
 import com.example.domain.ledger.LedgerCategoryIcons
 import com.example.domain.util.IndianNumberFormatter
+import com.example.domain.util.PkrNumberFormatter
 import com.example.ui.ExpenseScope
 import com.example.ui.ExpenseTimeFilter
 import com.example.ui.ExpensesSummary
@@ -363,7 +364,7 @@ fun ExpensesScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = "Rs. ${IndianNumberFormatter.formatIndianDouble(exp.amount, 2)}",
+                                    text = PkrNumberFormatter.formatPkrAmount(exp.amount, decimals = 2),
                                     fontSize = 24.sp,
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = DigitalMonospaceFont,
@@ -414,7 +415,7 @@ fun ExpensesScreen(
                 onDismissRequest = { expenseToDelete = null },
                 title = { Text("Delete Expense Record?") },
                 text = {
-                    Text("Are you sure you want to delete this expense of Rs. ${IndianNumberFormatter.formatIndianDouble(exp.amount, 2)} (${exp.category})?")
+                    Text("Are you sure you want to delete this expense of ${PkrNumberFormatter.formatPkrAmount(exp.amount, decimals = 2)} (${exp.category})?")
                 },
                 confirmButton = {
                     TextButton(
@@ -861,7 +862,7 @@ private fun ExpenseCategorySummaryCard(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Rs. ${IndianNumberFormatter.formatIndianDouble(amount, 2)}",
+                            text = PkrNumberFormatter.formatPkrAmount(amount, decimals = 2),
                             fontSize = 12.5.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = DigitalMonospaceFont,
@@ -979,7 +980,7 @@ private fun ExpenseRowItem(
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "-Rs. ${IndianNumberFormatter.formatIndianDouble(expense.amount, 2)}",
+                    text = "-${PkrNumberFormatter.formatPkrAmount(expense.amount, decimals = 2)}",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = DigitalMonospaceFont,
@@ -1255,17 +1256,7 @@ private fun ExpenseAddEditSheetContent(
                     value = uiState.formAmountText,
                     onValueChange = onAmountChange,
                     readOnly = true,
-                    placeholder = { Text("0", fontFamily = DigitalMonospaceFont) },
-                    leadingIcon = {
-                        Text(
-                            text = "Rs.",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            color = Color(0xFFEF4444),
-                            modifier = Modifier.padding(start = 12.dp)
-                        )
-                    },
+                    placeholder = { Text("0.00", fontFamily = DigitalMonospaceFont) },
                     trailingIcon = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (uiState.formAmountText.isNotEmpty()) {
@@ -1756,7 +1747,7 @@ private fun ExpenseAddEditSheetContent(
             modifier = Modifier.fillMaxWidth()
         ) {
             SmartStationKeypad(
-                activeFieldLabel = "Expense Amount (Rs.)",
+                activeFieldLabel = "Expense Amount",
                 onDigit = { onTokenAppend(it) },
                 onDoubleZero = { onTokenAppend("00") },
                 onDecimal = { onTokenAppend(".") },

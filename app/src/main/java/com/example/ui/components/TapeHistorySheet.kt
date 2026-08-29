@@ -179,7 +179,7 @@ fun TapeHistorySheet(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "${filteredList.size} calculations • Total: ${com.example.domain.util.IndianNumberFormatter.formatIndianDouble(periodTotalSum, 2)}",
+                            text = "${filteredList.size} calculations • Total: ${com.example.domain.util.PkrNumberFormatter.formatPkrAmount(periodTotalSum, decimals = 2)}",
                             fontFamily = DigitalMonospaceFont,
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -284,7 +284,7 @@ fun TapeHistorySheet(
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = com.example.domain.util.IndianNumberFormatter.formatIndianDouble(selectedSum, 2),
+                                text = com.example.domain.util.PkrNumberFormatter.formatPkrAmount(selectedSum, decimals = 2),
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = DigitalMonospaceFont,
                                 fontSize = 15.sp,

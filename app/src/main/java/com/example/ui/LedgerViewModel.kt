@@ -11,7 +11,7 @@ import com.example.domain.ledger.LedgerPaymentUtils
 import com.example.domain.ledger.LedgerSummary
 import com.example.domain.ledger.LedgerType
 import com.example.domain.ledger.LedgerUnifiedDataManager
-import com.example.domain.util.IndianNumberFormatter
+import com.example.domain.util.PkrNumberFormatter
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -610,7 +610,7 @@ class LedgerViewModel(
                 )
                 ledgerDao.insertTransaction(newTx)
                 val msg = if (isTransfer) {
-                    "Transferred Rs. ${IndianNumberFormatter.formatIndianDouble(amount, 0)}: $fromMode ➔ $toMode"
+                    "Transferred ${PkrNumberFormatter.formatPkrDouble(amount, decimals = 0)}: $fromMode ➔ $toMode"
                 } else {
                     val scopeLabel = if (isCashOut) " (${if (expenseScope == "HOME") "Home Expense" else "Business Expense"})" else ""
                     "${current.formType.title}$scopeLabel saved."
@@ -668,7 +668,7 @@ class LedgerViewModel(
         return buildString {
             appendLine("=== CASHBOOK TRANSACTION VOUCHER ===")
             appendLine("Type: $typeLabel")
-            appendLine("Amount: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.amount, 2)}")
+            appendLine("Amount: ${PkrNumberFormatter.formatPkrAmount(tx.amount, decimals = 2)}")
             if (isTransfer) {
                 appendLine("From Channel: ${tx.paymentMode}")
                 appendLine("To Channel:   ${tx.transferToMode}")
@@ -708,15 +708,15 @@ class LedgerViewModel(
             if (summary.cashByMode.isNotEmpty()) {
                 appendLine("PAYMENT CHANNEL BREAKDOWN:")
                 summary.cashByMode.forEach { (mode, net) ->
-                    val prefix = if (net >= 0) "+Rs. " else "-Rs. "
-                    appendLine("• $mode: $prefix${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(net), 2)}")
+                    val signPrefix = if (net >= 0) "+" else "-"
+                    appendLine("• $mode: $signPrefix${PkrNumberFormatter.formatPkrAmount(kotlin.math.abs(net), decimals = 2)}")
                 }
                 appendLine("--------------------------------------")
             }
             if (summary.categoryBreakdown.isNotEmpty()) {
                 appendLine("CATEGORY BREAKDOWN:")
                 summary.categoryBreakdown.forEach { (cat, amt) ->
-                    appendLine("• $cat: Rs. ${IndianNumberFormatter.formatIndianDouble(amt, 2)}")
+                    appendLine("• $cat: ${PkrNumberFormatter.formatPkrAmount(amt, decimals = 2)}")
                 }
                 appendLine("--------------------------------------")
             }
@@ -727,7 +727,7 @@ class LedgerViewModel(
                 val party = if (tx.partyName.isNotBlank()) " | ${tx.partyName}" else ""
                 val scopeTag = if (tx.type == "CASH_OUT") " [${if (tx.expenseScope == "HOME" || LedgerUnifiedDataManager.isHomeExpense(tx.category)) "Home" else "Biz"}]" else ""
                 val modeDesc = if (isTransfer) "${tx.paymentMode} ➔ ${tx.transferToMode}" else tx.paymentMode
-                appendLine("${i + 1}. [${dateFormat.format(Date(tx.dateMillis))}] ${tx.category}$party$scopeTag : $sign Rs. ${IndianNumberFormatter.formatIndianDouble(tx.amount, 2)} ($modeDesc)")
+                appendLine("${i + 1}. [${dateFormat.format(Date(tx.dateMillis))}] ${tx.category}$party$scopeTag : $sign ${PkrNumberFormatter.formatPkrAmount(tx.amount, decimals = 2)} ($modeDesc)")
             }
             appendLine("======================================")
         }

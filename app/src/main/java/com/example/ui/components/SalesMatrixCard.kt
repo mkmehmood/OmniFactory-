@@ -71,6 +71,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.db.SalesTransactionEntity
 import com.example.domain.sales.ReconciliationStatus
 import com.example.domain.util.IndianNumberFormatter
+import com.example.domain.util.PkrNumberFormatter
 import com.example.ui.theme.DigitalMonospaceFont
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -167,11 +168,7 @@ data class RepMatrixSummary(
         get() = IndianNumberFormatter.formatIndianCurrency(totalPhysicalCash)
 
     val formattedDiscrepancy: String
-        get() = when {
-            kotlin.math.abs(netDiscrepancy) < 0.01 -> "Rs. 0"
-            netDiscrepancy > 0.0 -> "+Rs. ${IndianNumberFormatter.formatIndianDouble(netDiscrepancy, 2)}"
-            else -> "-Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(netDiscrepancy), 2)}"
-        }
+        get() = IndianNumberFormatter.formatIndianCurrency(netDiscrepancy, showSign = true)
 }
 
 @Composable
@@ -657,8 +654,8 @@ private fun FleetSummaryKpiBanner(
 
     val varianceLabel = when {
         kotlin.math.abs(fleetVariance) < 0.01 -> "Fleet Balanced"
-        fleetVariance > 0 -> "+Rs. ${IndianNumberFormatter.formatIndianDouble(fleetVariance, 2)} Surplus"
-        else -> "−Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(fleetVariance), 2)} Shortage"
+        fleetVariance > 0 -> "+${PkrNumberFormatter.formatPkrAmount(fleetVariance, decimals = 2)} Surplus"
+        else -> "−${PkrNumberFormatter.formatPkrAmount(kotlin.math.abs(fleetVariance), decimals = 2)} Shortage"
     }
 
     Surface(
@@ -1531,9 +1528,9 @@ private fun buildMatrixExecutiveReport(
             appendLine("Fleet Commission Paid: ${IndianNumberFormatter.formatIndianCurrency(fleetCommPaid)}")
         }
         val varianceStr = when {
-            kotlin.math.abs(fleetVariance) < 0.01 -> "Rs. 0 (Balanced)"
-            fleetVariance > 0 -> "+Rs. ${IndianNumberFormatter.formatIndianDouble(fleetVariance, 2)} (Surplus)"
-            else -> "-Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(fleetVariance), 2)} (Shortage)"
+            kotlin.math.abs(fleetVariance) < 0.01 -> "0.00 (Balanced)"
+            fleetVariance > 0 -> "+${PkrNumberFormatter.formatPkrAmount(fleetVariance, decimals = 2)} (Surplus)"
+            else -> "-${PkrNumberFormatter.formatPkrAmount(kotlin.math.abs(fleetVariance), decimals = 2)} (Shortage)"
         }
         appendLine("Fleet Net Variance: $varianceStr")
         appendLine("----------------------------------------")

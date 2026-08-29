@@ -198,7 +198,6 @@ class MainActivity : ComponentActivity() {
             MyApplicationTheme(
                 appThemeSkin = uiState.appThemeSkin,
                 themeMode = uiState.themeMode,
-                accentTheme = uiState.accentTheme,
                 shapeStructureStyle = uiState.shapeStructureStyle,
                 componentSizeStyle = uiState.componentSizeStyle,
                 animationIntensity = uiState.animationIntensity,
@@ -235,7 +234,6 @@ class MainActivity : ComponentActivity() {
                             SettingsScreen(
                                 currentAppThemeSkin = uiState.appThemeSkin,
                                 currentThemeMode = uiState.themeMode,
-                                currentAccent = uiState.accentTheme,
                                 currentShapeStructure = uiState.shapeStructureStyle,
                                 currentComponentSize = uiState.componentSizeStyle,
                                 currentAnimationIntensity = uiState.animationIntensity,
@@ -245,7 +243,6 @@ class MainActivity : ComponentActivity() {
                                 showDoubleZeroKey = uiState.showDoubleZeroKey,
                                 onAppThemeSkinChange = { calculatorViewModel.setAppThemeSkin(it) },
                                 onThemeModeChange = { calculatorViewModel.setThemeMode(it) },
-                                onAccentChange = { calculatorViewModel.setAccentTheme(it) },
                                 onShapeStructureChange = { calculatorViewModel.setShapeStructureStyle(it) },
                                 onComponentSizeChange = { calculatorViewModel.setComponentSizeStyle(it) },
                                 onAnimationIntensityChange = { calculatorViewModel.setAnimationIntensity(it) },

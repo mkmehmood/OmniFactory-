@@ -46,19 +46,19 @@ class SalesReconciliationCalculatorTest {
         assertEquals(ReconciliationStatus.BALANCED, result.status)
         assertEquals("135", result.formattedNetSold)
         assertEquals("115", result.formattedCashQty)
-        assertEquals("Rs. 25.00", result.formattedUnitPrice)
-        assertEquals("Rs. 2.50", result.formattedCommissionPerUnit)
-        assertEquals("Rs. 337.50", result.formattedGrossCommission)
-        assertEquals("Rs. 100.00", result.formattedCommissionPaid)
-        assertEquals("Rs. 237.50", result.formattedCommissionPayable)
-        assertEquals("Rs. 2,975.00", result.formattedExpectedCash)
-        assertEquals("Rs. 0.00", result.formattedDiscrepancy)
+        assertEquals("25.00", result.formattedUnitPrice)
+        assertEquals("2.50", result.formattedCommissionPerUnit)
+        assertEquals("337.50", result.formattedGrossCommission)
+        assertEquals("100.00", result.formattedCommissionPaid)
+        assertEquals("237.50", result.formattedCommissionPayable)
+        assertEquals("2,975.00", result.formattedExpectedCash)
+        assertEquals("0.00", result.formattedDiscrepancy)
     }
 
     @Test
     fun testSurplusReconciliation() {
-        // Expected Cash = (2875 + 150) - 50 = Rs. 2,975.00
-        // Physical cash received = Rs. 3,035.00 -> Surplus = +Rs. 60.00
+        // Expected Cash = (2875 + 150) - 50 = 2,975.00
+        // Physical cash received = 3,035.00 -> Surplus = +60.00
         val input = SalesReconciliationInput(
             salesRep = "Sarah Chen",
             dateMillis = 1000L,
@@ -79,13 +79,13 @@ class SalesReconciliationCalculatorTest {
         assertEquals(3035.0, result.physicalCashInHand, 0.001)
         assertEquals(60.0, result.discrepancy, 0.001)
         assertEquals(ReconciliationStatus.OVER, result.status)
-        assertEquals("+Rs. 60.00", result.formattedDiscrepancy)
+        assertEquals("+60.00", result.formattedDiscrepancy)
     }
 
     @Test
     fun testDeficitReconciliation() {
-        // Expected Cash = (2875 + 150) - 50 = Rs. 2,975.00
-        // Physical Cash = Rs. 2,850.00 -> Shortage = -Rs. 125.00
+        // Expected Cash = (2875 + 150) - 50 = 2,975.00
+        // Physical Cash = 2,850.00 -> Shortage = -125.00
         val input = SalesReconciliationInput(
             salesRep = "Marcus Vance",
             dateMillis = 1000L,
@@ -107,11 +107,11 @@ class SalesReconciliationCalculatorTest {
         assertEquals(-125.0, result.discrepancy, 0.001)
         assertEquals(125.0, result.deficitAmount, 0.001)
         assertEquals(ReconciliationStatus.SHORT, result.status)
-        assertEquals("-Rs. 125.00", result.formattedDiscrepancy)
+        assertEquals("-125.00", result.formattedDiscrepancy)
     }
 
     @Test
-    fun testLargeIndianCurrencyFormat() {
+    fun testLargePkrCurrencyFormat() {
         // Sold: 1,050,345 @ 10 = 10,503,450
         // Commission: 1,050,345 * 1.5 = 1,575,517.50
         // Expected Cash = 10,503,450 (unaffected by commission)
@@ -129,8 +129,8 @@ class SalesReconciliationCalculatorTest {
 
         val result = SalesReconciliationCalculator.calculate(input)
         assertEquals("10,50,345", result.formattedNetSold)
-        assertEquals("Rs. 1,05,03,450.00", result.formattedExpectedCash)
-        assertEquals("Rs. 15,75,517.50", result.formattedTotalCommission)
+        assertEquals("1,05,03,450.00", result.formattedExpectedCash)
+        assertEquals("15,75,517.50", result.formattedTotalCommission)
         assertEquals(ReconciliationStatus.BALANCED, result.status)
     }
 
@@ -157,10 +157,10 @@ class SalesReconciliationCalculatorTest {
 
         assertEquals(ReconciliationStatus.BALANCED, repA.status)
         assertEquals("450", repA.formattedNetSold)
-        assertEquals("Rs. 10,000.00", repA.formattedProductCashSales)
-        assertEquals("Rs. 1,125.00", repA.formattedTotalCommission)
-        assertEquals("Rs. 9,225.00", repA.formattedExpectedCash)
-        assertEquals("Rs. 0.00", repA.formattedDiscrepancy)
+        assertEquals("10,000.00", repA.formattedProductCashSales)
+        assertEquals("1,125.00", repA.formattedTotalCommission)
+        assertEquals("9,225.00", repA.formattedExpectedCash)
+        assertEquals("0.00", repA.formattedDiscrepancy)
     }
 
     @Test
@@ -191,6 +191,6 @@ class SalesReconciliationCalculatorTest {
         assertEquals(128500.0, result.physicalCashInHand, 0.001)
         assertEquals(580.0, result.discrepancy, 0.001)
         assertEquals(ReconciliationStatus.OVER, result.status)
-        assertEquals("+Rs. 580.00", result.formattedDiscrepancy)
+        assertEquals("+580.00", result.formattedDiscrepancy)
     }
 }

@@ -10,7 +10,6 @@ import com.example.data.repository.HistoryRepository
 import com.example.domain.calculator.CalculationResult
 import com.example.domain.calculator.CalculatorEngine
 import com.example.ui.components.HistoryTimeSplit
-import com.example.ui.theme.AccentTheme
 import com.example.ui.theme.AnimationIntensity
 import com.example.ui.theme.AppFontStyle
 import com.example.ui.theme.AppThemeSkin
@@ -43,7 +42,6 @@ data class CalculatorUiState(
     val componentSizeStyle: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
     val shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     val themeMode: ThemeMode = ThemeMode.DARK,
-    val accentTheme: AccentTheme = AccentTheme.AQUA,
     val historyTimeSplit: HistoryTimeSplit = HistoryTimeSplit.ALL_TIME,
     val isTapeOpen: Boolean = false,
     val isSettingsOpen: Boolean = false,
@@ -68,7 +66,6 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
             shapeStructureStyle = userPreferencesManager.shapeStructureStyle,
             componentSizeStyle = userPreferencesManager.componentSizeStyle,
             themeMode = userPreferencesManager.themeMode,
-            accentTheme = userPreferencesManager.accentTheme,
             animationIntensity = userPreferencesManager.animationIntensity,
             hapticIntensity = userPreferencesManager.hapticIntensity,
             soundIntensity = userPreferencesManager.soundIntensity,
@@ -400,11 +397,6 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
         _uiState.update { it.copy(themeMode = mode) }
     }
 
-    fun setAccentTheme(accent: AccentTheme) {
-        userPreferencesManager.accentTheme = accent
-        _uiState.update { it.copy(accentTheme = accent) }
-    }
-
     fun setShowDoubleZeroKey(enabled: Boolean) {
         userPreferencesManager.showDoubleZeroKey = enabled
         _uiState.update { it.copy(showDoubleZeroKey = enabled) }
@@ -418,7 +410,6 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
                 shapeStructureStyle = userPreferencesManager.shapeStructureStyle,
                 componentSizeStyle = userPreferencesManager.componentSizeStyle,
                 themeMode = userPreferencesManager.themeMode,
-                accentTheme = userPreferencesManager.accentTheme,
                 animationIntensity = userPreferencesManager.animationIntensity,
                 hapticIntensity = userPreferencesManager.hapticIntensity,
                 soundIntensity = userPreferencesManager.soundIntensity,

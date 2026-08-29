@@ -21,10 +21,10 @@ class IndianNumberFormatterTest {
 
     @Test
     fun testPakistaniRupeesInIndianFormatting() {
-        assertEquals("Rs. 10,70,500.00", IndianNumberFormatter.formatPakistaniRupees(1070500.0))
-        assertEquals("Rs. 10,50,345.00", IndianNumberFormatter.formatIndianCurrency(1050345.0))
-        assertEquals("Rs. 0.00", IndianNumberFormatter.formatIndianCurrency(0.0))
-        assertEquals("-Rs. 5,000.50", IndianNumberFormatter.formatIndianCurrency(-5000.50))
-        assertEquals("+Rs. 10,000.00", IndianNumberFormatter.formatIndianCurrency(10000.0, showSign = true))
+        assertEquals("10,70,500.00", IndianNumberFormatter.formatPakistaniRupees(1070500.0))
+        assertEquals("10,50,345.00", IndianNumberFormatter.formatIndianCurrency(1050345.0))
+        assertEquals("0.00", IndianNumberFormatter.formatIndianCurrency(0.0))
+        assertEquals("-5,000.50", IndianNumberFormatter.formatIndianCurrency(-5000.50))
+        assertEquals("+10,000.00", IndianNumberFormatter.formatIndianCurrency(10000.0, showSign = true))
     }
 }

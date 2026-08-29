@@ -140,7 +140,6 @@ import com.example.domain.util.HapticFeedbackHelper
 import com.example.domain.util.SoundFeedbackHelper
 import com.example.ui.BackupDialogType
 import com.example.ui.SettingsViewModel
-import com.example.ui.theme.AccentTheme
 import com.example.ui.theme.AnimationIntensity
 import com.example.ui.theme.AppFontStyle
 import com.example.ui.theme.AppThemeSkin
@@ -160,7 +159,6 @@ import com.example.ui.theme.toSmallShape
 fun SettingsScreen(
     currentAppThemeSkin: AppThemeSkin = AppThemeSkin.DARK_OBSIDIAN,
     currentThemeMode: ThemeMode,
-    currentAccent: AccentTheme,
     currentShapeStructure: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     currentComponentSize: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
     currentAnimationIntensity: AnimationIntensity = AnimationIntensity.BALANCED,
@@ -170,7 +168,6 @@ fun SettingsScreen(
     showDoubleZeroKey: Boolean,
     onAppThemeSkinChange: (AppThemeSkin) -> Unit = {},
     onThemeModeChange: (ThemeMode) -> Unit,
-    onAccentChange: (AccentTheme) -> Unit,
     onShapeStructureChange: (ShapeStructureStyle) -> Unit = {},
     onComponentSizeChange: (ComponentSizeStyle) -> Unit = {},
     onAnimationIntensityChange: (AnimationIntensity) -> Unit = {},
@@ -210,7 +207,6 @@ fun SettingsScreen(
     }
 
     var themeSkinDropdownExpanded by remember { mutableStateOf(false) }
-    var colorDropdownExpanded by remember { mutableStateOf(false) }
     var shapeDropdownExpanded by remember { mutableStateOf(false) }
     var sizeDropdownExpanded by remember { mutableStateOf(false) }
     var fontDropdownExpanded by remember { mutableStateOf(false) }
@@ -414,93 +410,7 @@ fun SettingsScreen(
             HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
 
             // ==========================================
-            // SECTION 2: Color Palette Scheme Dropdown
-            // ==========================================
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "Color Palette Scheme (Accent Glow)",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "Customize glowing accent highlights across keypad and interactive buttons",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Column(modifier = Modifier.fillMaxWidth().testTag("color_scheme_dropdown_box")) {
-                    GlassDropdownTrigger(
-                        isExpanded = colorDropdownExpanded,
-                        onClick = { colorDropdownExpanded = !colorDropdownExpanded },
-                        testTag = "color_scheme_dropdown_trigger",
-                        leadingContent = {
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(CircleShape)
-                                    .background(Brush.linearGradient(currentAccent.previewGradient))
-                                    .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
-                            )
-                        },
-                        title = currentAccent.displayName,
-                        subtitle = currentAccent.description
-                    )
-
-                    GlassExpandablePanel(
-                        expanded = colorDropdownExpanded,
-                        maxHeight = 360.dp,
-                        modifier = Modifier.testTag("color_scheme_dropdown_menu")
-                    ) {
-                        AccentTheme.entries.forEach { accent ->
-                            val isSelected = currentAccent == accent
-                            val accentColor = if (isDark) accent.darkPrimary else accent.lightPrimary
-
-                            GlassDropdownItem(
-                                onClick = {
-                                    onAccentChange(accent)
-                                    colorDropdownExpanded = false
-                                },
-                                modifier = Modifier.testTag("color_item_${accent.name.lowercase()}")
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(20.dp)
-                                        .clip(CircleShape)
-                                        .background(Brush.linearGradient(accent.previewGradient))
-                                        .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = accent.displayName,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        fontSize = 13.sp,
-                                        color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = accent.description,
-                                        fontSize = 10.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                if (isSelected) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "Selected",
-                                        tint = accentColor,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
-
-            // ==========================================
-            // SECTION 3: Keypad & Shapes Dropdown
+            // SECTION 2: Keypad & Shapes Dropdown
             // ==========================================
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(

@@ -107,6 +107,7 @@ import com.example.ui.components.SmartStationKeypad
 import com.example.domain.sales.ReconciliationStatus
 import com.example.domain.sales.SalesReconciliationResult
 import com.example.domain.util.IndianNumberFormatter
+import com.example.domain.util.PkrNumberFormatter
 import com.example.ui.SalesUiState
 import com.example.ui.theme.DigitalMonospaceFont
 import com.example.ui.theme.LocalShapeStructure
@@ -896,7 +897,7 @@ private fun SalesInputFormCard(
                     value = unitSalePrice,
                     onValueChange = onSetUnitSalePrice,
                     isSelected = focusedFieldId == "unit_price",
-                    onFocus = { onFocusField("unit_price", "Unit Sale Price (Rs.)") },
+                    onFocus = { onFocusField("unit_price", "Unit Sale Price") },
                     testTag = "unit_sale_price_input",
                     primaryColor = primaryColor,
                     isDark = isDark,
@@ -908,7 +909,7 @@ private fun SalesInputFormCard(
                     value = commissionPerUnit,
                     onValueChange = onSetCommissionPerUnit,
                     isSelected = focusedFieldId == "commission_rate",
-                    onFocus = { onFocusField("commission_rate", "Commission / Unit (Rs.)") },
+                    onFocus = { onFocusField("commission_rate", "Commission / Unit") },
                     testTag = "commission_per_unit_input",
                     primaryColor = primaryColor,
                     isDark = isDark,
@@ -925,7 +926,7 @@ private fun SalesInputFormCard(
                 value = commissionPaid,
                 onValueChange = onSetCommissionPaid,
                 isSelected = focusedFieldId == "commission_paid",
-                onFocus = { onFocusField("commission_paid", "Commission Paid Advance (Rs.)") },
+                onFocus = { onFocusField("commission_paid", "Commission Paid Advance") },
                 testTag = "commission_paid_input",
                 primaryColor = primaryColor,
                 isDark = isDark,
@@ -955,7 +956,7 @@ private fun SalesInputFormCard(
                     value = recoveredCredit,
                     onValueChange = onSetRecoveredCredit,
                     isSelected = focusedFieldId == "recovered_credit",
-                    onFocus = { onFocusField("recovered_credit", "Recovered Credit (Rs.)") },
+                    onFocus = { onFocusField("recovered_credit", "Recovered Credit") },
                     testTag = "recovered_credit_input",
                     primaryColor = primaryColor,
                     isDark = isDark,
@@ -967,7 +968,7 @@ private fun SalesInputFormCard(
                     value = expense,
                     onValueChange = onSetExpense,
                     isSelected = focusedFieldId == "expense",
-                    onFocus = { onFocusField("expense", "Field Expenses (Rs.)") },
+                    onFocus = { onFocusField("expense", "Field Expenses") },
                     testTag = "expense_input",
                     primaryColor = primaryColor,
                     isDark = isDark,
@@ -983,7 +984,7 @@ private fun SalesInputFormCard(
                 value = physicalCash,
                 onValueChange = onSetPhysicalCash,
                 isSelected = focusedFieldId == "physical_cash",
-                onFocus = { onFocusField("physical_cash", "Physical Cash Received (Rs.)") },
+                onFocus = { onFocusField("physical_cash", "Physical Cash Received") },
                 testTag = "physical_cash_input",
                 primaryColor = primaryColor,
                 isDark = isDark,
@@ -1709,7 +1710,7 @@ private fun SalesRecordCard(
             Tuple4(
                 Color(0xFF0284C7),
                 Color(0xFFFFFFFF),
-                "SURPLUS +Rs. ${IndianNumberFormatter.formatIndianDouble(discrepancy, 2)}",
+                "SURPLUS +${PkrNumberFormatter.formatPkrAmount(discrepancy, decimals = 2)}",
                 Icons.Default.TrendingUp
             )
         }
@@ -1717,7 +1718,7 @@ private fun SalesRecordCard(
             Tuple4(
                 Color(0xFFEF4444),
                 Color(0xFFFFFFFF),
-                "SHORTAGE −Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(discrepancy), 2)}",
+                "SHORTAGE −${PkrNumberFormatter.formatPkrAmount(kotlin.math.abs(discrepancy), decimals = 2)}",
                 Icons.Default.TrendingDown
             )
         }
@@ -1879,26 +1880,26 @@ private fun SalesRecordCard(
                 ) {
                     GridKeyValueBox(
                         label = "Unit Price",
-                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.unitSalePrice, 2)}",
+                        value = PkrNumberFormatter.formatPkrAmount(tx.unitSalePrice, decimals = 2),
                         isDark = isDark,
                         modifier = Modifier.weight(1.1f)
                     )
                     GridKeyValueBox(
                         label = "Comm / Unit",
-                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.commissionPerUnit, 2)}",
+                        value = PkrNumberFormatter.formatPkrAmount(tx.commissionPerUnit, decimals = 2),
                         isDark = isDark,
                         modifier = Modifier.weight(1.1f)
                     )
                     GridKeyValueBox(
                         label = "Comm Paid",
-                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.commissionPaid, 2)}",
+                        value = PkrNumberFormatter.formatPkrAmount(tx.commissionPaid, decimals = 2),
                         highlightColor = if (tx.commissionPaid > 0) Color(0xFFF59E0B) else null,
                         isDark = isDark,
                         modifier = Modifier.weight(1.1f)
                     )
                     GridKeyValueBox(
                         label = "Net Comm",
-                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.totalCommission, 2)}",
+                        value = PkrNumberFormatter.formatPkrAmount(tx.totalCommission, decimals = 2),
                         highlightColor = Color(0xFF10B981),
                         isDark = isDark,
                         modifier = Modifier.weight(1.1f)
@@ -1920,28 +1921,28 @@ private fun SalesRecordCard(
                 ) {
                     GridKeyValueBox(
                         label = "Recovered Cr",
-                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.recoveredCredit, 2)}",
+                        value = PkrNumberFormatter.formatPkrAmount(tx.recoveredCredit, decimals = 2),
                         highlightColor = if (tx.recoveredCredit > 0) Color(0xFF10B981) else null,
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
                     )
                     GridKeyValueBox(
                         label = "Field Exp",
-                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.expense, 2)}",
+                        value = PkrNumberFormatter.formatPkrAmount(tx.expense, decimals = 2),
                         highlightColor = if (tx.expense > 0) Color(0xFFEF4444) else null,
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
                     )
                     GridKeyValueBox(
                         label = "Cash Handover",
-                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.physicalCashInHand, 2)}",
+                        value = PkrNumberFormatter.formatPkrAmount(tx.physicalCashInHand, decimals = 2),
                         highlightColor = primaryColor,
                         isDark = isDark,
                         modifier = Modifier.weight(1.2f)
                     )
                     GridKeyValueBox(
                         label = "Expected Cash",
-                        value = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.expectedCash, 2)}",
+                        value = PkrNumberFormatter.formatPkrAmount(tx.expectedCash, decimals = 2),
                         highlightColor = primaryColor,
                         isDark = isDark,
                         modifier = Modifier.weight(1.2f)
@@ -2035,24 +2036,24 @@ private fun buildSingleTransactionAuditText(tx: SalesTransactionEntity): String 
         appendLine("3. Expired Qty: ${IndianNumberFormatter.formatIndianDouble(tx.expiredQty, 0)}")
         appendLine("4. Shared Qty: ${IndianNumberFormatter.formatIndianDouble(tx.sharedQty, 0)}")
         appendLine("5. Credit Sales Qty: ${IndianNumberFormatter.formatIndianDouble(tx.creditSalesQty, 0)}")
-        appendLine("6. Unit Sale Price: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.unitSalePrice, 2)}")
-        appendLine("7. Commission / Unit: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.commissionPerUnit, 2)}")
-        appendLine("8. Commission Paid: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.commissionPaid, 2)}")
-        appendLine("9. Recovered Credit: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.recoveredCredit, 2)}")
-        appendLine("10. Field Expenses: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.expense, 2)}")
-        appendLine("11. Physical Cash Handover: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.physicalCashInHand, 2)}")
+        appendLine("6. Unit Sale Price: ${PkrNumberFormatter.formatPkrAmount(tx.unitSalePrice, decimals = 2)}")
+        appendLine("7. Commission / Unit: ${PkrNumberFormatter.formatPkrAmount(tx.commissionPerUnit, decimals = 2)}")
+        appendLine("8. Commission Paid: ${PkrNumberFormatter.formatPkrAmount(tx.commissionPaid, decimals = 2)}")
+        appendLine("9. Recovered Credit: ${PkrNumberFormatter.formatPkrAmount(tx.recoveredCredit, decimals = 2)}")
+        appendLine("10. Field Expenses: ${PkrNumberFormatter.formatPkrAmount(tx.expense, decimals = 2)}")
+        appendLine("11. Physical Cash Handover: ${PkrNumberFormatter.formatPkrAmount(tx.physicalCashInHand, decimals = 2)}")
         appendLine("----------------------------------")
         appendLine("AUDIT CALCULATIONS:")
-        appendLine("• Net Sold Units: ${IndianNumberFormatter.formatIndianDouble(tx.netSoldUnits, 0)}")
-        appendLine("• Cash Qty Units: ${IndianNumberFormatter.formatIndianDouble(tx.cashQtyUnits, 0)}")
-        appendLine("• Cash Sales Revenue: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.cashQtyUnits * tx.unitSalePrice, 2)}")
-        appendLine("• Gross Commission: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.grossCommission, 2)}")
-        appendLine("• Net Commission Payable: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.totalCommission, 2)}")
-        appendLine("• Expected Cash Receivable: Rs. ${IndianNumberFormatter.formatIndianDouble(tx.expectedCash, 2)}")
+        appendLine("• Net Sold Units: ${PkrNumberFormatter.formatPkrDouble(tx.netSoldUnits, decimals = 0)}")
+        appendLine("• Cash Qty Units: ${PkrNumberFormatter.formatPkrDouble(tx.cashQtyUnits, decimals = 0)}")
+        appendLine("• Cash Sales Revenue: ${PkrNumberFormatter.formatPkrAmount(tx.cashQtyUnits * tx.unitSalePrice, decimals = 2)}")
+        appendLine("• Gross Commission: ${PkrNumberFormatter.formatPkrAmount(tx.grossCommission, decimals = 2)}")
+        appendLine("• Net Commission Payable: ${PkrNumberFormatter.formatPkrAmount(tx.totalCommission, decimals = 2)}")
+        appendLine("• Expected Cash Receivable: ${PkrNumberFormatter.formatPkrAmount(tx.expectedCash, decimals = 2)}")
         val discrepancy = tx.physicalCashInHand - tx.expectedCash
-        val discStr = if (kotlin.math.abs(discrepancy) < 0.01) "Rs. 0 (Balanced)"
-        else if (discrepancy > 0) "+Rs. ${IndianNumberFormatter.formatIndianDouble(discrepancy, 2)} (Surplus)"
-        else "-Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(discrepancy), 2)} (Shortage)"
+        val discStr = if (kotlin.math.abs(discrepancy) < 0.01) "0.00 (Balanced)"
+        else if (discrepancy > 0) "+${PkrNumberFormatter.formatPkrAmount(discrepancy, decimals = 2)} (Surplus)"
+        else "-${PkrNumberFormatter.formatPkrAmount(kotlin.math.abs(discrepancy), decimals = 2)} (Shortage)"
         appendLine("• Variance / Discrepancy: $discStr")
         appendLine("==================================")
     }
@@ -2135,7 +2136,7 @@ private fun buildReconciliationSummaryText(uiState: SalesUiState): String {
         appendLine("• Physical Cash Received: ${res.formattedPhysicalCash}")
         appendLine("• Variance / Discrepancy: ${res.formattedDiscrepancy}")
         if (res.deficitAmount > 0) {
-            appendLine("• Deficit Shortfall: ${res.formattedDeficitAmount} (Alert Limit: Rs. ${uiState.deficitThresholdText})")
+            appendLine("• Deficit Shortfall: ${res.formattedDeficitAmount} (Alert Limit: ${uiState.deficitThresholdText})")
         }
     }
 }

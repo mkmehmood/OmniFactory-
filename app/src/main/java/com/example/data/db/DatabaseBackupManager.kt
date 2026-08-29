@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import com.example.data.preferences.UserPreferencesManager
 import com.example.ui.components.HistoryTimeSplit
-import com.example.ui.theme.AccentTheme
 import com.example.ui.theme.AnimationIntensity
 import com.example.ui.theme.AppFontStyle
 import com.example.ui.theme.AppThemeSkin
@@ -226,7 +225,6 @@ class DatabaseBackupManager(private val context: Context) {
             put("appThemeSkin", prefs.appThemeSkin.name)
             put("fontStyle", prefs.fontStyle.name)
             put("themeMode", prefs.themeMode.name)
-            put("accentTheme", prefs.accentTheme.name)
             put("shapeStructureStyle", prefs.shapeStructureStyle.name)
             put("componentSizeStyle", prefs.componentSizeStyle.name)
             put("animationIntensity", prefs.animationIntensity.name)
@@ -465,9 +463,6 @@ class DatabaseBackupManager(private val context: Context) {
                         }
                         settingsObj.optString("themeMode").takeIf { it.isNotBlank() }?.let {
                             prefs.themeMode = ThemeMode.valueOf(it)
-                        }
-                        settingsObj.optString("accentTheme").takeIf { it.isNotBlank() }?.let {
-                            prefs.accentTheme = AccentTheme.valueOf(it)
                         }
                         settingsObj.optString("shapeStructureStyle").takeIf { it.isNotBlank() }?.let {
                             prefs.shapeStructureStyle = ShapeStructureStyle.valueOf(it)

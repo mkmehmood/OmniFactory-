@@ -1,6 +1,6 @@
 package com.example.domain.calculator
 
-import com.example.domain.util.IndianNumberFormatter
+import com.example.domain.util.PkrNumberFormatter
 import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode
@@ -226,10 +226,10 @@ object CalculatorEngine {
     }
 
     /**
-     * Formats number in Indian numbering format: 10,50,345
+     * Formats number in PKR numbering format: 10,50,345
      */
     fun formatNumber(value: BigDecimal, maxDecimals: Int = 8, useGrouping: Boolean = true): String {
-        return IndianNumberFormatter.formatIndian(value, maxDecimals = maxDecimals, useGrouping = useGrouping)
+        return PkrNumberFormatter.formatPkr(value, maxDecimals = maxDecimals, useGrouping = useGrouping)
     }
 
     fun formatExpressionForDisplay(expr: String): String {

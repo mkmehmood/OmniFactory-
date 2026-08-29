@@ -505,85 +505,6 @@ enum class AppThemeSkin(
     )
 }
 
-enum class AccentTheme(
-    val displayName: String,
-    val description: String,
-    val darkPrimary: Color,
-    val lightPrimary: Color,
-    val previewGradient: List<Color>
-) {
-    AQUA(
-        "Aqua Cyan",
-        "Vibrant cyan crystal glow",
-        GlassAccents.AquaGlassPrimary,
-        GlassAccents.AquaGlassLight,
-        listOf(Color(0xFF00E5FF), Color(0xFF00B0FF))
-    ),
-    VIOLET(
-        "Electric Violet",
-        "Deep amethyst & neon violet",
-        GlassAccents.VioletGlassPrimary,
-        GlassAccents.VioletGlassLight,
-        listOf(Color(0xFFD500F9), Color(0xFF8E24AA))
-    ),
-    AMBER(
-        "Molten Amber",
-        "Warm golden amber glow",
-        GlassAccents.AmberGlassPrimary,
-        GlassAccents.AmberGlassLight,
-        listOf(Color(0xFFFFB300), Color(0xFFFF6F00))
-    ),
-    EMERALD(
-        "Emerald Mint",
-        "Vivid neon emerald green",
-        GlassAccents.EmeraldGlassPrimary,
-        GlassAccents.EmeraldGlassLight,
-        listOf(Color(0xFF00E676), Color(0xFF00B0FF))
-    ),
-    ICE(
-        "Arctic Sky",
-        "Crisp glacial sky blue",
-        GlassAccents.IceGlassPrimary,
-        GlassAccents.IceGlassLight,
-        listOf(Color(0xFF38BDF8), Color(0xFF0284C7))
-    ),
-    ROSE(
-        "Crimson Rose",
-        "Radiant ruby rose pink",
-        GlassAccents.RoseGlassPrimary,
-        GlassAccents.RoseGlassLight,
-        listOf(Color(0xFFF43F5E), Color(0xFFBE123C))
-    ),
-    INDIGO(
-        "Royal Sapphire",
-        "Deep ultramarine & indigo",
-        GlassAccents.IndigoGlassPrimary,
-        GlassAccents.IndigoGlassLight,
-        listOf(Color(0xFF6366F1), Color(0xFF4338CA))
-    ),
-    CORAL(
-        "Sunset Coral",
-        "Warm luminous coral orange",
-        GlassAccents.CoralGlassPrimary,
-        GlassAccents.CoralGlassLight,
-        listOf(Color(0xFFFB923C), Color(0xFFEA580C))
-    ),
-    LIME(
-        "Cyber Lime",
-        "High-contrast neon acid lime",
-        GlassAccents.LimeGlassPrimary,
-        GlassAccents.LimeGlassLight,
-        listOf(Color(0xFFA3E635), Color(0xFF65A30D))
-    ),
-    SLATE(
-        "Titanium Slate",
-        "Minimalist titanium monochrome",
-        GlassAccents.SlateGlassPrimary,
-        GlassAccents.SlateGlassLight,
-        listOf(Color(0xFF94A3B8), Color(0xFF475569))
-    )
-}
-
 enum class ShapeStructureStyle(
     val displayName: String,
     val description: String
@@ -754,7 +675,6 @@ val LocalAppThemeSkin = staticCompositionLocalOf { AppThemeSkin.DARK_OBSIDIAN }
 fun MyApplicationTheme(
     appThemeSkin: AppThemeSkin = AppThemeSkin.DARK_OBSIDIAN,
     themeMode: ThemeMode = ThemeMode.DARK,
-    accentTheme: AccentTheme = AccentTheme.AQUA,
     shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     componentSizeStyle: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
     animationIntensity: AnimationIntensity = AnimationIntensity.BALANCED,
@@ -769,13 +689,7 @@ fun MyApplicationTheme(
         ThemeMode.LIGHT -> false
     }
 
-    val primary = if (appThemeSkin.isDark == isDark) {
-        if (accentTheme == AccentTheme.AQUA) appThemeSkin.defaultAccent
-        else (if (isDark) accentTheme.darkPrimary else accentTheme.lightPrimary)
-    } else {
-        if (isDark) accentTheme.darkPrimary else accentTheme.lightPrimary
-    }
-
+    val primary = appThemeSkin.defaultAccent
     val onPrimary = if (primary.luminance() > 0.5f) Color(0xFF0F172A) else Color(0xFFFFFFFF)
 
     val skinColorScheme = if (isDark) {

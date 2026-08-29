@@ -1,6 +1,6 @@
 package com.example.domain.sales
 
-import com.example.domain.util.IndianNumberFormatter
+import com.example.domain.util.PkrNumberFormatter
 
 enum class ReconciliationStatus {
     BALANCED,
@@ -129,31 +129,31 @@ object SalesReconciliationCalculator {
             deficitAmount = deficitAmount,
             status = status,
             sharedQty = shared,
-            formattedNetSold = formatIndianNumber(netSoldUnits),
-            formattedCashQty = formatIndianNumber(cashQtyUnits),
-            formattedSharedQty = formatIndianNumber(shared),
-            formattedUnitPrice = IndianNumberFormatter.formatIndianCurrency(unitPrice),
-            formattedCommissionPerUnit = IndianNumberFormatter.formatIndianCurrency(commissionPerUnit),
-            formattedGrossCommission = IndianNumberFormatter.formatIndianCurrency(grossCommission),
-            formattedCommissionPaid = IndianNumberFormatter.formatIndianCurrency(commissionPaid),
-            formattedCommissionPayable = IndianNumberFormatter.formatIndianCurrency(commissionPayable),
-            formattedTotalCommission = IndianNumberFormatter.formatIndianCurrency(commissionPayable),
-            formattedExpectedCash = IndianNumberFormatter.formatIndianCurrency(expectedCash),
-            formattedPhysicalCash = IndianNumberFormatter.formatIndianCurrency(physicalCash),
-            formattedReconciledCash = IndianNumberFormatter.formatIndianCurrency(reconciledCash),
-            formattedDiscrepancy = IndianNumberFormatter.formatIndianCurrency(discrepancy, showSign = true),
-            formattedDeficitAmount = IndianNumberFormatter.formatIndianCurrency(deficitAmount),
-            formattedExpense = IndianNumberFormatter.formatIndianCurrency(expense),
-            formattedRecoveredCredit = IndianNumberFormatter.formatIndianCurrency(recoveredCredit),
-            formattedCashFromSales = IndianNumberFormatter.formatIndianCurrency(cashFromSales)
+            formattedNetSold = formatPkrNumber(netSoldUnits),
+            formattedCashQty = formatPkrNumber(cashQtyUnits),
+            formattedSharedQty = formatPkrNumber(shared),
+            formattedUnitPrice = PkrNumberFormatter.formatPkrAmount(unitPrice),
+            formattedCommissionPerUnit = PkrNumberFormatter.formatPkrAmount(commissionPerUnit),
+            formattedGrossCommission = PkrNumberFormatter.formatPkrAmount(grossCommission),
+            formattedCommissionPaid = PkrNumberFormatter.formatPkrAmount(commissionPaid),
+            formattedCommissionPayable = PkrNumberFormatter.formatPkrAmount(commissionPayable),
+            formattedTotalCommission = PkrNumberFormatter.formatPkrAmount(commissionPayable),
+            formattedExpectedCash = PkrNumberFormatter.formatPkrAmount(expectedCash),
+            formattedPhysicalCash = PkrNumberFormatter.formatPkrAmount(physicalCash),
+            formattedReconciledCash = PkrNumberFormatter.formatPkrAmount(reconciledCash),
+            formattedDiscrepancy = PkrNumberFormatter.formatPkrAmount(discrepancy, showSign = true),
+            formattedDeficitAmount = PkrNumberFormatter.formatPkrAmount(deficitAmount),
+            formattedExpense = PkrNumberFormatter.formatPkrAmount(expense),
+            formattedRecoveredCredit = PkrNumberFormatter.formatPkrAmount(recoveredCredit),
+            formattedCashFromSales = PkrNumberFormatter.formatPkrAmount(cashFromSales)
         )
     }
 
-    private fun formatIndianNumber(value: Double): String {
+    private fun formatPkrNumber(value: Double): String {
         return if (value % 1.0 == 0.0) {
-            IndianNumberFormatter.formatIndianDouble(value, 0)
+            PkrNumberFormatter.formatPkrDouble(value, 0)
         } else {
-            IndianNumberFormatter.formatIndianDouble(value, 2)
+            PkrNumberFormatter.formatPkrDouble(value, 2)
         }
     }
 }

@@ -110,6 +110,7 @@ import com.example.domain.ledger.LedgerSummary
 import com.example.domain.ledger.LedgerType
 import com.example.domain.ledger.LedgerUnifiedDataManager
 import com.example.domain.util.IndianNumberFormatter
+import com.example.domain.util.PkrNumberFormatter
 import com.example.ui.LedgerUiState
 import com.example.ui.LedgerViewModel
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -347,9 +348,9 @@ fun LedgerScreen(
             val isTransfer = tx.type == "TRANSFER" || tx.type == "CASH_TRANSFER"
             val titleText = if (isTransfer) "Delete Transfer Record?" else "Delete Transaction Record?"
             val detailText = if (isTransfer) {
-                "Are you sure you want to delete this transfer of Rs. ${IndianNumberFormatter.formatIndianDouble(tx.amount, 2)} (${tx.paymentMode} ➔ ${tx.transferToMode})?"
+                "Are you sure you want to delete this transfer of ${PkrNumberFormatter.formatPkrAmount(tx.amount, decimals = 2)} (${tx.paymentMode} ➔ ${tx.transferToMode})?"
             } else {
-                "Are you sure you want to delete this ${tx.type.replace('_', ' ')} entry of Rs. ${IndianNumberFormatter.formatIndianDouble(tx.amount, 2)} (${tx.category})?"
+                "Are you sure you want to delete this ${tx.type.replace('_', ' ')} entry of ${PkrNumberFormatter.formatPkrAmount(tx.amount, decimals = 2)} (${tx.category})?"
             }
 
             AlertDialog(
@@ -530,7 +531,7 @@ private fun ModeMiniPill(
             }
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "Rs. ${IndianNumberFormatter.formatIndianDouble(amount, 0)}",
+                text = PkrNumberFormatter.formatPkrDouble(amount, decimals = 0),
                 fontSize = 11.5.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
@@ -787,7 +788,7 @@ private fun LedgerPaymentModeBreakdownCard(
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "${if (isPositive) "+" else "-"}Rs. ${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(entry.value), 0)}",
+                                text = "${if (isPositive) "+" else "-"}${PkrNumberFormatter.formatPkrDouble(kotlin.math.abs(entry.value), decimals = 0)}",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = DigitalMonospaceFont,
@@ -857,7 +858,7 @@ private fun LedgerCategoryBreakdownCard(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Rs. ${IndianNumberFormatter.formatIndianDouble(amount, 2)}",
+                            text = PkrNumberFormatter.formatPkrAmount(amount, decimals = 2),
                             fontSize = 12.5.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = DigitalMonospaceFont,
@@ -1425,17 +1426,7 @@ private fun LedgerAddEditSheetContent(
                     value = uiState.formAmountText,
                     onValueChange = onAmountChange,
                     readOnly = true,
-                    placeholder = { Text("0", fontFamily = DigitalMonospaceFont) },
-                    leadingIcon = {
-                        Text(
-                            text = "Rs.",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            color = uiState.formType.color,
-                            modifier = Modifier.padding(start = 12.dp)
-                        )
-                    },
+                    placeholder = { Text("0.00", fontFamily = DigitalMonospaceFont) },
                     trailingIcon = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (uiState.formAmountText.isNotEmpty()) {
@@ -1992,7 +1983,7 @@ private fun LedgerAddEditSheetContent(
             modifier = Modifier.fillMaxWidth()
         ) {
             SmartStationKeypad(
-                activeFieldLabel = "Amount (Rs.)",
+                activeFieldLabel = "Amount",
                 onDigit = onTokenAppend,
                 onDoubleZero = { onTokenAppend("00") },
                 onDecimal = { onTokenAppend(".") },
@@ -2461,7 +2452,7 @@ private fun LedgerTransactionRow(
                 Column(horizontalAlignment = Alignment.End) {
                     val sign = if (isTransfer) "⇆" else if (isCashOut) "-" else "+"
                     Text(
-                        text = "$sign Rs. ${IndianNumberFormatter.formatIndianDouble(tx.amount, 2)}",
+                        text = "$sign ${PkrNumberFormatter.formatPkrAmount(tx.amount, decimals = 2)}",
                         fontSize = 13.5.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = DigitalMonospaceFont,
@@ -2557,7 +2548,7 @@ private fun LedgerDetailDialog(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Rs. ${IndianNumberFormatter.formatIndianDouble(tx.amount, 2)}",
+                            text = PkrNumberFormatter.formatPkrAmount(tx.amount, decimals = 2),
                             fontSize = 22.sp,
                             fontWeight = FontWeight.ExtraBold,
                             fontFamily = DigitalMonospaceFont,

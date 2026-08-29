@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.domain.util.IndianNumberFormatter
+import com.example.domain.util.PkrNumberFormatter
 
 enum class LedgerType(
     val title: String,
@@ -68,18 +69,14 @@ data class LedgerSummary(
     val cashByMode: Map<String, Double> = emptyMap(),
     val categoryBreakdown: Map<String, Double> = emptyMap()
 ) {
-    val formattedCashIn: String get() = "Rs. ${IndianNumberFormatter.formatIndianDouble(totalCashIn, 2)}"
-    val formattedCashOut: String get() = "Rs. ${IndianNumberFormatter.formatIndianDouble(totalCashOut, 2)}"
-    val formattedTransferred: String get() = "Rs. ${IndianNumberFormatter.formatIndianDouble(totalTransferred, 2)}"
-    val formattedNetCashFlow: String
-        get() {
-            val prefix = if (netCashFlow > 0) "+Rs. " else if (netCashFlow < 0) "-Rs. " else "Rs. "
-            return "$prefix${IndianNumberFormatter.formatIndianDouble(kotlin.math.abs(netCashFlow), 2)}"
-        }
-    val formattedCashInHand: String get() = "Rs. ${IndianNumberFormatter.formatIndianDouble(totalCashInHand, 2)}"
-    val formattedCashBalance: String get() = "Rs. ${IndianNumberFormatter.formatIndianDouble(cashBalance, 0)}"
-    val formattedBankBalance: String get() = "Rs. ${IndianNumberFormatter.formatIndianDouble(bankBalance, 0)}"
-    val formattedOthersBalance: String get() = "Rs. ${IndianNumberFormatter.formatIndianDouble(otherModesBalance, 0)}"
+    val formattedCashIn: String get() = PkrNumberFormatter.formatPkrAmount(totalCashIn, decimals = 2)
+    val formattedCashOut: String get() = PkrNumberFormatter.formatPkrAmount(totalCashOut, decimals = 2)
+    val formattedTransferred: String get() = PkrNumberFormatter.formatPkrAmount(totalTransferred, decimals = 2)
+    val formattedNetCashFlow: String get() = PkrNumberFormatter.formatPkrAmount(netCashFlow, showSign = true, decimals = 2)
+    val formattedCashInHand: String get() = PkrNumberFormatter.formatPkrAmount(totalCashInHand, decimals = 2)
+    val formattedCashBalance: String get() = PkrNumberFormatter.formatPkrDouble(cashBalance, decimals = 0)
+    val formattedBankBalance: String get() = PkrNumberFormatter.formatPkrDouble(bankBalance, decimals = 0)
+    val formattedOthersBalance: String get() = PkrNumberFormatter.formatPkrDouble(otherModesBalance, decimals = 0)
 }
 
 object LedgerPaymentUtils {

@@ -215,7 +215,7 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
                     isSavedSuccess = false
                 )
                 viewModelScope.launch {
-                    _userMessage.emit("Shifted Rs. ${String.format(java.util.Locale.US, "%.2f", deficit)} deficit to Commission Paid. Deficit eliminated!")
+                    _userMessage.emit("Shifted ${String.format(java.util.Locale.US, "%.2f", deficit)} deficit to Commission Paid. Deficit eliminated!")
                 }
                 recalculate(updated)
             } else {

@@ -3,7 +3,6 @@ package com.example.data.preferences
 import android.content.Context
 import android.content.SharedPreferences
 import com.example.ui.components.HistoryTimeSplit
-import com.example.ui.theme.AccentTheme
 import com.example.ui.theme.AnimationIntensity
 import com.example.ui.theme.AppFontStyle
 import com.example.ui.theme.AppThemeSkin
@@ -87,19 +86,6 @@ class UserPreferencesManager(context: Context) {
         }
         set(value) {
             prefs.edit().putString(KEY_THEME_MODE, value.name).apply()
-        }
-
-    var accentTheme: AccentTheme
-        get() {
-            val name = prefs.getString(KEY_ACCENT_THEME, AccentTheme.AQUA.name) ?: AccentTheme.AQUA.name
-            return try {
-                AccentTheme.valueOf(name)
-            } catch (e: Exception) {
-                AccentTheme.AQUA
-            }
-        }
-        set(value) {
-            prefs.edit().putString(KEY_ACCENT_THEME, value.name).apply()
         }
 
     var animationIntensity: AnimationIntensity
@@ -192,7 +178,6 @@ class UserPreferencesManager(context: Context) {
         private const val KEY_SHAPE_STRUCTURE = "pref_shape_structure"
         private const val KEY_COMPONENT_SIZE = "pref_component_size"
         private const val KEY_THEME_MODE = "pref_theme_mode"
-        private const val KEY_ACCENT_THEME = "pref_accent_theme"
         private const val KEY_ANIMATION_INTENSITY = "pref_animation_intensity"
         private const val KEY_HAPTIC_INTENSITY = "pref_haptic_intensity"
         private const val KEY_SOUND_INTENSITY = "pref_sound_intensity"

@@ -9,6 +9,7 @@ import com.example.data.db.LedgerTransactionDao
 import com.example.data.db.LedgerTransactionEntity
 import com.example.domain.ledger.LedgerUnifiedDataManager
 import com.example.domain.util.IndianNumberFormatter
+import com.example.domain.util.PkrNumberFormatter
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -46,11 +47,11 @@ data class ExpensesSummary(
     val topCategories: Map<String, Double> = emptyMap(),
     val byMode: Map<String, Double> = emptyMap()
 ) {
-    val formattedTotal: String get() = "Rs. ${IndianNumberFormatter.formatIndianDouble(totalExpense, 2)}"
-    val formattedBusiness: String get() = "Rs. ${IndianNumberFormatter.formatIndianDouble(businessExpense, 2)}"
-    val formattedHome: String get() = "Rs. ${IndianNumberFormatter.formatIndianDouble(homeExpense, 2)}"
-    val formattedToday: String get() = "Rs. ${IndianNumberFormatter.formatIndianDouble(todayExpense, 2)}"
-    val formattedMonth: String get() = "Rs. ${IndianNumberFormatter.formatIndianDouble(monthExpense, 2)}"
+    val formattedTotal: String get() = PkrNumberFormatter.formatPkrAmount(totalExpense, decimals = 2)
+    val formattedBusiness: String get() = PkrNumberFormatter.formatPkrAmount(businessExpense, decimals = 2)
+    val formattedHome: String get() = PkrNumberFormatter.formatPkrAmount(homeExpense, decimals = 2)
+    val formattedToday: String get() = PkrNumberFormatter.formatPkrAmount(todayExpense, decimals = 2)
+    val formattedMonth: String get() = PkrNumberFormatter.formatPkrAmount(monthExpense, decimals = 2)
 }
 
 data class ExpensesUiState(
@@ -489,7 +490,7 @@ class ExpensesViewModel(
                     dateMillis = dateMillis
                 )
                 ledgerDao.insertTransaction(newExpense)
-                _userMessage.emit("${current.formScope.shortName} Expense of Rs. ${IndianNumberFormatter.formatIndianDouble(amount, 0)} logged to Ledger.")
+                _userMessage.emit("${current.formScope.shortName} Expense of ${PkrNumberFormatter.formatPkrDouble(amount, 0)} logged to Ledger.")
             }
             _uiState.update {
                 it.copy(
@@ -537,7 +538,7 @@ class ExpensesViewModel(
             if (summary.topCategories.isNotEmpty()) {
                 appendLine("EXPENSES BY CATEGORY:")
                 summary.topCategories.entries.sortedByDescending { it.value }.take(10).forEach { (cat, amt) ->
-                    appendLine("• $cat: Rs. ${IndianNumberFormatter.formatIndianDouble(amt, 2)}")
+                    appendLine("• $cat: ${PkrNumberFormatter.formatPkrAmount(amt, decimals = 2)}")
                 }
                 appendLine("--------------------------------------")
             }
@@ -546,7 +547,7 @@ class ExpensesViewModel(
                 val scopeTag = if (exp.expenseScope == "HOME" || isHomeExpenseItem(exp.category, exp.expenseScope)) "[Home]" else "[Business]"
                 val party = if (exp.partyName.isNotBlank()) " | Paid to: ${exp.partyName}" else ""
                 val rem = if (exp.remarks.isNotBlank()) " (${exp.remarks})" else ""
-                appendLine("${i + 1}. [${dateFormat.format(Date(exp.dateMillis))}] $scopeTag ${exp.category}$party : Rs. ${IndianNumberFormatter.formatIndianDouble(exp.amount, 2)} [${exp.paymentMode}]$rem")
+                appendLine("${i + 1}. [${dateFormat.format(Date(exp.dateMillis))}] $scopeTag ${exp.category}$party : ${PkrNumberFormatter.formatPkrAmount(exp.amount, decimals = 2)} [${exp.paymentMode}]$rem")
             }
             appendLine("======================================")
         }
