@@ -8,6 +8,7 @@ import com.example.data.db.AppDatabase
 import com.example.data.db.LedgerTransactionDao
 import com.example.data.db.LedgerTransactionEntity
 import com.example.domain.ledger.LedgerPaymentUtils
+import com.example.domain.ledger.LedgerStatementItem
 import com.example.domain.ledger.LedgerSummary
 import com.example.domain.ledger.LedgerType
 import com.example.domain.ledger.LedgerUnifiedDataManager
@@ -48,6 +49,7 @@ data class LedgerUiState(
     val summary: LedgerSummary = LedgerSummary(),
     val filteredTransactions: List<LedgerTransactionEntity> = emptyList(),
     val allTransactions: List<LedgerTransactionEntity> = emptyList(),
+    val statementMap: Map<Long, LedgerStatementItem> = emptyMap(),
     val distinctParties: List<String> = emptyList(),
     val availableCategories: List<String> = emptyList(),
     val businessCategories: List<String> = emptyList(),
@@ -76,6 +78,7 @@ class LedgerViewModel(
             ledgerDao.getAllTransactions().collect { allList ->
                 _uiState.update { current ->
                     val summary = computeSummary(allList)
+                    val statementMap = computeStatementMap(allList)
                     val filtered = filterTransactions(
                         allList,
                         current.searchQuery,
@@ -98,6 +101,7 @@ class LedgerViewModel(
                     current.copy(
                         allTransactions = allList,
                         summary = summary,
+                        statementMap = statementMap,
                         filteredTransactions = filtered,
                         distinctParties = distinctParties,
                         availableCategories = allCats,
@@ -132,6 +136,7 @@ class LedgerViewModel(
         val current = _uiState.value
         val allList = current.allTransactions
         val summary = computeSummary(allList)
+        val statementMap = computeStatementMap(allList)
         val filtered = filterTransactions(
             allList,
             current.searchQuery,
@@ -142,9 +147,38 @@ class LedgerViewModel(
         _uiState.update {
             it.copy(
                 summary = summary,
+                statementMap = statementMap,
                 filteredTransactions = filtered
             )
         }
+    }
+
+    private fun computeStatementMap(allList: List<LedgerTransactionEntity>): Map<Long, LedgerStatementItem> {
+        val chronological = allList.sortedWith(
+            compareBy<LedgerTransactionEntity> { it.dateMillis }
+                .thenBy { it.timestamp }
+                .thenBy { it.id }
+        )
+
+        var runningBalance = 0.0
+        val map = mutableMapOf<Long, LedgerStatementItem>()
+        for (tx in chronological) {
+            val balanceBefore = runningBalance
+            val netImpact = when {
+                tx.type == "CASH_OUT" -> -tx.amount
+                tx.type == "TRANSFER" || tx.type == "CASH_TRANSFER" -> 0.0
+                else -> tx.amount
+            }
+            runningBalance += netImpact
+            val balanceAfter = runningBalance
+            map[tx.id] = LedgerStatementItem(
+                transaction = tx,
+                balanceBefore = balanceBefore,
+                balanceAfter = balanceAfter,
+                netImpact = netImpact
+            )
+        }
+        return map
     }
 
     private fun computeSummary(allList: List<LedgerTransactionEntity>): LedgerSummary {
@@ -655,6 +689,7 @@ class LedgerViewModel(
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
         val isTransfer = tx.type == "TRANSFER" || tx.type == "CASH_TRANSFER"
         val isOut = tx.type == "CASH_OUT"
+        val statement = _uiState.value.statementMap[tx.id]
 
         val typeLabel = when {
             isTransfer -> "CASH / ACCOUNT TRANSFER"
@@ -666,9 +701,14 @@ class LedgerViewModel(
         }
 
         return buildString {
-            appendLine("=== CASHBOOK TRANSACTION VOUCHER ===")
+            appendLine("=== CASHBOOK TRANSACTION STATEMENT VOUCHER ===")
             appendLine("Type: $typeLabel")
-            appendLine("Amount: ${PkrNumberFormatter.formatPkrAmount(tx.amount, decimals = 2)}")
+            appendLine("Amount: ${PkrNumberFormatter.formatPkrAmount(tx.amount)}")
+            if (statement != null) {
+                appendLine("Balance Before: ${statement.formattedBalanceBefore}")
+                appendLine("Transaction Impact: ${statement.formattedImpact}")
+                appendLine("Balance After:  ${statement.formattedBalanceAfter}")
+            }
             if (isTransfer) {
                 appendLine("From Channel: ${tx.paymentMode}")
                 appendLine("To Channel:   ${tx.transferToMode}")
@@ -680,7 +720,7 @@ class LedgerViewModel(
             if (tx.referenceNo.isNotBlank()) appendLine("Ref / Bill No: ${tx.referenceNo}")
             if (tx.remarks.isNotBlank()) appendLine("Remarks: ${tx.remarks}")
             appendLine("Date: ${dateFormat.format(Date(tx.dateMillis))}")
-            appendLine("====================================")
+            appendLine("==============================================")
         }
     }
 
@@ -690,7 +730,7 @@ class LedgerViewModel(
         val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)
 
         return buildString {
-            appendLine("=== DAILY LEDGER & CASHBOOK SUMMARY ===")
+            appendLine("=== DAILY LEDGER & CASHBOOK BANK STATEMENT ===")
             appendLine("Total Entries: ${summary.transactionCount}")
             appendLine("--------------------------------------")
             appendLine("TOTAL CASH IN HAND: ${summary.formattedCashInHand}")
@@ -709,27 +749,29 @@ class LedgerViewModel(
                 appendLine("PAYMENT CHANNEL BREAKDOWN:")
                 summary.cashByMode.forEach { (mode, net) ->
                     val signPrefix = if (net >= 0) "+" else "-"
-                    appendLine("• $mode: $signPrefix${PkrNumberFormatter.formatPkrAmount(kotlin.math.abs(net), decimals = 2)}")
+                    appendLine("• $mode: $signPrefix${PkrNumberFormatter.formatPkrAmount(kotlin.math.abs(net))}")
                 }
                 appendLine("--------------------------------------")
             }
             if (summary.categoryBreakdown.isNotEmpty()) {
                 appendLine("CATEGORY BREAKDOWN:")
                 summary.categoryBreakdown.forEach { (cat, amt) ->
-                    appendLine("• $cat: ${PkrNumberFormatter.formatPkrAmount(amt, decimals = 2)}")
+                    appendLine("• $cat: ${PkrNumberFormatter.formatPkrAmount(amt)}")
                 }
                 appendLine("--------------------------------------")
             }
-            appendLine("TRANSACTION LOG (${state.filteredTransactions.size} records):")
+            appendLine("TRANSACTION STATEMENT LOG (${state.filteredTransactions.size} records):")
             state.filteredTransactions.forEachIndexed { i, tx ->
                 val isTransfer = tx.type == "TRANSFER" || tx.type == "CASH_TRANSFER"
                 val sign = if (isTransfer) "⇆" else if (tx.type == "CASH_OUT") "-" else "+"
                 val party = if (tx.partyName.isNotBlank()) " | ${tx.partyName}" else ""
                 val scopeTag = if (tx.type == "CASH_OUT") " [${if (tx.expenseScope == "HOME" || LedgerUnifiedDataManager.isHomeExpense(tx.category)) "Home" else "Biz"}]" else ""
                 val modeDesc = if (isTransfer) "${tx.paymentMode} ➔ ${tx.transferToMode}" else tx.paymentMode
-                appendLine("${i + 1}. [${dateFormat.format(Date(tx.dateMillis))}] ${tx.category}$party$scopeTag : $sign ${PkrNumberFormatter.formatPkrAmount(tx.amount, decimals = 2)} ($modeDesc)")
+                val stmt = state.statementMap[tx.id]
+                val balSuffix = if (stmt != null) " | Bal After: ${stmt.formattedBalanceAfter}" else ""
+                appendLine("${i + 1}. [${dateFormat.format(Date(tx.dateMillis))}] ${tx.category}$party$scopeTag : $sign ${PkrNumberFormatter.formatPkrAmount(tx.amount)} ($modeDesc)$balSuffix")
             }
-            appendLine("======================================")
+            appendLine("==============================================")
         }
     }
 }

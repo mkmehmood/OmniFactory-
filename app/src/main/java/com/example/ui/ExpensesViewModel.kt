@@ -35,6 +35,16 @@ enum class ExpenseTimeFilter(val label: String) {
     TODAY("Today")
 }
 
+data class ExpenseStatementItem(
+    val expense: LedgerTransactionEntity,
+    val cumulativeBefore: Double,
+    val cumulativeAfter: Double
+) {
+    val formattedCumulativeBefore: String get() = PkrNumberFormatter.formatPkrAmount(cumulativeBefore)
+    val formattedCumulativeAfter: String get() = PkrNumberFormatter.formatPkrAmount(cumulativeAfter)
+    val formattedAmount: String get() = "-${PkrNumberFormatter.formatPkrAmount(expense.amount)}"
+}
+
 data class ExpensesSummary(
     val totalExpense: Double = 0.0,
     val businessExpense: Double = 0.0,
@@ -47,11 +57,11 @@ data class ExpensesSummary(
     val topCategories: Map<String, Double> = emptyMap(),
     val byMode: Map<String, Double> = emptyMap()
 ) {
-    val formattedTotal: String get() = PkrNumberFormatter.formatPkrAmount(totalExpense, decimals = 2)
-    val formattedBusiness: String get() = PkrNumberFormatter.formatPkrAmount(businessExpense, decimals = 2)
-    val formattedHome: String get() = PkrNumberFormatter.formatPkrAmount(homeExpense, decimals = 2)
-    val formattedToday: String get() = PkrNumberFormatter.formatPkrAmount(todayExpense, decimals = 2)
-    val formattedMonth: String get() = PkrNumberFormatter.formatPkrAmount(monthExpense, decimals = 2)
+    val formattedTotal: String get() = PkrNumberFormatter.formatPkrAmount(totalExpense)
+    val formattedBusiness: String get() = PkrNumberFormatter.formatPkrAmount(businessExpense)
+    val formattedHome: String get() = PkrNumberFormatter.formatPkrAmount(homeExpense)
+    val formattedToday: String get() = PkrNumberFormatter.formatPkrAmount(todayExpense)
+    val formattedMonth: String get() = PkrNumberFormatter.formatPkrAmount(monthExpense)
 }
 
 data class ExpensesUiState(
@@ -76,6 +86,7 @@ data class ExpensesUiState(
     // Data lists
     val allExpenses: List<LedgerTransactionEntity> = emptyList(),
     val filteredExpenses: List<LedgerTransactionEntity> = emptyList(),
+    val statementMap: Map<Long, ExpenseStatementItem> = emptyMap(),
     val summary: ExpensesSummary = ExpensesSummary(),
     val businessCategories: List<String> = emptyList(),
     val homeCategories: List<String> = emptyList(),
@@ -111,6 +122,7 @@ class ExpensesViewModel(
 
                 _uiState.update { current ->
                     val summary = computeSummary(expensesOnly)
+                    val statementMap = computeExpenseStatementMap(expensesOnly)
                     val filtered = filterExpenses(
                         expensesOnly,
                         current.selectedScope,
@@ -137,6 +149,7 @@ class ExpensesViewModel(
                     current.copy(
                         allExpenses = expensesOnly,
                         filteredExpenses = filtered,
+                        statementMap = statementMap,
                         summary = summary,
                         businessCategories = bizList,
                         homeCategories = homeList,
@@ -283,6 +296,28 @@ class ExpensesViewModel(
         }
     }
 
+    private fun computeExpenseStatementMap(expenses: List<LedgerTransactionEntity>): Map<Long, ExpenseStatementItem> {
+        val chronological = expenses.sortedWith(
+            compareBy<LedgerTransactionEntity> { it.dateMillis }
+                .thenBy { it.timestamp }
+                .thenBy { it.id }
+        )
+
+        var cumulative = 0.0
+        val map = mutableMapOf<Long, ExpenseStatementItem>()
+        for (exp in chronological) {
+            val before = cumulative
+            cumulative += exp.amount
+            val after = cumulative
+            map[exp.id] = ExpenseStatementItem(
+                expense = exp,
+                cumulativeBefore = before,
+                cumulativeAfter = after
+            )
+        }
+        return map
+    }
+
     private fun recomputeState() {
         val current = _uiState.value
         val filtered = filterExpenses(
@@ -291,7 +326,8 @@ class ExpensesViewModel(
             current.selectedTimeFilter,
             current.searchQuery
         )
-        _uiState.update { it.copy(filteredExpenses = filtered) }
+        val statementMap = computeExpenseStatementMap(current.allExpenses)
+        _uiState.update { it.copy(filteredExpenses = filtered, statementMap = statementMap) }
     }
 
     // --- Controls ---
@@ -520,13 +556,35 @@ class ExpensesViewModel(
         _uiState.update { it.copy(isDetailDialogOpen = false, selectedExpenseForDetail = null) }
     }
 
+    fun buildSingleExpenseReport(exp: LedgerTransactionEntity): String {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
+        val statement = _uiState.value.statementMap[exp.id]
+        val scopeTag = if (exp.expenseScope == "HOME" || isHomeExpenseItem(exp.category, exp.expenseScope)) "HOME / PERSONAL" else "BUSINESS"
+
+        return buildString {
+            appendLine("=== EXPENSE STATEMENT VOUCHER ===")
+            appendLine("Category: ${exp.category} ($scopeTag)")
+            appendLine("Amount: ${PkrNumberFormatter.formatPkrAmount(exp.amount)}")
+            if (statement != null) {
+                appendLine("Cumulative Before: ${statement.formattedCumulativeBefore}")
+                appendLine("Cumulative After:  ${statement.formattedCumulativeAfter}")
+            }
+            appendLine("Payment Mode: ${exp.paymentMode}")
+            if (exp.partyName.isNotBlank()) appendLine("Paid To: ${exp.partyName}")
+            if (exp.referenceNo.isNotBlank()) appendLine("Ref / Receipt: ${exp.referenceNo}")
+            if (exp.remarks.isNotBlank()) appendLine("Remarks: ${exp.remarks}")
+            appendLine("Date: ${dateFormat.format(Date(exp.dateMillis))}")
+            appendLine("=================================")
+        }
+    }
+
     fun buildExpenseSummaryReport(): String {
         val state = _uiState.value
         val summary = state.summary
         val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)
 
         return buildString {
-            appendLine("=== EVERYDAY EXPENSES AUDIT REPORT ===")
+            appendLine("=== EVERYDAY EXPENSES STATEMENT REPORT ===")
             appendLine("Filter: ${state.selectedScope.label} | ${state.selectedTimeFilter.label}")
             appendLine("--------------------------------------")
             appendLine("TOTAL EXPENSES:     ${summary.formattedTotal} (${summary.count} entries)")
@@ -538,18 +596,20 @@ class ExpensesViewModel(
             if (summary.topCategories.isNotEmpty()) {
                 appendLine("EXPENSES BY CATEGORY:")
                 summary.topCategories.entries.sortedByDescending { it.value }.take(10).forEach { (cat, amt) ->
-                    appendLine("• $cat: ${PkrNumberFormatter.formatPkrAmount(amt, decimals = 2)}")
+                    appendLine("• $cat: ${PkrNumberFormatter.formatPkrAmount(amt)}")
                 }
                 appendLine("--------------------------------------")
             }
-            appendLine("EXPENSES LOG (${state.filteredExpenses.size} items):")
+            appendLine("EXPENSES STATEMENT LOG (${state.filteredExpenses.size} items):")
             state.filteredExpenses.forEachIndexed { i, exp ->
                 val scopeTag = if (exp.expenseScope == "HOME" || isHomeExpenseItem(exp.category, exp.expenseScope)) "[Home]" else "[Business]"
                 val party = if (exp.partyName.isNotBlank()) " | Paid to: ${exp.partyName}" else ""
                 val rem = if (exp.remarks.isNotBlank()) " (${exp.remarks})" else ""
-                appendLine("${i + 1}. [${dateFormat.format(Date(exp.dateMillis))}] $scopeTag ${exp.category}$party : ${PkrNumberFormatter.formatPkrAmount(exp.amount, decimals = 2)} [${exp.paymentMode}]$rem")
+                val stmt = state.statementMap[exp.id]
+                val cumSuffix = if (stmt != null) " | Total Spent After: ${stmt.formattedCumulativeAfter}" else ""
+                appendLine("${i + 1}. [${dateFormat.format(Date(exp.dateMillis))}] $scopeTag ${exp.category}$party : -${PkrNumberFormatter.formatPkrAmount(exp.amount)} [${exp.paymentMode}]$rem$cumSuffix")
             }
-            appendLine("======================================")
+            appendLine("==========================================")
         }
     }
 }

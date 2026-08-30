@@ -59,7 +59,7 @@ object PkrNumberFormatter {
         val isNegative = value < 0
         val absVal = kotlin.math.abs(value)
 
-        val rounded = BigDecimal(absVal.toString()).setScale(decimals, RoundingMode.HALF_UP)
+        val rounded = BigDecimal.valueOf(absVal).setScale(decimals, RoundingMode.HALF_UP)
         val plainStr = rounded.toPlainString()
         val parts = plainStr.split(".")
         val integerPart = parts[0]
@@ -78,15 +78,16 @@ object PkrNumberFormatter {
 
     /**
      * Formats a Double amount for visual representation strictly WITHOUT currency symbols.
-     * Example: 1070500.0 -> "10,70,500.00", -5000.5 -> "-5,000.50", 10000.0 (showSign) -> "+10,000.00"
+     * Whole numbers format cleanly without decimals (e.g., 123.00 -> "123", 1070500.0 -> "10,70,500").
+     * Numbers with fractional parts retain their decimals (e.g., 123.45 -> "123.45").
      */
     fun formatPkrAmount(
         value: Double,
         showSign: Boolean = false,
         decimals: Int = 2,
-        stripTrailingZeros: Boolean = false
+        stripTrailingZeros: Boolean = true
     ): String {
-        if (value.isNaN() || value.isInfinite()) return if (stripTrailingZeros || decimals == 0) "0" else "0.00"
+        if (value.isNaN() || value.isInfinite()) return "0"
         val absVal = kotlin.math.abs(value)
         val absFormatted = formatPkrDouble(absVal, decimals = decimals, stripTrailingZeros = stripTrailingZeros)
         return when {

@@ -23,7 +23,7 @@ object IndianNumberFormatter {
         showSign: Boolean = false,
         symbol: String = ""
     ): String {
-        val formatted = PkrNumberFormatter.formatPkrAmount(value, showSign = showSign, decimals = 2, stripTrailingZeros = false)
+        val formatted = PkrNumberFormatter.formatPkrAmount(value, showSign = showSign, decimals = 2, stripTrailingZeros = true)
         return if (symbol.isEmpty()) formatted else {
             if (formatted.startsWith("-")) "-$symbol ${formatted.substring(1)}"
             else if (formatted.startsWith("+")) "+$symbol ${formatted.substring(1)}"

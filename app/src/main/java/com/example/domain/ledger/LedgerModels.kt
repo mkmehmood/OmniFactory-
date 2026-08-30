@@ -14,8 +14,24 @@ import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.data.db.LedgerTransactionEntity
 import com.example.domain.util.IndianNumberFormatter
 import com.example.domain.util.PkrNumberFormatter
+
+data class LedgerStatementItem(
+    val transaction: LedgerTransactionEntity,
+    val balanceBefore: Double,
+    val balanceAfter: Double,
+    val netImpact: Double
+) {
+    val formattedBalanceBefore: String get() = PkrNumberFormatter.formatPkrAmount(balanceBefore)
+    val formattedBalanceAfter: String get() = PkrNumberFormatter.formatPkrAmount(balanceAfter)
+    val formattedImpact: String get() = when {
+        transaction.type == "TRANSFER" || transaction.type == "CASH_TRANSFER" -> "⇆ ${PkrNumberFormatter.formatPkrAmount(transaction.amount)}"
+        transaction.type == "CASH_OUT" -> "- ${PkrNumberFormatter.formatPkrAmount(transaction.amount)}"
+        else -> "+ ${PkrNumberFormatter.formatPkrAmount(transaction.amount)}"
+    }
+}
 
 enum class LedgerType(
     val title: String,

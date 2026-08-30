@@ -54,6 +54,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.TrendingDown
+import com.example.ui.ExpenseStatementItem
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -248,6 +249,7 @@ fun ExpensesScreen(
                 items(uiState.filteredExpenses, key = { it.id }) { expense ->
                     ExpenseRowItem(
                         expense = expense,
+                        statement = uiState.statementMap[expense.id],
                         onClick = { viewModel.openDetail(expense) },
                         onEdit = { viewModel.openEditExpense(expense) },
                         onDelete = { expenseToDelete = expense },
@@ -329,10 +331,11 @@ fun ExpensesScreen(
         }
 
         // ==========================================
-        // EXPENSE DETAIL MODAL
+        // EXPENSE DETAIL MODAL (WITH STATEMENT PROGRESSION)
         // ==========================================
         if (uiState.isDetailDialogOpen && uiState.selectedExpenseForDetail != null) {
             val exp = uiState.selectedExpenseForDetail!!
+            val statement = uiState.statementMap[exp.id]
             val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy, hh:mm a", Locale.US) }
             AlertDialog(
                 onDismissRequest = { viewModel.closeDetail() },
@@ -343,39 +346,79 @@ fun ExpensesScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Expense Voucher",
+                            text = "Expense Statement Voucher",
                             fontWeight = FontWeight.Bold,
                             fontFamily = DigitalMonospaceFont
                         )
-                        IconButton(onClick = { viewModel.closeDetail() }, modifier = Modifier.size(28.dp)) {
-                            Icon(imageVector = Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(18.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = {
+                                val voucher = viewModel.buildSingleExpenseReport(exp)
+                                val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Expense Voucher", voucher))
+                                Toast.makeText(context, "Voucher copied", Toast.LENGTH_SHORT).show()
+                            }, modifier = Modifier.size(28.dp)) {
+                                Icon(imageVector = Icons.Default.ContentCopy, contentDescription = "Copy Voucher", tint = primaryColor, modifier = Modifier.size(16.dp))
+                            }
+                            IconButton(onClick = { viewModel.closeDetail() }, modifier = Modifier.size(28.dp)) {
+                                Icon(imageVector = Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(18.dp))
+                            }
                         }
                     }
                 },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
-                            color = expenseAccent.copy(alpha = 0.12f)
+                            color = expenseAccent.copy(alpha = 0.12f),
+                            border = BorderStroke(1.dp, expenseAccent.copy(alpha = 0.35f))
                         ) {
                             Column(
                                 modifier = Modifier.padding(14.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = PkrNumberFormatter.formatPkrAmount(exp.amount, decimals = 2),
+                                    text = "-${PkrNumberFormatter.formatPkrAmount(exp.amount)}",
                                     fontSize = 24.sp,
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = DigitalMonospaceFont,
                                     color = expenseAccent
                                 )
                                 Text(
-                                    text = "EVERYDAY EXPENSE",
+                                    text = if (exp.expenseScope == "HOME") "HOME / PERSONAL EXPENSE" else "BUSINESS EXPENSE",
                                     fontSize = 11.sp,
                                     fontFamily = DigitalMonospaceFont,
                                     color = expenseAccent
                                 )
+                            }
+                        }
+
+                        // Statement Effect Box
+                        if (statement != null) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isDark) Color(0x22FFFFFF) else Color(0x0A000000),
+                                border = BorderStroke(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x18000000)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(
+                                        text = "EXPENSE STATEMENT PROGRESSION",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = DigitalMonospaceFont,
+                                        color = primaryColor
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    DetailRow(label = "Cumulative Spent Before:", value = statement.formattedCumulativeBefore)
+                                    DetailRow(label = "Expense Impact:", value = statement.formattedAmount)
+                                    DetailRow(label = "Cumulative Spent After:", value = statement.formattedCumulativeAfter)
+                                }
                             }
                         }
 
@@ -862,7 +905,7 @@ private fun ExpenseCategorySummaryCard(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = PkrNumberFormatter.formatPkrAmount(amount, decimals = 2),
+                            text = PkrNumberFormatter.formatPkrAmount(amount),
                             fontSize = 12.5.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = DigitalMonospaceFont,
@@ -876,12 +919,13 @@ private fun ExpenseCategorySummaryCard(
 }
 
 // =========================================================================
-// EXPENSE ROW ITEM
+// EXPENSE ROW ITEM (WITH BANK STATEMENT RUNNING CUMULATIVE BALANCE)
 // =========================================================================
 
 @Composable
 private fun ExpenseRowItem(
     expense: LedgerTransactionEntity,
+    statement: ExpenseStatementItem? = null,
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -900,108 +944,164 @@ private fun ExpenseRowItem(
         shape = RoundedCornerShape(12.dp),
         color = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(12.dp)
         ) {
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(accentColor.copy(alpha = 0.18f)),
-                    contentAlignment = Alignment.Center
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Icon(
-                        imageVector = LedgerCategoryIcons.getCategoryIcon(expense.category),
-                        contentDescription = null,
-                        tint = accentColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(10.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = expense.category,
-                            fontSize = 13.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(accentColor.copy(alpha = 0.18f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = LedgerCategoryIcons.getCategoryIcon(expense.category),
+                            contentDescription = null,
+                            tint = accentColor,
+                            modifier = Modifier.size(18.dp)
                         )
-                        if (expense.partyName.isNotBlank()) {
+                    }
+
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = " • ${expense.partyName}",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                text = expense.category,
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
+                            if (expense.partyName.isNotBlank()) {
+                                Text(
+                                    text = " • ${expense.partyName}",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = dateFormat.format(Date(expense.dateMillis)),
+                                fontSize = 10.5.sp,
+                                fontFamily = DigitalMonospaceFont,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = " | ${expense.paymentMode}",
+                                fontSize = 10.5.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            if (expense.remarks.isNotBlank()) {
+                                Text(
+                                    text = " (${expense.remarks})",
+                                    fontSize = 10.5.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
+                }
 
-                    Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "-${PkrNumberFormatter.formatPkrAmount(expense.amount)}",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = accentColor
+                    )
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = dateFormat.format(Date(expense.dateMillis)),
-                            fontSize = 10.5.sp,
-                            fontFamily = DigitalMonospaceFont,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = " | ${expense.paymentMode}",
-                            fontSize = 10.5.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        if (expense.remarks.isNotBlank()) {
-                            Text(
-                                text = " (${expense.remarks})",
-                                fontSize = 10.5.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                        IconButton(onClick = onEdit, modifier = Modifier.size(26.dp)) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(13.dp)
+                            )
+                        }
+                        IconButton(onClick = onDelete, modifier = Modifier.size(26.dp)) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                                modifier = Modifier.size(13.dp)
                             )
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
+            // Bank Statement Cumulative Running Expense Strip
+            if (statement != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(thickness = 0.7.dp, color = if (isDark) Color(0x18FFFFFF) else Color(0x10000000))
+                Spacer(modifier = Modifier.height(6.dp))
 
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "-${PkrNumberFormatter.formatPkrAmount(expense.amount, decimals = 2)}",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = DigitalMonospaceFont,
-                    color = accentColor
-                )
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onEdit, modifier = Modifier.size(26.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f, fill = false)
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(13.dp)
+                            imageVector = Icons.Default.TrendingDown,
+                            contentDescription = null,
+                            tint = Color(0xFF64748B),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Cumulative: ",
+                            fontSize = 10.5.sp,
+                            fontFamily = DigitalMonospaceFont,
+                            color = Color(0xFF64748B)
+                        )
+                        Text(
+                            text = "${statement.formattedCumulativeBefore} ➔",
+                            fontSize = 10.5.sp,
+                            fontFamily = DigitalMonospaceFont,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    IconButton(onClick = onDelete, modifier = Modifier.size(26.dp)) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
-                            modifier = Modifier.size(13.dp)
+
+                    Surface(
+                        shape = RoundedCornerShape(5.dp),
+                        color = Color(0x18EF4444)
+                    ) {
+                        Text(
+                            text = "Total Spent: ${statement.formattedCumulativeAfter}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = Color(0xFFEF4444),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
                 }

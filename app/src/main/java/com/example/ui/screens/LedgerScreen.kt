@@ -320,6 +320,7 @@ fun LedgerScreen(
             val tx = uiState.selectedTransactionForDetail!!
             LedgerDetailDialog(
                 tx = tx,
+                statement = uiState.statementMap[tx.id],
                 onDismiss = { viewModel.closeTransactionDetail() },
                 onEdit = {
                     viewModel.closeTransactionDetail()
@@ -348,9 +349,9 @@ fun LedgerScreen(
             val isTransfer = tx.type == "TRANSFER" || tx.type == "CASH_TRANSFER"
             val titleText = if (isTransfer) "Delete Transfer Record?" else "Delete Transaction Record?"
             val detailText = if (isTransfer) {
-                "Are you sure you want to delete this transfer of ${PkrNumberFormatter.formatPkrAmount(tx.amount, decimals = 2)} (${tx.paymentMode} ➔ ${tx.transferToMode})?"
+                "Are you sure you want to delete this transfer of ${PkrNumberFormatter.formatPkrAmount(tx.amount)} (${tx.paymentMode} ➔ ${tx.transferToMode})?"
             } else {
-                "Are you sure you want to delete this ${tx.type.replace('_', ' ')} entry of ${PkrNumberFormatter.formatPkrAmount(tx.amount, decimals = 2)} (${tx.category})?"
+                "Are you sure you want to delete this ${tx.type.replace('_', ' ')} entry of ${PkrNumberFormatter.formatPkrAmount(tx.amount)} (${tx.category})?"
             }
 
             AlertDialog(
@@ -858,7 +859,7 @@ private fun LedgerCategoryBreakdownCard(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = PkrNumberFormatter.formatPkrAmount(amount, decimals = 2),
+                            text = PkrNumberFormatter.formatPkrAmount(amount),
                             fontSize = 12.5.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = DigitalMonospaceFont,
@@ -2265,6 +2266,7 @@ private fun LedgerHistoryPanelSheetContent(
                 items(uiState.filteredTransactions, key = { it.id }) { tx ->
                     LedgerTransactionRow(
                         tx = tx,
+                        statement = uiState.statementMap[tx.id],
                         onClick = { viewModel.openTransactionDetail(tx) },
                         onEdit = { onEditTx(tx) },
                         onDelete = { onDeleteTx(tx) },
@@ -2317,12 +2319,13 @@ private fun HistoryFilterSvgChip(
 }
 
 // =========================================================================
-// 8. TRANSACTION ROW COMPONENT
+// 8. TRANSACTION ROW COMPONENT (WITH BANK STATEMENT RUNNING BALANCE)
 // =========================================================================
 
 @Composable
 private fun LedgerTransactionRow(
     tx: LedgerTransactionEntity,
+    statement: com.example.domain.ledger.LedgerStatementItem? = null,
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -2343,7 +2346,7 @@ private fun LedgerTransactionRow(
         else -> Icons.Default.ArrowDownward
     }
 
-    val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.US) }
+    val dateFormat = remember { SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.US) }
 
     Surface(
         modifier = Modifier
@@ -2356,123 +2359,183 @@ private fun LedgerTransactionRow(
         color = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF),
         shadowElevation = 1.dp
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(12.dp)
         ) {
-            // Left: Icon + Info
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(accentColor.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
+                // Left: Icon + Info
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = accentColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(10.dp))
-
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = if (isTransfer) "Account Transfer" else tx.category,
-                            fontSize = 13.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(accentColor.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = accentColor,
+                            modifier = Modifier.size(18.dp)
                         )
+                    }
 
-                        if (isCashOut) {
-                            val isHome = tx.expenseScope == "HOME" || LedgerUnifiedDataManager.isHomeExpense(tx.category)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Surface(
-                                shape = RoundedCornerShape(4.dp),
-                                color = if (isHome) Color(0x25F97316) else Color(0x25EF4444)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = if (isTransfer) "Account Transfer" else tx.category,
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            if (isCashOut) {
+                                val isHome = tx.expenseScope == "HOME" || LedgerUnifiedDataManager.isHomeExpense(tx.category)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = if (isHome) Color(0x25F97316) else Color(0x25EF4444)
                                 ) {
-                                    Icon(
-                                        imageVector = if (isHome) Icons.Default.Home else Icons.Default.Business,
-                                        contentDescription = null,
-                                        tint = if (isHome) Color(0xFFF97316) else Color(0xFFEF4444),
-                                        modifier = Modifier.size(9.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(2.dp))
-                                    Text(
-                                        text = if (isHome) "Home" else "Biz",
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isHome) Color(0xFFF97316) else Color(0xFFEF4444)
-                                    )
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isHome) Icons.Default.Home else Icons.Default.Business,
+                                            contentDescription = null,
+                                            tint = if (isHome) Color(0xFFF97316) else Color(0xFFEF4444),
+                                            modifier = Modifier.size(9.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Text(
+                                            text = if (isHome) "Home" else "Biz",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isHome) Color(0xFFF97316) else Color(0xFFEF4444)
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
 
-                    val subtitle = if (isTransfer) {
-                        "${tx.paymentMode} ➔ ${tx.transferToMode}"
-                    } else {
-                        val party = if (tx.partyName.isNotBlank()) "${tx.partyName} • " else ""
-                        "$party${tx.paymentMode} • ${dateFormat.format(Date(tx.dateMillis))}"
-                    }
+                        val subtitle = if (isTransfer) {
+                            "${tx.paymentMode} ➔ ${tx.transferToMode}"
+                        } else {
+                            val party = if (tx.partyName.isNotBlank()) "${tx.partyName} • " else ""
+                            "$party${tx.paymentMode} • ${dateFormat.format(Date(tx.dateMillis))}"
+                        }
 
-                    Text(
-                        text = subtitle,
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            // Right: Amount + Actions
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Column(horizontalAlignment = Alignment.End) {
-                    val sign = if (isTransfer) "⇆" else if (isCashOut) "-" else "+"
-                    Text(
-                        text = "$sign ${PkrNumberFormatter.formatPkrAmount(tx.amount, decimals = 2)}",
-                        fontSize = 13.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = accentColor
-                    )
-                    if (isTransfer) {
                         Text(
-                            text = dateFormat.format(Date(tx.dateMillis)),
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = subtitle,
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
-                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(15.dp))
-                }
+                // Right: Amount + Actions
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.End) {
+                        val sign = if (isTransfer) "⇆" else if (isCashOut) "-" else "+"
+                        Text(
+                            text = "$sign ${PkrNumberFormatter.formatPkrAmount(tx.amount)}",
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = accentColor
+                        )
+                        if (isTransfer) {
+                            Text(
+                                text = dateFormat.format(Date(tx.dateMillis)),
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
 
-                IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
-                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFEF4444), modifier = Modifier.size(15.dp))
+                    IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
+                        Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(15.dp))
+                    }
+
+                    IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
+                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFEF4444), modifier = Modifier.size(15.dp))
+                    }
+                }
+            }
+
+            // Bank Statement Running Balance Effect Strip
+            if (statement != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(thickness = 0.7.dp, color = if (isDark) Color(0x18FFFFFF) else Color(0x10000000))
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f, fill = false)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AccountBalanceWallet,
+                            contentDescription = null,
+                            tint = Color(0xFF64748B),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Balance: ",
+                            fontSize = 10.5.sp,
+                            fontFamily = DigitalMonospaceFont,
+                            color = Color(0xFF64748B)
+                        )
+                        Text(
+                            text = "${statement.formattedBalanceBefore} ➔",
+                            fontSize = 10.5.sp,
+                            fontFamily = DigitalMonospaceFont,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(5.dp),
+                        color = if (statement.balanceAfter >= 0) Color(0x1810B981) else Color(0x18EF4444)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Bal: ${statement.formattedBalanceAfter}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = if (statement.balanceAfter >= 0) Color(0xFF10B981) else Color(0xFFEF4444)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -2480,12 +2543,13 @@ private fun LedgerTransactionRow(
 }
 
 // =========================================================================
-// 9. TRANSACTION DETAIL DIALOG
+// 9. TRANSACTION DETAIL DIALOG (WITH BANK STATEMENT PROGRESSION EFFECT)
 // =========================================================================
 
 @Composable
 private fun LedgerDetailDialog(
     tx: LedgerTransactionEntity,
+    statement: com.example.domain.ledger.LedgerStatementItem? = null,
     onDismiss: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -2511,7 +2575,7 @@ private fun LedgerDetailDialog(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = if (isTransfer) "Transfer Voucher" else "Transaction Voucher",
+                    text = if (isTransfer) "Transfer Statement Voucher" else "Statement Voucher",
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = DigitalMonospaceFont
@@ -2548,12 +2612,48 @@ private fun LedgerDetailDialog(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = PkrNumberFormatter.formatPkrAmount(tx.amount, decimals = 2),
+                            text = PkrNumberFormatter.formatPkrAmount(tx.amount),
                             fontSize = 22.sp,
                             fontWeight = FontWeight.ExtraBold,
                             fontFamily = DigitalMonospaceFont,
                             color = accentColor
                         )
+                    }
+                }
+
+                // Bank Statement Running Progression Box
+                if (statement != null) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isDark) Color(0x22FFFFFF) else Color(0x0A000000),
+                        border = BorderStroke(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x18000000)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "BANK STATEMENT EFFECT",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = primaryColor
+                                )
+                                Text(
+                                    text = statement.formattedImpact,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = accentColor
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            DetailItemRow("Balance Before:", statement.formattedBalanceBefore)
+                            DetailItemRow("Balance After:", statement.formattedBalanceAfter)
+                        }
                     }
                 }
 
