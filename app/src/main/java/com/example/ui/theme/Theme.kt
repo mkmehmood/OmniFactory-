@@ -44,7 +44,10 @@ enum class OrnamentalPatternStyle(
     ROYAL_FLEUR_DE_LIS("Imperial Fleur-de-Lis", "Regal French monarchy heraldic fleurons, crown arches and imperial emblems"),
     CYBER_CIRCUITS("Cyber Matrix Circuit Lattice", "Futuristic printed circuit nodes, hex grid corners and laser traces"),
     CONSTELLATION_NEBULA("Celestial Nebula & Constellations", "Starry night galaxy coordinates, cosmic stardust and constellation charts"),
-    MINIMALIST_AURA("Ambient Aura Glow", "Soft luminous radial aura glow")
+    MINIMALIST_AURA("Ambient Aura Glow", "Soft luminous radial aura glow"),
+    SPATIAL_ORBITAL_DEPTH("Spatial 3D Orbital Rings", "Floating 3D depth rings, orbital halo horizons and luminous stardust"),
+    SPATIAL_HOLOGRAPHIC_GRID("Spatial Hologram Depth Grid", "Atmospheric perspective depth grid, floating laser nodes and neon horizon"),
+    SPATIAL_AURORA_PORTAL("Spatial Aurora Refraction", "Vision frosted glass refraction rays with chromatic chromatic aberration")
 }
 
 enum class AppThemeSkin(
@@ -65,6 +68,63 @@ enum class AppThemeSkin(
     val ornamentalPattern: OrnamentalPatternStyle = OrnamentalPatternStyle.NONE,
     val ornamentalTintColor: Color = Color(0x33FFD700)
 ) {
+    // ==========================================
+    // 0. SPATIAL COMPUTING & VISION OS MASTERPIECES
+    // ==========================================
+    SPATIAL_VISION_DARK(
+        displayName = "Spatial Frosted Glass (Vision Dark)",
+        categoryTag = "Spatial UI",
+        description = "Vision-inspired frosted acrylic glass with 3D specular edge highlights, floating depth & luminous cyan glow",
+        isDark = true,
+        background = Color(0xFF070B14),
+        surface = Color(0xFF0E1626),
+        surfaceVariant = Color(0x2E38BDF8),
+        surfacePressed = Color(0x5438BDF8),
+        outline = Color(0x4D38BDF8),
+        textPrimary = Color(0xFFF0F9FF),
+        textSecondary = Color(0xFFBAE6FD),
+        defaultAccent = Color(0xFF00E5FF),
+        previewColors = listOf(Color(0xFF070B14), Color(0xFF00E5FF), Color(0xFF818CF8)),
+        badgeLabel = "SPATIAL GLASS",
+        ornamentalPattern = OrnamentalPatternStyle.SPATIAL_ORBITAL_DEPTH,
+        ornamentalTintColor = Color(0xFF00E5FF)
+    ),
+    SPATIAL_NEBULA_HOLO(
+        displayName = "Spatial Nebula & Holo Matrix",
+        categoryTag = "Spatial UI",
+        description = "Deep space horizon grid with floating holographic coordinates & radiant ultraviolet aura",
+        isDark = true,
+        background = Color(0xFF080616),
+        surface = Color(0xFF140F2D),
+        surfaceVariant = Color(0x33A855F7),
+        surfacePressed = Color(0x55A855F7),
+        outline = Color(0x59A855F7),
+        textPrimary = Color(0xFFFAF5FF),
+        textSecondary = Color(0xFFE9D5FF),
+        defaultAccent = Color(0xFFA855F7),
+        previewColors = listOf(Color(0xFF080616), Color(0xFFA855F7), Color(0xFF00F0FF)),
+        badgeLabel = "SPATIAL HOLO",
+        ornamentalPattern = OrnamentalPatternStyle.SPATIAL_HOLOGRAPHIC_GRID,
+        ornamentalTintColor = Color(0xFFA855F7)
+    ),
+    SPATIAL_CRYSTAL_LIGHT(
+        displayName = "Spatial Crystalline (Vision Light)",
+        categoryTag = "Spatial UI",
+        description = "Pure crystalline frosted glass with specular top refraction, diamond clarity & vivid sky blue accents",
+        isDark = false,
+        background = Color(0xFFF1F5F9),
+        surface = Color(0xFFFFFFFF),
+        surfaceVariant = Color(0x80FFFFFF),
+        surfacePressed = Color(0xB3E2E8F0),
+        outline = Color(0x4D0EA5E9),
+        textPrimary = Color(0xFF0F172A),
+        textSecondary = Color(0xFF334155),
+        defaultAccent = Color(0xFF0EA5E9),
+        previewColors = listOf(Color(0xFFFFFFFF), Color(0xFFE0F2FE), Color(0xFF0EA5E9)),
+        badgeLabel = "SPATIAL CRYSTAL",
+        ornamentalPattern = OrnamentalPatternStyle.SPATIAL_AURORA_PORTAL,
+        ornamentalTintColor = Color(0xFF0EA5E9)
+    ),
     // ==========================================
     // 1. AROMATIC & ORNAMENTAL MASTERPIECES
     // ==========================================

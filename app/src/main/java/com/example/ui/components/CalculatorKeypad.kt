@@ -508,6 +508,7 @@ private fun LiquidGlassKey(
     val shape = shapeStructureStyle.toButtonShape()
     val borderWidth = if (shapeStructureStyle == ShapeStructureStyle.LINE_BORDER) 1.5.dp else 1.dp
     val fontScale = componentSizeStyle.keyFontScale
+    val keyElevation = if (isPressed) 1.dp else 5.dp
 
     Box(
         modifier = modifier
@@ -516,13 +517,24 @@ private fun LiquidGlassKey(
                 scaleX = combinedScale
                 scaleY = combinedScale
                 this.translationY = translationY.dp.toPx()
+                this.shadowElevation = keyElevation.toPx()
+                this.shape = shape
+                this.clip = false
             }
             .aspectRatio(1.15f)
             .clip(shape)
             .background(glassBg)
             .border(
                 width = borderWidth,
-                color = glassBorder,
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        if (isDark) Color.White.copy(alpha = if (isPressed) 0.55f else 0.35f) else Color.White.copy(alpha = 0.85f),
+                        glassBorder,
+                        glassBorder.copy(alpha = 0.4f)
+                    ),
+                    start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                    end = androidx.compose.ui.geometry.Offset(100f, 100f)
+                ),
                 shape = shape
             )
             .clickable(
@@ -551,6 +563,24 @@ private fun LiquidGlassKey(
             .testTag(testTag),
         contentAlignment = Alignment.Center
     ) {
+        // Specular 3D light sheen at the top of the key
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth(0.85f)
+                .height(1.5.dp)
+                .clip(shape)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            Color.Transparent,
+                            if (isDark) Color.White.copy(alpha = 0.40f) else Color.White.copy(alpha = 0.75f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+
         if (icon != null) {
             Icon(
                 imageVector = icon,

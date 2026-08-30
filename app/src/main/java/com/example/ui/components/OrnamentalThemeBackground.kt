@@ -129,6 +129,15 @@ fun OrnamentalThemeBackground(
                 OrnamentalPatternStyle.CONSTELLATION_NEBULA -> {
                     drawConstellationsBackground(canvasW, canvasH, tint, appThemeSkin.isDark)
                 }
+                OrnamentalPatternStyle.SPATIAL_ORBITAL_DEPTH -> {
+                    drawSpatialOrbitalDepthBackground(canvasW, canvasH, tint, appThemeSkin.isDark)
+                }
+                OrnamentalPatternStyle.SPATIAL_HOLOGRAPHIC_GRID -> {
+                    drawSpatialHolographicGridBackground(canvasW, canvasH, tint, appThemeSkin.isDark)
+                }
+                OrnamentalPatternStyle.SPATIAL_AURORA_PORTAL -> {
+                    drawSpatialAuroraPortalBackground(canvasW, canvasH, tint, appThemeSkin.isDark)
+                }
                 OrnamentalPatternStyle.MINIMALIST_AURA -> {
                     // Subtle ambient gradient circles
                     drawCircle(
@@ -990,3 +999,231 @@ private fun DrawScope.drawConstellationsBackground(
         drawCircle(starColor, radius = 3.5f, center = pt)
     }
 }
+
+// =========================================================================
+// 12. SPATIAL ORBITAL 3D DEPTH RINGS
+// =========================================================================
+private fun DrawScope.drawSpatialOrbitalDepthBackground(
+    w: Float,
+    h: Float,
+    tint: Color,
+    isDark: Boolean
+) {
+    val baseAlpha = if (isDark) 0.35f else 0.22f
+    val centerX = w * 0.5f
+    val centerY = h * 0.38f
+
+    // 1. Perspective Depth Horizon Ellipses
+    val rings = listOf(
+        Pair(w * 0.42f, h * 0.15f),
+        Pair(w * 0.65f, h * 0.24f),
+        Pair(w * 0.88f, h * 0.34f),
+        Pair(w * 1.12f, h * 0.44f)
+    )
+
+    rings.forEachIndexed { idx, (radX, radY) ->
+        val ringAlpha = baseAlpha * (1f - (idx * 0.18f))
+        val strokeW = if (idx == 0) 1.8f else 1.2f
+        drawOval(
+            color = tint.copy(alpha = ringAlpha),
+            topLeft = Offset(centerX - radX, centerY - radY),
+            size = Size(radX * 2f, radY * 2f),
+            style = Stroke(width = strokeW)
+        )
+    }
+
+    // 2. Spatial Horizon Light Beam
+    drawLine(
+        brush = Brush.horizontalGradient(
+            colors = listOf(
+                Color.Transparent,
+                tint.copy(alpha = baseAlpha * 0.8f),
+                tint.copy(alpha = baseAlpha),
+                tint.copy(alpha = baseAlpha * 0.8f),
+                Color.Transparent
+            )
+        ),
+        start = Offset(w * 0.05f, centerY),
+        end = Offset(w * 0.95f, centerY),
+        strokeWidth = 1.5f
+    )
+
+    // 3. Floating Spatial Coordinates & Depth Nodes
+    val nodes = listOf(
+        Offset(centerX - w * 0.35f, centerY - h * 0.08f),
+        Offset(centerX + w * 0.35f, centerY - h * 0.08f),
+        Offset(centerX - w * 0.22f, centerY + h * 0.12f),
+        Offset(centerX + w * 0.22f, centerY + h * 0.12f),
+        Offset(centerX, centerY - h * 0.18f),
+        Offset(centerX, centerY + h * 0.22f)
+    )
+
+    nodes.forEach { node ->
+        // Glow halo
+        drawCircle(
+            color = tint.copy(alpha = baseAlpha * 0.3f),
+            radius = 6f,
+            center = node
+        )
+        // Core node
+        drawCircle(
+            color = if (isDark) Color.White.copy(alpha = 0.85f) else tint,
+            radius = 2.5f,
+            center = node
+        )
+    }
+
+    // 4. Subtle Radial Atmospheric Aura
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                tint.copy(alpha = if (isDark) 0.16f else 0.09f),
+                tint.copy(alpha = 0.03f),
+                Color.Transparent
+            ),
+            center = Offset(centerX, centerY),
+            radius = w * 0.65f
+        ),
+        radius = w * 0.65f,
+        center = Offset(centerX, centerY)
+    )
+}
+
+// =========================================================================
+// 13. SPATIAL HOLOGRAPHIC DEPTH GRID
+// =========================================================================
+private fun DrawScope.drawSpatialHolographicGridBackground(
+    w: Float,
+    h: Float,
+    tint: Color,
+    isDark: Boolean
+) {
+    val baseAlpha = if (isDark) 0.30f else 0.20f
+    val horizonY = h * 0.42f
+    val vanishingX = w * 0.5f
+
+    // 1. Perspective floor lines radiating from horizon
+    val perspectiveAngles = listOf(
+        0.0f, 0.12f, 0.25f, 0.38f, 0.5f, 0.62f, 0.75f, 0.88f, 1.0f
+    )
+
+    perspectiveAngles.forEach { fraction ->
+        val bottomX = w * fraction
+        val lineAlpha = baseAlpha * 0.7f
+        drawLine(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    tint.copy(alpha = 0.02f),
+                    tint.copy(alpha = lineAlpha),
+                    tint.copy(alpha = lineAlpha * 1.2f)
+                ),
+                startY = horizonY,
+                endY = h
+            ),
+            start = Offset(vanishingX, horizonY),
+            end = Offset(bottomX, h),
+            strokeWidth = 1.0f
+        )
+    }
+
+    // 2. Transverse horizontal depth lines (spaced exponentially for 3D perspective)
+    val depthSteps = listOf(0.06f, 0.14f, 0.24f, 0.38f, 0.56f, 0.78f, 1.0f)
+    depthSteps.forEach { step ->
+        val y = horizonY + (h - horizonY) * step
+        val stepAlpha = baseAlpha * (0.3f + step * 0.7f)
+        drawLine(
+            color = tint.copy(alpha = stepAlpha),
+            start = Offset(0f, y),
+            end = Offset(w, y),
+            strokeWidth = 1.0f
+        )
+    }
+
+    // 3. Upper Spatial Reticle Rings
+    drawCircle(
+        color = tint.copy(alpha = baseAlpha * 0.6f),
+        radius = w * 0.22f,
+        center = Offset(vanishingX, horizonY - h * 0.16f),
+        style = Stroke(width = 1.2f)
+    )
+    drawCircle(
+        color = tint.copy(alpha = baseAlpha * 0.3f),
+        radius = w * 0.36f,
+        center = Offset(vanishingX, horizonY - h * 0.16f),
+        style = Stroke(width = 1.0f)
+    )
+
+    // 4. Center Horizon Reticle
+    drawCircle(
+        color = tint.copy(alpha = baseAlpha),
+        radius = 4f,
+        center = Offset(vanishingX, horizonY)
+    )
+}
+
+// =========================================================================
+// 14. SPATIAL AURORA REFRACTION PORTAL
+// =========================================================================
+private fun DrawScope.drawSpatialAuroraPortalBackground(
+    w: Float,
+    h: Float,
+    tint: Color,
+    isDark: Boolean
+) {
+    val baseAlpha = if (isDark) 0.25f else 0.18f
+
+    // 1. Dual Soft Luminous Portals
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                tint.copy(alpha = baseAlpha * 0.8f),
+                tint.copy(alpha = baseAlpha * 0.3f),
+                Color.Transparent
+            ),
+            center = Offset(w * 0.80f, h * 0.18f),
+            radius = w * 0.55f
+        ),
+        radius = w * 0.55f,
+        center = Offset(w * 0.80f, h * 0.18f)
+    )
+
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                Color(0xFF818CF8).copy(alpha = baseAlpha * 0.6f),
+                Color(0xFF818CF8).copy(alpha = baseAlpha * 0.2f),
+                Color.Transparent
+            ),
+            center = Offset(w * 0.20f, h * 0.75f),
+            radius = w * 0.60f
+        ),
+        radius = w * 0.60f,
+        center = Offset(w * 0.20f, h * 0.75f)
+    )
+
+    // 2. Prismatic Crystalline Lines
+    val pts = listOf(
+        Pair(Offset(w * 0.1f, h * 0.2f), Offset(w * 0.9f, h * 0.35f)),
+        Pair(Offset(w * 0.15f, h * 0.4f), Offset(w * 0.85f, h * 0.55f)),
+        Pair(Offset(w * 0.05f, h * 0.65f), Offset(w * 0.95f, h * 0.78f))
+    )
+
+    pts.forEach { (p1, p2) ->
+        drawLine(
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    Color.Transparent,
+                    tint.copy(alpha = baseAlpha * 0.7f),
+                    Color(0xFF818CF8).copy(alpha = baseAlpha * 0.7f),
+                    Color.Transparent
+                ),
+                start = p1,
+                end = p2
+            ),
+            start = p1,
+            end = p2,
+            strokeWidth = 1.4f
+        )
+    }
+}
+

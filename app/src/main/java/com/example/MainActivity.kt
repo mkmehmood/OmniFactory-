@@ -15,10 +15,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
@@ -42,6 +44,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
@@ -55,7 +58,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -546,60 +551,99 @@ private fun LiquidGlassTopBar(
     onActionClick: () -> Unit
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val currentSkin = com.example.ui.theme.LocalAppThemeSkin.current
 
-    CenterAlignedTopAppBar(
-        navigationIcon = {
-            IconButton(
-                onClick = onOpenDrawer,
-                modifier = Modifier.testTag("open_sidebar_button")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = "Open Sidebar Navigation",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        },
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        CenterAlignedTopAppBar(
+            navigationIcon = {
+                IconButton(
+                    onClick = onOpenDrawer,
                     modifier = Modifier
-                        .size(28.dp)
+                        .padding(start = 4.dp)
+                        .size(38.dp)
                         .clip(CircleShape)
-                        .background(primaryColor.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
+                        .background(currentSkin.surfaceVariant.copy(alpha = 0.35f))
+                        .testTag("open_sidebar_button")
                 ) {
                     Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = primaryColor,
-                        modifier = Modifier.size(16.dp)
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Open Sidebar Navigation",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = title,
-                    fontWeight = FontWeight.SemiBold,
-                    fontFamily = DigitalMonospaceFont,
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        },
-        actions = {
-            IconButton(
-                onClick = onActionClick,
-                modifier = Modifier.testTag("topbar_action_button")
-            ) {
-                Icon(
-                    imageVector = actionIcon,
-                    contentDescription = actionDescription,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        },
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = Color.Transparent
+            },
+            title = {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (isDark) currentSkin.surfaceVariant.copy(alpha = 0.40f) else currentSkin.surface.copy(alpha = 0.75f),
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = 1.dp,
+                        brush = Brush.linearGradient(
+                            listOf(
+                                if (isDark) Color.White.copy(alpha = 0.40f) else Color.White.copy(alpha = 0.85f),
+                                primaryColor.copy(alpha = 0.35f),
+                                primaryColor.copy(alpha = 0.15f)
+                            )
+                        )
+                    ),
+                    shadowElevation = 4.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(primaryColor.copy(alpha = 0.22f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = primaryColor,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = title,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            },
+            actions = {
+                IconButton(
+                    onClick = onActionClick,
+                    modifier = Modifier
+                        .padding(end = 4.dp)
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(currentSkin.surfaceVariant.copy(alpha = 0.35f))
+                        .testTag("topbar_action_button")
+                ) {
+                    Icon(
+                        imageVector = actionIcon,
+                        contentDescription = actionDescription,
+                        tint = primaryColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            },
+            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                containerColor = Color.Transparent
+            )
         )
-    )
+    }
 }
