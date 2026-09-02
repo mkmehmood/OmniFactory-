@@ -87,7 +87,7 @@ object PkrNumberFormatter {
         decimals: Int = 2,
         stripTrailingZeros: Boolean = true
     ): String {
-        if (value.isNaN() || value.isInfinite()) return "0"
+        if (value.isNaN() || value.isInfinite()) return if (stripTrailingZeros) "0" else "0.00"
         val absVal = kotlin.math.abs(value)
         val absFormatted = formatPkrDouble(absVal, decimals = decimals, stripTrailingZeros = stripTrailingZeros)
         return when {

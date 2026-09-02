@@ -21,10 +21,10 @@ class PkrNumberFormatterTest {
 
     @Test
     fun testPkrAmountFormattingWithoutSymbols() {
-        assertEquals("10,70,500.00", PkrNumberFormatter.formatPkrAmount(1070500.0))
-        assertEquals("10,50,345.00", PkrNumberFormatter.formatPkrAmount(1050345.0))
-        assertEquals("0.00", PkrNumberFormatter.formatPkrAmount(0.0))
-        assertEquals("-5,000.50", PkrNumberFormatter.formatPkrAmount(-5000.50))
-        assertEquals("+10,000.00", PkrNumberFormatter.formatPkrAmount(10000.0, showSign = true))
+        assertEquals("10,70,500.00", PkrNumberFormatter.formatPkrAmount(1070500.0, stripTrailingZeros = false))
+        assertEquals("10,50,345.00", PkrNumberFormatter.formatPkrAmount(1050345.0, stripTrailingZeros = false))
+        assertEquals("0.00", PkrNumberFormatter.formatPkrAmount(0.0, stripTrailingZeros = false))
+        assertEquals("-5,000.50", PkrNumberFormatter.formatPkrAmount(-5000.50, stripTrailingZeros = false))
+        assertEquals("+10,000.00", PkrNumberFormatter.formatPkrAmount(10000.0, showSign = true, stripTrailingZeros = false))
     }
 }

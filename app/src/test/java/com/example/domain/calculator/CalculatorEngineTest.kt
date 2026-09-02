@@ -46,6 +46,16 @@ class CalculatorEngineTest {
 
     @Test
     fun testPercentCommercialCalculations() {
+        // 199 + 15% = 228.85 (199 + 29.85)
+        val r0 = CalculatorEngine.evaluate("199 + 15%")
+        assertTrue(r0 is CalculationResult.Success)
+        assertEquals("228.85", CalculatorEngine.formatNumber((r0 as CalculationResult.Success).value))
+
+        // 199 - 15% = 169.15
+        val r0b = CalculatorEngine.evaluate("199 - 15%")
+        assertTrue(r0b is CalculationResult.Success)
+        assertEquals("169.15", CalculatorEngine.formatNumber((r0b as CalculationResult.Success).value))
+
         // 100 + 10% = 110
         val r1 = CalculatorEngine.evaluate("100 + 10%")
         assertTrue(r1 is CalculationResult.Success)
@@ -55,6 +65,16 @@ class CalculatorEngineTest {
         val r2 = CalculatorEngine.evaluate("100 - 10%")
         assertTrue(r2 is CalculationResult.Success)
         assertEquals("90", CalculatorEngine.formatNumber((r2 as CalculationResult.Success).value))
+
+        // 500 × 15% = 75
+        val r3 = CalculatorEngine.evaluate("500 * 15%")
+        assertTrue(r3 is CalculationResult.Success)
+        assertEquals("75", CalculatorEngine.formatNumber((r3 as CalculationResult.Success).value))
+
+        // 50% alone = 0.5
+        val r4 = CalculatorEngine.evaluate("50%")
+        assertTrue(r4 is CalculationResult.Success)
+        assertEquals("0.5", CalculatorEngine.formatNumber((r4 as CalculationResult.Success).value))
     }
 
     @Test

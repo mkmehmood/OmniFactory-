@@ -106,8 +106,10 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
 
         val newExpr = if (isNew || current == "0") {
             digit
+        } else if (current.endsWith("%")) {
+            current + "×" + digit
         } else {
-            val lastToken = current.split('+', '−', '-', '×', '*', '÷', '/', '(', ')').lastOrNull() ?: ""
+            val lastToken = current.split('+', '−', '-', '×', '*', '÷', '/', '(', ')', '%').lastOrNull() ?: ""
             if (lastToken == "0") {
                 current.dropLast(1) + digit
             } else {
@@ -126,13 +128,18 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
             return
         }
 
+        if (current.endsWith("%")) {
+            updateExpression(current + "×0.", isEvaluated = false)
+            return
+        }
+
         val lastChar = current.last()
         if (lastChar in listOf('+', '−', '-', '×', '*', '÷', '/', '(')) {
             updateExpression(current + "0.", isEvaluated = false)
             return
         }
 
-        val lastToken = current.split('+', '−', '-', '×', '*', '÷', '/', '(', ')').lastOrNull() ?: ""
+        val lastToken = current.split('+', '−', '-', '×', '*', '÷', '/', '(', ')', '%').lastOrNull() ?: ""
         if (lastToken.contains('.')) {
             return
         }
@@ -149,13 +156,17 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
             return
         }
 
+        if (current.endsWith("%")) {
+            return
+        }
+
         val lastChar = current.last()
         if (lastChar in listOf('+', '−', '-', '×', '*', '÷', '/', '(')) {
             updateExpression(current + "0", isEvaluated = false)
             return
         }
 
-        val lastToken = current.split('+', '−', '-', '×', '*', '÷', '/', '(', ')').lastOrNull() ?: ""
+        val lastToken = current.split('+', '−', '-', '×', '*', '÷', '/', '(', ')', '%').lastOrNull() ?: ""
         if (lastToken == "0") {
             return
         }
@@ -194,19 +205,9 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
         if (current.isEmpty()) return
 
         val lastChar = current.last()
-        if (lastChar in listOf('+', '−', '×', '÷', '(')) return
+        if (lastChar in listOf('+', '−', '-', '×', '*', '÷', '/', '(', '%')) return
 
-        val tokens = current.split('+', '−', '×', '÷')
-        val lastToken = tokens.lastOrNull() ?: return
-        if (lastToken.isEmpty()) return
-
-        val evalToken = CalculatorEngine.evaluate(lastToken)
-        if (evalToken is CalculationResult.Success) {
-            val percentVal = evalToken.value.divide(BigDecimal("100"), 10, java.math.RoundingMode.HALF_UP).stripTrailingZeros()
-            val formatted = CalculatorEngine.formatNumber(percentVal)
-            val prefix = current.substring(0, current.length - lastToken.length)
-            updateExpression(prefix + formatted, isEvaluated = false)
-        }
+        updateExpression(current + "%", isEvaluated = false)
     }
 
     fun onNegate() {
@@ -283,7 +284,7 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun onPaste(text: String) {
-        val sanitized = text.filter { it.isDigit() || it in listOf('.', '+', '-', '*', '/', '(', ')', '×', '÷', '−') }
+        val sanitized = text.filter { it.isDigit() || it in listOf('.', '+', '-', '*', '/', '%', '(', ')', '×', '÷', '−') }
             .replace("*", "×")
             .replace("/", "÷")
             .replace("-", "−")
