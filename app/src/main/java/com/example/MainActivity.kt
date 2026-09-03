@@ -11,6 +11,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,24 +23,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -47,7 +47,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -76,11 +75,12 @@ import com.example.ui.LedgerViewModel
 import com.example.ui.MixtureViewModel
 import com.example.ui.SalesViewModel
 import com.example.ui.SettingsViewModel
-import com.example.ui.components.AppNavigationDrawer
 import com.example.ui.components.DrawerDestination
 import com.example.ui.components.OrnamentalThemeBackground
+import com.example.ui.components.SectionCapsuleDropdownMenu
 import com.example.ui.components.SimpleCalculatorDialog
 import com.example.ui.components.TapeHistorySheet
+import com.example.ui.components.TopSectionCapsule
 import com.example.ui.screens.BasicCalculatorScreen
 import com.example.ui.screens.BatchScalingScreen
 import com.example.ui.screens.ConverterScreen
@@ -115,16 +115,16 @@ class MainActivity : ComponentActivity() {
             val historyList by calculatorViewModel.historyList.collectAsStateWithLifecycle()
             val snackbarHostState = remember { SnackbarHostState() }
             val context = LocalContext.current
-            val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
             val scope = rememberCoroutineScope()
             var currentDestination by remember { mutableStateOf(DrawerDestination.CALCULATOR) }
+            var isSectionDropdownOpen by remember { mutableStateOf(false) }
             var showQuickCalculatorDialog by remember { mutableStateOf(false) }
 
-            BackHandler(enabled = drawerState.isOpen) {
-                scope.launch { drawerState.close() }
+            BackHandler(enabled = isSectionDropdownOpen) {
+                isSectionDropdownOpen = false
             }
 
-            BackHandler(enabled = !drawerState.isOpen && currentDestination != DrawerDestination.CALCULATOR) {
+            BackHandler(enabled = !isSectionDropdownOpen && currentDestination != DrawerDestination.CALCULATOR) {
                 currentDestination = DrawerDestination.CALCULATOR
             }
 
@@ -208,33 +208,10 @@ class MainActivity : ComponentActivity() {
                 animationIntensity = uiState.animationIntensity,
                 fontStyle = uiState.fontStyle
             ) {
-                ModalNavigationDrawer(
-                    drawerState = drawerState,
-                    drawerContent = {
-                        AppNavigationDrawer(
-                            currentDestination = currentDestination,
-                            activeConverterCategory = converterUiState.activeCategory,
-                            onSelectDestination = { destination ->
-                                scope.launch { drawerState.close() }
-                                currentDestination = destination
-                                calculatorViewModel.setTapeOpen(false)
-                            },
-                            onOpenConverterGrid = {
-                                converterViewModel.showCategoryGrid()
-                            },
-                            onSelectConverterCategory = { category ->
-                                converterViewModel.selectCategoryAndOpenDedicatedScreen(category)
-                            },
-                            onCloseDrawer = {
-                                scope.launch { drawerState.close() }
-                            }
-                        )
-                    }
+                OrnamentalThemeBackground(
+                    appThemeSkin = uiState.appThemeSkin,
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    OrnamentalThemeBackground(
-                        appThemeSkin = uiState.appThemeSkin,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
                         if (currentDestination == DrawerDestination.SETTINGS) {
                             SettingsScreen(
                                 currentAppThemeSkin = uiState.appThemeSkin,
@@ -340,10 +317,14 @@ class MainActivity : ComponentActivity() {
                                         icon = topBarIcon,
                                         actionIcon = actionIcon,
                                         actionDescription = actionDescription,
-                                        onOpenDrawer = {
-                                            scope.launch { drawerState.open() }
+                                        isDropdownOpen = isSectionDropdownOpen,
+                                        onToggleDropdown = {
+                                            isSectionDropdownOpen = !isSectionDropdownOpen
                                         },
-                                        onActionClick = onActionClick
+                                        onActionClick = onActionClick,
+                                        onBackToCalculator = if (currentDestination != DrawerDestination.CALCULATOR) {
+                                            { currentDestination = DrawerDestination.CALCULATOR }
+                                        } else null
                                     )
                                 },
                                 snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -497,6 +478,23 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 }
+
+                                // Interactive Section Dropdown Menu with capsules increasing in size down the app
+                                SectionCapsuleDropdownMenu(
+                                    isOpen = isSectionDropdownOpen,
+                                    currentDestination = currentDestination,
+                                    onSelectDestination = { destination ->
+                                        currentDestination = destination
+                                        isSectionDropdownOpen = false
+                                        calculatorViewModel.setTapeOpen(false)
+                                    },
+                                    onOpenConverterGrid = {
+                                        converterViewModel.showCategoryGrid()
+                                    },
+                                    onDismiss = {
+                                        isSectionDropdownOpen = false
+                                    }
+                                )
                             }
                         }
                     }
@@ -538,7 +536,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -547,11 +544,12 @@ private fun LiquidGlassTopBar(
     icon: ImageVector,
     actionIcon: ImageVector,
     actionDescription: String,
-    onOpenDrawer: () -> Unit,
-    onActionClick: () -> Unit
+    isDropdownOpen: Boolean,
+    onToggleDropdown: () -> Unit,
+    onActionClick: () -> Unit,
+    onBackToCalculator: (() -> Unit)? = null
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
-    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val currentSkin = com.example.ui.theme.LocalAppThemeSkin.current
 
     Box(
@@ -561,67 +559,50 @@ private fun LiquidGlassTopBar(
     ) {
         CenterAlignedTopAppBar(
             navigationIcon = {
-                IconButton(
-                    onClick = onOpenDrawer,
-                    modifier = Modifier
-                        .padding(start = 4.dp)
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(currentSkin.surfaceVariant.copy(alpha = 0.35f))
-                        .testTag("open_sidebar_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Menu,
-                        contentDescription = "Open Sidebar Navigation",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            },
-            title = {
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = if (isDark) currentSkin.surfaceVariant.copy(alpha = 0.40f) else currentSkin.surface.copy(alpha = 0.75f),
-                    border = androidx.compose.foundation.BorderStroke(
-                        width = 1.dp,
-                        brush = Brush.linearGradient(
-                            listOf(
-                                if (isDark) Color.White.copy(alpha = 0.40f) else Color.White.copy(alpha = 0.85f),
-                                primaryColor.copy(alpha = 0.35f),
-                                primaryColor.copy(alpha = 0.15f)
-                            )
-                        )
-                    ),
-                    shadowElevation = 4.dp
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                if (onBackToCalculator != null) {
+                    IconButton(
+                        onClick = onBackToCalculator,
+                        modifier = Modifier
+                            .padding(start = 4.dp)
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(currentSkin.surfaceVariant.copy(alpha = 0.35f))
+                            .testTag("back_to_calculator_button")
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(primaryColor.copy(alpha = 0.22f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                tint = primaryColor,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = title,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back to Calculator",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 4.dp)
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(primaryColor.copy(alpha = 0.18f))
+                            .clickable { onToggleDropdown() }
+                            .testTag("brand_icon_button"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.WaterDrop,
+                            contentDescription = "App Brand / Toggle Sections",
+                            tint = primaryColor,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
+            },
+            title = {
+                TopSectionCapsule(
+                    title = title,
+                    icon = icon,
+                    isExpanded = isDropdownOpen,
+                    onClick = onToggleDropdown
+                )
             },
             actions = {
                 IconButton(
