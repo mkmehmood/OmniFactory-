@@ -8,22 +8,43 @@ import android.view.View
 import com.example.ui.theme.SoundIntensity
 
 object SoundFeedbackHelper {
-    private var softToneGen: ToneGenerator? = null
-    private var standardToneGen: ToneGenerator? = null
-    private var loudToneGen: ToneGenerator? = null
-    private var extremeToneGen: ToneGenerator? = null
+    @Volatile
+    private var cachedAudioManager: AudioManager? = null
+    @Volatile
+    private var audioManagerInitialized = false
 
-    init {
-        initGenerators()
+    @Volatile
+    private var toneGen: ToneGenerator? = null
+
+    private fun getAudioManager(context: Context): AudioManager? {
+        if (!audioManagerInitialized) {
+            synchronized(this) {
+                if (!audioManagerInitialized) {
+                    cachedAudioManager = try {
+                        context.applicationContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+                    } catch (_: Throwable) {
+                        null
+                    }
+                    audioManagerInitialized = true
+                }
+            }
+        }
+        return cachedAudioManager
     }
 
-    private fun initGenerators() {
-        try {
-            softToneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 40)
-            standardToneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 70)
-            loudToneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 90)
-            extremeToneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
-        } catch (_: Throwable) {}
+    private fun getOrCreateToneGenerator(): ToneGenerator? {
+        if (toneGen == null) {
+            synchronized(this) {
+                if (toneGen == null) {
+                    toneGen = try {
+                        ToneGenerator(AudioManager.STREAM_MUSIC, 85)
+                    } catch (_: Throwable) {
+                        null
+                    }
+                }
+            }
+        }
+        return toneGen
     }
 
     fun playClickSound(
@@ -33,49 +54,28 @@ object SoundFeedbackHelper {
     ) {
         if (intensity == SoundIntensity.OFF) return
 
-        // 1. Play standard View sound effect
+        // 1. Play standard View sound effect (hardware-managed, zero allocation)
         try {
             view?.playSoundEffect(SoundEffectConstants.CLICK)
         } catch (_: Throwable) {}
 
         // 2. Play AudioManager FX key click with appropriate volume scale
         try {
-            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+            val audioManager = getAudioManager(context)
             val fxVolume = when (intensity) {
                 SoundIntensity.OFF -> 0.0f
-                SoundIntensity.SOFT -> 0.4f
-                SoundIntensity.STANDARD -> 0.75f
+                SoundIntensity.SOFT -> 0.35f
+                SoundIntensity.STANDARD -> 0.70f
                 SoundIntensity.LOUD -> 0.95f
                 SoundIntensity.EXTREME_BOOST -> 1.0f
             }
             audioManager?.playSoundEffect(AudioManager.FX_KEY_CLICK, fxVolume)
         } catch (_: Throwable) {}
 
-        // 3. ToneGenerator for guaranteed clear audible playback
-        try {
-            when (intensity) {
-                SoundIntensity.OFF -> {}
-                SoundIntensity.SOFT -> {
-                    if (softToneGen == null) softToneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 40)
-                    softToneGen?.startTone(ToneGenerator.TONE_PROP_BEEP, 15)
-                }
-                SoundIntensity.STANDARD -> {
-                    if (standardToneGen == null) standardToneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 70)
-                    standardToneGen?.startTone(ToneGenerator.TONE_PROP_BEEP, 20)
-                }
-                SoundIntensity.LOUD -> {
-                    if (loudToneGen == null) loudToneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 90)
-                    loudToneGen?.startTone(ToneGenerator.TONE_PROP_BEEP2, 28)
-                }
-                SoundIntensity.EXTREME_BOOST -> {
-                    // Extreme acoustic burst that rings clear, loud and uninhibited
-                    if (extremeToneGen == null) extremeToneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
-                    extremeToneGen?.startTone(ToneGenerator.TONE_CDMA_KEYPAD_VOLUME_KEY_LITE, 35)
-                }
-            }
-        } catch (_: Throwable) {
+        // 3. Optional boost tone only for EXTREME_BOOST to prevent audio buffer contention
+        if (intensity == SoundIntensity.EXTREME_BOOST) {
             try {
-                initGenerators()
+                getOrCreateToneGenerator()?.startTone(ToneGenerator.TONE_PROP_BEEP, 18)
             } catch (_: Throwable) {}
         }
     }

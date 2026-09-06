@@ -66,8 +66,48 @@ enum class AppThemeSkin(
     val previewColors: List<Color>,
     val badgeLabel: String,
     val ornamentalPattern: OrnamentalPatternStyle = OrnamentalPatternStyle.NONE,
-    val ornamentalTintColor: Color = Color(0x33FFD700)
+    val ornamentalTintColor: Color = Color.Transparent
 ) {
+    // ==========================================
+    // PHOTO THEME: PURE LIGHT & DARK CHARCOAL
+    // ==========================================
+    DARK_CHARCOAL(
+        displayName = "Dark Charcoal",
+        categoryTag = "Photo Theme",
+        description = "Pure black background with dark charcoal number keys and vibrant orange operators",
+        isDark = true,
+        background = Color(0xFF000000),
+        surface = Color(0xFF1C1C1E),
+        surfaceVariant = Color(0xFF333333),
+        surfacePressed = Color(0xFF4A4A4C),
+        outline = Color(0x33FFFFFF),
+        textPrimary = Color(0xFFFFFFFF),
+        textSecondary = Color(0xFFA5A5A5),
+        defaultAccent = Color(0xFFFF9F0A),
+        previewColors = listOf(Color(0xFF000000), Color(0xFF333333), Color(0xFFFF9F0A)),
+        badgeLabel = "PHOTO THEME",
+        ornamentalPattern = OrnamentalPatternStyle.NONE,
+        ornamentalTintColor = Color.Transparent
+    ),
+    PURE_LIGHT(
+        displayName = "Pure Light",
+        categoryTag = "Photo Theme",
+        description = "Pure white background with dark charcoal number keys and vibrant orange operators",
+        isDark = false,
+        background = Color(0xFFFFFFFF),
+        surface = Color(0xFFFFFFFF),
+        surfaceVariant = Color(0xFF333333),
+        surfacePressed = Color(0xFF4A4A4C),
+        outline = Color(0x1F000000),
+        textPrimary = Color(0xFF000000),
+        textSecondary = Color(0xFF666666),
+        defaultAccent = Color(0xFFFF9F0A),
+        previewColors = listOf(Color(0xFFFFFFFF), Color(0xFF333333), Color(0xFFFF9F0A)),
+        badgeLabel = "PHOTO THEME",
+        ornamentalPattern = OrnamentalPatternStyle.NONE,
+        ornamentalTintColor = Color.Transparent
+    ),
+
     // ==========================================
     // 0. SPATIAL COMPUTING & VISION OS MASTERPIECES
     // ==========================================
@@ -737,29 +777,22 @@ fun MyApplicationTheme(
     themeMode: ThemeMode = ThemeMode.DARK,
     shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     componentSizeStyle: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
-    animationIntensity: AnimationIntensity = AnimationIntensity.BALANCED,
-    fontStyle: AppFontStyle = AppFontStyle.SYSTEM,
+    animationIntensity: AnimationIntensity = AnimationIntensity.OFF,
+    fontStyle: AppFontStyle = AppFontStyle.BEGONIA,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val isSystemDark = isSystemInDarkTheme()
     val isDark = when (themeMode) {
-        ThemeMode.SYSTEM -> if (appThemeSkin == AppThemeSkin.DARK_OBSIDIAN) isSystemDark else appThemeSkin.isDark
+        ThemeMode.SYSTEM -> isSystemDark
         ThemeMode.DARK -> true
         ThemeMode.LIGHT -> false
     }
 
     val primary = appThemeSkin.defaultAccent
-    val onPrimary = if (primary.luminance() > 0.5f) Color(0xFF0F172A) else Color(0xFFFFFFFF)
+    val onPrimary = if (primary.luminance() > 0.5f) Color(0xFF0F172A) else Color.White
 
     val skinColorScheme = if (isDark) {
-        val baseBackground = if (appThemeSkin.isDark) appThemeSkin.background else PureDarkBackground
-        val baseSurface = if (appThemeSkin.isDark) appThemeSkin.surface else PureDarkSurface
-        val baseSurfaceVariant = if (appThemeSkin.isDark) appThemeSkin.surfaceVariant else PureDarkGlassSurface
-        val baseOutline = if (appThemeSkin.isDark) appThemeSkin.outline else PureDarkGlassBorder
-        val baseTextPrimary = if (appThemeSkin.isDark) appThemeSkin.textPrimary else PureDarkTextPrimary
-        val baseTextSecondary = if (appThemeSkin.isDark) appThemeSkin.textSecondary else PureDarkTextSecondary
-
         darkColorScheme(
             primary = primary,
             onPrimary = onPrimary,
@@ -767,22 +800,15 @@ fun MyApplicationTheme(
             onPrimaryContainer = primary,
             secondary = primary.copy(alpha = 0.85f),
             onSecondary = onPrimary,
-            background = baseBackground,
-            onBackground = baseTextPrimary,
-            surface = baseSurface,
-            onSurface = baseTextPrimary,
-            surfaceVariant = baseSurfaceVariant,
-            onSurfaceVariant = baseTextSecondary,
-            outline = baseOutline
+            background = appThemeSkin.background,
+            onBackground = appThemeSkin.textPrimary,
+            surface = appThemeSkin.surface,
+            onSurface = appThemeSkin.textPrimary,
+            surfaceVariant = appThemeSkin.surfaceVariant,
+            onSurfaceVariant = appThemeSkin.textSecondary,
+            outline = appThemeSkin.outline
         )
     } else {
-        val baseBackground = if (!appThemeSkin.isDark) appThemeSkin.background else PureLightBackground
-        val baseSurface = if (!appThemeSkin.isDark) appThemeSkin.surface else PureLightSurface
-        val baseSurfaceVariant = if (!appThemeSkin.isDark) appThemeSkin.surfaceVariant else PureLightGlassSurface
-        val baseOutline = if (!appThemeSkin.isDark) appThemeSkin.outline else PureLightGlassBorder
-        val baseTextPrimary = if (!appThemeSkin.isDark) appThemeSkin.textPrimary else PureLightTextPrimary
-        val baseTextSecondary = if (!appThemeSkin.isDark) appThemeSkin.textSecondary else PureLightTextSecondary
-
         lightColorScheme(
             primary = primary,
             onPrimary = onPrimary,
@@ -790,13 +816,13 @@ fun MyApplicationTheme(
             onPrimaryContainer = primary,
             secondary = primary.copy(alpha = 0.85f),
             onSecondary = onPrimary,
-            background = baseBackground,
-            onBackground = baseTextPrimary,
-            surface = baseSurface,
-            onSurface = baseTextPrimary,
-            surfaceVariant = baseSurfaceVariant,
-            onSurfaceVariant = baseTextSecondary,
-            outline = baseOutline
+            background = if (appThemeSkin.isDark) PureLightBackground else appThemeSkin.background,
+            onBackground = if (appThemeSkin.isDark) PureLightTextPrimary else appThemeSkin.textPrimary,
+            surface = if (appThemeSkin.isDark) PureLightSurface else appThemeSkin.surface,
+            onSurface = if (appThemeSkin.isDark) PureLightTextPrimary else appThemeSkin.textPrimary,
+            surfaceVariant = if (appThemeSkin.isDark) PureLightGlassSurface else appThemeSkin.surfaceVariant,
+            onSurfaceVariant = if (appThemeSkin.isDark) PureLightTextSecondary else appThemeSkin.textSecondary,
+            outline = if (appThemeSkin.isDark) PureLightGlassBorder else appThemeSkin.outline
         )
     }
 

@@ -11,6 +11,34 @@ import com.example.ui.theme.HapticIntensity
 
 object HapticFeedbackHelper {
 
+    @Volatile
+    private var cachedVibrator: Vibrator? = null
+    @Volatile
+    private var vibratorInitialized = false
+
+    private fun getVibrator(context: Context): Vibrator? {
+        if (!vibratorInitialized) {
+            synchronized(this) {
+                if (!vibratorInitialized) {
+                    cachedVibrator = try {
+                        val appCtx = context.applicationContext
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            val vibratorManager = appCtx.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                            vibratorManager?.defaultVibrator
+                        } else {
+                            @Suppress("DEPRECATION")
+                            appCtx.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                        }
+                    } catch (_: Throwable) {
+                        null
+                    }
+                    vibratorInitialized = true
+                }
+            }
+        }
+        return cachedVibrator
+    }
+
     fun performKeypadTap(
         context: Context,
         view: View?,
@@ -45,13 +73,7 @@ object HapticFeedbackHelper {
 
         // 2. Direct hardware vibrator activation for exact tactile sensation matching intensity
         try {
-            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
-                vibratorManager?.defaultVibrator
-            } else {
-                @Suppress("DEPRECATION")
-                context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-            }
+            val vibrator = getVibrator(context)
 
             if (vibrator != null && vibrator.hasVibrator()) {
                 when (intensity) {

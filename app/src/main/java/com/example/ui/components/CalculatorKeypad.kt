@@ -10,6 +10,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -131,30 +132,10 @@ fun CalculatorKeypad(
     val padH = componentSizeStyle.keypadPaddingH
     val padV = componentSizeStyle.keypadPaddingV
 
-    // Frosted glass keypad container
+    // Clean keypad container
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
-            .background(
-                if (currentSkin == AppThemeSkin.OLED_TRUE_BLACK) {
-                    Color(0xFF000000).copy(alpha = 0.7f)
-                } else if (isDark) {
-                    currentSkin.surface.copy(alpha = 0.5f)
-                } else {
-                    currentSkin.surfaceVariant.copy(alpha = 0.65f)
-                }
-            )
-            .border(
-                width = 1.dp,
-                brush = Brush.verticalGradient(
-                    listOf(
-                        currentSkin.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
-                        Color.Transparent
-                    )
-                ),
-                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
-            )
             .padding(horizontal = padH, vertical = padV)
     ) {
         Column(
@@ -422,49 +403,19 @@ private fun LiquidGlassKey(
     type: KeyType,
     onClick: () -> Unit,
     testTag: String,
-    animationIntensity: AnimationIntensity,
+    animationIntensity: AnimationIntensity = AnimationIntensity.OFF,
     componentSizeStyle: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
     shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     modifier: Modifier = Modifier
 ) {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val currentSkin = LocalAppThemeSkin.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scope = rememberCoroutineScope()
-    val bounceAnim = remember { Animatable(1f) }
-
-    val hasAnim = animationIntensity != AnimationIntensity.OFF
-    val targetScale = if (isPressed && hasAnim) animationIntensity.scaleFactor else 1f
-    val targetTransY = if (isPressed && hasAnim) animationIntensity.translationFactor else 0f
-
-    // Fluid responsive press scale & translation physics
-    val pressScale by animateFloatAsState(
-        targetValue = targetScale,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = when (animationIntensity) {
-                AnimationIntensity.EXTREME_BOUNCE -> Spring.StiffnessLow
-                AnimationIntensity.HIGH_SPRING -> Spring.StiffnessMedium
-                else -> Spring.StiffnessMedium
-            }
-        ),
-        label = "glass_press_scale"
-    )
-
-    val translationY by animateFloatAsState(
-        targetValue = targetTransY,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
-        ),
-        label = "glass_press_translation"
-    )
-
     val primaryColor = MaterialTheme.colorScheme.primary
     val onPrimaryColor = MaterialTheme.colorScheme.onPrimary
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
 
-    val (glassBg, contentColor, glassBorder) = when (type) {
+    val (keyBg, contentColor, borderColor) = when (type) {
         KeyType.NUMBER -> {
             val bg = if (isPressed) currentSkin.surfacePressed else currentSkin.surfaceVariant
             val textCol = currentSkin.textPrimary
@@ -506,81 +457,25 @@ private fun LiquidGlassKey(
     }
 
     val shape = shapeStructureStyle.toButtonShape()
-    val borderWidth = if (shapeStructureStyle == ShapeStructureStyle.LINE_BORDER) 1.5.dp else 1.dp
     val fontScale = componentSizeStyle.keyFontScale
-    val keyElevation = if (isPressed) 1.dp else 5.dp
 
     Box(
         modifier = modifier
-            .graphicsLayer {
-                val combinedScale = pressScale * bounceAnim.value
-                scaleX = combinedScale
-                scaleY = combinedScale
-                this.translationY = translationY.dp.toPx()
-                this.shadowElevation = keyElevation.toPx()
-                this.shape = shape
-                this.clip = false
-            }
             .aspectRatio(1.15f)
             .clip(shape)
-            .background(glassBg)
-            .border(
-                width = borderWidth,
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        if (isDark) Color.White.copy(alpha = if (isPressed) 0.55f else 0.35f) else Color.White.copy(alpha = 0.85f),
-                        glassBorder,
-                        glassBorder.copy(alpha = 0.4f)
-                    ),
-                    start = androidx.compose.ui.geometry.Offset(0f, 0f),
-                    end = androidx.compose.ui.geometry.Offset(100f, 100f)
-                ),
-                shape = shape
-            )
+            .background(keyBg)
+            .border(BorderStroke(1.dp, borderColor), shape)
             .clickable(
                 interactionSource = interactionSource,
                 indication = ripple(
                     bounded = true,
-                    color = if (type == KeyType.EQUALS) Color.White else primaryColor
+                    color = primaryColor.copy(alpha = 0.35f)
                 ),
-                onClick = {
-                    if (hasAnim) {
-                        scope.launch {
-                            val snapVal = if (animationIntensity == AnimationIntensity.EXTREME_BOUNCE) 0.70f else 0.88f
-                            bounceAnim.snapTo(snapVal)
-                            bounceAnim.animateTo(
-                                targetValue = 1f,
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                    stiffness = Spring.StiffnessMedium
-                                )
-                            )
-                        }
-                    }
-                    onClick()
-                }
+                onClick = onClick
             )
             .testTag(testTag),
         contentAlignment = Alignment.Center
     ) {
-        // Specular 3D light sheen at the top of the key
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth(0.85f)
-                .height(1.5.dp)
-                .clip(shape)
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            Color.Transparent,
-                            if (isDark) Color.White.copy(alpha = 0.40f) else Color.White.copy(alpha = 0.75f),
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
-
         if (icon != null) {
             Icon(
                 imageVector = icon,
@@ -600,7 +495,7 @@ private fun LiquidGlassKey(
                 text = text,
                 color = contentColor,
                 fontSize = (baseFontSize * fontScale).sp,
-                fontWeight = if (type == KeyType.EQUALS || type == KeyType.OPERATOR || type == KeyType.DOUBLE_ZERO) FontWeight.Bold else FontWeight.Medium,
+                fontWeight = if (type == KeyType.EQUALS || type == KeyType.OPERATOR) FontWeight.SemiBold else FontWeight.Medium,
                 fontFamily = DigitalMonospaceFont,
                 fontStyle = LocalAppFontStyle.current.defaultFontStyle
             )

@@ -2,12 +2,8 @@ package com.example.ui.components
 
 import android.view.View
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -238,18 +234,6 @@ fun TopSectionCapsule(
         label = "ChevronRotation"
     )
 
-    // Breathing pulse for the live status LED indicator
-    val infiniteTransition = rememberInfiniteTransition(label = "TopCapsuleBeacon")
-    val beaconPulse by infiniteTransition.animateFloat(
-        initialValue = 0.45f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "BeaconPulse"
-    )
-
     val specularBorderBrush = Brush.linearGradient(
         colors = if (isExpanded) {
             listOf(
@@ -362,7 +346,7 @@ fun TopSectionCapsule(
                         modifier = Modifier
                             .size(5.dp)
                             .clip(CircleShape)
-                            .background(primaryColor.copy(alpha = beaconPulse))
+                            .background(primaryColor)
                     )
                     Spacer(modifier = Modifier.width(3.dp))
                     Text(
@@ -607,16 +591,6 @@ private fun SpatialNavigationHubHeader(
     onDismiss: () -> Unit
 ) {
     val currentSkin = LocalAppThemeSkin.current
-    val infiniteTransition = rememberInfiniteTransition(label = "HubHeaderBeacon")
-    val beaconPulse by infiniteTransition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "HeaderBeaconPulse"
-    )
 
     Row(
         modifier = Modifier
@@ -635,12 +609,12 @@ private fun SpatialNavigationHubHeader(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Pulsing Emerald/Cyan Beacon Dot
+                // Glowing Emerald/Cyan Beacon Dot
                 Box(
                     modifier = Modifier
                         .size(7.dp)
                         .clip(CircleShape)
-                        .background(primaryColor.copy(alpha = beaconPulse))
+                        .background(primaryColor)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(

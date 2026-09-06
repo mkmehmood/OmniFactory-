@@ -12,6 +12,7 @@ import androidx.activity.viewModels
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,17 +30,19 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -47,6 +50,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -75,12 +79,11 @@ import com.example.ui.LedgerViewModel
 import com.example.ui.MixtureViewModel
 import com.example.ui.SalesViewModel
 import com.example.ui.SettingsViewModel
+import com.example.ui.components.AppNavigationDrawer
 import com.example.ui.components.DrawerDestination
 import com.example.ui.components.OrnamentalThemeBackground
-import com.example.ui.components.SectionCapsuleDropdownMenu
 import com.example.ui.components.SimpleCalculatorDialog
 import com.example.ui.components.TapeHistorySheet
-import com.example.ui.components.TopSectionCapsule
 import com.example.ui.screens.BasicCalculatorScreen
 import com.example.ui.screens.BatchScalingScreen
 import com.example.ui.screens.ConverterScreen
@@ -108,23 +111,18 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val uiState by calculatorViewModel.uiState.collectAsStateWithLifecycle()
-            val batchUiState by batchScalingViewModel.uiState.collectAsStateWithLifecycle()
-            val salesUiState by salesViewModel.uiState.collectAsStateWithLifecycle()
-            val converterUiState by converterViewModel.uiState.collectAsStateWithLifecycle()
-            val savedSalesTransactions by salesViewModel.savedTransactions.collectAsStateWithLifecycle()
-            val historyList by calculatorViewModel.historyList.collectAsStateWithLifecycle()
             val snackbarHostState = remember { SnackbarHostState() }
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
             var currentDestination by remember { mutableStateOf(DrawerDestination.CALCULATOR) }
-            var isSectionDropdownOpen by remember { mutableStateOf(false) }
+            val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
             var showQuickCalculatorDialog by remember { mutableStateOf(false) }
 
-            BackHandler(enabled = isSectionDropdownOpen) {
-                isSectionDropdownOpen = false
+            BackHandler(enabled = drawerState.isOpen) {
+                scope.launch { drawerState.close() }
             }
 
-            BackHandler(enabled = !isSectionDropdownOpen && currentDestination != DrawerDestination.CALCULATOR) {
+            BackHandler(enabled = !drawerState.isOpen && currentDestination != DrawerDestination.CALCULATOR) {
                 currentDestination = DrawerDestination.CALCULATOR
             }
 
@@ -208,10 +206,35 @@ class MainActivity : ComponentActivity() {
                 animationIntensity = uiState.animationIntensity,
                 fontStyle = uiState.fontStyle
             ) {
-                OrnamentalThemeBackground(
-                    appThemeSkin = uiState.appThemeSkin,
-                    modifier = Modifier.fillMaxSize()
+                ModalNavigationDrawer(
+                    drawerState = drawerState,
+                    drawerContent = {
+                        AppNavigationDrawer(
+                            currentDestination = currentDestination,
+                            activeConverterCategory = null,
+                            onSelectDestination = { destination ->
+                                currentDestination = destination
+                                scope.launch { drawerState.close() }
+                                calculatorViewModel.setTapeOpen(false)
+                            },
+                            onOpenConverterGrid = {
+                                converterViewModel.showCategoryGrid()
+                            },
+                            onSelectConverterCategory = { category ->
+                                converterViewModel.setCategory(category)
+                                currentDestination = DrawerDestination.CONVERTER
+                                scope.launch { drawerState.close() }
+                            },
+                            onCloseDrawer = {
+                                scope.launch { drawerState.close() }
+                            }
+                        )
+                    }
                 ) {
+                    OrnamentalThemeBackground(
+                        appThemeSkin = uiState.appThemeSkin,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
                         if (currentDestination == DrawerDestination.SETTINGS) {
                             SettingsScreen(
                                 currentAppThemeSkin = uiState.appThemeSkin,
@@ -250,10 +273,7 @@ class MainActivity : ComponentActivity() {
                                         DrawerDestination.SALES -> "Sales Reconciliation"
                                         DrawerDestination.MIXTURE_CALCULATOR -> "Mixture Calculator"
                                         DrawerDestination.BATCH_SCALING -> "Batch Scaler"
-                                        DrawerDestination.CONVERTER -> {
-                                            if (converterUiState.isCategoryGridActive) "Units Converter"
-                                            else "Units: ${converterUiState.activeCategory.shortName}"
-                                        }
+                                        DrawerDestination.CONVERTER -> "Units Converter"
                                         else -> "Calculator"
                                     }
                                     val topBarIcon = when (currentDestination) {
@@ -263,10 +283,7 @@ class MainActivity : ComponentActivity() {
                                         DrawerDestination.SALES -> Icons.Default.ReceiptLong
                                         DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Science
                                         DrawerDestination.BATCH_SCALING -> Icons.Default.Scale
-                                        DrawerDestination.CONVERTER -> {
-                                            if (converterUiState.isCategoryGridActive) Icons.Default.Category
-                                            else converterUiState.activeCategory.icon
-                                        }
+                                        DrawerDestination.CONVERTER -> Icons.Default.Category
                                         else -> Icons.Default.Calculate
                                     }
                                     val actionIcon = when (currentDestination) {
@@ -317,9 +334,8 @@ class MainActivity : ComponentActivity() {
                                         icon = topBarIcon,
                                         actionIcon = actionIcon,
                                         actionDescription = actionDescription,
-                                        isDropdownOpen = isSectionDropdownOpen,
-                                        onToggleDropdown = {
-                                            isSectionDropdownOpen = !isSectionDropdownOpen
+                                        onOpenSidebar = {
+                                            scope.launch { drawerState.open() }
                                         },
                                         onActionClick = onActionClick,
                                         onBackToCalculator = if (currentDestination != DrawerDestination.CALCULATOR) {
@@ -382,6 +398,8 @@ class MainActivity : ComponentActivity() {
                                             )
                                         }
                                         DrawerDestination.SALES -> {
+                                            val salesUiState by salesViewModel.uiState.collectAsStateWithLifecycle()
+                                            val savedSalesTransactions by salesViewModel.savedTransactions.collectAsStateWithLifecycle()
                                             SalesScreen(
                                                 uiState = salesUiState,
                                                 savedTransactions = savedSalesTransactions,
@@ -415,6 +433,7 @@ class MainActivity : ComponentActivity() {
                                             )
                                         }
                                         DrawerDestination.BATCH_SCALING -> {
+                                            val batchUiState by batchScalingViewModel.uiState.collectAsStateWithLifecycle()
                                             BatchScalingScreen(
                                                 uiState = batchUiState,
                                                 onAddComponent = { batchScalingViewModel.addComponent() },
@@ -437,6 +456,7 @@ class MainActivity : ComponentActivity() {
                                             )
                                         }
                                         DrawerDestination.CONVERTER -> {
+                                            val converterUiState by converterViewModel.uiState.collectAsStateWithLifecycle()
                                             ConverterScreen(
                                                 viewModel = converterViewModel,
                                                 uiState = converterUiState,
@@ -478,23 +498,6 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 }
-
-                                // Interactive Section Dropdown Menu with capsules increasing in size down the app
-                                SectionCapsuleDropdownMenu(
-                                    isOpen = isSectionDropdownOpen,
-                                    currentDestination = currentDestination,
-                                    onSelectDestination = { destination ->
-                                        currentDestination = destination
-                                        isSectionDropdownOpen = false
-                                        calculatorViewModel.setTapeOpen(false)
-                                    },
-                                    onOpenConverterGrid = {
-                                        converterViewModel.showCategoryGrid()
-                                    },
-                                    onDismiss = {
-                                        isSectionDropdownOpen = false
-                                    }
-                                )
                             }
                         }
                     }
@@ -502,6 +505,7 @@ class MainActivity : ComponentActivity() {
 
                     // Clean, Unlimited and Persistent History Sheet with All Time, Today, Weekly, Monthly, Yearly separation
                     if (uiState.isTapeOpen) {
+                        val historyList by calculatorViewModel.historyList.collectAsStateWithLifecycle()
                         TapeHistorySheet(
                             historyList = historyList,
                             selectedTimeSplit = uiState.historyTimeSplit,
@@ -536,6 +540,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -544,8 +549,7 @@ private fun LiquidGlassTopBar(
     icon: ImageVector,
     actionIcon: ImageVector,
     actionDescription: String,
-    isDropdownOpen: Boolean,
-    onToggleDropdown: () -> Unit,
+    onOpenSidebar: () -> Unit,
     onActionClick: () -> Unit,
     onBackToCalculator: (() -> Unit)? = null
 ) {
@@ -577,32 +581,56 @@ private fun LiquidGlassTopBar(
                         )
                     }
                 } else {
-                    Box(
+                    IconButton(
+                        onClick = onOpenSidebar,
                         modifier = Modifier
                             .padding(start = 4.dp)
                             .size(38.dp)
                             .clip(CircleShape)
                             .background(primaryColor.copy(alpha = 0.18f))
-                            .clickable { onToggleDropdown() }
-                            .testTag("brand_icon_button"),
-                        contentAlignment = Alignment.Center
+                            .testTag("sidebar_menu_button")
                     ) {
                         Icon(
-                            imageVector = Icons.Default.WaterDrop,
-                            contentDescription = "App Brand / Toggle Sections",
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = "Open Sidebar Navigation",
                             tint = primaryColor,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 }
             },
             title = {
-                TopSectionCapsule(
-                    title = title,
-                    icon = icon,
-                    isExpanded = isDropdownOpen,
-                    onClick = onToggleDropdown
-                )
+                Surface(
+                    onClick = onOpenSidebar,
+                    shape = RoundedCornerShape(20.dp),
+                    color = currentSkin.surfaceVariant.copy(alpha = 0.45f),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        currentSkin.outline.copy(alpha = 0.25f)
+                    ),
+                    modifier = Modifier.testTag("topbar_title_button")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = primaryColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
             },
             actions = {
                 IconButton(

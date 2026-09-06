@@ -64,3 +64,19 @@ val PureLightGlassBorder = Color(0x4D000000) // delicate border
 val PureLightTextPrimary = Color(0xFF0F172A)
 val PureLightTextSecondary = Color(0xFF475569)
 val PureLightTextMuted = Color(0xFF64748B)
+
+// Photo Theme: Pure Light & Dark Charcoal Palette (from uploaded design)
+val PhotoOrangeOperator = Color(0xFFFF9F0A)
+val PhotoOrangeOperatorPressed = Color(0xFFE08900)
+
+val PhotoCharcoalNumber = Color(0xFF333333)
+val PhotoCharcoalNumberPressed = Color(0xFF4A4A4C)
+
+val PhotoActionGrey = Color(0xFFA5A5A5)
+val PhotoActionGreyPressed = Color(0xFFC0C0C0)
+
+val PhotoDarkBackground = Color(0xFF000000)
+val PhotoDarkSurface = Color(0xFF1C1C1E)
+
+val PhotoLightBackground = Color(0xFFFFFFFF)
+val PhotoLightSurface = Color(0xFFF2F2F7)

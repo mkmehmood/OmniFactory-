@@ -206,10 +206,8 @@ fun SettingsScreen(
         }
     }
 
-    var themeSkinDropdownExpanded by remember { mutableStateOf(false) }
     var shapeDropdownExpanded by remember { mutableStateOf(false) }
     var sizeDropdownExpanded by remember { mutableStateOf(false) }
-    var fontDropdownExpanded by remember { mutableStateOf(false) }
     var animDropdownExpanded by remember { mutableStateOf(false) }
     var hapticDropdownExpanded by remember { mutableStateOf(false) }
     var soundDropdownExpanded by remember { mutableStateOf(false) }
@@ -271,9 +269,9 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // ==========================================
-            // SECTION 1: App Visual Theme & Skin Dropdown
+            // SECTION 1: Photo Theme Mode (Pure Light & Dark Charcoal)
             // ==========================================
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -281,12 +279,12 @@ fun SettingsScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "App Visual Theme & Skin",
+                            text = "Photo Theme Appearance",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = "Choose overall skin & design aesthetic (Gift Style, Color Design, Dark, Light, Cyber, etc.)",
+                            text = "Pure Light & Dark Charcoal from the design mockup",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -297,7 +295,7 @@ fun SettingsScreen(
                         border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
                     ) {
                         Text(
-                            text = currentAppThemeSkin.categoryTag,
+                            text = "PHOTO THEME",
                             fontSize = 9.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = primaryColor,
@@ -307,103 +305,37 @@ fun SettingsScreen(
                     }
                 }
 
-                Column(modifier = Modifier.fillMaxWidth().testTag("app_theme_skin_dropdown_box")) {
-                    GlassDropdownTrigger(
-                        isExpanded = themeSkinDropdownExpanded,
-                        onClick = { themeSkinDropdownExpanded = !themeSkinDropdownExpanded },
-                        testTag = "app_theme_skin_dropdown_trigger",
-                        leadingContent = {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                currentAppThemeSkin.previewColors.take(3).forEach { color ->
-                                    Box(
-                                        modifier = Modifier
-                                            .size(14.dp)
-                                            .clip(CircleShape)
-                                            .background(color)
-                                            .border(0.5.dp, Color.White.copy(alpha = 0.6f), CircleShape)
-                                    )
-                                }
-                            }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    LiquidThemeCard(
+                        title = "Dark Charcoal",
+                        icon = Icons.Default.DarkMode,
+                        isSelected = currentThemeMode == ThemeMode.DARK,
+                        onClick = {
+                            onThemeModeChange(ThemeMode.DARK)
+                            onAppThemeSkinChange(AppThemeSkin.DARK_CHARCOAL)
                         },
-                        title = currentAppThemeSkin.displayName,
-                        subtitle = "${currentAppThemeSkin.categoryTag} • ${currentAppThemeSkin.description}"
+                        modifier = Modifier.weight(1f)
                     )
-
-                    GlassExpandablePanel(
-                        expanded = themeSkinDropdownExpanded,
-                        maxHeight = 440.dp,
-                        modifier = Modifier.testTag("app_theme_skin_dropdown_menu")
-                    ) {
-                        AppThemeSkin.entries.forEach { skin ->
-                            val isSelected = currentAppThemeSkin == skin
-
-                            GlassDropdownItem(
-                                onClick = {
-                                    onAppThemeSkinChange(skin)
-                                    themeSkinDropdownExpanded = false
-                                },
-                                modifier = Modifier.testTag("skin_item_${skin.name.lowercase()}")
-                            ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    skin.previewColors.take(3).forEach { color ->
-                                        Box(
-                                            modifier = Modifier
-                                                .size(13.dp)
-                                                .clip(CircleShape)
-                                                .background(color)
-                                                .border(0.5.dp, Color.White.copy(alpha = 0.6f), CircleShape)
-                                        )
-                                    }
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Text(
-                                            text = skin.displayName,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                                            fontSize = 13.5.sp,
-                                            color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Surface(
-                                            shape = RoundedCornerShape(6.dp),
-                                            color = if (isSelected) primaryColor.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
-                                        ) {
-                                            Text(
-                                                text = skin.categoryTag,
-                                                fontSize = 8.5.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
-                                                letterSpacing = 0.5.sp
-                                            )
-                                        }
-                                    }
-                                    Text(
-                                        text = skin.description,
-                                        fontSize = 10.5.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                if (isSelected) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "Selected",
-                                        tint = primaryColor,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    LiquidThemeCard(
+                        title = "Pure Light",
+                        icon = Icons.Default.LightMode,
+                        isSelected = currentThemeMode == ThemeMode.LIGHT,
+                        onClick = {
+                            onThemeModeChange(ThemeMode.LIGHT)
+                            onAppThemeSkinChange(AppThemeSkin.PURE_LIGHT)
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    LiquidThemeCard(
+                        title = "System",
+                        icon = Icons.Default.Smartphone,
+                        isSelected = currentThemeMode == ThemeMode.SYSTEM,
+                        onClick = { onThemeModeChange(ThemeMode.SYSTEM) },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
 
@@ -579,7 +511,7 @@ fun SettingsScreen(
             HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
 
             // ==========================================
-            // SECTION 5: App & System Font Typography Dropdown
+            // SECTION 4: Custom Begonia Font (Applied Everywhere)
             // ==========================================
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
@@ -589,12 +521,12 @@ fun SettingsScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "App & System Font Typography",
+                            text = "App Typography",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = "Modern calligraphy, cursive, digital LED, and elegant fonts applied to all text & numbers",
+                            text = "Begonia custom font applied across all calculations, keypad & stations",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -605,7 +537,7 @@ fun SettingsScreen(
                         border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
                     ) {
                         Text(
-                            text = "${AppFontStyle.entries.size} FONTS",
+                            text = "BEGONIA FONT",
                             fontSize = 9.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = primaryColor,
@@ -615,175 +547,67 @@ fun SettingsScreen(
                     }
                 }
 
-                Column(modifier = Modifier.fillMaxWidth().testTag("font_style_dropdown_box")) {
-                    GlassDropdownTrigger(
-                        isExpanded = fontDropdownExpanded,
-                        onClick = { fontDropdownExpanded = !fontDropdownExpanded },
-                        testTag = "font_style_dropdown_trigger",
-                        leadingContent = {
-                            Icon(
-                                imageVector = getFontIcon(currentFontStyle),
-                                contentDescription = null,
-                                tint = primaryColor,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        },
-                        title = currentFontStyle.displayName,
-                        subtitle = currentFontStyle.description
-                    )
-
-                    GlassExpandablePanel(
-                        expanded = fontDropdownExpanded,
-                        maxHeight = 440.dp,
-                        modifier = Modifier.testTag("font_style_dropdown_menu")
-                    ) {
-                        AppFontStyle.entries.forEach { fontStyle ->
-                            val isSelected = currentFontStyle == fontStyle
-
-                            GlassDropdownItem(
-                                onClick = {
-                                    onFontStyleChange(fontStyle)
-                                    fontDropdownExpanded = false
-                                },
-                                modifier = Modifier.testTag("font_item_${fontStyle.name.lowercase()}")
-                            ) {
-                                Icon(
-                                    imageVector = getFontIcon(fontStyle),
-                                    contentDescription = null,
-                                    tint = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = fontStyle.displayName,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                                        fontSize = 14.sp,
-                                        fontFamily = fontStyle.fontFamily,
-                                        fontStyle = fontStyle.defaultFontStyle,
-                                        color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = fontStyle.description,
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.height(3.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(4.dp),
-                                        color = if (isSelected) primaryColor.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                                        border = BorderStroke(0.5.dp, if (isSelected) primaryColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(
-                                            text = fontStyle.previewSample,
-                                            fontFamily = fontStyle.fontFamily,
-                                            fontStyle = fontStyle.defaultFontStyle,
-                                            fontSize = 12.sp,
-                                            color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                        )
-                                    }
-                                }
-                                if (isSelected) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "Selected",
-                                        tint = primaryColor,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Live Typography Interactive Preview Card (Formatted cleanly without .00)
                 Surface(
                     shape = shapeStructure.toCardShape(),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                     border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
-                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp)
+                    modifier = Modifier.fillMaxWidth().testTag("begonia_font_card")
                 ) {
                     Column(
                         modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(primaryColor.copy(alpha = 0.18f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.TextFields,
+                                    contentDescription = null,
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "Begonia Custom Font",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Zero system font fallback • 100% custom typography",
+                                    fontSize = 11.5.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
+                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                text = "LIVE TYPOGRAPHY PREVIEW",
-                                fontSize = 10.5.sp,
+                                text = "176 • 123,456 + 75% = 216,048",
+                                fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
                                 color = primaryColor,
-                                letterSpacing = 1.sp
-                            )
-                            Text(
-                                text = currentFontStyle.displayName,
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontFamily = currentFontStyle.fontFamily,
-                                fontStyle = currentFontStyle.defaultFontStyle
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                             )
                         }
-                        Text(
-                            text = "123,456 + 75% = 216,048",
-                            fontSize = 20.sp,
-                            fontWeight = currentFontStyle.defaultFontWeight,
-                            fontFamily = currentFontStyle.fontFamily,
-                            fontStyle = currentFontStyle.defaultFontStyle,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Modern Calligraphy • Scientific Calculator • Daily Ledger • Fast 123",
-                            fontSize = 12.sp,
-                            fontFamily = currentFontStyle.fontFamily,
-                            fontStyle = currentFontStyle.defaultFontStyle,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
-            }
-
-            HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
-
-            // ==========================================
-            // SECTION 4: Appearance & Theme Mode
-            // ==========================================
-            Text(
-                text = "Appearance & Surface Mode",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                LiquidThemeCard(
-                    title = "Dark Glass",
-                    icon = Icons.Default.DarkMode,
-                    isSelected = currentThemeMode == ThemeMode.DARK,
-                    onClick = { onThemeModeChange(ThemeMode.DARK) },
-                    modifier = Modifier.weight(1f)
-                )
-                LiquidThemeCard(
-                    title = "Light Glass",
-                    icon = Icons.Default.LightMode,
-                    isSelected = currentThemeMode == ThemeMode.LIGHT,
-                    onClick = { onThemeModeChange(ThemeMode.LIGHT) },
-                    modifier = Modifier.weight(1f)
-                )
-                LiquidThemeCard(
-                    title = "System",
-                    icon = Icons.Default.Smartphone,
-                    isSelected = currentThemeMode == ThemeMode.SYSTEM,
-                    onClick = { onThemeModeChange(ThemeMode.SYSTEM) },
-                    modifier = Modifier.weight(1f)
-                )
             }
 
             HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
@@ -1904,6 +1728,7 @@ private fun getFontIcon(fontStyle: AppFontStyle): ImageVector {
         AppFontStyle.INDUSTRIAL_BLACK -> Icons.Default.DensityLarge
         AppFontStyle.SMALL_CAPS_LEDGER -> Icons.Default.Abc
         AppFontStyle.GEOMETRIC_TECHNO -> Icons.Default.TextFields
+        AppFontStyle.BEGONIA -> Icons.Default.TextFields
     }
 }
 

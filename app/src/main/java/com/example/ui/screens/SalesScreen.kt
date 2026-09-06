@@ -919,18 +919,24 @@ private fun SalesInputFormCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Commission Paid (Deducts from commission, adds to expected cash)
+            // Commission Paid (Deducted directly from expected cash in hand)
             NumericGridInputField(
-                label = "Commission Paid (Advance/Paid)",
+                label = "Commission Paid (Deducted from Cash)",
                 placeholder = "0",
                 value = commissionPaid,
                 onValueChange = onSetCommissionPaid,
                 isSelected = focusedFieldId == "commission_paid",
-                onFocus = { onFocusField("commission_paid", "Commission Paid Advance") },
+                onFocus = { onFocusField("commission_paid", "Commission Paid (Deducted from Cash)") },
                 testTag = "commission_paid_input",
                 primaryColor = primaryColor,
                 isDark = isDark,
                 modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                text = "• Paid commission deducts directly from expected cash in hand to be remitted",
+                fontSize = 10.sp,
+                fontFamily = DigitalMonospaceFont,
+                color = Color(0xFFF59E0B)
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -1169,7 +1175,7 @@ private fun SettlementResultPanel(
                                     color = alertFg
                                 )
                                 Text(
-                                    text = "Shortfall: ${result.formattedDeficitAmount} (Physical Cash is less than Expected Cash)",
+                                    text = "Shortfall: ${result.formattedDeficitAmount} (Physical Cash is less than Net Expected Cash)",
                                     fontSize = 11.sp,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontFamily = DigitalMonospaceFont
@@ -1233,7 +1239,7 @@ private fun SettlementResultPanel(
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
-            // Hero Expected Cash Receivable Card (Pure cash flow from quantities & prices)
+            // Hero Net Expected Cash Remittance Card with Exact Cash in Hand Breakdown
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1255,19 +1261,25 @@ private fun SettlementResultPanel(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "EXPECTED CASH RECEIVABLE",
+                            text = "NET EXPECTED CASH IN HAND",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = DigitalMonospaceFont,
                             color = primaryColor
                         )
-                        Text(
-                            text = "Product Cash Flow",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontFamily = DigitalMonospaceFont
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = if (result.commissionPaid > 0) Color(0xFFF59E0B).copy(alpha = 0.2f) else primaryColor.copy(alpha = 0.18f)
+                        ) {
+                            Text(
+                                text = if (result.commissionPaid > 0) "After Comm. Deduction" else "No Comm. Deducted",
+                                fontSize = 9.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (result.commissionPaid > 0) Color(0xFFF59E0B) else primaryColor,
+                                fontFamily = DigitalMonospaceFont,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -1281,15 +1293,89 @@ private fun SettlementResultPanel(
                         modifier = Modifier.testTag("expected_cash_display")
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    // Concise Formula Breakdown (Pure Quantity & Prices, Commission independent)
-                    Text(
-                        text = "Cash Sales (${result.formattedCashFromSales}) + Recovery (${result.formattedRecoveredCredit}) − Field Exp (${result.formattedExpense})",
-                        fontSize = 10.5.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontFamily = DigitalMonospaceFont
-                    )
+                    // Dedicated EXACT CASH IN HAND AUDIT BOX (Without Commission Deduction)
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isDark) Color(0xFF0B132B).copy(alpha = 0.75f) else Color(0xFFF1F5F9),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x22000000))
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "1. Exact Cash in Hand (No Comm. Deduction):",
+                                    fontSize = 10.5.sp,
+                                    fontFamily = DigitalMonospaceFont,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = result.formattedExactCashBeforeCommission,
+                                    fontSize = 11.5.sp,
+                                    fontFamily = DigitalMonospaceFont,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF38BDF8)
+                                )
+                            }
+                            Text(
+                                text = "   = Cash Sales (${result.formattedCashFromSales}) + Recovery (${result.formattedRecoveredCredit}) − Expenses (${result.formattedExpense})",
+                                fontSize = 9.5.sp,
+                                fontFamily = DigitalMonospaceFont,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            if (result.commissionPaid > 0.0) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "2. Less Paid Commission (Deducted):",
+                                        fontSize = 10.5.sp,
+                                        fontFamily = DigitalMonospaceFont,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFFF59E0B)
+                                    )
+                                    Text(
+                                        text = "− ${result.formattedCommissionPaid}",
+                                        fontSize = 11.5.sp,
+                                        fontFamily = DigitalMonospaceFont,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFF59E0B)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "3. Net Expected Cash Handover:",
+                                        fontSize = 10.5.sp,
+                                        fontFamily = DigitalMonospaceFont,
+                                        fontWeight = FontWeight.Bold,
+                                        color = primaryColor
+                                    )
+                                    Text(
+                                        text = "= ${result.formattedExpectedCash}",
+                                        fontSize = 12.sp,
+                                        fontFamily = DigitalMonospaceFont,
+                                        fontWeight = FontWeight.Bold,
+                                        color = primaryColor
+                                    )
+                                }
+                            }
+                        }
+                    }
 
                     if (result.sharedQty > 0) {
                         Spacer(modifier = Modifier.height(4.dp))
@@ -1321,7 +1407,7 @@ private fun SettlementResultPanel(
             ) {
                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
                     Text(
-                        text = "COMMISSION ACCOUNTING (PAYABLE & PAID)",
+                        text = "COMMISSION ACCOUNTING (EARNED, PAID & PAYABLE)",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = DigitalMonospaceFont,
@@ -1342,16 +1428,16 @@ private fun SettlementResultPanel(
                             modifier = Modifier.weight(1f)
                         )
                         CommissionMiniBox(
-                            label = "Commission Paid",
+                            label = "Paid (Deducted)",
                             value = result.formattedCommissionPaid,
                             color = Color(0xFFF59E0B),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1.1f)
                         )
                         CommissionMiniBox(
-                            label = "Commission Payable",
+                            label = "Net Payable",
                             value = result.formattedCommissionPayable,
                             color = Color(0xFF10B981),
-                            modifier = Modifier.weight(1.2f)
+                            modifier = Modifier.weight(1.1f)
                         )
                     }
                 }
@@ -1365,12 +1451,14 @@ private fun SettlementResultPanel(
                 discrepancyFormatted = result.formattedDiscrepancy,
                 physicalCashFormatted = result.formattedPhysicalCash,
                 expectedCashFormatted = result.formattedExpectedCash,
+                exactCashFormatted = result.formattedExactCashBeforeCommission,
+                commissionPaidFormatted = result.formattedCommissionPaid,
                 isDark = isDark
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Key Financial Stats Grid
+            // Key Financial Stats Grid - Row 1: Units & Quantities
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -1392,15 +1480,55 @@ private fun SettlementResultPanel(
                 )
 
                 SummaryStatBox(
+                    label = "Gross Comm",
+                    value = result.formattedGrossCommission,
+                    tintColor = Color(0xFF8B5CF6),
+                    modifier = Modifier.weight(1f),
+                    testTag = "stat_gross_commission"
+                )
+
+                SummaryStatBox(
                     label = "Comm Payable",
                     value = result.formattedCommissionPayable,
                     tintColor = Color(0xFFF59E0B),
                     modifier = Modifier.weight(1f),
                     testTag = "stat_commission_rate"
                 )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Key Financial Stats Grid - Row 2: Cash in Hand Audit (Exact vs Deduction vs Net Expected)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                SummaryStatBox(
+                    label = "Exact Cash (No Comm)",
+                    value = result.formattedExactCashBeforeCommission,
+                    tintColor = Color(0xFF0284C7),
+                    modifier = Modifier.weight(1.2f),
+                    testTag = "stat_exact_cash_before_comm"
+                )
 
                 SummaryStatBox(
-                    label = "Cash Received",
+                    label = "Comm Paid",
+                    value = if (result.commissionPaid > 0) "−${result.formattedCommissionPaid}" else result.formattedCommissionPaid,
+                    tintColor = Color(0xFFF59E0B),
+                    modifier = Modifier.weight(1f),
+                    testTag = "stat_commission_paid_deduction"
+                )
+
+                SummaryStatBox(
+                    label = "Net Expected",
+                    value = result.formattedExpectedCash,
+                    tintColor = Color(0xFF10B981),
+                    modifier = Modifier.weight(1.1f),
+                    testTag = "stat_net_expected_cash"
+                )
+
+                SummaryStatBox(
+                    label = "Cash Handover",
                     value = result.formattedPhysicalCash,
                     tintColor = primaryColor,
                     modifier = Modifier.weight(1.1f),
@@ -1457,16 +1585,23 @@ private fun SettlementStatusBadge(
     discrepancyFormatted: String,
     physicalCashFormatted: String,
     expectedCashFormatted: String,
+    exactCashFormatted: String,
+    commissionPaidFormatted: String,
     isDark: Boolean
 ) {
     val (badgeBgColor, badgeBorderColor, contentColor, statusTitle, statusSubtitle, statusIcon) = when (status) {
         ReconciliationStatus.BALANCED -> {
+            val sub = if (commissionPaidFormatted != "0.00" && commissionPaidFormatted != "0") {
+                "Cash handover ($physicalCashFormatted) matches Net Expected Cash ($expectedCashFormatted) after $commissionPaidFormatted comm deduction (Exact Cash: $exactCashFormatted)"
+            } else {
+                "Cash received ($physicalCashFormatted) matches exact cash in hand ($expectedCashFormatted)"
+            }
             Tuple6(
                 Color(0xFF10B981).copy(alpha = 0.14f),
                 Color(0xFF10B981).copy(alpha = 0.45f),
                 Color(0xFF10B981),
                 "SETTLED (BALANCED)",
-                "Cash received ($physicalCashFormatted) matches expected cash ($expectedCashFormatted)",
+                sub,
                 Icons.Default.CheckCircle
             )
         }
@@ -1476,7 +1611,7 @@ private fun SettlementStatusBadge(
                 Color(0xFF0284C7).copy(alpha = 0.45f),
                 Color(0xFF38BDF8),
                 "SURPLUS (+)",
-                "Cash received exceeds expected cash by $discrepancyFormatted",
+                "Cash received exceeds net expected cash by $discrepancyFormatted (Exact Cash without comm: $exactCashFormatted)",
                 Icons.Default.TrendingUp
             )
         }
@@ -1486,7 +1621,7 @@ private fun SettlementStatusBadge(
                 Color(0xFFEF4444).copy(alpha = 0.45f),
                 Color(0xFFF87171),
                 "SHORTAGE (−)",
-                "Cash received is short of expected cash by $discrepancyFormatted",
+                "Cash received is short of net expected cash by $discrepancyFormatted (Exact Cash without comm: $exactCashFormatted)",
                 Icons.Default.TrendingDown
             )
         }
@@ -1635,6 +1770,66 @@ private fun SavedTransactionsBottomSheet(
         }
 
         Spacer(modifier = Modifier.height(10.dp))
+
+        if (transactions.isNotEmpty()) {
+            val totalExactCash = transactions.sumOf { it.exactCashBeforeCommission }
+            val totalCommPaid = transactions.sumOf { it.commissionPaid }
+            val totalExpected = transactions.sumOf { it.expectedCash }
+            val totalPhysical = transactions.sumOf { it.physicalCashInHand }
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 10.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = if (isDark) Color(0xFF0B132B) else Color(0xFFF1F5F9),
+                border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f))
+            ) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    Text(
+                        text = "SAVED RECORDS CASH IN HAND AUDIT SUMMARY",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = primaryColor
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        GridKeyValueBox(
+                            label = "Exact Cash (No Comm)",
+                            value = PkrNumberFormatter.formatPkrAmount(totalExactCash, decimals = 2),
+                            highlightColor = Color(0xFF38BDF8),
+                            isDark = isDark,
+                            modifier = Modifier.weight(1.2f)
+                        )
+                        GridKeyValueBox(
+                            label = "Total Comm Paid",
+                            value = "−${PkrNumberFormatter.formatPkrAmount(totalCommPaid, decimals = 2)}",
+                            highlightColor = Color(0xFFF59E0B),
+                            isDark = isDark,
+                            modifier = Modifier.weight(1f)
+                        )
+                        GridKeyValueBox(
+                            label = "Net Expected",
+                            value = PkrNumberFormatter.formatPkrAmount(totalExpected, decimals = 2),
+                            highlightColor = Color(0xFF10B981),
+                            isDark = isDark,
+                            modifier = Modifier.weight(1.1f)
+                        )
+                        GridKeyValueBox(
+                            label = "Cash Handover",
+                            value = PkrNumberFormatter.formatPkrAmount(totalPhysical, decimals = 2),
+                            highlightColor = primaryColor,
+                            isDark = isDark,
+                            modifier = Modifier.weight(1.1f)
+                        )
+                    }
+                }
+            }
+        }
 
         if (transactions.isEmpty()) {
             Box(
@@ -1906,9 +2101,9 @@ private fun SalesRecordCard(
                     )
                 }
 
-                // 3. SETTLEMENT & CASH (3 Inputs: Field Expenses, Recovered Credit, Cash Received)
+                // 3. CASH IN HAND & COMMISSION DEDUCTION AUDIT
                 Text(
-                    text = "CASH & EXPENSES (3 INPUTS)",
+                    text = "CASH IN HAND & COMMISSION AUDIT",
                     fontSize = 9.5.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = DigitalMonospaceFont,
@@ -1934,19 +2129,55 @@ private fun SalesRecordCard(
                         modifier = Modifier.weight(1f)
                     )
                     GridKeyValueBox(
+                        label = "Exact Cash (No Comm)",
+                        value = PkrNumberFormatter.formatPkrAmount(tx.exactCashBeforeCommission, decimals = 2),
+                        highlightColor = Color(0xFF38BDF8),
+                        isDark = isDark,
+                        modifier = Modifier.weight(1.2f)
+                    )
+                    GridKeyValueBox(
+                        label = "Comm Paid",
+                        value = if (tx.commissionPaid > 0) "−${PkrNumberFormatter.formatPkrAmount(tx.commissionPaid, decimals = 2)}" else "0.00",
+                        highlightColor = if (tx.commissionPaid > 0) Color(0xFFF59E0B) else null,
+                        isDark = isDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    GridKeyValueBox(
+                        label = "Net Expected Cash",
+                        value = PkrNumberFormatter.formatPkrAmount(tx.expectedCash, decimals = 2),
+                        highlightColor = Color(0xFF10B981),
+                        isDark = isDark,
+                        modifier = Modifier.weight(1.2f)
+                    )
+                    GridKeyValueBox(
                         label = "Cash Handover",
                         value = PkrNumberFormatter.formatPkrAmount(tx.physicalCashInHand, decimals = 2),
                         highlightColor = primaryColor,
                         isDark = isDark,
                         modifier = Modifier.weight(1.2f)
                     )
-                    GridKeyValueBox(
-                        label = "Expected Cash",
-                        value = PkrNumberFormatter.formatPkrAmount(tx.expectedCash, decimals = 2),
-                        highlightColor = primaryColor,
-                        isDark = isDark,
-                        modifier = Modifier.weight(1.2f)
-                    )
+                }
+
+                if (tx.commissionPaid > 0.0) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFFF59E0B).copy(alpha = 0.12f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "• Paid Comm of ${PkrNumberFormatter.formatPkrAmount(tx.commissionPaid, decimals = 2)} deducted from Cash in Hand. Exact cash before comm was ${PkrNumberFormatter.formatPkrAmount(tx.exactCashBeforeCommission, decimals = 2)}.",
+                            fontSize = 9.5.sp,
+                            fontFamily = DigitalMonospaceFont,
+                            color = Color(0xFFF59E0B),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             }
 
@@ -2049,7 +2280,14 @@ private fun buildSingleTransactionAuditText(tx: SalesTransactionEntity): String 
         appendLine("• Cash Sales Revenue: ${PkrNumberFormatter.formatPkrAmount(tx.cashQtyUnits * tx.unitSalePrice, decimals = 2)}")
         appendLine("• Gross Commission: ${PkrNumberFormatter.formatPkrAmount(tx.grossCommission, decimals = 2)}")
         appendLine("• Net Commission Payable: ${PkrNumberFormatter.formatPkrAmount(tx.totalCommission, decimals = 2)}")
-        appendLine("• Expected Cash Receivable: ${PkrNumberFormatter.formatPkrAmount(tx.expectedCash, decimals = 2)}")
+        appendLine("----------------------------------")
+        appendLine("CASH IN HAND & COMMISSION AUDIT:")
+        appendLine("• Exact Cash in Hand (WITHOUT Commission Deduction): ${PkrNumberFormatter.formatPkrAmount(tx.exactCashBeforeCommission, decimals = 2)}")
+        appendLine("  [Formula: Cash Sales (${PkrNumberFormatter.formatPkrAmount(tx.cashQtyUnits * tx.unitSalePrice, decimals = 2)}) + Recovered Credit (${PkrNumberFormatter.formatPkrAmount(tx.recoveredCredit, decimals = 2)}) − Expenses (${PkrNumberFormatter.formatPkrAmount(tx.expense, decimals = 2)})]")
+        appendLine("• Commission Paid (Deducted from Cash): −${PkrNumberFormatter.formatPkrAmount(tx.commissionPaid, decimals = 2)}")
+        appendLine("• Net Expected Cash in Hand (AFTER Commission Deduction): ${PkrNumberFormatter.formatPkrAmount(tx.expectedCash, decimals = 2)}")
+        appendLine("• Physical Cash Handover: ${PkrNumberFormatter.formatPkrAmount(tx.physicalCashInHand, decimals = 2)}")
+        appendLine("• Actual Cash Collected (Before Commission Payout): ${PkrNumberFormatter.formatPkrAmount(tx.actualCashBeforeCommission, decimals = 2)}")
         val discrepancy = tx.physicalCashInHand - tx.expectedCash
         val discStr = if (kotlin.math.abs(discrepancy) < 0.01) "0.00 (Balanced)"
         else if (discrepancy > 0) "+${PkrNumberFormatter.formatPkrAmount(discrepancy, decimals = 2)} (Surplus)"
@@ -2128,12 +2366,13 @@ private fun buildReconciliationSummaryText(uiState: SalesUiState): String {
         appendLine("• Gross Commission: ${res.formattedGrossCommission}")
         appendLine("• Commission Paid (Advance): ${res.formattedCommissionPaid}")
         appendLine("• Commission Payable (Net): ${res.formattedCommissionPayable}")
-        appendLine("\n--- FINANCIAL SETTLEMENT (PURE CASH FLOW) ---")
-        appendLine("• Product Cash Sales: ${res.formattedCashFromSales}")
-        appendLine("• Recovered Credit: ${res.formattedRecoveredCredit}")
-        appendLine("• Field Expenses: ${res.formattedExpense}")
-        appendLine("• Expected Cash Receivable: ${res.formattedExpectedCash}")
-        appendLine("• Physical Cash Received: ${res.formattedPhysicalCash}")
+        appendLine("\n--- CASH IN HAND & COMMISSION AUDIT ---")
+        appendLine("• Exact Cash in Hand (WITHOUT Commission Deduction): ${res.formattedExactCashBeforeCommission}")
+        appendLine("  [Formula: Product Sales (${res.formattedCashFromSales}) + Recovered Credit (${res.formattedRecoveredCredit}) − Field Expenses (${res.formattedExpense})]")
+        appendLine("• Commission Paid (Deducted from Cash): −${res.formattedCommissionPaid}")
+        appendLine("• Net Expected Cash in Hand (AFTER Commission Deduction): ${res.formattedExpectedCash}")
+        appendLine("• Physical Cash Received Handover: ${res.formattedPhysicalCash}")
+        appendLine("• Actual Cash Collected (Before Commission Payout): ${res.formattedActualCashBeforeCommission}")
         appendLine("• Variance / Discrepancy: ${res.formattedDiscrepancy}")
         if (res.deficitAmount > 0) {
             appendLine("• Deficit Shortfall: ${res.formattedDeficitAmount} (Alert Limit: ${uiState.deficitThresholdText})")

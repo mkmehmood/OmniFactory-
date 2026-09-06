@@ -30,4 +30,14 @@ data class SalesTransactionEntity(
     val status: String,
     val timestamp: Long = System.currentTimeMillis(),
     val note: String = ""
-)
+) {
+    // Exact Cash in Hand WITHOUT commission deduction (Cash Sales + Recovery - Expense)
+    @get:androidx.room.Ignore
+    val exactCashBeforeCommission: Double
+        get() = (cashQtyUnits * unitSalePrice) + recoveredCredit - expense
+
+    // Actual physical cash collected before commission payout
+    @get:androidx.room.Ignore
+    val actualCashBeforeCommission: Double
+        get() = physicalCashInHand + commissionPaid
+}

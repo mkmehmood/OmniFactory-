@@ -36,8 +36,10 @@ data class SalesReconciliationResult(
     val cashFromSales: Double,
     val recoveredCredit: Double,
     val expense: Double,
-    val expectedCash: Double,
+    val exactCashBeforeCommission: Double, // Exact cash in hand WITHOUT commission deduction (Cash Sales + Recovery - Expense)
+    val expectedCash: Double, // Net expected cash in hand AFTER paid commission deduction (exactCashBeforeCommission - commissionPaid)
     val physicalCashInHand: Double,
+    val actualCashBeforeCommission: Double, // Physical cash received + commission paid
     val reconciledCash: Double,
     val discrepancy: Double,
     val deficitAmount: Double,
@@ -52,8 +54,10 @@ data class SalesReconciliationResult(
     val formattedCommissionPaid: String,
     val formattedCommissionPayable: String,
     val formattedTotalCommission: String,
+    val formattedExactCashBeforeCommission: String,
     val formattedExpectedCash: String,
     val formattedPhysicalCash: String,
+    val formattedActualCashBeforeCommission: String,
     val formattedReconciledCash: String,
     val formattedDiscrepancy: String,
     val formattedDeficitAmount: String,
@@ -92,15 +96,21 @@ object SalesReconciliationCalculator {
         // Commission Payable (Net Commission to be paid) = max(0, Gross Commission - Commission Paid)
         val commissionPayable = maxOf(0.0, grossCommission - commissionPaid)
 
-        // Expected Cash to receive from Sales Rep / Manager:
-        // Relates ONLY to product quantity and prices (+ recovered credit - field expenses).
-        // Commission does NOT affect or reduce expected cash.
-        val expectedCash = cashFromSales + recoveredCredit - expense
+        // 1. Exact Cash in Hand (WITHOUT Commission Deduction):
+        // Pure cash generated from sales + recovered credit - field expenses.
+        val exactCashBeforeCommission = cashFromSales + recoveredCredit - expense
+
+        // 2. Expected Cash in Hand (AFTER Paid Commission Deduction):
+        // Paid commission is deducted from the expected cash in hand!
+        val expectedCash = exactCashBeforeCommission - commissionPaid
+
+        // 3. Actual Cash collected before commission payout:
+        val actualCashBeforeCommission = physicalCash + commissionPaid
 
         // Reconciled Cash accounted for (Physical Cash received)
         val reconciledCash = physicalCash
 
-        // Status / Discrepancy = Physical Cash Received − Expected Cash
+        // Status / Discrepancy = Physical Cash Handover − Expected Cash (After Commission Deduction)
         val discrepancy = physicalCash - expectedCash
         val deficitAmount = if (discrepancy < -0.005) kotlin.math.abs(discrepancy) else 0.0
 
@@ -122,8 +132,10 @@ object SalesReconciliationCalculator {
             cashFromSales = cashFromSales,
             recoveredCredit = recoveredCredit,
             expense = expense,
+            exactCashBeforeCommission = exactCashBeforeCommission,
             expectedCash = expectedCash,
             physicalCashInHand = physicalCash,
+            actualCashBeforeCommission = actualCashBeforeCommission,
             reconciledCash = reconciledCash,
             discrepancy = discrepancy,
             deficitAmount = deficitAmount,
@@ -138,8 +150,10 @@ object SalesReconciliationCalculator {
             formattedCommissionPaid = PkrNumberFormatter.formatPkrAmount(commissionPaid, stripTrailingZeros = false),
             formattedCommissionPayable = PkrNumberFormatter.formatPkrAmount(commissionPayable, stripTrailingZeros = false),
             formattedTotalCommission = PkrNumberFormatter.formatPkrAmount(commissionPayable, stripTrailingZeros = false),
+            formattedExactCashBeforeCommission = PkrNumberFormatter.formatPkrAmount(exactCashBeforeCommission, stripTrailingZeros = false),
             formattedExpectedCash = PkrNumberFormatter.formatPkrAmount(expectedCash, stripTrailingZeros = false),
             formattedPhysicalCash = PkrNumberFormatter.formatPkrAmount(physicalCash, stripTrailingZeros = false),
+            formattedActualCashBeforeCommission = PkrNumberFormatter.formatPkrAmount(actualCashBeforeCommission, stripTrailingZeros = false),
             formattedReconciledCash = PkrNumberFormatter.formatPkrAmount(reconciledCash, stripTrailingZeros = false),
             formattedDiscrepancy = PkrNumberFormatter.formatPkrAmount(discrepancy, showSign = true, stripTrailingZeros = false),
             formattedDeficitAmount = PkrNumberFormatter.formatPkrAmount(deficitAmount, stripTrailingZeros = false),

@@ -6,7 +6,7 @@ import org.junit.Test
 class SalesReconciliationCalculatorTest {
 
     @Test
-    fun testBalancedReconciliationWithCommissionAndDeductions() {
+    fun testBalancedReconciliationWithCommissionDeductedFromCash() {
         // Sold = 150, Returned = 10, Expired = 5 -> Net Sold = 135
         // Credit Sales = 20 -> Cash Qty = 115
         // Unit Price = Rs. 25.00 -> Product Cash Sales = 115 * 25 = Rs. 2,875.00
@@ -14,9 +14,11 @@ class SalesReconciliationCalculatorTest {
         // Commission Paid = Rs. 100.00 -> Commission Payable = Rs. 237.50
         // Recovered Credit = Rs. 150.00
         // Field Expense = Rs. 50.00
-        // Expected Cash to receive from rep = 2875 + 150 - 50 = Rs. 2,975.00 (Commission does NOT deduct from expected cash)
-        // Physical Cash handed over = Rs. 2,975.00
-        // Discrepancy = 2975.00 - 2975.00 = Rs. 0.00 (BALANCED)
+        // Exact Cash in Hand (WITHOUT Commission Deduction) = 2875 + 150 - 50 = Rs. 2,975.00
+        // Expected Cash in Hand (AFTER Commission Deduction) = 2975 - 100 = Rs. 2,875.00
+        // Physical Cash handed over = Rs. 2,875.00
+        // Actual Cash collected before commission payout = 2875 + 100 = Rs. 2,975.00
+        // Discrepancy = 2875.00 - 2875.00 = Rs. 0.00 (BALANCED)
         val input = SalesReconciliationInput(
             salesRep = "Alex Morgan",
             dateMillis = 1000L,
@@ -25,7 +27,7 @@ class SalesReconciliationCalculatorTest {
             expiredQty = 5.0,
             creditSalesQty = 20.0,
             recoveredCredit = 150.0,
-            physicalCashInHand = 2975.00,
+            physicalCashInHand = 2875.00,
             expense = 50.0,
             unitSalePrice = 25.0,
             commissionPerUnit = 2.5,
@@ -40,8 +42,10 @@ class SalesReconciliationCalculatorTest {
         assertEquals(100.0, result.commissionPaid, 0.001)
         assertEquals(237.5, result.commissionPayable, 0.001)
         assertEquals(2875.0, result.cashFromSales, 0.001)
-        assertEquals(2975.0, result.expectedCash, 0.001)
-        assertEquals(2975.0, result.physicalCashInHand, 0.001)
+        assertEquals(2975.0, result.exactCashBeforeCommission, 0.001)
+        assertEquals(2875.0, result.expectedCash, 0.001)
+        assertEquals(2875.0, result.physicalCashInHand, 0.001)
+        assertEquals(2975.0, result.actualCashBeforeCommission, 0.001)
         assertEquals(0.0, result.discrepancy, 0.001)
         assertEquals(ReconciliationStatus.BALANCED, result.status)
         assertEquals("135", result.formattedNetSold)
@@ -51,13 +55,16 @@ class SalesReconciliationCalculatorTest {
         assertEquals("337.50", result.formattedGrossCommission)
         assertEquals("100.00", result.formattedCommissionPaid)
         assertEquals("237.50", result.formattedCommissionPayable)
-        assertEquals("2,975.00", result.formattedExpectedCash)
+        assertEquals("2,975.00", result.formattedExactCashBeforeCommission)
+        assertEquals("2,875.00", result.formattedExpectedCash)
+        assertEquals("2,975.00", result.formattedActualCashBeforeCommission)
         assertEquals("0.00", result.formattedDiscrepancy)
     }
 
     @Test
     fun testSurplusReconciliation() {
-        // Expected Cash = (2875 + 150) - 50 = 2,975.00
+        // Exact Cash = (2875 + 150) - 50 = 2,975.00
+        // Expected Cash = 2975.00 (Commission Paid = 0)
         // Physical cash received = 3,035.00 -> Surplus = +60.00
         val input = SalesReconciliationInput(
             salesRep = "Sarah Chen",
@@ -75,6 +82,7 @@ class SalesReconciliationCalculatorTest {
 
         val result = SalesReconciliationCalculator.calculate(input)
 
+        assertEquals(2975.0, result.exactCashBeforeCommission, 0.001)
         assertEquals(2975.0, result.expectedCash, 0.001)
         assertEquals(3035.0, result.physicalCashInHand, 0.001)
         assertEquals(60.0, result.discrepancy, 0.001)
@@ -84,7 +92,8 @@ class SalesReconciliationCalculatorTest {
 
     @Test
     fun testDeficitReconciliation() {
-        // Expected Cash = (2875 + 150) - 50 = 2,975.00
+        // Exact Cash = (2875 + 150) - 50 = 2,975.00
+        // Expected Cash = 2975.00 (Commission Paid = 0)
         // Physical Cash = 2,850.00 -> Shortage = -125.00
         val input = SalesReconciliationInput(
             salesRep = "Marcus Vance",
@@ -102,6 +111,7 @@ class SalesReconciliationCalculatorTest {
 
         val result = SalesReconciliationCalculator.calculate(input)
 
+        assertEquals(2975.0, result.exactCashBeforeCommission, 0.001)
         assertEquals(2975.0, result.expectedCash, 0.001)
         assertEquals(2850.0, result.physicalCashInHand, 0.001)
         assertEquals(-125.0, result.discrepancy, 0.001)
@@ -114,23 +124,25 @@ class SalesReconciliationCalculatorTest {
     fun testLargePkrCurrencyFormat() {
         // Sold: 1,050,345 @ 10 = 10,503,450
         // Commission: 1,050,345 * 1.5 = 1,575,517.50
-        // Expected Cash = 10,503,450 (unaffected by commission)
+        // Commission paid: 500,000 -> Expected Cash = 10,503,450 - 500,000 = 10,003,450.00
         val input = SalesReconciliationInput(
             totalSoldQty = 1050345.0,
             returnedQty = 0.0,
             expiredQty = 0.0,
             creditSalesQty = 0.0,
             recoveredCredit = 0.0,
-            physicalCashInHand = 10503450.00,
+            physicalCashInHand = 10003450.00,
             expense = 0.0,
             unitSalePrice = 10.0,
-            commissionPerUnit = 1.5
+            commissionPerUnit = 1.5,
+            commissionPaid = 500000.0
         )
 
         val result = SalesReconciliationCalculator.calculate(input)
         assertEquals("10,50,345", result.formattedNetSold)
-        assertEquals("1,05,03,450.00", result.formattedExpectedCash)
-        assertEquals("15,75,517.50", result.formattedTotalCommission)
+        assertEquals("1,05,03,450.00", result.formattedExactCashBeforeCommission)
+        assertEquals("1,00,03,450.00", result.formattedExpectedCash)
+        assertEquals("10,75,517.50", result.formattedCommissionPayable)
         assertEquals(ReconciliationStatus.BALANCED, result.status)
     }
 
@@ -146,6 +158,7 @@ class SalesReconciliationCalculatorTest {
             totalRecoveredCredit = 500.0,
             totalCommission = 1125.0,
             totalExpense = 150.0,
+            totalExactCashBeforeCommission = 10350.0,
             totalExpectedCash = 9225.0,
             totalPhysicalCash = 9225.0,
             netDiscrepancy = 0.0,
@@ -159,6 +172,7 @@ class SalesReconciliationCalculatorTest {
         assertEquals("450", repA.formattedNetSold)
         assertEquals("10,000.00", repA.formattedProductCashSales)
         assertEquals("1,125.00", repA.formattedTotalCommission)
+        assertEquals("10,350.00", repA.formattedTotalExactCashBeforeCommission)
         assertEquals("9,225.00", repA.formattedExpectedCash)
         assertEquals("0.00", repA.formattedDiscrepancy)
     }
@@ -187,6 +201,7 @@ class SalesReconciliationCalculatorTest {
         val result = SalesReconciliationCalculator.calculate(input)
         assertEquals(355.55, result.netSoldUnits, 0.001)
         assertEquals(142220.0, result.cashFromSales, 0.001)
+        assertEquals(127920.0, result.exactCashBeforeCommission, 0.001)
         assertEquals(127920.0, result.expectedCash, 0.001)
         assertEquals(128500.0, result.physicalCashInHand, 0.001)
         assertEquals(580.0, result.discrepancy, 0.001)

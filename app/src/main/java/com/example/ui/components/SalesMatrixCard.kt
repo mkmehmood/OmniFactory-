@@ -104,6 +104,7 @@ data class RepMatrixSummary(
     val totalCommissionPaid: Double = 0.0,
     val totalCommission: Double, // Net commission payable
     val totalExpense: Double,
+    val totalExactCashBeforeCommission: Double = 0.0,
     val totalExpectedCash: Double,
     val totalPhysicalCash: Double,
     val netDiscrepancy: Double,
@@ -161,6 +162,9 @@ data class RepMatrixSummary(
     val formattedRecoveredCredit: String
         get() = IndianNumberFormatter.formatIndianCurrency(totalRecoveredCredit)
 
+    val formattedTotalExactCashBeforeCommission: String
+        get() = IndianNumberFormatter.formatIndianCurrency(if (totalExactCashBeforeCommission != 0.0) totalExactCashBeforeCommission else (totalProductCashSales + totalRecoveredCredit - totalExpense))
+
     val formattedExpectedCash: String
         get() = IndianNumberFormatter.formatIndianCurrency(totalExpectedCash)
 
@@ -212,6 +216,7 @@ fun SalesRepresentativesMatrixCard(
                 val commPaid = list.sumOf { it.commissionPaid }
                 val netComm = list.sumOf { it.totalCommission }
                 val expense = list.sumOf { it.expense }
+                val exactCash = prodCashSales + recovered - expense
                 val expectedCash = list.sumOf { it.expectedCash }
                 val physicalCash = list.sumOf { it.physicalCashInHand }
                 val discrepancy = physicalCash - expectedCash
@@ -238,6 +243,7 @@ fun SalesRepresentativesMatrixCard(
                     totalCommissionPaid = commPaid,
                     totalCommission = netComm,
                     totalExpense = expense,
+                    totalExactCashBeforeCommission = exactCash,
                     totalExpectedCash = expectedCash,
                     totalPhysicalCash = physicalCash,
                     netDiscrepancy = discrepancy,
@@ -280,6 +286,7 @@ fun SalesRepresentativesMatrixCard(
     val fleetTotalNetUnits = remember(repSummaries) { repSummaries.sumOf { it.totalNetSoldUnits } }
     val fleetTotalSharedUnits = remember(repSummaries) { repSummaries.sumOf { it.totalSharedUnits } }
     val fleetTotalReturnedUnits = remember(repSummaries) { repSummaries.sumOf { it.totalReturnedUnits } }
+    val fleetTotalExactCash = remember(repSummaries) { repSummaries.sumOf { it.totalExactCashBeforeCommission } }
     val fleetTotalExpectedCash = remember(repSummaries) { repSummaries.sumOf { it.totalExpectedCash } }
     val fleetTotalPhysicalCash = remember(repSummaries) { repSummaries.sumOf { it.totalPhysicalCash } }
     val fleetTotalCommission = remember(repSummaries) { repSummaries.sumOf { it.totalCommission } }
@@ -367,6 +374,7 @@ fun SalesRepresentativesMatrixCard(
                 totalReps = repSummaries.size,
                 totalNetUnits = fleetTotalNetUnits,
                 totalSharedUnits = fleetTotalSharedUnits,
+                totalExactCash = fleetTotalExactCash,
                 totalExpectedCash = fleetTotalExpectedCash,
                 totalPhysicalCash = fleetTotalPhysicalCash,
                 totalCommission = fleetTotalCommission,
@@ -636,6 +644,7 @@ private fun FleetSummaryKpiBanner(
     totalReps: Int,
     totalNetUnits: Double,
     totalSharedUnits: Double,
+    totalExactCash: Double,
     totalExpectedCash: Double,
     totalPhysicalCash: Double,
     totalCommission: Double,
@@ -677,7 +686,7 @@ private fun FleetSummaryKpiBanner(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "TOTAL FLEET SETTLEMENT STATUS",
+                    text = "TOTAL FLEET SETTLEMENT & CASH AUDIT",
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = DigitalMonospaceFont,
@@ -706,7 +715,19 @@ private fun FleetSummaryKpiBanner(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 MatrixStatBox(
-                    label = "Total Expected",
+                    label = "Exact Cash (No Comm)",
+                    value = IndianNumberFormatter.formatIndianCurrency(totalExactCash),
+                    tintColor = Color(0xFF38BDF8),
+                    modifier = Modifier.weight(1.1f)
+                )
+                MatrixStatBox(
+                    label = "Comm Paid",
+                    value = "−" + IndianNumberFormatter.formatIndianCurrency(totalCommissionPaid),
+                    tintColor = Color(0xFFF59E0B),
+                    modifier = Modifier.weight(1f)
+                )
+                MatrixStatBox(
+                    label = "Net Expected",
                     value = IndianNumberFormatter.formatIndianCurrency(totalExpectedCash),
                     tintColor = primaryColor,
                     modifier = Modifier.weight(1f)
@@ -715,18 +736,6 @@ private fun FleetSummaryKpiBanner(
                     label = "Cash Collected",
                     value = IndianNumberFormatter.formatIndianCurrency(totalPhysicalCash),
                     tintColor = Color(0xFF10B981),
-                    modifier = Modifier.weight(1f)
-                )
-                MatrixStatBox(
-                    label = "Net Commission",
-                    value = IndianNumberFormatter.formatIndianCurrency(totalCommission),
-                    tintColor = Color(0xFFF59E0B),
-                    modifier = Modifier.weight(1f)
-                )
-                MatrixStatBox(
-                    label = "Net Units",
-                    value = IndianNumberFormatter.formatIndianDouble(totalNetUnits, 0),
-                    tintColor = Color(0xFF38BDF8),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -1082,7 +1091,7 @@ private fun RepCashSalesAuditCard(
 
             // Audit Formula Decomposition Row
             Text(
-                text = "Sales (${summary.formattedProductCashSales}) + Recovery (${summary.formattedRecoveredCredit}) − Net Comm (${summary.formattedTotalCommission}) − Exp (${summary.formattedTotalExpense})",
+                text = "Sales (${summary.formattedProductCashSales}) + Recovery (${summary.formattedRecoveredCredit}) − Exp (${summary.formattedTotalExpense}) = Exact Cash: ${summary.formattedTotalExactCashBeforeCommission}",
                 fontSize = 10.sp,
                 fontFamily = DigitalMonospaceFont,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1091,10 +1100,11 @@ private fun RepCashSalesAuditCard(
             if (summary.totalCommissionPaid > 0.0) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Gross Comm: ${summary.formattedGrossCommission} | Paid: ${summary.formattedCommissionPaid} | Remaining: ${summary.formattedTotalCommission}",
+                    text = "Paid Comm of ${summary.formattedCommissionPaid} deducted from Cash in Hand → Net Expected: ${summary.formattedExpectedCash}",
                     fontSize = 9.5.sp,
                     fontFamily = DigitalMonospaceFont,
-                    color = Color(0xFFF59E0B)
+                    color = Color(0xFFF59E0B),
+                    fontWeight = FontWeight.SemiBold
                 )
             }
 

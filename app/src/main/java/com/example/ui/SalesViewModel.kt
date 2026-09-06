@@ -203,19 +203,15 @@ class SalesViewModel(application: Application) : AndroidViewModel(application) {
                 val deficit = res.deficitAmount
                 val currentPaid = current.commissionPaidText.parseCleanDouble()
                 val newPaid = currentPaid + deficit
-                val currentPhys = current.physicalCashText.parseCleanDouble()
-                val newPhys = currentPhys + deficit
 
                 val newPaidStr = if (newPaid % 1.0 == 0.0) String.format(java.util.Locale.US, "%.0f", newPaid) else String.format(java.util.Locale.US, "%.2f", newPaid)
-                val newPhysStr = if (newPhys % 1.0 == 0.0) String.format(java.util.Locale.US, "%.0f", newPhys) else String.format(java.util.Locale.US, "%.2f", newPhys)
 
                 val updated = current.copy(
                     commissionPaidText = newPaidStr,
-                    physicalCashText = newPhysStr,
                     isSavedSuccess = false
                 )
                 viewModelScope.launch {
-                    _userMessage.emit("Shifted ${String.format(java.util.Locale.US, "%.2f", deficit)} deficit to Commission Paid. Deficit eliminated!")
+                    _userMessage.emit("Deducted ${String.format(java.util.Locale.US, "%.2f", deficit)} deficit as Commission Paid from expected cash. Deficit eliminated!")
                 }
                 recalculate(updated)
             } else {
