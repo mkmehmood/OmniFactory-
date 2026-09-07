@@ -245,7 +245,7 @@ fun LedgerScreen(
             ModalBottomSheet(
                 onDismissRequest = { viewModel.closeAddSheet() },
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                containerColor = if (isDark) Color(0xFF101726) else Color(0xFFF8FAFC),
+                containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
                 LedgerAddEditSheetContent(
@@ -293,7 +293,7 @@ fun LedgerScreen(
             ModalBottomSheet(
                 onDismissRequest = { viewModel.setHistoryPanelOpen(false) },
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                containerColor = if (isDark) Color(0xFF0F172A) else Color(0xFFF1F5F9),
+                containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
                 LedgerHistoryPanelSheetContent(
@@ -389,7 +389,7 @@ private fun LedgerHeroBalanceCard(
     isDark: Boolean
 ) {
     val isPositive = summary.totalCashInHand >= 0
-    val cardColor = if (isDark) Color(0xFF0D253A) else Color(0xFF0F172A)
+    val cardColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
     val accentColor = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
 
     Surface(
@@ -397,7 +397,7 @@ private fun LedgerHeroBalanceCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
             .border(
-                BorderStroke(1.dp, if (isDark) Color(0x3338BDF8) else Color(0x22000000)),
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f)),
                 RoundedCornerShape(18.dp)
             )
             .testTag("ledger_hero_balance_card"),
@@ -429,20 +429,20 @@ private fun LedgerHeroBalanceCard(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
                         fontFamily = DigitalMonospaceFont,
-                        color = Color(0xFF94A3B8)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = Color(0x25FFFFFF)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
                 ) {
                     Text(
                         text = "${summary.transactionCount} Entries",
                         fontSize = 10.sp,
                         fontFamily = DigitalMonospaceFont,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFE2E8F0),
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                     )
                 }
@@ -455,11 +455,11 @@ private fun LedgerHeroBalanceCard(
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,
                 fontFamily = DigitalMonospaceFont,
-                color = if (isPositive) Color(0xFF34D399) else Color(0xFFF87171)
+                color = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
             )
 
             Spacer(modifier = Modifier.height(10.dp))
-            HorizontalDivider(thickness = 0.8.dp, color = Color(0x22FFFFFF))
+            HorizontalDivider(thickness = 0.8.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.25f else 0.15f))
             Spacer(modifier = Modifier.height(10.dp))
 
             // Payment Mode Breakdown Pills: Cash, Bank, and Others
@@ -507,7 +507,7 @@ private fun ModeMiniPill(
             .clickable { onClick() }
             .testTag("mode_pill_${label.lowercase()}"),
         shape = RoundedCornerShape(8.dp),
-        color = Color(0x1FFFFFFF)
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
@@ -517,7 +517,7 @@ private fun ModeMiniPill(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = Color(0xFF94A3B8),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(11.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
@@ -525,7 +525,7 @@ private fun ModeMiniPill(
                     text = label,
                     fontSize = 10.sp,
                     fontFamily = DigitalMonospaceFont,
-                    color = Color(0xFFCBD5E1),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -536,7 +536,7 @@ private fun ModeMiniPill(
                 fontSize = 11.5.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
-                color = if (amount >= 0) Color.White else Color(0xFFF87171),
+                color = if (amount >= 0) MaterialTheme.colorScheme.onSurface else Color(0xFFEF4444),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -563,7 +563,7 @@ private fun LedgerMetricCard(
             .clip(RoundedCornerShape(14.dp))
             .border(1.dp, accentColor.copy(alpha = 0.35f), RoundedCornerShape(14.dp)),
         shape = RoundedCornerShape(14.dp),
-        color = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF)
+        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
@@ -731,7 +731,7 @@ private fun LedgerPaymentModeBreakdownCard(
             .clip(RoundedCornerShape(16.dp))
             .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
-        color = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF)
+        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
@@ -819,7 +819,7 @@ private fun LedgerCategoryBreakdownCard(
             .clip(RoundedCornerShape(16.dp))
             .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
-        color = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF)
+        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
@@ -1104,7 +1104,7 @@ private fun LedgerAddEditSheetContent(
                         .clip(RoundedCornerShape(12.dp))
                         .border(1.dp, Color(0x33EF4444), RoundedCornerShape(12.dp)),
                     shape = RoundedCornerShape(12.dp),
-                    color = if (isDark) Color(0xFF1E1010) else Color(0xFFFEF2F2)
+                    color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else Color(0xFFFEF2F2)
                 ) {
                     Row(
                         modifier = Modifier
@@ -1182,7 +1182,7 @@ private fun LedgerAddEditSheetContent(
                     .clip(RoundedCornerShape(14.dp))
                     .border(1.dp, Color(0x443B82F6), RoundedCornerShape(14.dp)),
                 shape = RoundedCornerShape(14.dp),
-                color = if (isDark) Color(0xFF0F1E36) else Color(0xFFEFF6FF)
+                color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else Color(0xFFEFF6FF)
             ) {
                 Column(
                     modifier = Modifier
@@ -1445,7 +1445,7 @@ private fun LedgerAddEditSheetContent(
                                 Icon(
                                     imageVector = Icons.Default.Calculate,
                                     contentDescription = "Quick Calculator",
-                                    tint = uiState.formType.color,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(17.dp)
                                 )
                             }
@@ -1978,8 +1978,8 @@ private fun LedgerAddEditSheetContent(
     ) {
         Surface(
             shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-            color = if (isDark) Color(0xFF0F172A) else Color(0xFFFFFFFF),
-            border = BorderStroke(1.dp, if (isDark) Color(0x3338BDF8) else Color(0x22000000)),
+            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f)),
             shadowElevation = 16.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -2356,7 +2356,7 @@ private fun LedgerTransactionRow(
             .clickable { onClick() }
             .testTag("transaction_row_${tx.id}"),
         shape = RoundedCornerShape(12.dp),
-        color = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF),
+        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface,
         shadowElevation = 1.dp
     ) {
         Column(

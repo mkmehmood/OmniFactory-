@@ -1299,8 +1299,8 @@ private fun SettlementResultPanel(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        color = if (isDark) Color(0xFF0B132B).copy(alpha = 0.75f) else Color(0xFFF1F5F9),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x22000000))
+                        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f))
                     ) {
                         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
                             Row(
@@ -1782,7 +1782,7 @@ private fun SavedTransactionsBottomSheet(
                     .fillMaxWidth()
                     .padding(bottom = 10.dp),
                 shape = RoundedCornerShape(12.dp),
-                color = if (isDark) Color(0xFF0B132B) else Color(0xFFF1F5F9),
+                color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
                 border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f))
             ) {
                 Column(modifier = Modifier.padding(10.dp)) {
@@ -1925,13 +1925,13 @@ private fun SalesRecordCard(
             .clip(RoundedCornerShape(14.dp))
             .border(
                 1.dp,
-                if (isDark) Color(0x2AFFFFFF) else Color(0x20000000),
+                MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f),
                 RoundedCornerShape(14.dp)
             )
             .testTag("sales_record_card_${tx.id}"),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDark) Color(0xFF141E33) else Color(0xFFFFFFFF)
+            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {

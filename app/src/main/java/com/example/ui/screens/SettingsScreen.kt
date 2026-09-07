@@ -32,7 +32,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Animation
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -70,6 +69,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Storage
@@ -175,7 +175,7 @@ fun SettingsScreen(
     onHapticIntensityChange: (HapticIntensity) -> Unit = {},
     onSoundIntensityChange: (SoundIntensity) -> Unit = {},
     onToggleDoubleZero: (Boolean) -> Unit,
-    onNavigateBack: () -> Unit,
+    onOpenSidebar: () -> Unit = {},
     settingsViewModel: SettingsViewModel = viewModel(),
     onPreferencesReload: () -> Unit = {},
     onCopyToClipboard: (String, String) -> Unit = { _, _ -> },
@@ -212,46 +212,59 @@ fun SettingsScreen(
     var hapticDropdownExpanded by remember { mutableStateOf(false) }
     var soundDropdownExpanded by remember { mutableStateOf(false) }
 
+    val currentSkin = currentAppThemeSkin
+    val isCharcoalTheme = currentSkin == AppThemeSkin.DARK_CHARCOAL
+    val titleBg = when {
+        isCharcoalTheme -> Color(0xFF1C1C1E)
+        !isDark -> Color(0xFFF2F2F7)
+        else -> currentSkin.surfaceVariant.copy(alpha = 0.55f)
+    }
+    val titleBorder = when {
+        isCharcoalTheme -> Color(0x33FFFFFF)
+        !isDark -> Color(0x22000000)
+        else -> currentSkin.outline.copy(alpha = 0.35f)
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize().testTag("settings_screen"),
         topBar = {
             CenterAlignedTopAppBar(
+                navigationIcon = {
+                    Spacer(modifier = Modifier.size(40.dp))
+                },
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(primaryColor.copy(alpha = 0.18f)),
-                            contentAlignment = Alignment.Center
+                    Surface(
+                        onClick = onOpenSidebar,
+                        shape = RoundedCornerShape(22.dp),
+                        color = titleBg,
+                        border = BorderStroke(1.dp, titleBorder),
+                        shadowElevation = if (!isDark && !isCharcoalTheme) 1.5.dp else 0.dp,
+                        modifier = Modifier.testTag("topbar_title_button")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Palette,
+                                imageVector = Icons.Default.Settings,
                                 contentDescription = null,
                                 tint = primaryColor,
                                 modifier = Modifier.size(18.dp)
                             )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Settings",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Settings",
-                            fontFamily = DigitalMonospaceFont,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp
-                        )
                     }
                 },
-                navigationIcon = {
-                    IconButton(
-                        onClick = onNavigateBack,
-                        modifier = Modifier.testTag("settings_back_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                actions = {
+                    Spacer(modifier = Modifier.size(40.dp))
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = Color.Transparent

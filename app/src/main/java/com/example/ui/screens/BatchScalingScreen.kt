@@ -86,7 +86,10 @@ import com.example.ui.ComponentInput
 import com.example.ui.ScalingPreset
 import com.example.ui.components.BlinkingCursorPointer
 import com.example.ui.components.InputFieldCopyPasteMenu
+import com.example.ui.components.LiquidGlassDialpadInput
+import com.example.ui.components.LiquidGlassTextField
 import com.example.ui.components.SmartStationKeypad
+import com.example.ui.components.liquidGlassField
 import com.example.ui.theme.DigitalMonospaceFont
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -611,27 +614,21 @@ private fun ComponentRowItem(
             )
 
             // Name Field
-            OutlinedTextField(
+            LiquidGlassTextField(
                 value = component.name,
                 onValueChange = onNameChange,
-                placeholder = { Text("Name", fontSize = 12.sp) },
+                placeholder = "Name",
                 singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                accentColor = primaryColor,
+                testTag = "component_name_input_$index",
                 modifier = Modifier
                     .weight(1.2f)
-                    .testTag("component_name_input_$index")
                     .onFocusChanged {
                         if (it.isFocused) {
                             onDismissKeypad()
                         }
-                    },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = primaryColor,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedContainerColor = if (isDark) Color(0x22FFFFFF) else Color(0x10000000),
-                    unfocusedContainerColor = if (isDark) Color(0x14FFFFFF) else Color(0x08000000)
-                ),
-                shape = RoundedCornerShape(8.dp),
-                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    }
             )
 
             Spacer(modifier = Modifier.width(6.dp))
@@ -640,32 +637,20 @@ private fun ComponentRowItem(
             Box(
                 modifier = Modifier.weight(0.9f)
             ) {
-                OutlinedTextField(
+                LiquidGlassDialpadInput(
+                    label = "",
                     value = component.amountText,
-                    onValueChange = onAmountChange,
-                    placeholder = { Text("0", fontSize = 12.sp) },
-                    suffix = {
-                        if (isAmountFocused) {
-                            BlinkingCursorPointer(color = primaryColor)
-                        }
+                    isFocused = isAmountFocused,
+                    onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        onFocusAmount()
                     },
-                    singleLine = true,
-                    readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("component_amount_input_$index"),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = primaryColor,
-                        unfocusedBorderColor = if (isAmountFocused) primaryColor else Color.Transparent,
-                        focusedContainerColor = if (isDark) Color(0x22FFFFFF) else Color(0x10000000),
-                        unfocusedContainerColor = if (isDark) Color(0x14FFFFFF) else Color(0x08000000)
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    textStyle = androidx.compose.ui.text.TextStyle(
-                        fontSize = 13.sp,
-                        fontFamily = DigitalMonospaceFont,
-                        fontWeight = FontWeight.Bold
-                    )
+                    placeholder = "0",
+                    accentColor = primaryColor,
+                    shape = RoundedCornerShape(12.dp),
+                    testTag = "component_amount_input_$index",
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 // Clickable overlay with tap and long-press

@@ -26,13 +26,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Scale
@@ -75,6 +73,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.BatchScalingViewModel
 import com.example.ui.CalculatorViewModel
+import com.example.ui.components.liquidGlassField
 import com.example.ui.ConverterViewModel
 import com.example.ui.ExpensesViewModel
 import com.example.ui.LedgerViewModel
@@ -260,8 +259,8 @@ class MainActivity : ComponentActivity() {
                                 settingsViewModel = settingsViewModel,
                                 onPreferencesReload = { calculatorViewModel.reloadPreferences() },
                                 onCopyToClipboard = copyToClipboard,
-                                onNavigateBack = {
-                                    currentDestination = DrawerDestination.CALCULATOR
+                                onOpenSidebar = {
+                                    scope.launch { drawerState.open() }
                                 }
                             )
                         } else {
@@ -295,7 +294,7 @@ class MainActivity : ComponentActivity() {
                                         DrawerDestination.SALES -> Icons.Default.ReceiptLong
                                         DrawerDestination.CONVERTER -> Icons.Default.Calculate
                                         DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Calculate
-                                        DrawerDestination.BATCH_SCALING -> Icons.Default.Scale
+                                        DrawerDestination.BATCH_SCALING -> Icons.Default.Calculate
                                         else -> Icons.Default.History
                                     }
                                     val actionDescription = when (currentDestination) {
@@ -339,10 +338,7 @@ class MainActivity : ComponentActivity() {
                                         onOpenSidebar = {
                                             scope.launch { drawerState.open() }
                                         },
-                                        onActionClick = onActionClick,
-                                        onBackToCalculator = if (currentDestination != DrawerDestination.CALCULATOR) {
-                                            { currentDestination = DrawerDestination.CALCULATOR }
-                                        } else null
+                                        onActionClick = onActionClick
                                     )
                                 },
                                 snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -552,34 +548,20 @@ private fun LiquidGlassTopBar(
     actionIcon: ImageVector,
     actionDescription: String,
     onOpenSidebar: () -> Unit,
-    onActionClick: () -> Unit,
-    onBackToCalculator: (() -> Unit)? = null
+    onActionClick: () -> Unit
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
     val currentSkin = com.example.ui.theme.LocalAppThemeSkin.current
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val isCharcoalTheme = currentSkin == com.example.ui.theme.AppThemeSkin.DARK_CHARCOAL
 
-    val iconButtonBg = when {
-        isCharcoalTheme -> Color(0xFF2C2C2E)
-        !isDark -> Color(0xFFF2F2F7)
-        else -> currentSkin.surfaceVariant.copy(alpha = 0.5f)
-    }
-    val iconButtonBorder = when {
-        isCharcoalTheme -> Color(0x2EFFFFFF)
-        !isDark -> Color(0x1E000000)
-        else -> currentSkin.outline.copy(alpha = 0.35f)
-    }
-    val titleBg = when {
-        isCharcoalTheme -> Color(0xFF1C1C1E)
-        !isDark -> Color(0xFFF2F2F7)
-        else -> currentSkin.surfaceVariant.copy(alpha = 0.55f)
-    }
-    val titleBorder = when {
-        isCharcoalTheme -> Color(0x33FFFFFF)
-        !isDark -> Color(0x22000000)
-        else -> currentSkin.outline.copy(alpha = 0.35f)
-    }
+    val titleShape = RoundedCornerShape(24.dp)
+    val titleBgBrush = Brush.verticalGradient(
+        listOf(
+            currentSkin.surfaceVariant.copy(alpha = if (isDark) 0.60f else 0.70f),
+            currentSkin.surface.copy(alpha = if (isDark) 0.85f else 0.90f)
+        )
+    )
 
     Box(
         modifier = Modifier
@@ -588,55 +570,26 @@ private fun LiquidGlassTopBar(
     ) {
         CenterAlignedTopAppBar(
             navigationIcon = {
-                if (onBackToCalculator != null) {
-                    IconButton(
-                        onClick = onBackToCalculator,
-                        modifier = Modifier
-                            .padding(start = 4.dp)
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(iconButtonBg)
-                            .border(BorderStroke(1.dp, iconButtonBorder), CircleShape)
-                            .testTag("back_to_calculator_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back to Calculator",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                } else {
-                    IconButton(
-                        onClick = onOpenSidebar,
-                        modifier = Modifier
-                            .padding(start = 4.dp)
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(iconButtonBg)
-                            .border(BorderStroke(1.dp, iconButtonBorder), CircleShape)
-                            .testTag("sidebar_menu_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = "Open Sidebar Navigation",
-                            tint = primaryColor,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                }
+                // Symmetrical spacing placeholder to preserve centered capsule alignment
+                Spacer(modifier = Modifier.size(42.dp))
             },
             title = {
-                Surface(
-                    onClick = onOpenSidebar,
-                    shape = RoundedCornerShape(22.dp),
-                    color = titleBg,
-                    border = BorderStroke(1.dp, titleBorder),
-                    shadowElevation = if (!isDark && !isCharcoalTheme) 1.5.dp else 0.dp,
-                    modifier = Modifier.testTag("topbar_title_button")
+                Box(
+                    modifier = Modifier
+                        .liquidGlassField(
+                            isFocused = false,
+                            shape = titleShape,
+                            accentColor = primaryColor,
+                            isDark = isDark,
+                            elevation = 3.dp
+                        )
+                        .background(titleBgBrush)
+                        .clickable { onOpenSidebar() }
+                        .testTag("topbar_title_button"),
+                    contentAlignment = Alignment.Center
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
@@ -658,15 +611,28 @@ private fun LiquidGlassTopBar(
                 }
             },
             actions = {
-                IconButton(
-                    onClick = onActionClick,
+                Box(
                     modifier = Modifier
                         .padding(end = 4.dp)
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(iconButtonBg)
-                        .border(BorderStroke(1.dp, iconButtonBorder), CircleShape)
-                        .testTag("topbar_action_button")
+                        .size(42.dp)
+                        .liquidGlassField(
+                            isFocused = false,
+                            shape = CircleShape,
+                            accentColor = primaryColor,
+                            isDark = isDark,
+                            elevation = 2.dp
+                        )
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    currentSkin.surfaceVariant.copy(alpha = if (isDark) 0.60f else 0.75f),
+                                    currentSkin.surface.copy(alpha = if (isDark) 0.85f else 0.90f)
+                                )
+                            )
+                        )
+                        .clickable { onActionClick() }
+                        .testTag("topbar_action_button"),
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = actionIcon,

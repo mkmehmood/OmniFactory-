@@ -36,7 +36,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.ContentCopy
@@ -333,14 +332,14 @@ fun ConverterCategoriesHub(
             items(ConverterCategory.values()) { category ->
                 val isSelected = activeCategory == category
                 val cardBg = if (isSelected) {
-                    category.accentColor.copy(alpha = 0.20f)
+                    primaryColor.copy(alpha = 0.16f)
                 } else {
-                    if (isDark) Color(0xFF131C2D) else Color(0xFFFFFFFF)
+                    if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
                 }
                 val borderClr = if (isSelected) {
-                    category.accentColor.copy(alpha = 0.8f)
+                    primaryColor.copy(alpha = 0.7f)
                 } else {
-                    if (isDark) Color(0x22FFFFFF) else Color(0x18000000)
+                    MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f)
                 }
 
                 Surface(
@@ -366,13 +365,13 @@ fun ConverterCategoriesHub(
                             modifier = Modifier
                                 .size(46.dp)
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(category.accentColor.copy(alpha = 0.22f)),
+                                .background(if (isSelected) primaryColor.copy(alpha = 0.25f) else primaryColor.copy(alpha = 0.12f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = category.icon,
                                 contentDescription = category.shortName,
-                                tint = category.accentColor,
+                                tint = primaryColor,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -387,7 +386,7 @@ fun ConverterCategoriesHub(
                             textAlign = TextAlign.Center,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            color = if (isSelected) category.accentColor else MaterialTheme.colorScheme.onSurface
+                            color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -402,7 +401,7 @@ fun ConverterCategoriesHub(
                         .clip(cardShape)
                         .border(
                             1.dp,
-                            if (isDark) Color(0x22FFFFFF) else Color(0x18000000),
+                            MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f),
                             cardShape
                         )
                         .clickable {
@@ -410,7 +409,7 @@ fun ConverterCategoriesHub(
                         }
                         .testTag("grid_item_all_suites"),
                     shape = cardShape,
-                    color = if (isDark) Color(0xFF131C2D) else Color(0xFFFFFFFF),
+                    color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface,
                     shadowElevation = if (isDark) 0.dp else 1.dp
                 ) {
                     Column(
@@ -424,7 +423,7 @@ fun ConverterCategoriesHub(
                             modifier = Modifier
                                 .size(46.dp)
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(infoColor.copy(alpha = 0.18f)),
+                                .background(infoColor.copy(alpha = 0.14f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -463,15 +462,16 @@ fun ConverterActiveHeader(
     modifier: Modifier = Modifier
 ) {
     val cardShape = shapeStructureStyle.toCardShape()
+    val primaryColor = MaterialTheme.colorScheme.primary
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .clip(cardShape)
-            .border(1.dp, category.accentColor.copy(alpha = 0.4f), cardShape)
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.20f), cardShape)
             .testTag("converter_active_header"),
         shape = cardShape,
-        color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF),
+        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface,
         shadowElevation = if (isDark) 0.dp else 2.dp
     ) {
         Row(
@@ -486,13 +486,13 @@ fun ConverterActiveHeader(
                     modifier = Modifier
                         .size(38.dp)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(category.accentColor.copy(alpha = 0.2f)),
+                        .background(primaryColor.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = category.icon,
                         contentDescription = category.title,
-                        tint = category.accentColor,
+                        tint = primaryColor,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -516,32 +516,23 @@ fun ConverterActiveHeader(
                 }
             }
 
-            // Back to Categories Hub Button
+            // Back to Categories Hub Button (Icon only - categories text removed)
             Surface(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
                     .clickable { onBackToGrid() }
                     .testTag("back_to_grid_button"),
-                shape = RoundedCornerShape(8.dp),
-                color = category.accentColor.copy(alpha = 0.18f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, category.accentColor.copy(alpha = 0.5f))
+                shape = RoundedCornerShape(10.dp),
+                color = primaryColor.copy(alpha = 0.15f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.45f))
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.Category,
                         contentDescription = "All Categories",
-                        tint = category.accentColor,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Categories",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = category.accentColor
+                        tint = primaryColor,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
@@ -609,9 +600,9 @@ private fun CurrencyConverterModule(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(cardShape)
-                .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), cardShape),
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f), cardShape),
             shape = cardShape,
-            color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
+            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
         ) {
             Row(
                 modifier = Modifier
@@ -663,11 +654,11 @@ private fun CurrencyConverterModule(
                 .clip(cardShape)
                 .border(
                     1.dp,
-                    if (isAmountFocused) primaryColor.copy(alpha = 0.8f) else if (isDark) Color(0x22FFFFFF) else Color(0x18000000),
+                    if (isAmountFocused) primaryColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f),
                     cardShape
                 ),
             shape = cardShape,
-            color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
+            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -742,7 +733,7 @@ private fun CurrencyConverterModule(
                             .clip(inputShape)
                             .border(
                                 1.5.dp,
-                                if (isAmountFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                if (isAmountFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
                                 inputShape
                             )
                             .clickable {
@@ -792,7 +783,7 @@ private fun CurrencyConverterModule(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(8.dp))
-                                .border(1.dp, if (isDark) Color(0x18FFFFFF) else Color(0x18000000), RoundedCornerShape(8.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f), RoundedCornerShape(8.dp))
                                 .clickable {
                                     viewModel.setCurrencyAmount(clean)
                                     onFieldClicked("currency_amount", "Amount in ${fromCurrency.code}")
@@ -826,7 +817,7 @@ private fun CurrencyConverterModule(
                     .clickable { viewModel.swapCurrency() }
                     .testTag("currency_swap_button"),
                 shape = CircleShape,
-                color = if (isDark) Color(0xFF1B2436) else Color(0xFFF1F5F9),
+                color = if (isDark) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
                 shadowElevation = 4.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -847,7 +838,7 @@ private fun CurrencyConverterModule(
                 .clip(cardShape)
                 .border(1.dp, primaryColor.copy(alpha = 0.35f), cardShape),
             shape = cardShape,
-            color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
+            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -988,9 +979,9 @@ private fun BmiConverterModule(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(cardShape)
-                .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), cardShape),
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f), cardShape),
             shape = cardShape,
-            color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
+            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
         ) {
             Row(modifier = Modifier.padding(6.dp)) {
                 Surface(
@@ -1036,9 +1027,9 @@ private fun BmiConverterModule(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(cardShape)
-                .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), cardShape),
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f), cardShape),
             shape = cardShape,
-            color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
+            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (uiState.bmiUnitSystem == BmiUnitSystem.METRIC) {
@@ -1056,7 +1047,7 @@ private fun BmiConverterModule(
                                 .clip(inputShape)
                                 .border(
                                     1.5.dp,
-                                    if (isWeightFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                    if (isWeightFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
                                     inputShape
                                 )
                                 .clickable { onFieldClicked("bmi_weight_metric", "Weight (kg)") }
@@ -1083,7 +1074,7 @@ private fun BmiConverterModule(
                                 .clip(inputShape)
                                 .border(
                                     1.5.dp,
-                                    if (isHeightFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                    if (isHeightFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
                                     inputShape
                                 )
                                 .clickable { onFieldClicked("bmi_height_metric", "Height (cm)") }
@@ -1114,7 +1105,7 @@ private fun BmiConverterModule(
                             .clip(inputShape)
                             .border(
                                 1.5.dp,
-                                if (isImpWeightFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                if (isImpWeightFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
                                 inputShape
                             )
                             .clickable { onFieldClicked("bmi_weight_imperial", "Weight (lbs)") }
@@ -1144,7 +1135,7 @@ private fun BmiConverterModule(
                                 .clip(inputShape)
                                 .border(
                                     1.5.dp,
-                                    if (isFeetFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                    if (isFeetFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
                                     inputShape
                                 )
                                 .clickable { onFieldClicked("bmi_feet_imperial", "Height (Feet)") }
@@ -1170,7 +1161,7 @@ private fun BmiConverterModule(
                                 .clip(inputShape)
                                 .border(
                                     1.5.dp,
-                                    if (isInchesFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                    if (isInchesFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
                                     inputShape
                                 )
                                 .clickable { onFieldClicked("bmi_inches_imperial", "Inches (0-11)") }
@@ -1202,7 +1193,7 @@ private fun BmiConverterModule(
                 .clip(cardShape)
                 .border(1.dp, categoryColor.copy(alpha = 0.5f), cardShape),
             shape = cardShape,
-            color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
+            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.padding(18.dp)) {
                 Row(
@@ -1343,11 +1334,11 @@ private fun StandardUnitsConverterModule(
                 .clip(cardShape)
                 .border(
                     1.dp,
-                    if (isInputFocused) primaryColor.copy(alpha = 0.8f) else if (isDark) Color(0x22FFFFFF) else Color(0x18000000),
+                    if (isInputFocused) primaryColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f),
                     cardShape
                 ),
             shape = cardShape,
-            color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
+            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -1410,7 +1401,7 @@ private fun StandardUnitsConverterModule(
                             .clip(inputShape)
                             .border(
                                 1.5.dp,
-                                if (isInputFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                if (isInputFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
                                 inputShape
                             )
                             .clickable {
@@ -1463,7 +1454,7 @@ private fun StandardUnitsConverterModule(
                     .clickable { viewModel.swapStandardUnits() }
                     .testTag("standard_swap_button"),
                 shape = CircleShape,
-                color = if (isDark) Color(0xFF1B2436) else Color(0xFFF1F5F9),
+                color = if (isDark) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
                 shadowElevation = 4.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -1484,7 +1475,7 @@ private fun StandardUnitsConverterModule(
                 .clip(cardShape)
                 .border(1.dp, primaryColor.copy(alpha = 0.35f), cardShape),
             shape = cardShape,
-            color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
+            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -1569,9 +1560,9 @@ private fun StandardUnitsConverterModule(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(cardShape)
-                .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), cardShape),
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f), cardShape),
             shape = cardShape,
-            color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
+            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -1646,11 +1637,11 @@ private fun TemperatureConverterModule(
                 .clip(cardShape)
                 .border(
                     1.dp,
-                    if (isTempFocused) primaryColor.copy(alpha = 0.8f) else if (isDark) Color(0x22FFFFFF) else Color(0x18000000),
+                    if (isTempFocused) primaryColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f),
                     cardShape
                 ),
             shape = cardShape,
-            color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
+            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -1708,7 +1699,7 @@ private fun TemperatureConverterModule(
                             .clip(inputShape)
                             .border(
                                 1.5.dp,
-                                if (isTempFocused) primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                                if (isTempFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
                                 inputShape
                             )
                             .clickable {
@@ -1761,7 +1752,7 @@ private fun TemperatureConverterModule(
                     .clickable { viewModel.swapTempUnits() }
                     .testTag("temp_swap_button"),
                 shape = CircleShape,
-                color = if (isDark) Color(0xFF1B2436) else Color(0xFFF1F5F9),
+                color = if (isDark) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
                 shadowElevation = 4.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -1782,7 +1773,7 @@ private fun TemperatureConverterModule(
                 .clip(cardShape)
                 .border(1.dp, primaryColor.copy(alpha = 0.35f), cardShape),
             shape = cardShape,
-            color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
+            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -1857,7 +1848,7 @@ private fun TemperatureConverterModule(
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
-                HorizontalDivider(color = if (isDark) Color(0x18FFFFFF) else Color(0x18000000))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.25f else 0.15f))
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = formula,
@@ -1873,9 +1864,9 @@ private fun TemperatureConverterModule(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(cardShape)
-                .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), cardShape),
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f), cardShape),
             shape = cardShape,
-            color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
+            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -1945,7 +1936,7 @@ private fun NumberSystemConverterModule(
             onCopy = { onCopyToClipboard(uiState.numDecimal, "Decimal") },
             inputShape = inputShape,
             cardShape = cardShape,
-            accentColor = Color(0xFF3B82F6),
+            accentColor = primaryColor,
             isDark = isDark,
             testTag = "num_decimal_input"
         )
@@ -1960,7 +1951,7 @@ private fun NumberSystemConverterModule(
             onCopy = { onCopyToClipboard(uiState.numBinary, "Binary") },
             inputShape = inputShape,
             cardShape = cardShape,
-            accentColor = Color(0xFF10B981),
+            accentColor = primaryColor,
             isDark = isDark,
             testTag = "num_binary_input"
         )
@@ -1975,7 +1966,7 @@ private fun NumberSystemConverterModule(
             onCopy = { onCopyToClipboard(uiState.numHex, "Hexadecimal") },
             inputShape = inputShape,
             cardShape = cardShape,
-            accentColor = Color(0xFFA855F7),
+            accentColor = primaryColor,
             isDark = isDark,
             testTag = "num_hex_input"
         )
@@ -1990,7 +1981,7 @@ private fun NumberSystemConverterModule(
             onCopy = { onCopyToClipboard(uiState.numOctal, "Octal") },
             inputShape = inputShape,
             cardShape = cardShape,
-            accentColor = Color(0xFFF59E0B),
+            accentColor = primaryColor,
             isDark = isDark,
             testTag = "num_octal_input"
         )
@@ -2001,9 +1992,9 @@ private fun NumberSystemConverterModule(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(cardShape)
-                .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), cardShape),
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f), cardShape),
             shape = cardShape,
-            color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
+            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -2073,12 +2064,12 @@ private fun SmartNumberBaseCard(
             .clip(cardShape)
             .border(
                 1.dp,
-                if (isFocused) accentColor else accentColor.copy(alpha = 0.35f),
+                if (isFocused) accentColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f),
                 cardShape
             )
             .clickable { onCardClicked() },
         shape = cardShape,
-        color = if (isDark) Color(0xFF141C2B) else Color(0xFFFFFFFF)
+        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
@@ -2115,7 +2106,7 @@ private fun SmartNumberBaseCard(
                     .clip(inputShape)
                     .border(
                         1.5.dp,
-                        if (isFocused) accentColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                        if (isFocused) accentColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
                         inputShape
                     )
                     .testTag(testTag),

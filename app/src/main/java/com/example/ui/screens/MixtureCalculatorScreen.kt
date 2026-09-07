@@ -224,7 +224,7 @@ fun MixtureCalculatorScreen(
                     Brush.radialGradient(
                         colors = listOf(
                             primaryColor.copy(alpha = if (isDark) 0.15f else 0.08f),
-                            Color(0xFF38BDF8).copy(alpha = if (isDark) 0.10f else 0.05f),
+                            MaterialTheme.colorScheme.secondary.copy(alpha = if (isDark) 0.10f else 0.05f),
                             Color.Transparent
                         )
                     )
