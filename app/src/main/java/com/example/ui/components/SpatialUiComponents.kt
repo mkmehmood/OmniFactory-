@@ -89,38 +89,40 @@ fun Modifier.liquidGlassSurface(
     elevation: Dp = 4.dp,
     isDark: Boolean = true,
     isFocused: Boolean = false,
-    accentColor: Color = Color(0xFF00E5FF),
+    accentColor: Color = Color(0xFFFF9F0A),
     containerBaseColor: Color? = null,
     highlightIntensity: Float = 1.0f
 ): Modifier = this
     .shadow(
         elevation = if (isFocused) (elevation + 3.dp) else elevation,
         shape = shape,
-        ambientColor = if (isFocused) accentColor.copy(alpha = 0.28f) else (if (isDark) Color(0x35000000) else Color(0x15000000)),
-        spotColor = if (isFocused) accentColor.copy(alpha = 0.40f) else (if (isDark) Color(0x45000000) else Color(0x22000000))
+        ambientColor = if (isFocused) accentColor.copy(alpha = 0.28f) else (if (isDark) Color(0x35000000) else Color(0x10000000)),
+        spotColor = if (isFocused) accentColor.copy(alpha = 0.38f) else (if (isDark) Color(0x45000000) else Color(0x18000000))
     )
     .clip(shape)
     .drawBehind {
-        // 1. Frosted translucent liquid glass body
-        val baseAlpha = if (isDark) 0.72f else 0.88f
+        // 1. Frosted translucent liquid glass body matching photo theme cards & tactile keys
         val bodyBrush = if (containerBaseColor != null) {
+            val baseAlpha = if (isDark) 0.82f else 0.94f
             Brush.verticalGradient(
                 listOf(
                     containerBaseColor.copy(alpha = baseAlpha),
-                    containerBaseColor.copy(alpha = (baseAlpha - 0.12f).coerceAtLeast(0.35f))
+                    containerBaseColor.copy(alpha = (baseAlpha - 0.08f).coerceAtLeast(0.40f))
                 )
             )
         } else {
             Brush.verticalGradient(
                 if (isDark) {
+                    // Dark Charcoal tactile key/surface color (#2C2C2E / #1C1C1E)
                     listOf(
-                        Color(0xFF1B2333).copy(alpha = 0.78f),
-                        Color(0xFF0F1522).copy(alpha = 0.86f)
+                        Color(0xFF2C2C2E).copy(alpha = 0.88f),
+                        Color(0xFF1C1C1E).copy(alpha = 0.92f)
                     )
                 } else {
+                    // Pure Light crisp white & soft silver (#FFFFFF / #F2F2F7)
                     listOf(
-                        Color.White.copy(alpha = 0.94f),
-                        Color(0xFFF0F3F8).copy(alpha = 0.82f)
+                        Color.White.copy(alpha = 0.96f),
+                        Color(0xFFF2F2F7).copy(alpha = 0.92f)
                     )
                 }
             )
@@ -132,21 +134,21 @@ fun Modifier.liquidGlassSurface(
             drawRect(
                 Brush.linearGradient(
                     listOf(
-                        accentColor.copy(alpha = 0.14f),
-                        accentColor.copy(alpha = 0.04f)
+                        accentColor.copy(alpha = if (isDark) 0.12f else 0.08f),
+                        accentColor.copy(alpha = 0.03f)
                     )
                 )
             )
         }
 
         // 3. Liquid Glass Specular Curve / Top Rim Glow (matching the curved light sheen in photos)
-        val glossAlpha = ((if (isFocused) (if (isDark) 0.32f else 0.48f) else (if (isDark) 0.18f else 0.34f)) * highlightIntensity).coerceIn(0f, 1f)
-        val specularHeight = (size.height * 0.52f).coerceAtLeast(16f)
+        val glossAlpha = ((if (isFocused) (if (isDark) 0.28f else 0.40f) else (if (isDark) 0.16f else 0.26f)) * highlightIntensity).coerceIn(0f, 1f)
+        val specularHeight = (size.height * 0.48f).coerceAtLeast(14f)
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(
                     Color.White.copy(alpha = glossAlpha),
-                    Color.White.copy(alpha = glossAlpha * 0.35f),
+                    Color.White.copy(alpha = glossAlpha * 0.28f),
                     Color.Transparent
                 ),
                 startY = 0f,
@@ -155,14 +157,14 @@ fun Modifier.liquidGlassSurface(
         )
     }
     .border(
-        width = if (isFocused) 1.5.dp else 1.1.dp,
+        width = if (isFocused) 1.5.dp else 1.0.dp,
         brush = if (isFocused) {
             Brush.linearGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = if (isDark) 0.90f else 0.98f),
+                    if (isDark) Color.White.copy(alpha = 0.70f) else accentColor.copy(alpha = 0.80f),
                     accentColor,
-                    accentColor.copy(alpha = 0.80f),
-                    Color.White.copy(alpha = 0.35f)
+                    accentColor.copy(alpha = 0.85f),
+                    if (isDark) Color.White.copy(alpha = 0.25f) else accentColor.copy(alpha = 0.40f)
                 ),
                 start = Offset(0f, 0f),
                 end = Offset(400f, 400f)
@@ -170,9 +172,9 @@ fun Modifier.liquidGlassSurface(
         } else {
             Brush.linearGradient(
                 colors = listOf(
-                    if (isDark) Color.White.copy(alpha = 0.50f) else Color.White.copy(alpha = 0.90f),
-                    if (isDark) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.10f),
-                    if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.03f)
+                    if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.14f),
+                    if (isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f),
+                    if (isDark) Color.White.copy(alpha = 0.04f) else Color.Black.copy(alpha = 0.03f)
                 ),
                 start = Offset(0f, 0f),
                 end = Offset(300f, 300f)
