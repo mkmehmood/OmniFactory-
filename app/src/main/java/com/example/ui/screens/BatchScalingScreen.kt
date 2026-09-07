@@ -50,8 +50,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import com.example.ui.components.LiquidGlassTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -611,11 +610,12 @@ private fun ComponentRowItem(
             )
 
             // Name Field
-            OutlinedTextField(
+            LiquidGlassTextField(
                 value = component.name,
                 onValueChange = onNameChange,
                 placeholder = { Text("Name", fontSize = 12.sp) },
                 singleLine = true,
+                accentColor = primaryColor,
                 modifier = Modifier
                     .weight(1.2f)
                     .testTag("component_name_input_$index")
@@ -624,13 +624,6 @@ private fun ComponentRowItem(
                             onDismissKeypad()
                         }
                     },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = primaryColor,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedContainerColor = if (isDark) Color(0x22FFFFFF) else Color(0x10000000),
-                    unfocusedContainerColor = if (isDark) Color(0x14FFFFFF) else Color(0x08000000)
-                ),
-                shape = RoundedCornerShape(8.dp),
                 textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium)
             )
 
@@ -640,7 +633,7 @@ private fun ComponentRowItem(
             Box(
                 modifier = Modifier.weight(0.9f)
             ) {
-                OutlinedTextField(
+                LiquidGlassTextField(
                     value = component.amountText,
                     onValueChange = onAmountChange,
                     placeholder = { Text("0", fontSize = 12.sp) },
@@ -651,16 +644,11 @@ private fun ComponentRowItem(
                     },
                     singleLine = true,
                     readOnly = true,
+                    forceFocused = isAmountFocused,
+                    accentColor = primaryColor,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("component_amount_input_$index"),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = primaryColor,
-                        unfocusedBorderColor = if (isAmountFocused) primaryColor else Color.Transparent,
-                        focusedContainerColor = if (isDark) Color(0x22FFFFFF) else Color(0x10000000),
-                        unfocusedContainerColor = if (isDark) Color(0x14FFFFFF) else Color(0x08000000)
-                    ),
-                    shape = RoundedCornerShape(8.dp),
                     textStyle = androidx.compose.ui.text.TextStyle(
                         fontSize = 13.sp,
                         fontFamily = DigitalMonospaceFont,
@@ -781,7 +769,7 @@ private fun ScalingParametersCard(
                 Box(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    OutlinedTextField(
+                    LiquidGlassTextField(
                         value = targetTotalText,
                         onValueChange = onSetTargetTotal,
                         label = { Text("Target Grand Total") },
@@ -793,14 +781,11 @@ private fun ScalingParametersCard(
                         },
                         singleLine = true,
                         readOnly = true,
+                        forceFocused = (focusedFieldId == "target_total"),
+                        accentColor = primaryColor,
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("target_total_input"),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = primaryColor,
-                            unfocusedBorderColor = if (focusedFieldId == "target_total") primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
-                        ),
-                        shape = RoundedCornerShape(10.dp),
                         textStyle = androidx.compose.ui.text.TextStyle(
                             fontSize = 15.sp,
                             fontFamily = DigitalMonospaceFont,
@@ -835,7 +820,7 @@ private fun ScalingParametersCard(
                 Box(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    OutlinedTextField(
+                    LiquidGlassTextField(
                         value = batchSizeText,
                         onValueChange = onSetBatchSize,
                         label = { Text("Batch Size (weight/quantity per unit)") },
@@ -847,14 +832,11 @@ private fun ScalingParametersCard(
                         },
                         singleLine = true,
                         readOnly = true,
+                        forceFocused = (focusedFieldId == "batch_size"),
+                        accentColor = primaryColor,
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("batch_size_input"),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = primaryColor,
-                            unfocusedBorderColor = if (focusedFieldId == "batch_size") primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
-                        ),
-                        shape = RoundedCornerShape(10.dp),
                         textStyle = androidx.compose.ui.text.TextStyle(
                             fontSize = 15.sp,
                             fontFamily = DigitalMonospaceFont,
@@ -931,7 +913,7 @@ private fun ScalingParametersCard(
                     Box(
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        OutlinedTextField(
+                        LiquidGlassTextField(
                             value = batchCountText,
                             onValueChange = onSetBatchCount,
                             label = { Text("Number of Batches") },
@@ -943,14 +925,11 @@ private fun ScalingParametersCard(
                             },
                             singleLine = true,
                             readOnly = true,
+                            forceFocused = (focusedFieldId == "batch_count"),
+                            accentColor = primaryColor,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("batch_count_input"),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = primaryColor,
-                                unfocusedBorderColor = if (focusedFieldId == "batch_count") primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
-                            ),
-                            shape = RoundedCornerShape(10.dp),
                             textStyle = androidx.compose.ui.text.TextStyle(
                                 fontSize = 15.sp,
                                 fontFamily = DigitalMonospaceFont,
@@ -984,7 +963,7 @@ private fun ScalingParametersCard(
                     Box(
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        OutlinedTextField(
+                        LiquidGlassTextField(
                             value = availableAmountText,
                             onValueChange = onSetAvailableAmount,
                             label = { Text("Total Available Amount") },
@@ -996,14 +975,11 @@ private fun ScalingParametersCard(
                             },
                             singleLine = true,
                             readOnly = true,
+                            forceFocused = (focusedFieldId == "available_amount"),
+                            accentColor = primaryColor,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("available_amount_input"),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = primaryColor,
-                                unfocusedBorderColor = if (focusedFieldId == "available_amount") primaryColor else if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
-                            ),
-                            shape = RoundedCornerShape(10.dp),
                             textStyle = androidx.compose.ui.text.TextStyle(
                                 fontSize = 15.sp,
                                 fontFamily = DigitalMonospaceFont,

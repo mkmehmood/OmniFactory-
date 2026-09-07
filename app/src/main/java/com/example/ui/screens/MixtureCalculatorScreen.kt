@@ -49,8 +49,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import com.example.ui.components.LiquidGlassTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -738,12 +737,13 @@ private fun Step1EnterTargetIngredients(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Text Input: Ingredient Name
-                OutlinedTextField(
+                LiquidGlassTextField(
                     value = nameInput,
                     onValueChange = onNameChange,
                     label = { Text("Ingredient Name") },
                     placeholder = { Text("Enter ingredient name") },
                     singleLine = true,
+                    accentColor = primaryColor,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("ingredient_name_input")
@@ -751,12 +751,7 @@ private fun Step1EnterTargetIngredients(
                             if (it.isFocused) {
                                 onDismissKeypad()
                             }
-                        },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = primaryColor,
-                        unfocusedBorderColor = borderColor
-                    )
+                        }
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -771,7 +766,7 @@ private fun Step1EnterTargetIngredients(
                     Box(
                         modifier = Modifier.weight(1.3f)
                     ) {
-                        OutlinedTextField(
+                        LiquidGlassTextField(
                             value = qtyInput,
                             onValueChange = onQtyChange,
                             readOnly = true,
@@ -783,15 +778,11 @@ private fun Step1EnterTargetIngredients(
                                 }
                             },
                             singleLine = true,
+                            forceFocused = isQtyFocused,
+                            accentColor = primaryColor,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .testTag("ingredient_qty_input"),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = if (isQtyFocused) primaryColor else borderColor,
-                                unfocusedBorderColor = if (isQtyFocused) primaryColor else borderColor,
-                                focusedContainerColor = if (isQtyFocused) primaryColor.copy(alpha = 0.10f) else Color.Transparent
-                            )
+                                .testTag("ingredient_qty_input")
                         )
 
                         Box(
@@ -817,12 +808,13 @@ private fun Step1EnterTargetIngredients(
                         )
                     }
 
-                    OutlinedTextField(
+                    LiquidGlassTextField(
                         value = unitInput,
                         onValueChange = onUnitChange,
                         label = { Text("Unit") },
                         placeholder = { Text("kg / g / L") },
                         singleLine = true,
+                        accentColor = primaryColor,
                         modifier = Modifier
                             .weight(1f)
                             .testTag("ingredient_unit_input")
@@ -830,12 +822,7 @@ private fun Step1EnterTargetIngredients(
                                 if (it.isFocused) {
                                     onDismissKeypad()
                                 }
-                            },
-                        shape = RoundedCornerShape(10.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = primaryColor,
-                            unfocusedBorderColor = borderColor
-                        )
+                            }
                     )
                 }
 
@@ -1192,7 +1179,7 @@ private fun Step3ReferenceAndActualAdded(
                         Box(
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            OutlinedTextField(
+                            LiquidGlassTextField(
                                 value = actualText,
                                 onValueChange = { onActualAddedChange(item.id, it) },
                                 readOnly = true,
@@ -1204,16 +1191,11 @@ private fun Step3ReferenceAndActualAdded(
                                     }
                                 },
                                 singleLine = true,
+                                forceFocused = isFocused,
+                                accentColor = primaryColor,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .testTag("actual_added_input_${item.id}"),
-                                shape = RoundedCornerShape(10.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = if (isFocused) primaryColor else borderColor,
-                                    unfocusedBorderColor = if (isFocused) primaryColor else borderColor,
-                                    focusedContainerColor = if (isFocused) primaryColor.copy(alpha = 0.12f) else if (isDark) Color(0x18FFFFFF) else Color(0x0C000000),
-                                    unfocusedContainerColor = if (isFocused) primaryColor.copy(alpha = 0.08f) else if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
-                                )
+                                    .testTag("actual_added_input_${item.id}")
                             )
 
                             Box(
@@ -1564,7 +1546,7 @@ private fun Step5DivideIntoBatches(
                     Box(
                         modifier = Modifier.weight(1f)
                     ) {
-                        OutlinedTextField(
+                        LiquidGlassTextField(
                             value = batchCountText,
                             onValueChange = onBatchCountChange,
                             readOnly = true,
@@ -1574,15 +1556,11 @@ private fun Step5DivideIntoBatches(
                                 }
                             },
                             singleLine = true,
+                            forceFocused = isBatchCountFocused,
+                            accentColor = primaryColor,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("batch_count_input"),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = if (isBatchCountFocused) primaryColor else borderColor,
-                                unfocusedBorderColor = if (isBatchCountFocused) primaryColor else borderColor,
-                                focusedContainerColor = if (isBatchCountFocused) primaryColor.copy(alpha = 0.10f) else Color.Transparent
-                            ),
                             textStyle = androidx.compose.ui.text.TextStyle(
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,

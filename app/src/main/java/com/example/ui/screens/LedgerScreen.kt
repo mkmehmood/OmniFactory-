@@ -72,8 +72,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import com.example.ui.components.LiquidGlassSearchField
+import com.example.ui.components.LiquidGlassTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -1234,7 +1234,7 @@ private fun LedgerAddEditSheetContent(
                             fontFamily = DigitalMonospaceFont,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        OutlinedTextField(
+                        LiquidGlassTextField(
                             value = uiState.formPaymentMode,
                             onValueChange = onPaymentModeChange,
                             placeholder = { Text("e.g. Cash, Bank Transfer...", fontSize = 12.5.sp) },
@@ -1247,11 +1247,7 @@ private fun LedgerAddEditSheetContent(
                                 )
                             },
                             singleLine = true,
-                            shape = RoundedCornerShape(10.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF3B82F6),
-                                unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
-                            ),
+                            accentColor = Color(0xFF3B82F6),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .onFocusChanged {
@@ -1325,7 +1321,7 @@ private fun LedgerAddEditSheetContent(
                             fontFamily = DigitalMonospaceFont,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        OutlinedTextField(
+                        LiquidGlassTextField(
                             value = uiState.formTransferToMode,
                             onValueChange = onTransferToModeChange,
                             placeholder = { Text("e.g. Bank Transfer, Easypaisa...", fontSize = 12.5.sp) },
@@ -1338,11 +1334,7 @@ private fun LedgerAddEditSheetContent(
                                 )
                             },
                             singleLine = true,
-                            shape = RoundedCornerShape(10.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF3B82F6),
-                                unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
-                            ),
+                            accentColor = Color(0xFF3B82F6),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .onFocusChanged {
@@ -1423,7 +1415,7 @@ private fun LedgerAddEditSheetContent(
             Box(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                OutlinedTextField(
+                LiquidGlassTextField(
                     value = uiState.formAmountText,
                     onValueChange = onAmountChange,
                     readOnly = true,
@@ -1457,13 +1449,8 @@ private fun LedgerAddEditSheetContent(
                         }
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = uiState.formType.color,
-                        unfocusedBorderColor = if (isKeypadOpen) uiState.formType.color else if (isDark) Color(0x33FFFFFF) else Color(0x28000000),
-                        focusedContainerColor = if (isKeypadOpen) uiState.formType.color.copy(alpha = 0.08f) else Color.Transparent,
-                        unfocusedContainerColor = if (isKeypadOpen) uiState.formType.color.copy(alpha = 0.05f) else Color.Transparent
-                    ),
+                    forceFocused = isKeypadOpen,
+                    accentColor = uiState.formType.color,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("form_amount_input")
@@ -1518,7 +1505,7 @@ private fun LedgerAddEditSheetContent(
                     "e.g. Sales, Customer Payment, Recovery, Noran Shah..."
                 }
 
-                OutlinedTextField(
+                LiquidGlassTextField(
                     value = uiState.formCategory,
                     onValueChange = onCategoryChange,
                     placeholder = { Text(placeholderText, fontSize = 13.sp) },
@@ -1538,11 +1525,6 @@ private fun LedgerAddEditSheetContent(
                         }
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = primaryColor,
-                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
-                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .onFocusChanged {
@@ -1659,7 +1641,7 @@ private fun LedgerAddEditSheetContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                OutlinedTextField(
+                LiquidGlassTextField(
                     value = uiState.formPaymentMode,
                     onValueChange = onPaymentModeChange,
                     placeholder = { Text("e.g. Cash, Bank Transfer, Easypaisa...") },
@@ -1679,11 +1661,6 @@ private fun LedgerAddEditSheetContent(
                         }
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = primaryColor,
-                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
-                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .onFocusChanged { if (it.isFocused) isKeypadOpen = false }
@@ -1790,7 +1767,7 @@ private fun LedgerAddEditSheetContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                OutlinedTextField(
+                LiquidGlassTextField(
                     value = uiState.formPartyName,
                     onValueChange = onPartyNameChange,
                     placeholder = { Text("e.g. Noran Shah, ABC Traders, Ali Store...") },
@@ -1798,11 +1775,6 @@ private fun LedgerAddEditSheetContent(
                         Icon(imageVector = Icons.Default.Person, contentDescription = null, tint = primaryColor, modifier = Modifier.size(20.dp))
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = primaryColor,
-                        unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
-                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .onFocusChanged { if (it.isFocused) isKeypadOpen = false }
@@ -1885,32 +1857,22 @@ private fun LedgerAddEditSheetContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            OutlinedTextField(
+            LiquidGlassTextField(
                 value = uiState.formReferenceNo,
                 onValueChange = onRefNoChange,
                 label = { Text("Bill / Ref #", fontSize = 12.sp) },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = primaryColor,
-                    unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
-                ),
                 modifier = Modifier
                     .weight(1f)
                     .onFocusChanged { if (it.isFocused) isKeypadOpen = false }
                     .testTag("form_ref_no_input")
             )
 
-            OutlinedTextField(
+            LiquidGlassTextField(
                 value = uiState.formRemarks,
                 onValueChange = onRemarksChange,
                 label = { Text("Remarks / Note", fontSize = 12.sp) },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = primaryColor,
-                    unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
-                ),
                 modifier = Modifier
                     .weight(1f)
                     .onFocusChanged { if (it.isFocused) isKeypadOpen = false }
@@ -2092,26 +2054,10 @@ private fun LedgerHistoryPanelSheetContent(
         Spacer(modifier = Modifier.height(10.dp))
 
         // Search Bar
-        OutlinedTextField(
-            value = uiState.searchQuery,
-            onValueChange = { viewModel.setSearchQuery(it) },
-            placeholder = { Text("Search by party, category, mode, amount...") },
-            leadingIcon = {
-                Icon(imageVector = Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp))
-            },
-            trailingIcon = {
-                if (uiState.searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                        Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
-                    }
-                }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = primaryColor,
-                unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
-            ),
+        LiquidGlassSearchField(
+            query = uiState.searchQuery,
+            onQueryChange = { viewModel.setSearchQuery(it) },
+            placeholderText = "Search by party, category, mode, amount...",
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("history_search_input")

@@ -34,8 +34,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import com.example.ui.components.LiquidGlassSearchField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -143,44 +142,10 @@ fun CurrencySearchBottomSheet(
             }
 
             // Search Bar Input
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = {
-                    Text(
-                        text = "Search currency, country or code...",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = primaryColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { searchQuery = "" }) {
-                            Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = "Clear Search",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = primaryColor,
-                    unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
-                    focusedContainerColor = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000),
-                    unfocusedContainerColor = if (isDark) Color(0x10FFFFFF) else Color(0x06000000)
-                ),
+            LiquidGlassSearchField(
+                query = searchQuery,
+                onQueryChange = { searchQuery = it },
+                placeholderText = "Search currency, country or code...",
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("currency_search_input")

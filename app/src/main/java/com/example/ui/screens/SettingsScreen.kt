@@ -100,7 +100,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import com.example.ui.components.LiquidGlassTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
@@ -1295,7 +1295,7 @@ fun SettingsScreen(
                         }
                     }
 
-                    OutlinedTextField(
+                    LiquidGlassTextField(
                         value = inputJson,
                         onValueChange = {
                             inputJson = it
@@ -1310,6 +1310,7 @@ fun SettingsScreen(
                             fontFamily = DigitalMonospaceFont,
                             fontSize = 10.sp
                         ),
+                        singleLine = false,
                         maxLines = 5
                     )
 

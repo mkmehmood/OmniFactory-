@@ -631,14 +631,14 @@ fun ShapeStructureStyle.toButtonShape(): CornerBasedShape = when (this) {
 }
 
 fun ShapeStructureStyle.toInputShape(): CornerBasedShape = when (this) {
-    ShapeStructureStyle.ROUNDED -> RoundedCornerShape(12.dp)
-    ShapeStructureStyle.PILL -> RoundedCornerShape(24.dp)
-    ShapeStructureStyle.LINE_BORDER -> RoundedCornerShape(6.dp)
+    ShapeStructureStyle.ROUNDED -> RoundedCornerShape(18.dp)
+    ShapeStructureStyle.PILL -> RoundedCornerShape(50)
+    ShapeStructureStyle.LINE_BORDER -> RoundedCornerShape(8.dp)
     ShapeStructureStyle.SHARP -> RoundedCornerShape(4.dp)
-    ShapeStructureStyle.CHAMFER_CUT -> CutCornerShape(10.dp)
-    ShapeStructureStyle.TEARDROP -> RoundedCornerShape(topStart = 16.dp, topEnd = 4.dp, bottomEnd = 16.dp, bottomStart = 4.dp)
-    ShapeStructureStyle.OVAL_STADIUM -> RoundedCornerShape(22.dp)
-    ShapeStructureStyle.SOFT_BUBBLE -> RoundedCornerShape(18.dp)
+    ShapeStructureStyle.CHAMFER_CUT -> CutCornerShape(12.dp)
+    ShapeStructureStyle.TEARDROP -> RoundedCornerShape(topStart = 20.dp, topEnd = 6.dp, bottomEnd = 20.dp, bottomStart = 6.dp)
+    ShapeStructureStyle.OVAL_STADIUM -> RoundedCornerShape(28.dp)
+    ShapeStructureStyle.SOFT_BUBBLE -> RoundedCornerShape(22.dp)
 }
 
 fun ShapeStructureStyle.toCardShape(): CornerBasedShape = when (this) {

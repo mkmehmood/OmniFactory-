@@ -67,8 +67,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import com.example.ui.components.LiquidGlassSearchField
+import com.example.ui.components.LiquidGlassTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -799,31 +799,10 @@ private fun ExpenseSearchBarAndAction(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = onQueryChange,
-            placeholder = { Text("Search expense, party, mode...", fontSize = 13.sp) },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp)
-                )
-            },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { onQueryChange("") }) {
-                        Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
-                    }
-                }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = primaryColor,
-                unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
-            ),
+        LiquidGlassSearchField(
+            query = searchQuery,
+            onQueryChange = onQueryChange,
+            placeholderText = "Search expense, party, mode...",
             modifier = Modifier
                 .weight(1f)
                 .testTag("expense_search_input")
@@ -1352,7 +1331,7 @@ private fun ExpenseAddEditSheetContent(
             Box(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                OutlinedTextField(
+                LiquidGlassTextField(
                     value = uiState.formAmountText,
                     onValueChange = onAmountChange,
                     readOnly = true,
@@ -1383,13 +1362,8 @@ private fun ExpenseAddEditSheetContent(
                         }
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFFEF4444),
-                        unfocusedBorderColor = if (isDialpadOpen) Color(0xFFEF4444) else if (isDark) Color(0x33FFFFFF) else Color(0x28000000),
-                        focusedContainerColor = if (isDialpadOpen) Color(0xFFEF4444).copy(alpha = 0.08f) else Color.Transparent,
-                        unfocusedContainerColor = if (isDialpadOpen) Color(0xFFEF4444).copy(alpha = 0.05f) else Color.Transparent
-                    ),
+                    forceFocused = isDialpadOpen,
+                    accentColor = Color(0xFFEF4444),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("form_expense_amount_input")
@@ -1431,7 +1405,7 @@ private fun ExpenseAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            OutlinedTextField(
+            LiquidGlassTextField(
                 value = uiState.formCategory,
                 onValueChange = onCategoryChange,
                 placeholder = { Text(if (uiState.formScope == ExpenseScope.HOME) "e.g. Groceries, Electricity, School Fees..." else "e.g. Raw Material, Salary, Rent, Fuel...") },
@@ -1451,7 +1425,6 @@ private fun ExpenseAddEditSheetContent(
                     }
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .onFocusChanged { if (it.isFocused) isDialpadOpen = false }
@@ -1551,7 +1524,7 @@ private fun ExpenseAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            OutlinedTextField(
+            LiquidGlassTextField(
                 value = uiState.formPaymentMode,
                 onValueChange = onPaymentModeChange,
                 placeholder = { Text("e.g. Cash, Bank Transfer, Easypaisa, JazzCash...") },
@@ -1571,7 +1544,6 @@ private fun ExpenseAddEditSheetContent(
                     }
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .onFocusChanged { if (it.isFocused) isDialpadOpen = false }
@@ -1713,7 +1685,7 @@ private fun ExpenseAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            OutlinedTextField(
+            LiquidGlassTextField(
                 value = uiState.formPaidTo,
                 onValueChange = onPaidToChange,
                 placeholder = { Text("Vendor name, store name, employee...") },
@@ -1726,7 +1698,6 @@ private fun ExpenseAddEditSheetContent(
                     )
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .onFocusChanged { if (it.isFocused) isDialpadOpen = false }
@@ -1743,7 +1714,7 @@ private fun ExpenseAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            OutlinedTextField(
+            LiquidGlassTextField(
                 value = uiState.formReferenceNo,
                 onValueChange = onRefNoChange,
                 placeholder = { Text("Receipt #, Bill #, Token #...") },
@@ -1756,7 +1727,6 @@ private fun ExpenseAddEditSheetContent(
                     )
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .onFocusChanged { if (it.isFocused) isDialpadOpen = false }
@@ -1773,12 +1743,12 @@ private fun ExpenseAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            OutlinedTextField(
+            LiquidGlassTextField(
                 value = uiState.formRemarks,
                 onValueChange = onRemarksChange,
                 placeholder = { Text("Add purchased items or notes...") },
+                singleLine = false,
                 maxLines = 3,
-                shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .onFocusChanged { if (it.isFocused) isDialpadOpen = false }

@@ -56,8 +56,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
@@ -65,6 +63,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
+import com.example.ui.components.LiquidGlassTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -440,7 +439,7 @@ fun SalesScreen(
             onDismissRequest = { showCustomRepDialog = false },
             title = { Text("Add Representative", fontWeight = FontWeight.Bold) },
             text = {
-                OutlinedTextField(
+                LiquidGlassTextField(
                     value = customRepInput,
                     onValueChange = { customRepInput = it },
                     label = { Text("Representative Name") },
@@ -1021,7 +1020,7 @@ private fun NumericGridInputField(
     Box(
         modifier = modifier
     ) {
-        OutlinedTextField(
+        LiquidGlassTextField(
             value = value,
             onValueChange = onValueChange,
             readOnly = true,
@@ -1040,14 +1039,10 @@ private fun NumericGridInputField(
                 }
             },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth().testTag(testTag),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = if (isSelected) primaryColor else if (isDark) Color(0x28FFFFFF) else Color(0x20000000),
-                unfocusedBorderColor = if (isSelected) primaryColor else if (isDark) Color(0x28FFFFFF) else Color(0x20000000),
-                focusedContainerColor = if (isSelected) primaryColor.copy(alpha = 0.12f) else if (isDark) Color(0x1FFFFFFF) else Color(0x0E000000),
-                unfocusedContainerColor = if (isSelected) primaryColor.copy(alpha = 0.08f) else if (isDark) Color(0x10FFFFFF) else Color(0x06000000)
-            ),
+            forceFocused = isSelected,
+            accentColor = primaryColor,
             shape = inputShape,
+            modifier = Modifier.fillMaxWidth().testTag(testTag),
             textStyle = androidx.compose.ui.text.TextStyle(
                 fontSize = 14.sp,
                 fontFamily = DigitalMonospaceFont,

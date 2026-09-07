@@ -36,7 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
+import com.example.ui.components.LiquidGlassTextField
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
@@ -377,12 +377,11 @@ fun TapeHistorySheet(
                         color = primaryColor
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedTextField(
+                    LiquidGlassTextField(
                         value = noteText,
                         onValueChange = { noteText = it },
                         label = { Text("Note / Description") },
                         placeholder = { Text("Enter calculation note...") },
-                        shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }

@@ -39,8 +39,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import com.example.ui.components.LiquidGlassSearchField
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
@@ -461,31 +460,11 @@ fun SalesRepresentativesMatrixCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Filter rep name...", fontSize = 12.sp) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f).height(44.dp).testTag("matrix_rep_search_input"),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = if (isDark) Color(0x1AFFFFFF) else Color(0x0A000000),
-                        unfocusedContainerColor = if (isDark) Color(0x10FFFFFF) else Color(0x05000000),
-                        focusedBorderColor = primaryColor,
-                        unfocusedBorderColor = if (isDark) Color(0x22FFFFFF) else Color(0x1E000000)
-                    ),
-                    textStyle = androidx.compose.ui.text.TextStyle(
-                        fontSize = 12.sp,
-                        fontFamily = DigitalMonospaceFont
-                    )
+                LiquidGlassSearchField(
+                    query = searchQuery,
+                    onQueryChange = { searchQuery = it },
+                    placeholderText = "Filter rep name...",
+                    modifier = Modifier.weight(1f).testTag("matrix_rep_search_input")
                 )
 
                 // Sort selector trigger
