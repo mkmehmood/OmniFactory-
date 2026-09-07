@@ -157,7 +157,7 @@ import com.example.ui.theme.toSmallShape
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    currentAppThemeSkin: AppThemeSkin = AppThemeSkin.DARK_OBSIDIAN,
+    currentAppThemeSkin: AppThemeSkin = AppThemeSkin.DARK_CHARCOAL,
     currentThemeMode: ThemeMode,
     currentShapeStructure: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     currentComponentSize: ComponentSizeStyle = ComponentSizeStyle.STANDARD,

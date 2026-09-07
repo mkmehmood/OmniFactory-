@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -415,90 +416,151 @@ private fun LiquidGlassKey(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    val (keyBg, contentColor, borderColor) = when (type) {
-        KeyType.NUMBER -> {
-            val bg = if (isPressed) currentSkin.surfacePressed else currentSkin.surfaceVariant
-            val textCol = currentSkin.textPrimary
-            val border = if (isPressed) primaryColor.copy(alpha = 0.65f) else currentSkin.outline
-            Triple(bg, textCol, border)
-        }
-        KeyType.DOUBLE_ZERO -> {
-            val bg = if (isDark) {
-                if (isPressed) primaryColor.copy(alpha = 0.40f) else primaryColor.copy(alpha = 0.16f)
-            } else {
-                if (isPressed) primaryColor.copy(alpha = 0.30f) else primaryColor.copy(alpha = 0.12f)
+    val isCharcoalTheme = currentSkin == AppThemeSkin.DARK_CHARCOAL
+    val isPureLightTheme = currentSkin == AppThemeSkin.PURE_LIGHT
+
+    val (keyBg, contentColor, borderColor) = when {
+        isCharcoalTheme -> when (type) {
+            KeyType.NUMBER, KeyType.DOUBLE_ZERO -> {
+                val bg = if (isPressed) Color(0xFF48484A) else Color(0xFF2C2C2E)
+                val textCol = Color(0xFFFFFFFF)
+                val border = Color(0x2EFFFFFF)
+                Triple(bg, textCol, border)
             }
-            val textCol = primaryColor
-            val border = primaryColor.copy(alpha = if (isPressed) 0.9f else 0.45f)
-            Triple(bg, textCol, border)
-        }
-        KeyType.OPERATOR -> {
-            val bg = if (isDark) {
-                if (isPressed) primaryColor.copy(alpha = 0.50f) else primaryColor.copy(alpha = 0.22f)
-            } else {
-                if (isPressed) primaryColor.copy(alpha = 0.35f) else primaryColor.copy(alpha = 0.16f)
+            KeyType.ACTION -> {
+                val bg = if (isPressed) Color(0xFFC7C7CC) else Color(0xFFA5A5A5)
+                val textCol = Color(0xFF1C1C1E)
+                val border = Color(0x33000000)
+                Triple(bg, textCol, border)
             }
-            val textCol = primaryColor
-            val border = primaryColor.copy(alpha = if (isPressed) 0.9f else 0.5f)
-            Triple(bg, textCol, border)
+            KeyType.OPERATOR -> {
+                val bg = if (isPressed) Color(0xFFE08900) else Color(0xFFFF9F0A)
+                val textCol = Color(0xFFFFFFFF)
+                val border = Color(0x4DFFFFFF)
+                Triple(bg, textCol, border)
+            }
+            KeyType.EQUALS -> {
+                val bg = if (isPressed) Color(0xFFE08900) else Color(0xFFFF9F0A)
+                val textCol = Color(0xFFFFFFFF)
+                val border = Color(0x66FFFFFF)
+                Triple(bg, textCol, border)
+            }
         }
-        KeyType.EQUALS -> {
-            val bg = if (isPressed) primaryColor.copy(alpha = 0.88f) else primaryColor
-            val textCol = onPrimaryColor
-            val border = if (isDark) Color(0x80FFFFFF) else Color(0x33000000)
-            Triple(bg, textCol, border)
+        isPureLightTheme || !isDark -> when (type) {
+            KeyType.NUMBER, KeyType.DOUBLE_ZERO -> {
+                val bg = if (isPressed) Color(0xFFE5E5EA) else Color(0xFFFFFFFF)
+                val textCol = Color(0xFF1C1C1E)
+                val border = Color(0x22000000)
+                Triple(bg, textCol, border)
+            }
+            KeyType.ACTION -> {
+                val bg = if (isPressed) Color(0xFFD1D1D6) else Color(0xFFE5E5EA)
+                val textCol = Color(0xFF1C1C1E)
+                val border = Color(0x1F000000)
+                Triple(bg, textCol, border)
+            }
+            KeyType.OPERATOR -> {
+                val bg = if (isPressed) Color(0xFFE08900) else Color(0xFFFF9F0A)
+                val textCol = Color(0xFFFFFFFF)
+                val border = Color(0x26000000)
+                Triple(bg, textCol, border)
+            }
+            KeyType.EQUALS -> {
+                val bg = if (isPressed) Color(0xFFE08900) else Color(0xFFFF9F0A)
+                val textCol = Color(0xFFFFFFFF)
+                val border = Color(0x33000000)
+                Triple(bg, textCol, border)
+            }
         }
-        KeyType.ACTION -> {
-            val bg = if (isPressed) currentSkin.surfacePressed else currentSkin.surfaceVariant
-            val textCol = currentSkin.textPrimary
-            val border = if (isPressed) primaryColor.copy(alpha = 0.55f) else currentSkin.outline
-            Triple(bg, textCol, border)
+        else -> when (type) {
+            KeyType.NUMBER, KeyType.DOUBLE_ZERO -> {
+                val bg = if (isPressed) currentSkin.surfacePressed else currentSkin.surfaceVariant
+                val textCol = currentSkin.textPrimary
+                val border = if (isPressed) primaryColor.copy(alpha = 0.65f) else currentSkin.outline
+                Triple(bg, textCol, border)
+            }
+            KeyType.ACTION -> {
+                val bg = if (isDark) {
+                    if (isPressed) Color(0x40FFFFFF) else Color(0x26FFFFFF)
+                } else {
+                    if (isPressed) Color(0x30000000) else Color(0x18000000)
+                }
+                val textCol = currentSkin.textPrimary
+                val border = currentSkin.outline
+                Triple(bg, textCol, border)
+            }
+            KeyType.OPERATOR -> {
+                val bg = if (isPressed) primaryColor.copy(alpha = 0.85f) else primaryColor
+                val textCol = onPrimaryColor
+                val border = if (isDark) Color(0x4DFFFFFF) else Color(0x26000000)
+                Triple(bg, textCol, border)
+            }
+            KeyType.EQUALS -> {
+                val bg = if (isPressed) primaryColor.copy(alpha = 0.85f) else primaryColor
+                val textCol = onPrimaryColor
+                val border = if (isDark) Color(0x80FFFFFF) else Color(0x33000000)
+                Triple(bg, textCol, border)
+            }
         }
     }
 
     val shape = shapeStructureStyle.toButtonShape()
     val fontScale = componentSizeStyle.keyFontScale
+    val elevation = if (!isDark && !isCharcoalTheme) {
+        if (isPressed) 1.dp else 2.5.dp
+    } else 0.dp
 
-    Box(
+    val rippleColor = when (type) {
+        KeyType.OPERATOR, KeyType.EQUALS -> Color.White.copy(alpha = 0.4f)
+        else -> if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.15f)
+    }
+
+    Surface(
         modifier = modifier
-            .aspectRatio(1.15f)
+            .aspectRatio(1.1f)
             .clip(shape)
-            .background(keyBg)
-            .border(BorderStroke(1.dp, borderColor), shape)
             .clickable(
                 interactionSource = interactionSource,
                 indication = ripple(
                     bounded = true,
-                    color = primaryColor.copy(alpha = 0.35f)
+                    color = rippleColor
                 ),
                 onClick = onClick
             )
             .testTag(testTag),
-        contentAlignment = Alignment.Center
+        shape = shape,
+        color = keyBg,
+        shadowElevation = elevation,
+        border = BorderStroke(1.dp, borderColor)
     ) {
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = iconContentDescription,
-                tint = contentColor,
-                modifier = Modifier.size(componentSizeStyle.iconSize)
-            )
-        } else if (text != null) {
-            val baseFontSize = when {
-                type == KeyType.EQUALS || type == KeyType.OPERATOR -> 28f
-                type == KeyType.DOUBLE_ZERO -> 22f
-                text.length > 2 -> 16f
-                else -> 24f
-            }
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = iconContentDescription,
+                    tint = contentColor,
+                    modifier = Modifier.size(componentSizeStyle.iconSize)
+                )
+            } else if (text != null) {
+                val baseFontSize = when {
+                    type == KeyType.EQUALS || type == KeyType.OPERATOR -> 28f
+                    type == KeyType.DOUBLE_ZERO -> 22f
+                    text.length > 2 -> 16f
+                    else -> 25f
+                }
 
-            Text(
-                text = text,
-                color = contentColor,
-                fontSize = (baseFontSize * fontScale).sp,
-                fontWeight = if (type == KeyType.EQUALS || type == KeyType.OPERATOR) FontWeight.SemiBold else FontWeight.Medium,
-                fontFamily = DigitalMonospaceFont,
-                fontStyle = LocalAppFontStyle.current.defaultFontStyle
-            )
+                Text(
+                    text = text,
+                    color = contentColor,
+                    fontSize = (baseFontSize * fontScale).sp,
+                    fontWeight = if (type == KeyType.EQUALS || type == KeyType.OPERATOR || type == KeyType.ACTION) FontWeight.SemiBold else FontWeight.Medium,
+                    fontFamily = DigitalMonospaceFont,
+                    fontStyle = LocalAppFontStyle.current.defaultFontStyle
+                )
+            }
         }
     }
 }

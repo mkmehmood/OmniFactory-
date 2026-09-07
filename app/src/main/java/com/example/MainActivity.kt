@@ -10,7 +10,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -555,6 +557,29 @@ private fun LiquidGlassTopBar(
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
     val currentSkin = com.example.ui.theme.LocalAppThemeSkin.current
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val isCharcoalTheme = currentSkin == com.example.ui.theme.AppThemeSkin.DARK_CHARCOAL
+
+    val iconButtonBg = when {
+        isCharcoalTheme -> Color(0xFF2C2C2E)
+        !isDark -> Color(0xFFF2F2F7)
+        else -> currentSkin.surfaceVariant.copy(alpha = 0.5f)
+    }
+    val iconButtonBorder = when {
+        isCharcoalTheme -> Color(0x2EFFFFFF)
+        !isDark -> Color(0x1E000000)
+        else -> currentSkin.outline.copy(alpha = 0.35f)
+    }
+    val titleBg = when {
+        isCharcoalTheme -> Color(0xFF1C1C1E)
+        !isDark -> Color(0xFFF2F2F7)
+        else -> currentSkin.surfaceVariant.copy(alpha = 0.55f)
+    }
+    val titleBorder = when {
+        isCharcoalTheme -> Color(0x33FFFFFF)
+        !isDark -> Color(0x22000000)
+        else -> currentSkin.outline.copy(alpha = 0.35f)
+    }
 
     Box(
         modifier = Modifier
@@ -568,9 +593,10 @@ private fun LiquidGlassTopBar(
                         onClick = onBackToCalculator,
                         modifier = Modifier
                             .padding(start = 4.dp)
-                            .size(38.dp)
+                            .size(40.dp)
                             .clip(CircleShape)
-                            .background(currentSkin.surfaceVariant.copy(alpha = 0.35f))
+                            .background(iconButtonBg)
+                            .border(BorderStroke(1.dp, iconButtonBorder), CircleShape)
                             .testTag("back_to_calculator_button")
                     ) {
                         Icon(
@@ -585,9 +611,10 @@ private fun LiquidGlassTopBar(
                         onClick = onOpenSidebar,
                         modifier = Modifier
                             .padding(start = 4.dp)
-                            .size(38.dp)
+                            .size(40.dp)
                             .clip(CircleShape)
-                            .background(primaryColor.copy(alpha = 0.18f))
+                            .background(iconButtonBg)
+                            .border(BorderStroke(1.dp, iconButtonBorder), CircleShape)
                             .testTag("sidebar_menu_button")
                     ) {
                         Icon(
@@ -602,16 +629,14 @@ private fun LiquidGlassTopBar(
             title = {
                 Surface(
                     onClick = onOpenSidebar,
-                    shape = RoundedCornerShape(20.dp),
-                    color = currentSkin.surfaceVariant.copy(alpha = 0.45f),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        currentSkin.outline.copy(alpha = 0.25f)
-                    ),
+                    shape = RoundedCornerShape(22.dp),
+                    color = titleBg,
+                    border = BorderStroke(1.dp, titleBorder),
+                    shadowElevation = if (!isDark && !isCharcoalTheme) 1.5.dp else 0.dp,
                     modifier = Modifier.testTag("topbar_title_button")
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
@@ -637,9 +662,10 @@ private fun LiquidGlassTopBar(
                     onClick = onActionClick,
                     modifier = Modifier
                         .padding(end = 4.dp)
-                        .size(38.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
-                        .background(currentSkin.surfaceVariant.copy(alpha = 0.35f))
+                        .background(iconButtonBg)
+                        .border(BorderStroke(1.dp, iconButtonBorder), CircleShape)
                         .testTag("topbar_action_button")
                 ) {
                     Icon(

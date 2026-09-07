@@ -74,17 +74,17 @@ enum class AppThemeSkin(
     DARK_CHARCOAL(
         displayName = "Dark Charcoal",
         categoryTag = "Photo Theme",
-        description = "Pure black background with dark charcoal number keys and vibrant orange operators",
+        description = "Pure black OLED background with tactile dark charcoal number keys, radiant orange operators & high-contrast silver action keys",
         isDark = true,
         background = Color(0xFF000000),
         surface = Color(0xFF1C1C1E),
-        surfaceVariant = Color(0xFF333333),
-        surfacePressed = Color(0xFF4A4A4C),
+        surfaceVariant = Color(0xFF2C2C2E),
+        surfacePressed = Color(0xFF48484A),
         outline = Color(0x33FFFFFF),
         textPrimary = Color(0xFFFFFFFF),
         textSecondary = Color(0xFFA5A5A5),
         defaultAccent = Color(0xFFFF9F0A),
-        previewColors = listOf(Color(0xFF000000), Color(0xFF333333), Color(0xFFFF9F0A)),
+        previewColors = listOf(Color(0xFF000000), Color(0xFF2C2C2E), Color(0xFFFF9F0A)),
         badgeLabel = "PHOTO THEME",
         ornamentalPattern = OrnamentalPatternStyle.NONE,
         ornamentalTintColor = Color.Transparent
@@ -92,17 +92,17 @@ enum class AppThemeSkin(
     PURE_LIGHT(
         displayName = "Pure Light",
         categoryTag = "Photo Theme",
-        description = "Pure white background with dark charcoal number keys and vibrant orange operators",
+        description = "Pristine white canvas with crisp tactile keys, radiant orange operators & soft silver action keys",
         isDark = false,
         background = Color(0xFFFFFFFF),
         surface = Color(0xFFFFFFFF),
-        surfaceVariant = Color(0xFF333333),
-        surfacePressed = Color(0xFF4A4A4C),
+        surfaceVariant = Color(0xFFF2F2F7),
+        surfacePressed = Color(0xFFE5E5EA),
         outline = Color(0x1F000000),
-        textPrimary = Color(0xFF000000),
-        textSecondary = Color(0xFF666666),
+        textPrimary = Color(0xFF1C1C1E),
+        textSecondary = Color(0xFF6E6E73),
         defaultAccent = Color(0xFFFF9F0A),
-        previewColors = listOf(Color(0xFFFFFFFF), Color(0xFF333333), Color(0xFFFF9F0A)),
+        previewColors = listOf(Color(0xFFFFFFFF), Color(0xFFF2F2F7), Color(0xFFFF9F0A)),
         badgeLabel = "PHOTO THEME",
         ornamentalPattern = OrnamentalPatternStyle.NONE,
         ornamentalTintColor = Color.Transparent
@@ -769,11 +769,11 @@ enum class SoundIntensity(
 val LocalShapeStructure = staticCompositionLocalOf { ShapeStructureStyle.ROUNDED }
 val LocalComponentSizing = staticCompositionLocalOf { ComponentSizeStyle.STANDARD }
 val LocalAnimationIntensity = staticCompositionLocalOf { AnimationIntensity.BALANCED }
-val LocalAppThemeSkin = staticCompositionLocalOf { AppThemeSkin.DARK_OBSIDIAN }
+val LocalAppThemeSkin = staticCompositionLocalOf { AppThemeSkin.DARK_CHARCOAL }
 
 @Composable
 fun MyApplicationTheme(
-    appThemeSkin: AppThemeSkin = AppThemeSkin.DARK_OBSIDIAN,
+    appThemeSkin: AppThemeSkin = AppThemeSkin.DARK_CHARCOAL,
     themeMode: ThemeMode = ThemeMode.DARK,
     shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     componentSizeStyle: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
