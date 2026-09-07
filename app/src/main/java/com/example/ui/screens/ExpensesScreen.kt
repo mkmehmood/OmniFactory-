@@ -116,12 +116,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import com.example.ui.components.BlinkingCursorPointer
 import com.example.ui.components.InputFieldCopyPasteMenu
-import com.example.ui.components.LiquidGlassDialpadInput
-import com.example.ui.components.LiquidGlassSearchBar
-import com.example.ui.components.LiquidGlassTextField
 import com.example.ui.components.SimpleCalculatorDialog
 import com.example.ui.components.SmartStationKeypad
-import com.example.ui.components.liquidGlassField
 import com.example.ui.theme.DigitalMonospaceFont
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -803,44 +799,55 @@ private fun ExpenseSearchBarAndAction(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        LiquidGlassSearchBar(
-            query = searchQuery,
-            onQueryChange = onQueryChange,
-            placeholder = "Search expense, party, mode...",
-            accentColor = primaryColor,
-            testTag = "expense_search_input",
-            modifier = Modifier.weight(1f)
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onQueryChange,
+            placeholder = { Text("Search expense, party, mode...", fontSize = 13.sp) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+            },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                    }
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = primaryColor,
+                unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x28000000)
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .testTag("expense_search_input")
         )
 
-        // Quick Calculator Button with matching Liquid Glass styling
-        Box(
+        // Quick Calculator Button
+        Surface(
             modifier = Modifier
                 .size(48.dp)
-                .liquidGlassField(
-                    isFocused = false,
-                    shape = RoundedCornerShape(16.dp),
-                    accentColor = primaryColor,
-                    isDark = isDark,
-                    elevation = 2.dp
-                )
-                .background(
-                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.60f else 0.70f),
-                            MaterialTheme.colorScheme.surface.copy(alpha = if (isDark) 0.85f else 0.90f)
-                        )
-                    )
-                )
+                .clip(RoundedCornerShape(12.dp))
+                .border(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x28000000), RoundedCornerShape(12.dp))
                 .clickable { onOpenCalc() }
                 .testTag("expense_quick_calc_button"),
-            contentAlignment = Alignment.Center
+            shape = RoundedCornerShape(12.dp),
+            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
         ) {
-            Icon(
-                imageVector = Icons.Default.Calculate,
-                contentDescription = "Quick Calculator",
-                tint = primaryColor,
-                modifier = Modifier.size(22.dp)
-            )
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Default.Calculate,
+                    contentDescription = "Quick Calculator",
+                    tint = primaryColor,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
         }
     }
 }
@@ -1345,19 +1352,12 @@ private fun ExpenseAddEditSheetContent(
             Box(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                LiquidGlassDialpadInput(
-                    label = "",
+                OutlinedTextField(
                     value = uiState.formAmountText,
-                    isFocused = isDialpadOpen,
-                    onClick = {
-                        focusManager.clearFocus()
-                        keyboardController?.hide()
-                        isDialpadOpen = true
-                    },
-                    placeholder = "0.00",
-                    accentColor = Color(0xFFEF4444),
-                    shape = RoundedCornerShape(14.dp),
-                    trailingContent = {
+                    onValueChange = onAmountChange,
+                    readOnly = true,
+                    placeholder = { Text("0.00", fontFamily = DigitalMonospaceFont) },
+                    trailingIcon = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (uiState.formAmountText.isNotEmpty()) {
                                 IconButton(onClick = onClearAmount, modifier = Modifier.size(28.dp)) {
@@ -1372,13 +1372,27 @@ private fun ExpenseAddEditSheetContent(
                                     imageVector = Icons.Default.Calculate,
                                     contentDescription = "Quick Calculator",
                                     tint = primaryColor,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(17.dp)
                                 )
                             }
                         }
                     },
-                    testTag = "form_expense_amount_input",
-                    modifier = Modifier.fillMaxWidth()
+                    suffix = {
+                        if (isDialpadOpen) {
+                            BlinkingCursorPointer(color = Color(0xFFEF4444))
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFEF4444),
+                        unfocusedBorderColor = if (isDialpadOpen) Color(0xFFEF4444) else if (isDark) Color(0x33FFFFFF) else Color(0x28000000),
+                        focusedContainerColor = if (isDialpadOpen) Color(0xFFEF4444).copy(alpha = 0.08f) else Color.Transparent,
+                        unfocusedContainerColor = if (isDialpadOpen) Color(0xFFEF4444).copy(alpha = 0.05f) else Color.Transparent
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("form_expense_amount_input")
                 )
 
                 // Click and Long-Press overlay for input area (tap opens keypad, long-press opens Copy/Paste)
@@ -1417,26 +1431,31 @@ private fun ExpenseAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            LiquidGlassTextField(
+            OutlinedTextField(
                 value = uiState.formCategory,
-                onValueChange = {
-                    onCategoryChange(it)
-                    isDialpadOpen = false
+                onValueChange = onCategoryChange,
+                placeholder = { Text(if (uiState.formScope == ExpenseScope.HOME) "e.g. Groceries, Electricity, School Fees..." else "e.g. Raw Material, Salary, Rent, Fuel...") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = LedgerCategoryIcons.getCategoryIcon(uiState.formCategory),
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(20.dp)
+                    )
                 },
-                placeholder = if (uiState.formScope == ExpenseScope.HOME) "e.g. Groceries, Electricity, School Fees..." else "e.g. Raw Material, Salary, Rent, Fuel...",
-                leadingIcon = LedgerCategoryIcons.getCategoryIcon(uiState.formCategory),
-                trailingContent = if (uiState.formCategory.isNotEmpty()) {
-                    {
-                        IconButton(onClick = { onCategoryChange("") }, modifier = Modifier.size(24.dp)) {
+                trailingIcon = {
+                    if (uiState.formCategory.isNotEmpty()) {
+                        IconButton(onClick = { onCategoryChange("") }) {
                             Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
                         }
                     }
-                } else null,
+                },
                 singleLine = true,
-                shape = RoundedCornerShape(14.dp),
-                accentColor = primaryColor,
-                testTag = "form_expense_category_input",
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) isDialpadOpen = false }
+                    .testTag("form_expense_category_input")
             )
 
             // Dynamic Auto-suggestions & "➕ Add '[typed text]'" - Only shows when user types letters
@@ -1532,26 +1551,31 @@ private fun ExpenseAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            LiquidGlassTextField(
+            OutlinedTextField(
                 value = uiState.formPaymentMode,
-                onValueChange = {
-                    onPaymentModeChange(it)
-                    isDialpadOpen = false
+                onValueChange = onPaymentModeChange,
+                placeholder = { Text("e.g. Cash, Bank Transfer, Easypaisa, JazzCash...") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Payments,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(20.dp)
+                    )
                 },
-                placeholder = "e.g. Cash, Bank Transfer, Easypaisa, JazzCash...",
-                leadingIcon = Icons.Default.Payments,
-                trailingContent = if (uiState.formPaymentMode.isNotEmpty()) {
-                    {
-                        IconButton(onClick = { onPaymentModeChange("") }, modifier = Modifier.size(24.dp)) {
+                trailingIcon = {
+                    if (uiState.formPaymentMode.isNotEmpty()) {
+                        IconButton(onClick = { onPaymentModeChange("") }) {
                             Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
                         }
                     }
-                } else null,
+                },
                 singleLine = true,
-                shape = RoundedCornerShape(14.dp),
-                accentColor = primaryColor,
-                testTag = "form_expense_mode_input",
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) isDialpadOpen = false }
+                    .testTag("form_expense_mode_input")
             )
 
             // Dynamic Auto-suggestions & "➕ Add '[typed text]'" - Only shows when user types letters
@@ -1647,41 +1671,31 @@ private fun ExpenseAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Box(
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .liquidGlassField(
-                        isFocused = false,
-                        shape = RoundedCornerShape(14.dp),
-                        accentColor = primaryColor,
-                        isDark = isDark,
-                        elevation = 2.dp
-                    )
-                    .background(
-                        androidx.compose.ui.graphics.Brush.verticalGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.50f else 0.65f),
-                                MaterialTheme.colorScheme.surface.copy(alpha = if (isDark) 0.75f else 0.85f)
-                            )
-                        )
-                    )
-                    .clickable { showDatePicker = true }
-                    .padding(horizontal = 14.dp, vertical = 12.dp)
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .border(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x28000000), RoundedCornerShape(10.dp))
+                    .clickable { showDatePicker = true },
+                color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.CalendarToday,
                         contentDescription = null,
                         tint = primaryColor,
-                        modifier = Modifier.size(17.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = dateFormat.format(Date(uiState.formDateMillis)),
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         fontFamily = DigitalMonospaceFont,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -1699,18 +1713,23 @@ private fun ExpenseAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            LiquidGlassTextField(
+            OutlinedTextField(
                 value = uiState.formPaidTo,
-                onValueChange = {
-                    onPaidToChange(it)
-                    isDialpadOpen = false
+                onValueChange = onPaidToChange,
+                placeholder = { Text("Vendor name, store name, employee...") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(16.dp)
+                    )
                 },
-                placeholder = "Vendor name, store name, employee...",
-                leadingIcon = Icons.Default.Person,
                 singleLine = true,
-                shape = RoundedCornerShape(14.dp),
-                accentColor = primaryColor,
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) isDialpadOpen = false }
             )
         }
 
@@ -1724,18 +1743,23 @@ private fun ExpenseAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            LiquidGlassTextField(
+            OutlinedTextField(
                 value = uiState.formReferenceNo,
-                onValueChange = {
-                    onRefNoChange(it)
-                    isDialpadOpen = false
+                onValueChange = onRefNoChange,
+                placeholder = { Text("Receipt #, Bill #, Token #...") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Receipt,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(16.dp)
+                    )
                 },
-                placeholder = "Receipt #, Bill #, Token #...",
-                leadingIcon = Icons.Default.Receipt,
                 singleLine = true,
-                shape = RoundedCornerShape(14.dp),
-                accentColor = primaryColor,
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) isDialpadOpen = false }
             )
         }
 
@@ -1749,18 +1773,15 @@ private fun ExpenseAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            LiquidGlassTextField(
+            OutlinedTextField(
                 value = uiState.formRemarks,
-                onValueChange = {
-                    onRemarksChange(it)
-                    isDialpadOpen = false
-                },
-                placeholder = "Add purchased items or notes...",
-                singleLine = false,
+                onValueChange = onRemarksChange,
+                placeholder = { Text("Add purchased items or notes...") },
                 maxLines = 3,
-                shape = RoundedCornerShape(14.dp),
-                accentColor = primaryColor,
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) isDialpadOpen = false }
             )
         }
 

@@ -142,15 +142,48 @@ fun CurrencySearchBottomSheet(
                 }
             }
 
-            // Standardized Liquid Glass Capsule Search Bar
-            LiquidGlassSearchBar(
-                query = searchQuery,
-                onQueryChange = { searchQuery = it },
-                placeholder = "Search currency, country or code...",
-                onClear = { searchQuery = "" },
-                accentColor = primaryColor,
-                testTag = "currency_search_input",
-                modifier = Modifier.fillMaxWidth()
+            // Search Bar Input
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = {
+                    Text(
+                        text = "Search currency, country or code...",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = primaryColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = "Clear Search",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = primaryColor,
+                    unfocusedBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x33000000),
+                    focusedContainerColor = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000),
+                    unfocusedContainerColor = if (isDark) Color(0x10FFFFFF) else Color(0x06000000)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("currency_search_input")
             )
 
             Spacer(modifier = Modifier.height(10.dp))

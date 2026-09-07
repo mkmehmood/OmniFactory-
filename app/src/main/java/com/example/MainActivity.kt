@@ -73,7 +73,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.BatchScalingViewModel
 import com.example.ui.CalculatorViewModel
-import com.example.ui.components.liquidGlassField
 import com.example.ui.ConverterViewModel
 import com.example.ui.ExpensesViewModel
 import com.example.ui.LedgerViewModel
@@ -555,13 +554,10 @@ private fun LiquidGlassTopBar(
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val isCharcoalTheme = currentSkin == com.example.ui.theme.AppThemeSkin.DARK_CHARCOAL
 
-    val titleShape = RoundedCornerShape(24.dp)
-    val titleBgBrush = Brush.verticalGradient(
-        listOf(
-            currentSkin.surfaceVariant.copy(alpha = if (isDark) 0.60f else 0.70f),
-            currentSkin.surface.copy(alpha = if (isDark) 0.85f else 0.90f)
-        )
-    )
+    val iconButtonBg = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.5f else 0.7f)
+    val iconButtonBorder = MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.20f)
+    val titleBg = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.55f else 0.75f)
+    val titleBorder = MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.20f)
 
     Box(
         modifier = Modifier
@@ -571,25 +567,19 @@ private fun LiquidGlassTopBar(
         CenterAlignedTopAppBar(
             navigationIcon = {
                 // Symmetrical spacing placeholder to preserve centered capsule alignment
-                Spacer(modifier = Modifier.size(42.dp))
+                Spacer(modifier = Modifier.size(40.dp))
             },
             title = {
-                Box(
-                    modifier = Modifier
-                        .liquidGlassField(
-                            isFocused = false,
-                            shape = titleShape,
-                            accentColor = primaryColor,
-                            isDark = isDark,
-                            elevation = 3.dp
-                        )
-                        .background(titleBgBrush)
-                        .clickable { onOpenSidebar() }
-                        .testTag("topbar_title_button"),
-                    contentAlignment = Alignment.Center
+                Surface(
+                    onClick = onOpenSidebar,
+                    shape = RoundedCornerShape(22.dp),
+                    color = titleBg,
+                    border = BorderStroke(1.dp, titleBorder),
+                    shadowElevation = if (!isDark && !isCharcoalTheme) 1.5.dp else 0.dp,
+                    modifier = Modifier.testTag("topbar_title_button")
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
@@ -611,28 +601,15 @@ private fun LiquidGlassTopBar(
                 }
             },
             actions = {
-                Box(
+                IconButton(
+                    onClick = onActionClick,
                     modifier = Modifier
                         .padding(end = 4.dp)
-                        .size(42.dp)
-                        .liquidGlassField(
-                            isFocused = false,
-                            shape = CircleShape,
-                            accentColor = primaryColor,
-                            isDark = isDark,
-                            elevation = 2.dp
-                        )
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    currentSkin.surfaceVariant.copy(alpha = if (isDark) 0.60f else 0.75f),
-                                    currentSkin.surface.copy(alpha = if (isDark) 0.85f else 0.90f)
-                                )
-                            )
-                        )
-                        .clickable { onActionClick() }
-                        .testTag("topbar_action_button"),
-                    contentAlignment = Alignment.Center
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(iconButtonBg)
+                        .border(BorderStroke(1.dp, iconButtonBorder), CircleShape)
+                        .testTag("topbar_action_button")
                 ) {
                     Icon(
                         imageVector = actionIcon,
