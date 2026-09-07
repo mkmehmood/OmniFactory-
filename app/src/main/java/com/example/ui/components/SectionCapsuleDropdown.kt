@@ -112,7 +112,7 @@ val APP_SECTION_ITEMS = listOf(
         shortTitle = "Calculator",
         subtitle = "Sequential math & tape history",
         categoryTag = "CORE MATH",
-        suiteAccent = Color(0xFF00E5FF), // Cyan Neon
+        suiteAccent = Color(0xFFFF9F0A),
         icon = Icons.Default.Calculate,
         testTag = "drawer_item_calculator"
     ),
@@ -122,7 +122,7 @@ val APP_SECTION_ITEMS = listOf(
         shortTitle = "Daily Ledger",
         subtitle = "Cash in hand, cash in & out audit",
         categoryTag = "FINANCE",
-        suiteAccent = Color(0xFF10B981), // Emerald
+        suiteAccent = Color(0xFFFF9F0A),
         icon = Icons.Default.AccountBalanceWallet,
         testTag = "drawer_item_ledger"
     ),
@@ -132,7 +132,7 @@ val APP_SECTION_ITEMS = listOf(
         shortTitle = "Expenses",
         subtitle = "Everyday business & home expense manager",
         categoryTag = "BUDGET",
-        suiteAccent = Color(0xFFF59E0B), // Amber Gold
+        suiteAccent = Color(0xFFFF9F0A),
         icon = Icons.Default.Receipt,
         testTag = "drawer_item_expenses"
     ),
@@ -142,7 +142,7 @@ val APP_SECTION_ITEMS = listOf(
         shortTitle = "Units Converter",
         subtitle = "11 dedicated conversion suites",
         categoryTag = "UNITS",
-        suiteAccent = Color(0xFF38BDF8), // Sky Blue
+        suiteAccent = Color(0xFFFF9F0A),
         icon = Icons.Default.SwapHoriz,
         testTag = "drawer_item_converter"
     ),
@@ -152,7 +152,7 @@ val APP_SECTION_ITEMS = listOf(
         shortTitle = "Sales Audit",
         subtitle = "Reconciliation & commission audit",
         categoryTag = "AUDIT",
-        suiteAccent = Color(0xFFA855F7), // Purple Neon
+        suiteAccent = Color(0xFFFF9F0A),
         icon = Icons.Default.ReceiptLong,
         testTag = "drawer_item_sales"
     ),
@@ -162,7 +162,7 @@ val APP_SECTION_ITEMS = listOf(
         shortTitle = "Mixture Calc",
         subtitle = "6-step ratio recalibration wizard",
         categoryTag = "CHEM/LAB",
-        suiteAccent = Color(0xFFEC4899), // Rose Pink
+        suiteAccent = Color(0xFFFF9F0A),
         icon = Icons.Default.Science,
         testTag = "drawer_item_mixture_calculator"
     ),
@@ -172,7 +172,7 @@ val APP_SECTION_ITEMS = listOf(
         shortTitle = "Batch Scaler",
         subtitle = "Proportional recipes & locking",
         categoryTag = "RECIPES",
-        suiteAccent = Color(0xFFF97316), // Vivid Orange
+        suiteAccent = Color(0xFFFF9F0A),
         icon = Icons.Default.Scale,
         testTag = "drawer_item_batch_scaling"
     ),
@@ -182,7 +182,7 @@ val APP_SECTION_ITEMS = listOf(
         shortTitle = "Settings",
         subtitle = "Palettes, shapes, sounds & haptics",
         categoryTag = "SYSTEM",
-        suiteAccent = Color(0xFF14B8A6), // Mint Teal
+        suiteAccent = Color(0xFFFF9F0A),
         icon = Icons.Default.Settings,
         testTag = "drawer_item_settings"
     )

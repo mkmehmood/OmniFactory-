@@ -23,7 +23,7 @@ enum class ConverterCategory(
     val shortName: String,
     val description: String,
     val icon: ImageVector,
-    val accentColor: Color,
+    val accentColor: Color = Color(0xFFFF9F0A),
     val testTagId: String
 ) {
     CURRENCY(
@@ -31,7 +31,7 @@ enum class ConverterCategory(
         shortName = "Currency",
         description = "Real-time world exchange rates & conversions",
         icon = Icons.Default.AttachMoney,
-        accentColor = Color(0xFF10B981),
+        accentColor = Color(0xFFFF9F0A),
         testTagId = "category_currency"
     ),
     BMI(
@@ -39,7 +39,7 @@ enum class ConverterCategory(
         shortName = "BMI",
         description = "Healthy weight & body composition gauge",
         icon = Icons.Default.FitnessCenter,
-        accentColor = Color(0xFF06B6D4),
+        accentColor = Color(0xFFFF9F0A),
         testTagId = "category_bmi"
     ),
     LENGTH(
@@ -47,7 +47,7 @@ enum class ConverterCategory(
         shortName = "Length",
         description = "Metric, Imperial, Astronomical & Nautical",
         icon = Icons.Default.Straighten,
-        accentColor = Color(0xFF3B82F6),
+        accentColor = Color(0xFFFF9F0A),
         testTagId = "category_length"
     ),
     AREA(
@@ -55,7 +55,7 @@ enum class ConverterCategory(
         shortName = "Area",
         description = "Land, imperial, metric & square units",
         icon = Icons.Default.AreaChart,
-        accentColor = Color(0xFF8B5CF6),
+        accentColor = Color(0xFFFF9F0A),
         testTagId = "category_area"
     ),
     VOLUME(
@@ -63,7 +63,7 @@ enum class ConverterCategory(
         shortName = "Volume",
         description = "Liters, gallons, fluid ounces & barrels",
         icon = Icons.Default.ViewInAr,
-        accentColor = Color(0xFFEC4899),
+        accentColor = Color(0xFFFF9F0A),
         testTagId = "category_volume"
     ),
     WEIGHT(
@@ -71,7 +71,7 @@ enum class ConverterCategory(
         shortName = "Weight",
         description = "Kilograms, pounds, stone, ounces & carats",
         icon = Icons.Default.Height,
-        accentColor = Color(0xFFF59E0B),
+        accentColor = Color(0xFFFF9F0A),
         testTagId = "category_weight"
     ),
     TEMPERATURE(
@@ -79,7 +79,7 @@ enum class ConverterCategory(
         shortName = "Temperature",
         description = "Celsius, Fahrenheit, Kelvin & formulas",
         icon = Icons.Default.Thermostat,
-        accentColor = Color(0xFFEF4444),
+        accentColor = Color(0xFFFF9F0A),
         testTagId = "category_temperature"
     ),
     SPEED(
@@ -87,7 +87,7 @@ enum class ConverterCategory(
         shortName = "Speed",
         description = "km/h, mph, m/s, knots & Mach speeds",
         icon = Icons.Default.Speed,
-        accentColor = Color(0xFF6366F1),
+        accentColor = Color(0xFFFF9F0A),
         testTagId = "category_speed"
     ),
     PRESSURE(
@@ -95,7 +95,7 @@ enum class ConverterCategory(
         shortName = "Pressure",
         description = "PSI, Bar, Pascals, atm & Torr",
         icon = Icons.Default.Compress,
-        accentColor = Color(0xFF14B8A6),
+        accentColor = Color(0xFFFF9F0A),
         testTagId = "category_pressure"
     ),
     POWER(
@@ -103,7 +103,7 @@ enum class ConverterCategory(
         shortName = "Power",
         description = "Watts, Kilowatts, Horsepower & BTU/h",
         icon = Icons.Default.Bolt,
-        accentColor = Color(0xFFEAB308),
+        accentColor = Color(0xFFFF9F0A),
         testTagId = "category_power"
     ),
     NUMBER_SYSTEM(
@@ -111,7 +111,7 @@ enum class ConverterCategory(
         shortName = "Number Base",
         description = "Binary, Hex, Octal & Decimal bitwise",
         icon = Icons.Default.Numbers,
-        accentColor = Color(0xFFA855F7),
+        accentColor = Color(0xFFFF9F0A),
         testTagId = "category_number_system"
     )
 }
