@@ -67,10 +67,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import com.example.ui.components.LiquidGlassButton
-import com.example.ui.components.LiquidGlassButtonStyle
-import com.example.ui.components.LiquidGlassDatePickerDialog
-import com.example.ui.components.LiquidGlassDatePickerTrigger
 import com.example.ui.components.LiquidGlassSearchField
 import com.example.ui.components.LiquidGlassTextField
 import androidx.compose.material3.Surface
@@ -1638,12 +1634,46 @@ private fun ExpenseAddEditSheetContent(
         }
 
         // Date Picker
-        LiquidGlassDatePickerTrigger(
-            selectedDateText = dateFormat.format(Date(uiState.formDateMillis)),
-            onClick = { showDatePicker = true },
-            label = "EXPENSE DATE",
-            modifier = Modifier.fillMaxWidth()
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = "EXPENSE DATE",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .border(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x28000000), RoundedCornerShape(10.dp))
+                    .clickable { showDatePicker = true },
+                color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarToday,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = dateFormat.format(Date(uiState.formDateMillis)),
+                        fontSize = 13.sp,
+                        fontFamily = DigitalMonospaceFont,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
 
         // Paid To (Vendor / Person / Store)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1732,27 +1762,35 @@ private fun ExpenseAddEditSheetContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            LiquidGlassButton(
+            Button(
                 onClick = onCancel,
-                style = LiquidGlassButtonStyle.SECONDARY,
                 modifier = Modifier
                     .weight(1f)
-                    .height(50.dp)
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isDark) Color(0x22FFFFFF) else Color(0x18000000),
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
             ) {
                 Text("Cancel", fontWeight = FontWeight.SemiBold)
             }
 
-            LiquidGlassButton(
+            Button(
                 onClick = onSave,
                 enabled = !uiState.isSubmitting && uiState.formAmountText.isNotBlank(),
-                isLoading = uiState.isSubmitting,
-                style = LiquidGlassButtonStyle.DESTRUCTIVE,
-                leadingIcon = Icons.Default.CheckCircle,
                 modifier = Modifier
                     .weight(1.5f)
-                    .height(50.dp),
-                testTag = "form_save_expense_btn"
+                    .height(50.dp)
+                    .testTag("form_save_expense_btn"),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFEF4444),
+                    contentColor = Color.White
+                )
             ) {
+                Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = if (isEditing) "Update Expense" else "Save Expense",
                     fontWeight = FontWeight.Bold,
@@ -1796,7 +1834,7 @@ private fun ExpenseAddEditSheetContent(
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = uiState.formDateMillis)
-        LiquidGlassDatePickerDialog(
+        DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {

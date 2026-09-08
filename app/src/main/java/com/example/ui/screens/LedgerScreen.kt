@@ -72,10 +72,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import com.example.ui.components.LiquidGlassButton
-import com.example.ui.components.LiquidGlassButtonStyle
-import com.example.ui.components.LiquidGlassDatePickerDialog
-import com.example.ui.components.LiquidGlassDatePickerTrigger
 import com.example.ui.components.LiquidGlassSearchField
 import com.example.ui.components.LiquidGlassTextField
 import androidx.compose.material3.Surface
@@ -1811,13 +1807,50 @@ private fun LedgerAddEditSheetContent(
         }
 
         // 6. Transaction Date Picker
-        LiquidGlassDatePickerTrigger(
-            selectedDateText = dateFormat.format(Date(uiState.formDateMillis)),
-            onClick = { showDatePicker = true },
-            label = "TRANSACTION DATE *",
-            modifier = Modifier.fillMaxWidth(),
-            testTag = "form_date_picker_button"
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = "TRANSACTION DATE *",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x28000000), RoundedCornerShape(12.dp))
+                    .clickable { showDatePicker = true }
+                    .testTag("form_date_picker_button"),
+                shape = RoundedCornerShape(12.dp),
+                color = if (isDark) Color(0x12FFFFFF) else Color(0x06000000)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(imageVector = Icons.Default.CalendarToday, contentDescription = null, tint = primaryColor, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = dateFormat.format(Date(uiState.formDateMillis)),
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Text(
+                        text = "Change Date",
+                        fontSize = 11.sp,
+                        color = primaryColor,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
 
         // 7. Reference Number & Remarks
         Row(
@@ -1854,37 +1887,46 @@ private fun LedgerAddEditSheetContent(
                 .padding(top = 8.dp, bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            LiquidGlassButton(
+            Button(
                 onClick = onCancel,
-                style = LiquidGlassButtonStyle.SECONDARY,
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp)
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isDark) Color(0x22FFFFFF) else Color(0x15000000),
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
             ) {
                 Text("Cancel")
             }
 
-            LiquidGlassButton(
+            Button(
                 onClick = onSave,
                 enabled = !uiState.isFormSubmitting,
-                isLoading = uiState.isFormSubmitting,
-                style = LiquidGlassButtonStyle.PRIMARY,
-                containerColor = uiState.formType.color,
-                leadingIcon = Icons.Default.CheckCircle,
                 modifier = Modifier
                     .weight(1.5f)
-                    .height(48.dp),
-                testTag = "form_save_button"
-            ) {
-                Text(
-                    text = if (isEditing) "Update Entry" else when {
-                        isTransfer -> "Save Transfer"
-                        isCashOut -> "Save Cash Out"
-                        else -> "Save Cash In"
-                    },
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
+                    .height(48.dp)
+                    .testTag("form_save_button"),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = uiState.formType.color,
+                    contentColor = Color.White
                 )
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isEditing) "Update Entry" else when {
+                            isTransfer -> "Save Transfer"
+                            isCashOut -> "Save Cash Out"
+                            else -> "Save Cash In"
+                        },
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                }
             }
         }
     }
@@ -1921,7 +1963,7 @@ private fun LedgerAddEditSheetContent(
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = uiState.formDateMillis)
-        LiquidGlassDatePickerDialog(
+        DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(

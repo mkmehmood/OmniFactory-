@@ -21,12 +21,12 @@ class UserPreferencesManager(context: Context) {
 
     var appThemeSkin: AppThemeSkin
         get() {
-            val name = prefs.getString(KEY_APP_THEME_SKIN, AppThemeSkin.CLEAR_LIQUID_TRANSPARENT.name)
-                ?: AppThemeSkin.CLEAR_LIQUID_TRANSPARENT.name
+            val name = prefs.getString(KEY_APP_THEME_SKIN, AppThemeSkin.DARK_CHARCOAL.name)
+                ?: AppThemeSkin.DARK_CHARCOAL.name
             return try {
                 AppThemeSkin.valueOf(name)
             } catch (e: Exception) {
-                AppThemeSkin.CLEAR_LIQUID_TRANSPARENT
+                AppThemeSkin.DARK_CHARCOAL
             }
         }
         set(value) {

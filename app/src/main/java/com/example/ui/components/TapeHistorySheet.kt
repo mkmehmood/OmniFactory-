@@ -36,10 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import com.example.ui.components.LiquidGlassButton
-import com.example.ui.components.LiquidGlassButtonStyle
 import com.example.ui.components.LiquidGlassTextField
-import com.example.ui.components.liquidGlassSurface
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
@@ -143,7 +140,7 @@ fun TapeHistorySheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = if (isDark) Color(0xD9101726) else Color(0xEEF8FAFC),
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
         modifier = Modifier.testTag("tape_history_sheet")
     ) {
@@ -390,21 +387,18 @@ fun TapeHistorySheet(
                 }
             },
             confirmButton = {
-                LiquidGlassButton(
+                Button(
                     onClick = {
                         onUpdateNote(entity, noteText)
                         editingEntity = null
                     },
-                    style = LiquidGlassButtonStyle.PRIMARY
+                    shape = CircleShape
                 ) {
                     Text("Save")
                 }
             },
             dismissButton = {
-                LiquidGlassButton(
-                    onClick = { editingEntity = null },
-                    style = LiquidGlassButtonStyle.SECONDARY
-                ) {
+                TextButton(onClick = { editingEntity = null }) {
                     Text("Cancel")
                 }
             }
@@ -419,21 +413,19 @@ fun TapeHistorySheet(
             title = { Text("Clear Entire History?") },
             text = { Text("All saved calculations will be permanently deleted.") },
             confirmButton = {
-                LiquidGlassButton(
+                Button(
                     onClick = {
                         onClearAll()
                         showClearDialog = false
                     },
-                    style = LiquidGlassButtonStyle.DESTRUCTIVE
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    shape = CircleShape
                 ) {
                     Text("Clear All")
                 }
             },
             dismissButton = {
-                LiquidGlassButton(
-                    onClick = { showClearDialog = false },
-                    style = LiquidGlassButtonStyle.SECONDARY
-                ) {
+                TextButton(onClick = { showClearDialog = false }) {
                     Text("Cancel")
                 }
             }
@@ -455,18 +447,28 @@ private fun TapeItemCard(
     onTogglePin: () -> Unit,
     onEditNote: () -> Unit
 ) {
-    Box(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .liquidGlassSurface(
-                shape = RoundedCornerShape(18.dp),
-                isDark = isDark,
-                accentColor = if (isSelected) primaryColor else (if (isDark) Color.White else primaryColor),
-                isFocused = isSelected,
-                elevation = if (isSelected) 8.dp else 2.dp
+            .clip(RoundedCornerShape(20.dp))
+            .border(
+                width = 1.dp,
+                brush = Brush.verticalGradient(
+                    listOf(
+                        if (isSelected) primaryColor else (if (isDark) Color.White else primaryColor).copy(alpha = 0.2f),
+                        Color.Transparent
+                    )
+                ),
+                shape = RoundedCornerShape(20.dp)
             )
             .clickable { onToggleSelect() }
-            .testTag("tape_item_${entity.id}")
+            .testTag("tape_item_${entity.id}"),
+        color = if (isSelected) {
+            primaryColor.copy(alpha = 0.22f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.45f else 0.6f)
+        },
+        shape = RoundedCornerShape(20.dp)
     ) {
         Column(
             modifier = Modifier
