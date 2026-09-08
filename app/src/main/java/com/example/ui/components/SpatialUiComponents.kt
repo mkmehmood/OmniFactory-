@@ -72,6 +72,14 @@ import androidx.compose.ui.unit.sp
 import com.example.domain.util.HapticFeedbackHelper
 import com.example.domain.util.SoundFeedbackHelper
 import com.example.ui.theme.DigitalMonospaceFont
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import com.example.ui.theme.toButtonShape
+import com.example.ui.theme.toCardShape
 import com.example.ui.theme.HapticIntensity
 import com.example.ui.theme.LocalAppThemeSkin
 import com.example.ui.theme.LocalShapeStructure
@@ -81,7 +89,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Authentic Liquid Glass surface modifier matching fluid glass mockups:
- * Translucent frosted glass body, realistic top specular reflection curve,
+ * Transparent clear liquid glass body, realistic top specular reflection curve,
  * glowing crystalline rim gradient, and soft floating elevation.
  */
 fun Modifier.liquidGlassSurface(
@@ -96,33 +104,36 @@ fun Modifier.liquidGlassSurface(
     .shadow(
         elevation = if (isFocused) (elevation + 3.dp) else elevation,
         shape = shape,
-        ambientColor = if (isFocused) accentColor.copy(alpha = 0.28f) else (if (isDark) Color(0x35000000) else Color(0x10000000)),
-        spotColor = if (isFocused) accentColor.copy(alpha = 0.38f) else (if (isDark) Color(0x45000000) else Color(0x18000000))
+        ambientColor = if (isFocused) accentColor.copy(alpha = 0.25f) else (if (isDark) Color(0x30000000) else Color(0x0C000000)),
+        spotColor = if (isFocused) accentColor.copy(alpha = 0.35f) else (if (isDark) Color(0x40000000) else Color(0x14000000))
     )
     .clip(shape)
     .drawBehind {
-        // 1. Frosted translucent liquid glass body matching photo theme cards & tactile keys
+        // 1. Transparent Clear Liquid Glass Body:
+        // Allows the underlying background and content to shine through with liquid refraction
         val bodyBrush = if (containerBaseColor != null) {
-            val baseAlpha = if (isDark) 0.82f else 0.94f
+            val baseAlpha = if (isDark) 0.26f else 0.35f
             Brush.verticalGradient(
                 listOf(
                     containerBaseColor.copy(alpha = baseAlpha),
-                    containerBaseColor.copy(alpha = (baseAlpha - 0.08f).coerceAtLeast(0.40f))
+                    containerBaseColor.copy(alpha = (baseAlpha * 0.70f).coerceAtLeast(0.12f))
                 )
             )
         } else {
             Brush.verticalGradient(
                 if (isDark) {
-                    // Dark Charcoal tactile key/surface color (#2C2C2E / #1C1C1E)
+                    // Transparent clear liquid glass with crystalline specular sheen
                     listOf(
-                        Color(0xFF2C2C2E).copy(alpha = 0.88f),
-                        Color(0xFF1C1C1E).copy(alpha = 0.92f)
+                        Color.White.copy(alpha = 0.14f),
+                        Color(0xFF1E293B).copy(alpha = 0.22f),
+                        Color(0xFF0F172A).copy(alpha = 0.30f)
                     )
                 } else {
-                    // Pure Light crisp white & soft silver (#FFFFFF / #F2F2F7)
+                    // Crystal clear liquid glass with pristine transparency
                     listOf(
-                        Color.White.copy(alpha = 0.96f),
-                        Color(0xFFF2F2F7).copy(alpha = 0.92f)
+                        Color.White.copy(alpha = 0.65f),
+                        Color(0xFFF8FAFC).copy(alpha = 0.35f),
+                        Color(0xFFE2E8F0).copy(alpha = 0.28f)
                     )
                 }
             )
@@ -134,21 +145,21 @@ fun Modifier.liquidGlassSurface(
             drawRect(
                 Brush.linearGradient(
                     listOf(
-                        accentColor.copy(alpha = if (isDark) 0.12f else 0.08f),
-                        accentColor.copy(alpha = 0.03f)
+                        accentColor.copy(alpha = if (isDark) 0.16f else 0.12f),
+                        accentColor.copy(alpha = 0.04f)
                     )
                 )
             )
         }
 
-        // 3. Liquid Glass Specular Curve / Top Rim Glow (matching the curved light sheen in photos)
-        val glossAlpha = ((if (isFocused) (if (isDark) 0.28f else 0.40f) else (if (isDark) 0.16f else 0.26f)) * highlightIntensity).coerceIn(0f, 1f)
-        val specularHeight = (size.height * 0.48f).coerceAtLeast(14f)
+        // 3. Clear Liquid Meniscus Specular Highlight (crystal reflections)
+        val glossAlpha = ((if (isFocused) (if (isDark) 0.38f else 0.52f) else (if (isDark) 0.24f else 0.36f)) * highlightIntensity).coerceIn(0f, 1f)
+        val specularHeight = (size.height * 0.45f).coerceAtLeast(12f)
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(
                     Color.White.copy(alpha = glossAlpha),
-                    Color.White.copy(alpha = glossAlpha * 0.28f),
+                    Color.White.copy(alpha = glossAlpha * 0.30f),
                     Color.Transparent
                 ),
                 startY = 0f,
@@ -161,10 +172,10 @@ fun Modifier.liquidGlassSurface(
         brush = if (isFocused) {
             Brush.linearGradient(
                 colors = listOf(
-                    if (isDark) Color.White.copy(alpha = 0.70f) else accentColor.copy(alpha = 0.80f),
-                    accentColor,
-                    accentColor.copy(alpha = 0.85f),
-                    if (isDark) Color.White.copy(alpha = 0.25f) else accentColor.copy(alpha = 0.40f)
+                    Color.White.copy(alpha = 0.85f),
+                    accentColor.copy(alpha = 0.95f),
+                    accentColor.copy(alpha = 0.70f),
+                    Color.White.copy(alpha = 0.40f)
                 ),
                 start = Offset(0f, 0f),
                 end = Offset(400f, 400f)
@@ -172,9 +183,9 @@ fun Modifier.liquidGlassSurface(
         } else {
             Brush.linearGradient(
                 colors = listOf(
-                    if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.14f),
-                    if (isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f),
-                    if (isDark) Color.White.copy(alpha = 0.04f) else Color.Black.copy(alpha = 0.03f)
+                    if (isDark) Color.White.copy(alpha = 0.40f) else Color.White.copy(alpha = 0.85f),
+                    if (isDark) Color.White.copy(alpha = 0.16f) else Color(0x30000000),
+                    if (isDark) Color.White.copy(alpha = 0.06f) else Color(0x12000000)
                 ),
                 start = Offset(0f, 0f),
                 end = Offset(300f, 300f)
@@ -413,17 +424,24 @@ fun SpatialGlassCard(
     val accent = MaterialTheme.colorScheme.primary
 
     val backgroundBrush = containerColor?.let {
-        Brush.linearGradient(listOf(it, it))
+        Brush.linearGradient(
+            listOf(
+                it.copy(alpha = if (isDark) 0.35f else 0.45f),
+                it.copy(alpha = if (isDark) 0.18f else 0.25f)
+            )
+        )
     } ?: Brush.verticalGradient(
         colors = if (isDark) {
             listOf(
-                skin.surfaceVariant.copy(alpha = 0.55f),
-                skin.surface.copy(alpha = 0.85f)
+                Color.White.copy(alpha = 0.10f),
+                skin.surfaceVariant.copy(alpha = 0.22f),
+                skin.surface.copy(alpha = 0.32f)
             )
         } else {
             listOf(
-                skin.surface.copy(alpha = 0.90f),
-                skin.surfaceVariant.copy(alpha = 0.65f)
+                Color.White.copy(alpha = 0.70f),
+                Color(0xFFF1F5F9).copy(alpha = 0.40f),
+                skin.surfaceVariant.copy(alpha = 0.30f)
             )
         }
     )
@@ -440,6 +458,258 @@ fun SpatialGlassCard(
             )
             .background(backgroundBrush)
             .testTag(testTag),
+        content = content
+    )
+}
+
+/**
+ * Visual styles for the versatile Liquid Glass Button suite.
+ */
+enum class LiquidGlassButtonStyle {
+    PRIMARY,
+    SECONDARY,
+    TONAL,
+    OUTLINE,
+    DESTRUCTIVE
+}
+
+/**
+ * Standardized authentic Liquid Glass Button adhering to the requested transparent, clear liquid look.
+ * Features realistic fluid translucency, specular meniscus highlight, crystalline refraction border,
+ * tactile spring press scale, and dynamic haptic feedback.
+ */
+@Composable
+fun LiquidGlassButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    style: LiquidGlassButtonStyle = LiquidGlassButtonStyle.PRIMARY,
+    shape: Shape? = null,
+    containerColor: Color? = null,
+    contentColor: Color? = null,
+    elevation: Dp = 4.dp,
+    leadingIcon: ImageVector? = null,
+    trailingIcon: ImageVector? = null,
+    isLoading: Boolean = false,
+    testTag: String? = null,
+    content: @Composable RowScope.() -> Unit
+) {
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val context = LocalContext.current
+    val view = LocalView.current
+
+    val resolvedShape = shape ?: LocalShapeStructure.current.toButtonShape()
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed && enabled) 0.96f else 1.0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "liquid_btn_scale"
+    )
+
+    val (baseColor, resolvedContentColor) = when (style) {
+        LiquidGlassButtonStyle.PRIMARY -> {
+            val bg = containerColor ?: primaryColor
+            val txt = contentColor ?: Color.White
+            Pair(bg, txt)
+        }
+        LiquidGlassButtonStyle.SECONDARY -> {
+            val bg = containerColor ?: (if (isDark) Color(0x35FFFFFF) else Color(0x18000000))
+            val txt = contentColor ?: MaterialTheme.colorScheme.onSurface
+            Pair(bg, txt)
+        }
+        LiquidGlassButtonStyle.TONAL -> {
+            val bg = containerColor ?: primaryColor.copy(alpha = 0.28f)
+            val txt = contentColor ?: primaryColor
+            Pair(bg, txt)
+        }
+        LiquidGlassButtonStyle.OUTLINE -> {
+            val bg = containerColor ?: Color.Transparent
+            val txt = contentColor ?: MaterialTheme.colorScheme.onSurface
+            Pair(bg, txt)
+        }
+        LiquidGlassButtonStyle.DESTRUCTIVE -> {
+            val bg = containerColor ?: Color(0xFFEF4444)
+            val txt = contentColor ?: Color.White
+            Pair(bg, txt)
+        }
+    }
+
+    val alphaMultiplier = if (enabled) 1.0f else 0.45f
+
+    Box(
+        modifier = modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                this.alpha = alphaMultiplier
+            }
+            .liquidGlassSurface(
+                shape = resolvedShape,
+                elevation = if (enabled) (if (isPressed) 1.dp else elevation) else 0.dp,
+                isDark = isDark,
+                isFocused = isPressed,
+                accentColor = if (style == LiquidGlassButtonStyle.DESTRUCTIVE) Color(0xFFEF4444) else primaryColor,
+                containerBaseColor = baseColor
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled && !isLoading
+            ) {
+                HapticFeedbackHelper.performKeypadTap(context, view, HapticIntensity.LIGHT)
+                SoundFeedbackHelper.playClickSound(context, view, SoundIntensity.STANDARD)
+                onClick()
+            }
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .let { if (testTag != null) it.testTag(testTag) else it },
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp,
+                    color = resolvedContentColor
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            } else if (leadingIcon != null) {
+                Icon(
+                    imageVector = leadingIcon,
+                    contentDescription = null,
+                    tint = resolvedContentColor,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            androidx.compose.runtime.CompositionLocalProvider(
+                androidx.compose.material3.LocalContentColor provides resolvedContentColor
+            ) {
+                content()
+            }
+
+            if (trailingIcon != null && !isLoading) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = trailingIcon,
+                    contentDescription = null,
+                    tint = resolvedContentColor,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Standardized Liquid Glass Date Picker Trigger capsule for form screens.
+ */
+@Composable
+fun LiquidGlassDatePickerTrigger(
+    selectedDateText: String,
+    onClick: () -> Unit,
+    label: String = "TRANSACTION DATE *",
+    modifier: Modifier = Modifier,
+    shape: Shape? = null,
+    testTag: String = "form_date_picker_button"
+) {
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val resolvedShape = shape ?: LocalShapeStructure.current.toInputShape()
+
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = DigitalMonospaceFont,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .liquidGlassSurface(
+                    shape = resolvedShape,
+                    elevation = 3.dp,
+                    isDark = isDark,
+                    isFocused = false,
+                    accentColor = primaryColor,
+                    containerBaseColor = if (isDark) Color(0x24FFFFFF) else Color(0x10000000)
+                )
+                .clickable(onClick = onClick)
+                .padding(horizontal = 14.dp, vertical = 13.dp)
+                .testTag(testTag)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarToday,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = selectedDateText,
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Text(
+                    text = "Change Date",
+                    fontSize = 11.sp,
+                    color = primaryColor,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Transparent clear liquid glass wrapper around DatePickerDialog.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LiquidGlassDatePickerDialog(
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    dismissButton: @Composable (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
+) {
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val shape = LocalShapeStructure.current.toCardShape()
+
+    DatePickerDialog(
+        onDismissRequest = onDismissRequest,
+        confirmButton = confirmButton,
+        dismissButton = dismissButton,
+        shape = shape,
+        colors = DatePickerDefaults.colors(
+            containerColor = if (isDark) Color(0xE60E1626) else Color(0xF2FFFFFF)
+        ),
+        modifier = modifier.liquidGlassSurface(
+            shape = shape,
+            elevation = 16.dp,
+            isDark = isDark,
+            accentColor = primaryColor,
+            containerBaseColor = if (isDark) Color(0x351E293B) else Color(0x55FFFFFF)
+        ),
         content = content
     )
 }

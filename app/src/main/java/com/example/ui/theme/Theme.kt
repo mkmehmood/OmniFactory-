@@ -69,6 +69,28 @@ enum class AppThemeSkin(
     val ornamentalTintColor: Color = Color.Transparent
 ) {
     // ==========================================
+    // LIQUID THEME: ULTRA-CLEAR & TRANSPARENT
+    // ==========================================
+    CLEAR_LIQUID_TRANSPARENT(
+        displayName = "Clear Liquid Glass",
+        categoryTag = "Liquid UI",
+        description = "Pristine transparent clear liquid glass with shimmering specular fluid highlights, crystalline refraction & fluid transparency",
+        isDark = true,
+        background = Color(0xFF090D16),
+        surface = Color(0x2EFFFFFF),
+        surfaceVariant = Color(0x1FFFFFFF),
+        surfacePressed = Color(0x40FFFFFF),
+        outline = Color(0x55FFFFFF),
+        textPrimary = Color(0xFFFFFFFF),
+        textSecondary = Color(0xFFE2E8F0),
+        defaultAccent = Color(0xFFFF9F0A),
+        previewColors = listOf(Color(0xFF090D16), Color(0x66FFFFFF), Color(0xFFFF9F0A)),
+        badgeLabel = "CLEAR LIQUID",
+        ornamentalPattern = OrnamentalPatternStyle.NONE,
+        ornamentalTintColor = Color.Transparent
+    ),
+
+    // ==========================================
     // PHOTO THEME: PURE LIGHT & DARK CHARCOAL
     // ==========================================
     DARK_CHARCOAL(
@@ -616,7 +638,13 @@ enum class ShapeStructureStyle(
     CHAMFER_CUT("Chamfer Cut Edge", "Futuristic 14dp diagonal cut corners"),
     TEARDROP("Teardrop Leaf", "Dynamic asymmetric organic corner geometry"),
     OVAL_STADIUM("Oval Stadium", "Ultra smooth 32dp deep curved geometry"),
-    SOFT_BUBBLE("Soft Cloud Bubble", "Plump 26dp ultra-soft rounded corners")
+    SOFT_BUBBLE("Soft Cloud Bubble", "Plump 26dp ultra-soft rounded corners"),
+    NEU_SQUIRCLE("Curvature Squircle", "Apple-style organic squircle with continuous curvature"),
+    LIQUID_DROPLET("Fluid Liquid Droplet", "Organic fluid droplet with bulbous head and fluid taper"),
+    CYBER_HEXAGON("Cyber Hexagonal Cut", "Angular multi-facet diagonal chamfered cyber geometry"),
+    TACTILE_DISC("Tactile Circular Disc", "Pure circular floating disc geometry with rim highlight"),
+    ARCH_VAULT("Cathedral Arch Vault", "Curved upper dome arch with crisp architectural baseline"),
+    DIAMOND_PRISM("Faceted Diamond Prism", "Precision diamond-cut faceted chamfer corners")
 }
 
 fun ShapeStructureStyle.toButtonShape(): CornerBasedShape = when (this) {
@@ -628,6 +656,12 @@ fun ShapeStructureStyle.toButtonShape(): CornerBasedShape = when (this) {
     ShapeStructureStyle.TEARDROP -> RoundedCornerShape(topStart = 26.dp, topEnd = 6.dp, bottomEnd = 26.dp, bottomStart = 6.dp)
     ShapeStructureStyle.OVAL_STADIUM -> RoundedCornerShape(32.dp)
     ShapeStructureStyle.SOFT_BUBBLE -> RoundedCornerShape(26.dp)
+    ShapeStructureStyle.NEU_SQUIRCLE -> RoundedCornerShape(22.dp)
+    ShapeStructureStyle.LIQUID_DROPLET -> RoundedCornerShape(topStart = 28.dp, topEnd = 10.dp, bottomEnd = 28.dp, bottomStart = 28.dp)
+    ShapeStructureStyle.CYBER_HEXAGON -> CutCornerShape(topStart = 16.dp, topEnd = 6.dp, bottomEnd = 16.dp, bottomStart = 6.dp)
+    ShapeStructureStyle.TACTILE_DISC -> RoundedCornerShape(50)
+    ShapeStructureStyle.ARCH_VAULT -> RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomEnd = 8.dp, bottomStart = 8.dp)
+    ShapeStructureStyle.DIAMOND_PRISM -> CutCornerShape(10.dp)
 }
 
 fun ShapeStructureStyle.toInputShape(): CornerBasedShape = when (this) {
@@ -639,6 +673,12 @@ fun ShapeStructureStyle.toInputShape(): CornerBasedShape = when (this) {
     ShapeStructureStyle.TEARDROP -> RoundedCornerShape(topStart = 20.dp, topEnd = 6.dp, bottomEnd = 20.dp, bottomStart = 6.dp)
     ShapeStructureStyle.OVAL_STADIUM -> RoundedCornerShape(28.dp)
     ShapeStructureStyle.SOFT_BUBBLE -> RoundedCornerShape(22.dp)
+    ShapeStructureStyle.NEU_SQUIRCLE -> RoundedCornerShape(18.dp)
+    ShapeStructureStyle.LIQUID_DROPLET -> RoundedCornerShape(topStart = 22.dp, topEnd = 8.dp, bottomEnd = 22.dp, bottomStart = 22.dp)
+    ShapeStructureStyle.CYBER_HEXAGON -> CutCornerShape(topStart = 12.dp, topEnd = 4.dp, bottomEnd = 12.dp, bottomStart = 4.dp)
+    ShapeStructureStyle.TACTILE_DISC -> RoundedCornerShape(50)
+    ShapeStructureStyle.ARCH_VAULT -> RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomEnd = 8.dp, bottomStart = 8.dp)
+    ShapeStructureStyle.DIAMOND_PRISM -> CutCornerShape(8.dp)
 }
 
 fun ShapeStructureStyle.toCardShape(): CornerBasedShape = when (this) {
@@ -650,6 +690,12 @@ fun ShapeStructureStyle.toCardShape(): CornerBasedShape = when (this) {
     ShapeStructureStyle.TEARDROP -> RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 24.dp, bottomStart = 8.dp)
     ShapeStructureStyle.OVAL_STADIUM -> RoundedCornerShape(28.dp)
     ShapeStructureStyle.SOFT_BUBBLE -> RoundedCornerShape(24.dp)
+    ShapeStructureStyle.NEU_SQUIRCLE -> RoundedCornerShape(24.dp)
+    ShapeStructureStyle.LIQUID_DROPLET -> RoundedCornerShape(topStart = 28.dp, topEnd = 12.dp, bottomEnd = 28.dp, bottomStart = 28.dp)
+    ShapeStructureStyle.CYBER_HEXAGON -> CutCornerShape(topStart = 20.dp, topEnd = 8.dp, bottomEnd = 20.dp, bottomStart = 8.dp)
+    ShapeStructureStyle.TACTILE_DISC -> RoundedCornerShape(26.dp)
+    ShapeStructureStyle.ARCH_VAULT -> RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomEnd = 12.dp, bottomStart = 12.dp)
+    ShapeStructureStyle.DIAMOND_PRISM -> CutCornerShape(14.dp)
 }
 
 fun ShapeStructureStyle.toSmallShape(): CornerBasedShape = when (this) {
@@ -661,6 +707,12 @@ fun ShapeStructureStyle.toSmallShape(): CornerBasedShape = when (this) {
     ShapeStructureStyle.TEARDROP -> RoundedCornerShape(topStart = 12.dp, topEnd = 3.dp, bottomEnd = 12.dp, bottomStart = 3.dp)
     ShapeStructureStyle.OVAL_STADIUM -> RoundedCornerShape(16.dp)
     ShapeStructureStyle.SOFT_BUBBLE -> RoundedCornerShape(12.dp)
+    ShapeStructureStyle.NEU_SQUIRCLE -> RoundedCornerShape(10.dp)
+    ShapeStructureStyle.LIQUID_DROPLET -> RoundedCornerShape(topStart = 14.dp, topEnd = 4.dp, bottomEnd = 14.dp, bottomStart = 14.dp)
+    ShapeStructureStyle.CYBER_HEXAGON -> CutCornerShape(topStart = 8.dp, topEnd = 3.dp, bottomEnd = 8.dp, bottomStart = 3.dp)
+    ShapeStructureStyle.TACTILE_DISC -> RoundedCornerShape(50)
+    ShapeStructureStyle.ARCH_VAULT -> RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomEnd = 4.dp, bottomStart = 4.dp)
+    ShapeStructureStyle.DIAMOND_PRISM -> CutCornerShape(5.dp)
 }
 
 fun ShapeStructureStyle.toChipShape(): CornerBasedShape = when (this) {
@@ -672,6 +724,12 @@ fun ShapeStructureStyle.toChipShape(): CornerBasedShape = when (this) {
     ShapeStructureStyle.TEARDROP -> RoundedCornerShape(topStart = 14.dp, topEnd = 4.dp, bottomEnd = 14.dp, bottomStart = 4.dp)
     ShapeStructureStyle.OVAL_STADIUM -> RoundedCornerShape(20.dp)
     ShapeStructureStyle.SOFT_BUBBLE -> RoundedCornerShape(16.dp)
+    ShapeStructureStyle.NEU_SQUIRCLE -> RoundedCornerShape(12.dp)
+    ShapeStructureStyle.LIQUID_DROPLET -> RoundedCornerShape(topStart = 16.dp, topEnd = 5.dp, bottomEnd = 16.dp, bottomStart = 16.dp)
+    ShapeStructureStyle.CYBER_HEXAGON -> CutCornerShape(topStart = 10.dp, topEnd = 4.dp, bottomEnd = 10.dp, bottomStart = 4.dp)
+    ShapeStructureStyle.TACTILE_DISC -> RoundedCornerShape(50)
+    ShapeStructureStyle.ARCH_VAULT -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomEnd = 6.dp, bottomStart = 6.dp)
+    ShapeStructureStyle.DIAMOND_PRISM -> CutCornerShape(6.dp)
 }
 
 enum class ComponentSizeStyle(

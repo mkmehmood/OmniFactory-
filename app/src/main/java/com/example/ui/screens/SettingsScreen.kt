@@ -364,7 +364,7 @@ fun SettingsScreen(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "Choose from 8 distinct geometric shapes for buttons, cards, and input fields",
+                    text = "Choose from 14 distinct geometric styles for buttons, cards, and input fields",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1713,6 +1713,12 @@ private fun getShapeIcon(shape: ShapeStructureStyle): ImageVector {
         ShapeStructureStyle.TEARDROP -> Icons.Default.PanoramaFishEye
         ShapeStructureStyle.OVAL_STADIUM -> Icons.Default.PanoramaFishEye
         ShapeStructureStyle.SOFT_BUBBLE -> Icons.Default.RoundedCorner
+        ShapeStructureStyle.NEU_SQUIRCLE -> Icons.Default.RoundedCorner
+        ShapeStructureStyle.LIQUID_DROPLET -> Icons.Default.Science
+        ShapeStructureStyle.CYBER_HEXAGON -> Icons.Default.ViewCompact
+        ShapeStructureStyle.TACTILE_DISC -> Icons.Default.TouchApp
+        ShapeStructureStyle.ARCH_VAULT -> Icons.Default.AspectRatio
+        ShapeStructureStyle.DIAMOND_PRISM -> Icons.Default.Palette
     }
 }
 
