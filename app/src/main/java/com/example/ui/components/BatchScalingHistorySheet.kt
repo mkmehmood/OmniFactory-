@@ -39,7 +39,16 @@ import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Functions
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.outlined.PushPin
+import com.example.domain.calculator.BatchScalingEngine
+import com.example.domain.calculator.BatchSubMode
+import com.example.domain.calculator.RoundingOption
+import com.example.domain.calculator.ScalingComponent
+import com.example.domain.calculator.ScalingMode
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -620,57 +629,214 @@ private fun BatchScalingHistoryCard(
                 )
             }
 
-            // Expandable Components Breakdown
+            // Expandable Components & Full Calculation Process Breakdown
             AnimatedVisibility(visible = expanded) {
+                val (scaledComponents, formulaSteps) = remember(item) { getOrComputeScaledComponents(item) }
+
                 Column(modifier = Modifier.padding(top = 8.dp)) {
                     HorizontalDivider(color = borderColor.copy(alpha = 0.5f))
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Section 1: Calculation Process & Formula Steps
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = primaryColor.copy(alpha = 0.08f),
+                        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Functions,
+                                    contentDescription = null,
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "CALCULATION PROCESS & FORMULAS",
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = primaryColor
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Scaling Factor derivation & mode info
+                            Text(
+                                text = "• Mode: $modeLabel | Target: ${item.targetTotalText.ifBlank { formatNum(item.scaledGrandTotal) }} | Factor: ${String.format(Locale.US, "%.4fx", item.scalingFactor)}",
+                                fontSize = 10.sp,
+                                fontFamily = DigitalMonospaceFont,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            if (item.lockedTotal > 0.0) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "• Locked Components Sum: ${formatNum(item.lockedTotal)} (Fixed)",
+                                    fontSize = 10.sp,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = primaryColor
+                                )
+                                Text(
+                                    text = "• Variable Pool: ${formatNum(item.unlockedOriginalTotal)} → Scaled: ${formatNum(item.unlockedScaledTotal)}",
+                                    fontSize = 10.sp,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            if (!isTargetMode || item.batchCountText != "1") {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "• Batch Division: ${item.batchCountText} Batches | Per Batch: ${formatNum(item.singleBatchGrandTotal)}",
+                                    fontSize = 10.sp,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            if (formulaSteps.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "STEP-BY-STEP ARITHMETIC:",
+                                    fontSize = 9.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                formulaSteps.forEachIndexed { idx, step ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 1.dp),
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = primaryColor.copy(alpha = 0.15f),
+                                            modifier = Modifier.padding(top = 1.dp)
+                                        ) {
+                                            Text(
+                                                text = "${idx + 1}",
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                fontFamily = DigitalMonospaceFont,
+                                                color = primaryColor,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = step,
+                                            fontSize = 10.sp,
+                                            fontFamily = DigitalMonospaceFont,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            lineHeight = 14.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Section 2: Complete Scaled Component Table
                     Text(
-                        text = "COMPONENTS LIST (${item.componentsCount}):",
-                        fontSize = 10.sp,
+                        text = "COMPLETE COMPONENT BREAKDOWN (${scaledComponents.size}):",
+                        fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = DigitalMonospaceFont,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                    val components = parseComponentsJson(item.componentsJson)
-                    components.forEach { (name, amount, isLocked) ->
-                        Row(
+                    scaledComponents.forEach { comp ->
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                            border = BorderStroke(1.dp, borderColor.copy(alpha = 0.4f)),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 2.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                                .padding(vertical = 3.dp)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "• $name",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                if (isLocked) {
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("(Locked)", fontSize = 9.sp, color = primaryColor)
+                            Column(modifier = Modifier.padding(8.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = comp.name,
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        if (comp.isLocked) {
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Surface(
+                                                shape = RoundedCornerShape(4.dp),
+                                                color = primaryColor.copy(alpha = 0.15f)
+                                            ) {
+                                                Text(
+                                                    text = "LOCKED",
+                                                    fontSize = 8.5.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontFamily = DigitalMonospaceFont,
+                                                    color = primaryColor,
+                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Text(
+                                        text = comp.scaledAmountFormatted,
+                                        fontSize = 12.sp,
+                                        fontFamily = DigitalMonospaceFont,
+                                        fontWeight = FontWeight.Bold,
+                                        color = primaryColor
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "Original: ${comp.originalAmountFormatted} (${String.format(Locale.US, "%.1f%%", comp.originalSharePercent)})",
+                                        fontSize = 10.sp,
+                                        fontFamily = DigitalMonospaceFont,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    if (!isTargetMode || item.batchCountText != "1") {
+                                        Text(
+                                            text = "Per Batch: ${comp.perBatchAmountFormatted}",
+                                            fontSize = 10.sp,
+                                            fontFamily = DigitalMonospaceFont,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "Scaled Share: ${String.format(Locale.US, "%.1f%%", comp.scaledSharePercent)}",
+                                            fontSize = 10.sp,
+                                            fontFamily = DigitalMonospaceFont,
+                                            color = primaryColor
+                                        )
+                                    }
                                 }
                             }
-                            Text(
-                                text = amount,
-                                fontSize = 11.sp,
-                                fontFamily = DigitalMonospaceFont,
-                                fontWeight = FontWeight.Bold,
-                                color = primaryColor
-                            )
                         }
-                    }
-
-                    if (!isTargetMode || item.batchCountText != "1") {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Batch Count: ${item.batchCountText} | Single Batch: ${formatNum(item.singleBatchGrandTotal)}",
-                            fontSize = 10.5.sp,
-                            fontFamily = DigitalMonospaceFont,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
             }
@@ -1042,21 +1208,139 @@ private fun formatNum(v: Double): String {
     return if (v % 1.0 == 0.0) String.format(Locale.US, "%,.0f", v) else String.format(Locale.US, "%,.2f", v)
 }
 
+data class HistoryScaledComponent(
+    val id: String,
+    val name: String,
+    val originalAmount: Double,
+    val originalSharePercent: Double,
+    val isLocked: Boolean,
+    val scaledAmount: Double,
+    val scaledSharePercent: Double,
+    val perBatchAmount: Double,
+    val originalAmountFormatted: String,
+    val scaledAmountFormatted: String,
+    val perBatchAmountFormatted: String
+)
+
+private fun getOrComputeScaledComponents(item: BatchScalingEntity): Pair<List<HistoryScaledComponent>, List<String>> {
+    val list = mutableListOf<HistoryScaledComponent>()
+    val formulaSteps = mutableListOf<String>()
+
+    try {
+        if (item.scaledComponentsJson.isNotBlank() && item.scaledComponentsJson != "[]") {
+            val array = JSONArray(item.scaledComponentsJson)
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                list.add(
+                    HistoryScaledComponent(
+                        id = obj.optString("id", "$i"),
+                        name = obj.optString("name", "Component ${i + 1}"),
+                        originalAmount = obj.optDouble("originalAmount", 0.0),
+                        originalSharePercent = obj.optDouble("originalSharePercent", 0.0),
+                        isLocked = obj.optBoolean("isLocked", false),
+                        scaledAmount = obj.optDouble("scaledAmount", 0.0),
+                        scaledSharePercent = obj.optDouble("scaledSharePercent", 0.0),
+                        perBatchAmount = obj.optDouble("perBatchAmount", 0.0),
+                        originalAmountFormatted = obj.optString("originalAmountFormatted", formatNum(obj.optDouble("originalAmount", 0.0))),
+                        scaledAmountFormatted = obj.optString("scaledAmountFormatted", formatNum(obj.optDouble("scaledAmount", 0.0))),
+                        perBatchAmountFormatted = obj.optString("perBatchAmountFormatted", formatNum(obj.optDouble("perBatchAmount", 0.0)))
+                    )
+                )
+            }
+        }
+        if (item.formulaStepsJson.isNotBlank() && item.formulaStepsJson != "[]") {
+            val stepsArray = JSONArray(item.formulaStepsJson)
+            for (i in 0 until stepsArray.length()) {
+                formulaSteps.add(stepsArray.getString(i))
+            }
+        }
+    } catch (e: Exception) {
+        // fallback
+    }
+
+    if (list.isEmpty()) {
+        val rawComponents = parseComponentsJson(item.componentsJson)
+        val scalingComponents = rawComponents.map { (name, amountText, isLocked) ->
+            ScalingComponent(
+                name = name,
+                originalAmount = amountText.toDoubleOrNull() ?: 0.0,
+                isLocked = isLocked
+            )
+        }
+        val mode = try { ScalingMode.valueOf(item.scalingMode) } catch (e: Exception) { ScalingMode.TARGET_TOTAL }
+        val subMode = try { BatchSubMode.valueOf(item.batchSubMode) } catch (e: Exception) { BatchSubMode.BY_BATCH_COUNT }
+        val rounding = try { RoundingOption.valueOf(item.roundingOption) } catch (e: Exception) { RoundingOption.ONE_DECIMAL }
+
+        val calcOutput = BatchScalingEngine.calculate(
+            components = scalingComponents,
+            scalingMode = mode,
+            targetTotalInput = item.targetTotalText.toDoubleOrNull() ?: item.scaledGrandTotal,
+            batchSizeInput = item.batchSizeText.toDoubleOrNull() ?: 0.0,
+            batchSubMode = subMode,
+            batchCountInput = item.batchCountText.toDoubleOrNull() ?: 1.0,
+            availableAmountInput = item.availableAmountText.toDoubleOrNull() ?: 0.0,
+            roundingOption = rounding
+        )
+
+        for (res in calcOutput.results) {
+            list.add(
+                HistoryScaledComponent(
+                    id = res.id,
+                    name = res.name,
+                    originalAmount = res.originalAmount,
+                    originalSharePercent = res.originalSharePercent,
+                    isLocked = res.isLocked,
+                    scaledAmount = res.scaledAmount,
+                    scaledSharePercent = res.scaledSharePercent,
+                    perBatchAmount = res.perBatchAmount,
+                    originalAmountFormatted = res.originalAmountFormatted,
+                    scaledAmountFormatted = res.scaledAmountFormatted,
+                    perBatchAmountFormatted = res.perBatchAmountFormatted
+                )
+            )
+        }
+        if (formulaSteps.isEmpty()) {
+            formulaSteps.addAll(calcOutput.formulaSteps)
+        }
+    }
+    return Pair(list, formulaSteps)
+}
+
 private fun formatScalingSummary(item: BatchScalingEntity): String {
-    val components = parseComponentsJson(item.componentsJson)
+    val (scaledList, formulaSteps) = getOrComputeScaledComponents(item)
     return buildString {
-        appendLine("=== BATCH SCALING RECIPE: ${item.title} ===")
-        appendLine("Mode: ${if (item.scalingMode == "TARGET_TOTAL") "Target Total" else "Batch Mode"}")
+        appendLine("==========================================")
+        appendLine("BATCH SCALING CALCULATION PROCESS & DATA")
+        appendLine("Recipe: ${item.title}")
+        appendLine("==========================================")
+        appendLine("Scaling Mode: ${if (item.scalingMode == "TARGET_TOTAL") "Target Total" else "Batch Mode"}")
         appendLine("Original Total: ${formatNum(item.originalGrandTotal)}")
         appendLine("Scaled Total: ${formatNum(item.scaledGrandTotal)}")
-        appendLine("Scaling Factor: ${String.format(Locale.US, "%.2fx", item.scalingFactor)}")
-        if (item.batchCountText != "1") appendLine("Batch Count: ${item.batchCountText}")
-        if (item.description.isNotBlank()) appendLine("Description: ${item.description}")
-        if (item.note.isNotBlank()) appendLine("Note: ${item.note}")
-        appendLine("\n--- COMPONENTS ---")
-        components.forEach { (name, amount, isLocked) ->
-            appendLine("• $name: $amount ${if (isLocked) "(Locked)" else ""}")
+        appendLine("Scaling Factor: ${String.format(Locale.US, "%.4fx", item.scalingFactor)}")
+        if (item.batchCountText != "1") appendLine("Batch Count: ${item.batchCountText} | Single Batch Total: ${formatNum(item.singleBatchGrandTotal)}")
+        if (item.lockedTotal > 0.0) {
+            appendLine("Locked Fixed Total: ${formatNum(item.lockedTotal)}")
+            appendLine("Unlocked Variable Total: ${formatNum(item.unlockedOriginalTotal)} -> Scaled: ${formatNum(item.unlockedScaledTotal)}")
         }
+        if (item.arithmeticSummary.isNotBlank()) {
+            appendLine("\n--- ARITHMETIC SUMMARY ---")
+            appendLine(item.arithmeticSummary)
+        }
+        if (formulaSteps.isNotEmpty()) {
+            appendLine("\n--- CALCULATION PROCESS & STEPS ---")
+            formulaSteps.forEachIndexed { idx, step ->
+                appendLine("${idx + 1}. $step")
+            }
+        }
+        appendLine("\n--- COMPLETE COMPONENT BREAKDOWN ---")
+        scaledList.forEach { comp ->
+            val lockTag = if (comp.isLocked) " [LOCKED]" else ""
+            val perBatch = if (item.batchCountText != "1") " | Per Batch: ${comp.perBatchAmountFormatted}" else ""
+            appendLine("• ${comp.name}$lockTag:")
+            appendLine("    Original: ${comp.originalAmountFormatted} (${String.format(Locale.US, "%.1f", comp.originalSharePercent)}%)")
+            appendLine("    Scaled:   ${comp.scaledAmountFormatted} (${String.format(Locale.US, "%.1f", comp.scaledSharePercent)}%)$perBatch")
+        }
+        if (item.note.isNotBlank()) appendLine("\nNotes: ${item.note}")
     }
 }
 

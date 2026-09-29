@@ -272,6 +272,38 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
         val anchorName = state.targetIngredients.find { it.id == state.anchorIngredientId }?.name ?: "Primary"
         val totalWeight = state.targetIngredients.sumOf { it.targetQuantity }
 
+        val recalibratedArray = JSONArray()
+        for (prop in state.recalibrationResult.proportions) {
+            val obj = JSONObject().apply {
+                put("ingredientId", prop.ingredientId)
+                put("ingredientName", prop.ingredientName)
+                put("unit", prop.unit)
+                put("targetQty", prop.targetQty)
+                put("newRequiredTotal", prop.newRequiredTotal)
+                put("alreadyAdded", prop.alreadyAdded)
+                put("stillNeeded", prop.stillNeeded)
+                put("isAnchor", prop.isAnchor)
+                put("formattedTarget", prop.formattedTarget)
+                put("formattedNewTotal", prop.formattedNewTotal)
+                put("formattedAlreadyAdded", prop.formattedAlreadyAdded)
+                put("formattedStillNeeded", prop.formattedStillNeeded)
+            }
+            recalibratedArray.put(obj)
+        }
+
+        val batchItemsArray = JSONArray()
+        for (item in state.batchDivisionResult.items) {
+            val obj = JSONObject().apply {
+                put("ingredientName", item.ingredientName)
+                put("amountPerBatch", item.amountPerBatch)
+                put("unit", item.unit)
+                put("totalAmount", item.totalAmount)
+                put("formattedPerBatch", item.formattedPerBatch)
+                put("formattedTotal", item.formattedTotal)
+            }
+            batchItemsArray.put(obj)
+        }
+
         val entity = MixtureRecipeEntity(
             title = title.ifEmpty { state.currentRecipeTitle },
             category = category.ifEmpty { "Structural" },
@@ -281,7 +313,15 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
             totalTargetWeight = totalWeight,
             unit = state.targetIngredients.firstOrNull()?.unit ?: "kg",
             ingredientsJson = array.toString(),
-            batchCount = state.batchCount
+            batchCount = state.batchCount,
+            simplifiedRatioString = state.simplifiedRatio.simplifiedRatioString,
+            anchorTargetQuantity = state.recalibrationResult.anchorTargetQty,
+            anchorActualAdded = state.recalibrationResult.anchorActualAdded,
+            scaleExplanation = state.recalibrationResult.scaleExplanation,
+            recalibratedProportionsJson = recalibratedArray.toString(),
+            totalNewMixtureWeight = state.recalibrationResult.totalNewMixtureWeight,
+            batchDivisionJson = batchItemsArray.toString(),
+            totalWeightPerBatch = state.batchDivisionResult.totalWeightPerBatch
         )
 
         viewModelScope.launch {

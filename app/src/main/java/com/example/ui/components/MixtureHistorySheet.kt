@@ -45,6 +45,12 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.filled.Functions
+import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.CheckCircle
+import com.example.domain.mixture.MixtureCalculatorEngine
+import com.example.domain.mixture.TargetIngredient
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -586,41 +592,238 @@ private fun MixtureHistoryCard(
                 )
             }
 
-            // Expandable Ingredients List
+            // Expandable Full Multi-Step Calculation Process Breakdown
             AnimatedVisibility(visible = expanded) {
+                val calc = remember(recipe) { getOrComputeMixtureCalculation(recipe) }
+
                 Column(modifier = Modifier.padding(top = 8.dp)) {
                     HorizontalDivider(color = borderColor.copy(alpha = 0.5f))
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Step 2 & 3: Simplified Ratio & Calibration Card
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = primaryColor.copy(alpha = 0.08f),
+                        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Science,
+                                    contentDescription = null,
+                                    tint = primaryColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "FORMULATION RATIO & CALIBRATION",
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = primaryColor
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Text(
+                                text = "• Simplified Ratio: ${calc.simplifiedRatio}",
+                                fontSize = 10.sp,
+                                fontFamily = DigitalMonospaceFont,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.SemiBold
+                            )
+
+                            Spacer(modifier = Modifier.height(3.dp))
+
+                            Text(
+                                text = "• Calibration Anchor: ${calc.anchorName} (${formatDouble(calc.anchorTargetQty)} ${recipe.unit} Target → ${formatDouble(calc.anchorActualAdded)} ${recipe.unit} Added)",
+                                fontSize = 10.sp,
+                                fontFamily = DigitalMonospaceFont,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Spacer(modifier = Modifier.height(3.dp))
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "• Scaling Factor: ",
+                                    fontSize = 10.sp,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = primaryColor.copy(alpha = 0.15f)
+                                ) {
+                                    Text(
+                                        text = String.format(Locale.US, "%.2fx", calc.scaleFactor),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = DigitalMonospaceFont,
+                                        color = primaryColor,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                    )
+                                }
+                            }
+
+                            if (calc.scaleExplanation.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = calc.scaleExplanation,
+                                    fontSize = 9.5.sp,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    lineHeight = 13.sp
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Step 4: Recalibrated Proportions & Correction Breakdown
                     Text(
-                        text = "INGREDIENTS BREAKDOWN:",
-                        fontSize = 10.sp,
+                        text = "RECALIBRATED PROPORTIONS & NEEDED AMOUNTS:",
+                        fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = DigitalMonospaceFont,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                    val ingredients = parseIngredientsJson(recipe.ingredientsJson)
-                    ingredients.forEach { (name, qty, unit) ->
-                        Row(
+                    calc.proportions.forEach { prop ->
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                            border = BorderStroke(1.dp, borderColor.copy(alpha = 0.4f)),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 2.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                                .padding(vertical = 3.dp)
                         ) {
-                            Text(
-                                text = "• $name",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Text(
-                                text = "$qty $unit",
-                                fontSize = 11.sp,
-                                fontFamily = DigitalMonospaceFont,
-                                fontWeight = FontWeight.Bold,
-                                color = primaryColor
-                            )
+                            Column(modifier = Modifier.padding(8.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = prop.name,
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        if (prop.isAnchor) {
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Surface(
+                                                shape = RoundedCornerShape(4.dp),
+                                                color = primaryColor.copy(alpha = 0.15f)
+                                            ) {
+                                                Text(
+                                                    text = "ANCHOR",
+                                                    fontSize = 8.5.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontFamily = DigitalMonospaceFont,
+                                                    color = primaryColor,
+                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Text(
+                                        text = "${formatDouble(prop.newRequiredTotal)} ${prop.unit}",
+                                        fontSize = 12.sp,
+                                        fontFamily = DigitalMonospaceFont,
+                                        fontWeight = FontWeight.Bold,
+                                        color = primaryColor
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Target: ${formatDouble(prop.targetQty)} ${prop.unit} | Added: ${formatDouble(prop.alreadyAdded)} ${prop.unit}",
+                                        fontSize = 10.sp,
+                                        fontFamily = DigitalMonospaceFont,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    if (prop.stillNeeded > 0.001) {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFFF59E0B).copy(alpha = 0.2f),
+                                            border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.5f))
+                                        ) {
+                                            Text(
+                                                text = "+${formatDouble(prop.stillNeeded)} ${prop.unit} needed",
+                                                fontSize = 9.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                fontFamily = DigitalMonospaceFont,
+                                                color = Color(0xFFF59E0B),
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                            )
+                                        }
+                                    } else {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFF10B981).copy(alpha = 0.15f)
+                                        ) {
+                                            Text(
+                                                text = "COMPLETED",
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                fontFamily = DigitalMonospaceFont,
+                                                color = Color(0xFF10B981),
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Step 5: Batch Division
+                    if (calc.batchCount > 1 || calc.batchItems.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = "BATCH DIVISION (${calc.batchCount} BATCHES · ${formatDouble(calc.totalWeightPerBatch)} ${recipe.unit}/BATCH):",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        calc.batchItems.forEach { item ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 2.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "• ${item.name}",
+                                    fontSize = 10.5.sp,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "${formatDouble(item.perBatch)} ${item.unit} / batch",
+                                    fontSize = 10.5.sp,
+                                    fontFamily = DigitalMonospaceFont,
+                                    fontWeight = FontWeight.Bold,
+                                    color = primaryColor
+                                )
+                            }
                         }
                     }
                 }
@@ -1024,18 +1227,194 @@ private fun formatDouble(v: Double): String {
     return if (v % 1.0 == 0.0) String.format(Locale.US, "%,.0f", v) else String.format(Locale.US, "%,.2f", v)
 }
 
+data class HistoryMixtureCalculation(
+    val simplifiedRatio: String,
+    val anchorName: String,
+    val anchorTargetQty: Double,
+    val anchorActualAdded: Double,
+    val scaleFactor: Double,
+    val scaleExplanation: String,
+    val proportions: List<HistoryProportionItem>,
+    val totalNewWeight: Double,
+    val batchCount: Int,
+    val batchItems: List<HistoryBatchDivisionItem>,
+    val totalWeightPerBatch: Double,
+    val unit: String
+)
+
+data class HistoryProportionItem(
+    val name: String,
+    val unit: String,
+    val targetQty: Double,
+    val newRequiredTotal: Double,
+    val alreadyAdded: Double,
+    val stillNeeded: Double,
+    val isAnchor: Boolean
+)
+
+data class HistoryBatchDivisionItem(
+    val name: String,
+    val perBatch: Double,
+    val unit: String,
+    val totalAmount: Double
+)
+
+private fun getOrComputeMixtureCalculation(recipe: MixtureRecipeEntity): HistoryMixtureCalculation {
+    val propList = mutableListOf<HistoryProportionItem>()
+    val batchList = mutableListOf<HistoryBatchDivisionItem>()
+
+    var ratioStr = recipe.simplifiedRatioString
+    var anchorTarget = recipe.anchorTargetQuantity
+    var anchorActual = recipe.anchorActualAdded
+    var explanation = recipe.scaleExplanation
+    var totalNewWeight = recipe.totalNewMixtureWeight
+    var totalWeightPerBatch = recipe.totalWeightPerBatch
+    val unit = recipe.unit
+
+    try {
+        if (recipe.recalibratedProportionsJson.isNotBlank() && recipe.recalibratedProportionsJson != "[]") {
+            val array = JSONArray(recipe.recalibratedProportionsJson)
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                propList.add(
+                    HistoryProportionItem(
+                        name = obj.optString("ingredientName", "Ingredient ${i + 1}"),
+                        unit = obj.optString("unit", unit),
+                        targetQty = obj.optDouble("targetQty", 0.0),
+                        newRequiredTotal = obj.optDouble("newRequiredTotal", 0.0),
+                        alreadyAdded = obj.optDouble("alreadyAdded", 0.0),
+                        stillNeeded = obj.optDouble("stillNeeded", 0.0),
+                        isAnchor = obj.optBoolean("isAnchor", false)
+                    )
+                )
+            }
+        }
+
+        if (recipe.batchDivisionJson.isNotBlank() && recipe.batchDivisionJson != "[]") {
+            val array = JSONArray(recipe.batchDivisionJson)
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                batchList.add(
+                    HistoryBatchDivisionItem(
+                        name = obj.optString("ingredientName", "Ingredient ${i + 1}"),
+                        perBatch = obj.optDouble("amountPerBatch", 0.0),
+                        unit = obj.optString("unit", unit),
+                        totalAmount = obj.optDouble("totalAmount", 0.0)
+                    )
+                )
+            }
+        }
+    } catch (e: Exception) {
+        // fallback
+    }
+
+    if (propList.isEmpty()) {
+        val parsed = parseIngredientsJson(recipe.ingredientsJson)
+        val targetIngredients = parsed.mapIndexed { idx, (name, qtyStr, u) ->
+            TargetIngredient(
+                id = "ing_hist_$idx",
+                name = name,
+                targetQuantity = qtyStr.replace(",", "").toDoubleOrNull() ?: 100.0,
+                unit = u
+            )
+        }
+
+        val ratioResult = MixtureCalculatorEngine.calculateSimplifiedRatio(targetIngredients)
+        ratioStr = ratioResult.simplifiedRatioString
+
+        val anchorId = targetIngredients.find { it.name.contains(recipe.anchorIngredientName, ignoreCase = true) }?.id
+            ?: targetIngredients.firstOrNull()?.id ?: ""
+
+        val recalibResult = MixtureCalculatorEngine.recalibrate(targetIngredients, anchorId, emptyMap())
+        explanation = recalibResult.scaleExplanation
+        totalNewWeight = recalibResult.totalNewMixtureWeight
+        anchorTarget = recalibResult.anchorTargetQty
+        anchorActual = recalibResult.anchorActualAdded
+
+        for (p in recalibResult.proportions) {
+            propList.add(
+                HistoryProportionItem(
+                    name = p.ingredientName,
+                    unit = p.unit,
+                    targetQty = p.targetQty,
+                    newRequiredTotal = p.newRequiredTotal,
+                    alreadyAdded = p.alreadyAdded,
+                    stillNeeded = p.stillNeeded,
+                    isAnchor = p.isAnchor
+                )
+            )
+        }
+
+        val batchCountVal = if (recipe.batchCount <= 0) 1 else recipe.batchCount
+        val batchResult = MixtureCalculatorEngine.divideBatches(recalibResult, batchCountVal)
+        totalWeightPerBatch = batchResult.totalWeightPerBatch
+
+        for (b in batchResult.items) {
+            batchList.add(
+                HistoryBatchDivisionItem(
+                    name = b.ingredientName,
+                    perBatch = b.amountPerBatch,
+                    unit = b.unit,
+                    totalAmount = b.totalAmount
+                )
+            )
+        }
+    }
+
+    return HistoryMixtureCalculation(
+        simplifiedRatio = ratioStr.ifBlank { "Calculated Formulation" },
+        anchorName = recipe.anchorIngredientName.ifBlank { propList.firstOrNull { it.isAnchor }?.name ?: "Primary" },
+        anchorTargetQty = if (anchorTarget > 0.0) anchorTarget else propList.firstOrNull { it.isAnchor }?.targetQty ?: 0.0,
+        anchorActualAdded = if (anchorActual > 0.0) anchorActual else propList.firstOrNull { it.isAnchor }?.alreadyAdded ?: 0.0,
+        scaleFactor = recipe.scaleFactor,
+        scaleExplanation = explanation,
+        proportions = propList,
+        totalNewWeight = if (totalNewWeight > 0.0) totalNewWeight else recipe.totalTargetWeight,
+        batchCount = if (recipe.batchCount <= 0) 1 else recipe.batchCount,
+        batchItems = batchList,
+        totalWeightPerBatch = if (totalWeightPerBatch > 0.0) totalWeightPerBatch else (totalNewWeight / (if (recipe.batchCount <= 0) 1 else recipe.batchCount)),
+        unit = unit
+    )
+}
+
 private fun formatRecipeSummary(recipe: MixtureRecipeEntity): String {
-    val ingredients = parseIngredientsJson(recipe.ingredientsJson)
+    val calc = getOrComputeMixtureCalculation(recipe)
     return buildString {
-        appendLine("=== MIXTURE FORMULATION: ${recipe.title} ===")
-        appendLine("Category: ${recipe.category}")
-        appendLine("Anchor Ingredient: ${recipe.anchorIngredientName}")
-        appendLine("Total Weight: ${formatDouble(recipe.totalTargetWeight)} ${recipe.unit}")
-        appendLine("Batch Count: ${recipe.batchCount}")
-        if (recipe.description.isNotBlank()) appendLine("Notes: ${recipe.description}")
-        appendLine("\n--- INGREDIENTS ---")
-        ingredients.forEach { (name, qty, unit) ->
-            appendLine("• $name: $qty $unit")
+        appendLine("==========================================")
+        appendLine("MIXTURE FORMULATION COMPLETE CALCULATION")
+        appendLine("Title: ${recipe.title} (${recipe.category})")
+        appendLine("==========================================")
+        appendLine("STEP 1 & 2: TARGET RECIPE & SIMPLIFIED RATIO")
+        appendLine("Simplified Ratio: ${calc.simplifiedRatio}")
+        appendLine("Target Total Weight: ${formatDouble(recipe.totalTargetWeight)} ${recipe.unit}")
+        appendLine("\nSTEP 3 & 4: CALIBRATION & RECALIBRATION")
+        appendLine("Anchor Ingredient: ${calc.anchorName}")
+        appendLine("Target vs Actual Added: ${formatDouble(calc.anchorTargetQty)} ${recipe.unit} -> ${formatDouble(calc.anchorActualAdded)} ${recipe.unit}")
+        appendLine("Scale Factor: ${String.format(Locale.US, "%.4fx", calc.scaleFactor)}")
+        if (calc.scaleExplanation.isNotBlank()) {
+            appendLine("Explanation: ${calc.scaleExplanation}")
+        }
+        appendLine("Recalibrated Total Mixture Weight: ${formatDouble(calc.totalNewWeight)} ${recipe.unit}")
+
+        appendLine("\n--- RECALIBRATED PROPORTIONS & NEEDED AMOUNTS ---")
+        calc.proportions.forEach { prop ->
+            val anchorTag = if (prop.isAnchor) " [ANCHOR]" else ""
+            appendLine("• ${prop.name}$anchorTag:")
+            appendLine("    Target:        ${formatDouble(prop.targetQty)} ${prop.unit}")
+            appendLine("    New Required:  ${formatDouble(prop.newRequiredTotal)} ${prop.unit}")
+            appendLine("    Already Added: ${formatDouble(prop.alreadyAdded)} ${prop.unit}")
+            appendLine("    Still Needed:  ${formatDouble(prop.stillNeeded)} ${prop.unit}")
+        }
+
+        appendLine("\nSTEP 5: BATCH DIVISION")
+        appendLine("Batch Count: ${calc.batchCount} Batches")
+        appendLine("Weight Per Batch: ${formatDouble(calc.totalWeightPerBatch)} ${recipe.unit}")
+        calc.batchItems.forEach { item ->
+            appendLine("  • ${item.name}: ${formatDouble(item.perBatch)} ${item.unit} / batch (Total: ${formatDouble(item.totalAmount)} ${item.unit})")
+        }
+
+        if (recipe.description.isNotBlank()) {
+            appendLine("\nNotes: ${recipe.description}")
         }
     }
 }

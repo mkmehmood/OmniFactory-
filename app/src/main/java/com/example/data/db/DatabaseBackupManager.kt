@@ -629,6 +629,14 @@ class DatabaseBackupManager(private val context: Context) {
                 put("batchCount", m.batchCount)
                 put("timestamp", m.timestamp)
                 put("isFavorite", m.isFavorite)
+                put("simplifiedRatioString", m.simplifiedRatioString)
+                put("anchorTargetQuantity", m.anchorTargetQuantity)
+                put("anchorActualAdded", m.anchorActualAdded)
+                put("scaleExplanation", m.scaleExplanation)
+                put("recalibratedProportionsJson", m.recalibratedProportionsJson)
+                put("totalNewMixtureWeight", m.totalNewMixtureWeight)
+                put("batchDivisionJson", m.batchDivisionJson)
+                put("totalWeightPerBatch", m.totalWeightPerBatch)
             }
             mixtureArray.put(obj)
         }
@@ -662,7 +670,15 @@ class DatabaseBackupManager(private val context: Context) {
                         ingredientsJson = obj.optString("ingredientsJson", "[]"),
                         batchCount = obj.optInt("batchCount", 1),
                         timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
-                        isFavorite = obj.optBoolean("isFavorite", false)
+                        isFavorite = obj.optBoolean("isFavorite", false),
+                        simplifiedRatioString = obj.optString("simplifiedRatioString", ""),
+                        anchorTargetQuantity = obj.optDouble("anchorTargetQuantity", 0.0),
+                        anchorActualAdded = obj.optDouble("anchorActualAdded", 0.0),
+                        scaleExplanation = obj.optString("scaleExplanation", ""),
+                        recalibratedProportionsJson = obj.optString("recalibratedProportionsJson", "[]"),
+                        totalNewMixtureWeight = obj.optDouble("totalNewMixtureWeight", 0.0),
+                        batchDivisionJson = obj.optString("batchDivisionJson", "[]"),
+                        totalWeightPerBatch = obj.optDouble("totalWeightPerBatch", 0.0)
                     )
                 )
             }
@@ -709,6 +725,12 @@ class DatabaseBackupManager(private val context: Context) {
                 put("timestamp", b.timestamp)
                 put("isPinned", b.isPinned)
                 put("note", b.note)
+                put("formulaStepsJson", b.formulaStepsJson)
+                put("arithmeticSummary", b.arithmeticSummary)
+                put("scaledComponentsJson", b.scaledComponentsJson)
+                put("lockedTotal", b.lockedTotal)
+                put("unlockedOriginalTotal", b.unlockedOriginalTotal)
+                put("unlockedScaledTotal", b.unlockedScaledTotal)
             }
             batchArray.put(obj)
         }
@@ -749,7 +771,13 @@ class DatabaseBackupManager(private val context: Context) {
                         componentsCount = obj.optInt("componentsCount", 0),
                         timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
                         isPinned = obj.optBoolean("isPinned", false),
-                        note = obj.optString("note", "")
+                        note = obj.optString("note", ""),
+                        formulaStepsJson = obj.optString("formulaStepsJson", "[]"),
+                        arithmeticSummary = obj.optString("arithmeticSummary", ""),
+                        scaledComponentsJson = obj.optString("scaledComponentsJson", "[]"),
+                        lockedTotal = obj.optDouble("lockedTotal", 0.0),
+                        unlockedOriginalTotal = obj.optDouble("unlockedOriginalTotal", 0.0),
+                        unlockedScaledTotal = obj.optDouble("unlockedScaledTotal", 0.0)
                     )
                 )
             }

@@ -31,5 +31,11 @@ data class BatchScalingEntity(
     val componentsCount: Int = 0,
     val timestamp: Long = System.currentTimeMillis(),
     val isPinned: Boolean = false,
-    val note: String = ""
+    val note: String = "",
+    val formulaStepsJson: String = "[]",
+    val arithmeticSummary: String = "",
+    val scaledComponentsJson: String = "[]",
+    val lockedTotal: Double = 0.0,
+    val unlockedOriginalTotal: Double = 0.0,
+    val unlockedScaledTotal: Double = 0.0
 )

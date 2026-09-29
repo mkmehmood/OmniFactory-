@@ -24,5 +24,13 @@ data class MixtureRecipeEntity(
     val ingredientsJson: String, // serialized target ingredients
     val batchCount: Int = 1,
     val timestamp: Long = System.currentTimeMillis(),
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val simplifiedRatioString: String = "",
+    val anchorTargetQuantity: Double = 0.0,
+    val anchorActualAdded: Double = 0.0,
+    val scaleExplanation: String = "",
+    val recalibratedProportionsJson: String = "[]",
+    val totalNewMixtureWeight: Double = 0.0,
+    val batchDivisionJson: String = "[]",
+    val totalWeightPerBatch: Double = 0.0
 )

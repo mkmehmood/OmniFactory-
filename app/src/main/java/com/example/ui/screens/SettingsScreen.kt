@@ -213,7 +213,7 @@ fun SettingsScreen(
     var soundDropdownExpanded by remember { mutableStateOf(false) }
 
     val currentSkin = currentAppThemeSkin
-    val isSuperAmoled = currentSkin == AppThemeSkin.DARK_CHARCOAL || currentSkin == AppThemeSkin.PURE_LIGHT
+    val isSuperAmoled = currentSkin == AppThemeSkin.DARK_CHARCOAL
     val titleBg = when {
         isSuperAmoled -> Color(0xFF0D0D0E)
         !isDark -> Color(0xFFF2F2F7)

@@ -321,6 +321,29 @@ class BatchScalingViewModel(application: Application) : AndroidViewModel(applica
             componentsArray.put(obj)
         }
 
+        val scaledComponentsArray = JSONArray()
+        for (res in output.results) {
+            val obj = JSONObject().apply {
+                put("id", res.id)
+                put("name", res.name)
+                put("originalAmount", res.originalAmount)
+                put("originalSharePercent", res.originalSharePercent)
+                put("isLocked", res.isLocked)
+                put("scaledAmount", res.scaledAmount)
+                put("scaledSharePercent", res.scaledSharePercent)
+                put("perBatchAmount", res.perBatchAmount)
+                put("originalAmountFormatted", res.originalAmountFormatted)
+                put("scaledAmountFormatted", res.scaledAmountFormatted)
+                put("perBatchAmountFormatted", res.perBatchAmountFormatted)
+            }
+            scaledComponentsArray.put(obj)
+        }
+
+        val formulaStepsArray = JSONArray()
+        for (step in output.formulaSteps) {
+            formulaStepsArray.put(step)
+        }
+
         val entity = BatchScalingEntity(
             title = title.ifBlank { current.currentTitle },
             description = description,
@@ -339,7 +362,13 @@ class BatchScalingViewModel(application: Application) : AndroidViewModel(applica
             componentsCount = current.components.size,
             timestamp = System.currentTimeMillis(),
             isPinned = false,
-            note = note
+            note = note,
+            formulaStepsJson = formulaStepsArray.toString(),
+            arithmeticSummary = output.arithmeticSummary,
+            scaledComponentsJson = scaledComponentsArray.toString(),
+            lockedTotal = output.lockedTotal,
+            unlockedOriginalTotal = output.unlockedOriginalTotal,
+            unlockedScaledTotal = output.unlockedScaledTotal
         )
 
         viewModelScope.launch {
