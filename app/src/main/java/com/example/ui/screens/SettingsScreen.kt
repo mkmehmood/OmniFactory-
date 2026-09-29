@@ -1035,6 +1035,18 @@ fun SettingsScreen(
                                 modifier = Modifier.weight(1f)
                             )
                         }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            DbStatPill(
+                                title = "Batch Scaler",
+                                value = "${settingsUiState.stats.batchScalingCount}",
+                                icon = Icons.Default.LinearScale,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
                     }
 
                     // Metadata details row
@@ -1554,6 +1566,21 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text("Mixture Wizard Recipes (${settingsUiState.stats.mixtureRecipesCount} recipes)", fontSize = 12.sp)
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { settingsViewModel.setClearBatchScalingOption(!settingsUiState.clearBatchScalingOption) }
+                            ) {
+                                Checkbox(
+                                    checked = settingsUiState.clearBatchScalingOption,
+                                    onCheckedChange = { settingsViewModel.setClearBatchScalingOption(it) },
+                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFFEF4444))
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Batch Scaler History (${settingsUiState.stats.batchScalingCount} recipes)", fontSize = 12.sp)
                             }
                         }
                     }

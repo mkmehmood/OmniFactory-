@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ReceiptLong
@@ -58,7 +59,9 @@ enum class DrawerDestination {
     EXPENSES,
     SALES,
     MIXTURE_CALCULATOR,
+    MIXTURE_HISTORY,
     BATCH_SCALING,
+    BATCH_SCALING_HISTORY,
     CONVERTER,
     SETTINGS
 }

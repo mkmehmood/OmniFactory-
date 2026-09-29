@@ -31,10 +31,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Refresh
@@ -67,26 +69,73 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.calculator.BatchScalingOutput
 import com.example.domain.calculator.BatchSubMode
 import com.example.domain.calculator.RoundingOption
 import com.example.domain.calculator.ScalingMode
 import com.example.ui.BatchScalingUiState
+import com.example.ui.BatchScalingViewModel
 import com.example.ui.ComponentInput
 import com.example.ui.ScalingPreset
 import com.example.ui.components.BlinkingCursorPointer
 import com.example.ui.components.InputFieldCopyPasteMenu
 import com.example.ui.components.SmartStationKeypad
 import com.example.ui.theme.DigitalMonospaceFont
+
+@Composable
+fun BatchScalingScreen(
+    viewModel: BatchScalingViewModel,
+    onNavigateToHistory: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+
+    BatchScalingScreen(
+        uiState = uiState,
+        onAddComponent = { viewModel.addComponent() },
+        onRemoveComponent = { viewModel.removeComponent(it) },
+        onUpdateComponentName = { id, name -> viewModel.updateComponentName(id, name) },
+        onUpdateComponentAmount = { id, amount -> viewModel.updateComponentAmount(id, amount) },
+        onToggleComponentLock = { viewModel.toggleComponentLock(it) },
+        onSetScalingMode = { viewModel.setScalingMode(it) },
+        onSetBatchSubMode = { viewModel.setBatchSubMode(it) },
+        onSetTargetTotal = { viewModel.setTargetTotal(it) },
+        onSetBatchSize = { viewModel.setBatchSize(it) },
+        onSetBatchCount = { viewModel.setBatchCount(it) },
+        onSetAvailableAmount = { viewModel.setAvailableAmount(it) },
+        onSetRoundingOption = { viewModel.setRoundingOption(it) },
+        onToggleFormulaExpanded = { viewModel.toggleFormulaExpanded() },
+        onApplyMultiplier = { viewModel.applyMultiplier(it) },
+        onLoadPreset = { viewModel.loadPreset(it) },
+        onClearAll = { viewModel.clearAll() },
+        onCopyResults = { text ->
+            clipboardManager.setText(AnnotatedString(text))
+            Toast.makeText(context, "Batch scaling copied to clipboard", Toast.LENGTH_SHORT).show()
+        },
+        onSaveCalculation = {
+            viewModel.saveCurrentToHistory()
+            Toast.makeText(context, "Calculation saved to history", Toast.LENGTH_SHORT).show()
+        },
+        onOpenHistory = onNavigateToHistory,
+        modifier = modifier
+    )
+}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -109,6 +158,8 @@ fun BatchScalingScreen(
     onLoadPreset: (ScalingPreset) -> Unit,
     onClearAll: () -> Unit,
     onCopyResults: (String) -> Unit,
+    onSaveCalculation: () -> Unit = {},
+    onOpenHistory: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
@@ -212,7 +263,10 @@ fun BatchScalingScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
                     Box(
                         modifier = Modifier
                             .size(36.dp)
@@ -244,17 +298,55 @@ fun BatchScalingScreen(
                     }
                 }
 
-                TextButton(
-                    onClick = onClearAll,
-                    modifier = Modifier.testTag("clear_batch_components_button")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Reset", fontSize = 12.sp)
+                    // History Button
+                    Surface(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            .clickable { onOpenHistory() }
+                            .testTag("batch_top_history_btn"),
+                        shape = RoundedCornerShape(8.dp),
+                        color = surfaceBg
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.History,
+                                contentDescription = "Batch History",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "History",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Medium,
+                                fontFamily = DigitalMonospaceFont,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // Reset Button
+                    IconButton(
+                        onClick = onClearAll,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .testTag("clear_batch_components_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Reset",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
 
@@ -338,6 +430,63 @@ fun BatchScalingScreen(
                     borderColor = cardBorderColor,
                     isDark = isDark
                 )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Post-Calculation Action Bar (Save Calculation, View History)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = onSaveCalculation,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp)
+                            .testTag("batch_results_save_button"),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Bookmark,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Save Calculation",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont
+                        )
+                    }
+
+                    Button(
+                        onClick = onOpenHistory,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp)
+                            .testTag("batch_results_history_button"),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "View History",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(32.dp))

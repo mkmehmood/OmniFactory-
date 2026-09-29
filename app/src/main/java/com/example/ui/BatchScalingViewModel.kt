@@ -1,16 +1,32 @@
 package com.example.ui
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.content.Context
+import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.data.db.AppDatabase
+import com.example.data.db.BatchScalingEntity
+import com.example.data.db.DatabaseBackupManager
+import com.example.data.db.RestoreMode
 import com.example.domain.calculator.BatchScalingEngine
 import com.example.domain.calculator.BatchScalingOutput
 import com.example.domain.calculator.BatchSubMode
 import com.example.domain.calculator.RoundingOption
 import com.example.domain.calculator.ScalingComponent
 import com.example.domain.calculator.ScalingMode
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.UUID
 
 data class ComponentInput(
@@ -40,7 +56,11 @@ data class BatchScalingUiState(
         availableAmountText = "",
         roundingOption = RoundingOption.ONE_DECIMAL
     ),
-    val isFormulaSectionExpanded: Boolean = true
+    val isFormulaSectionExpanded: Boolean = true,
+    val showHistorySheet: Boolean = false,
+    val showSaveDialog: Boolean = false,
+    val showBackupRestoreDialog: Boolean = false,
+    val currentTitle: String = "Batch Recipe"
 )
 
 private fun initialComponents() = listOf(
@@ -128,10 +148,31 @@ val BATCH_PRESETS = listOf(
     )
 )
 
-class BatchScalingViewModel : ViewModel() {
+class BatchScalingViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val database = AppDatabase.getDatabase(application)
+    private val batchScalingDao = database.batchScalingDao()
 
     private val _uiState = MutableStateFlow(BatchScalingUiState())
     val uiState: StateFlow<BatchScalingUiState> = _uiState.asStateFlow()
+
+    private val _userMessage = MutableSharedFlow<String>()
+    val userMessage: SharedFlow<String> = _userMessage.asSharedFlow()
+
+    val historyList: StateFlow<List<BatchScalingEntity>> = batchScalingDao.getAllHistory()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun setHistorySheetOpen(isOpen: Boolean) {
+        _uiState.update { it.copy(showHistorySheet = isOpen) }
+    }
+
+    fun setSaveDialogOpen(isOpen: Boolean) {
+        _uiState.update { it.copy(showSaveDialog = isOpen) }
+    }
+
+    fun setBackupRestoreDialogOpen(isOpen: Boolean) {
+        _uiState.update { it.copy(showBackupRestoreDialog = isOpen) }
+    }
 
     fun addComponent(name: String = "", amount: String = "100") {
         _uiState.update { current ->
@@ -235,6 +276,7 @@ class BatchScalingViewModel : ViewModel() {
     fun loadPreset(preset: ScalingPreset) {
         _uiState.update { current ->
             val updated = current.copy(
+                currentTitle = preset.title,
                 components = preset.components,
                 targetTotalText = preset.defaultTarget,
                 batchSizeText = preset.defaultBatchSize,
@@ -257,6 +299,170 @@ class BatchScalingViewModel : ViewModel() {
                 availableAmountText = ""
             )
             recalculate(updated)
+        }
+    }
+
+    // -------------------------------------------------------------
+    // History Persistence Operations (Save, View, Edit, Backup, Restore)
+    // -------------------------------------------------------------
+
+    fun saveCurrentToHistory(title: String = "", description: String = "", note: String = "") {
+        val current = _uiState.value
+        val output = current.calculationOutput
+
+        val componentsArray = JSONArray()
+        for (comp in current.components) {
+            val obj = JSONObject().apply {
+                put("id", comp.id)
+                put("name", comp.name)
+                put("amountText", comp.amountText)
+                put("isLocked", comp.isLocked)
+            }
+            componentsArray.put(obj)
+        }
+
+        val entity = BatchScalingEntity(
+            title = title.ifBlank { current.currentTitle },
+            description = description,
+            scalingMode = current.scalingMode.name,
+            batchSubMode = current.batchSubMode.name,
+            targetTotalText = current.targetTotalText,
+            batchSizeText = current.batchSizeText,
+            batchCountText = current.batchCountText,
+            availableAmountText = current.availableAmountText,
+            roundingOption = current.roundingOption.name,
+            componentsJson = componentsArray.toString(),
+            originalGrandTotal = output.originalGrandTotal,
+            scaledGrandTotal = output.scaledGrandTotal,
+            scalingFactor = output.scalingFactor,
+            singleBatchGrandTotal = output.singleBatchGrandTotal,
+            componentsCount = current.components.size,
+            timestamp = System.currentTimeMillis(),
+            isPinned = false,
+            note = note
+        )
+
+        viewModelScope.launch {
+            batchScalingDao.insert(entity)
+            _uiState.update { it.copy(showSaveDialog = false, currentTitle = entity.title) }
+            _userMessage.emit("Batch scaling '${entity.title}' saved to history")
+        }
+    }
+
+    fun loadFromHistory(entity: BatchScalingEntity) {
+        val parsedComponents = mutableListOf<ComponentInput>()
+        try {
+            val array = JSONArray(entity.componentsJson)
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                parsedComponents.add(
+                    ComponentInput(
+                        id = obj.optString("id", UUID.randomUUID().toString()),
+                        name = obj.optString("name", "Component ${i + 1}"),
+                        amountText = obj.optString("amountText", "0"),
+                        isLocked = obj.optBoolean("isLocked", false)
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            // fallback
+        }
+
+        val componentsToUse = if (parsedComponents.isNotEmpty()) parsedComponents else initialComponents()
+        val mode = try { ScalingMode.valueOf(entity.scalingMode) } catch (e: Exception) { ScalingMode.TARGET_TOTAL }
+        val subMode = try { BatchSubMode.valueOf(entity.batchSubMode) } catch (e: Exception) { BatchSubMode.BY_BATCH_COUNT }
+        val rounding = try { RoundingOption.valueOf(entity.roundingOption) } catch (e: Exception) { RoundingOption.ONE_DECIMAL }
+
+        _uiState.update { current ->
+            val updated = current.copy(
+                currentTitle = entity.title,
+                components = componentsToUse,
+                scalingMode = mode,
+                batchSubMode = subMode,
+                targetTotalText = entity.targetTotalText,
+                batchSizeText = entity.batchSizeText,
+                batchCountText = entity.batchCountText,
+                availableAmountText = entity.availableAmountText,
+                roundingOption = rounding,
+                showHistorySheet = false
+            )
+            recalculate(updated)
+        }
+
+        viewModelScope.launch {
+            _userMessage.emit("Loaded '${entity.title}' into Batch Scaler")
+        }
+    }
+
+    fun updateHistoryItem(entity: BatchScalingEntity, newTitle: String, newDescription: String, newNote: String) {
+        viewModelScope.launch {
+            val updated = entity.copy(
+                title = newTitle.ifBlank { entity.title },
+                description = newDescription,
+                note = newNote
+            )
+            batchScalingDao.update(updated)
+            _userMessage.emit("Updated '${updated.title}'")
+        }
+    }
+
+    fun togglePin(entity: BatchScalingEntity) {
+        viewModelScope.launch {
+            val updated = entity.copy(isPinned = !entity.isPinned)
+            batchScalingDao.update(updated)
+        }
+    }
+
+    fun deleteHistoryItem(entity: BatchScalingEntity) {
+        viewModelScope.launch {
+            batchScalingDao.delete(entity)
+            _userMessage.emit("Deleted '${entity.title}' from history")
+        }
+    }
+
+    fun clearAllHistory() {
+        viewModelScope.launch {
+            batchScalingDao.clearAll()
+            _userMessage.emit("Cleared all batch scaler history")
+        }
+    }
+
+    suspend fun exportBackupJson(): String {
+        val backupManager = DatabaseBackupManager(getApplication())
+        return backupManager.exportBatchScalingBackupJson()
+    }
+
+    fun restoreBackupFromJson(json: String, mode: RestoreMode) {
+        viewModelScope.launch {
+            val backupManager = DatabaseBackupManager(getApplication())
+            val result = backupManager.restoreBatchScalingFromJson(json, mode)
+            _userMessage.emit(result.message)
+        }
+    }
+
+    fun saveBackupToUri(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            val backupManager = DatabaseBackupManager(context)
+            val json = backupManager.exportBatchScalingBackupJson()
+            val ok = backupManager.writeBackupToUri(context, uri, json)
+            if (ok) {
+                _userMessage.emit("Batch Scaler backup file saved successfully.")
+            } else {
+                _userMessage.emit("Failed to save Batch Scaler backup.")
+            }
+        }
+    }
+
+    fun loadBackupFromUri(context: Context, uri: Uri, mode: RestoreMode) {
+        viewModelScope.launch {
+            val backupManager = DatabaseBackupManager(context)
+            val content = backupManager.readBackupFromUri(context, uri)
+            if (!content.isNullOrBlank()) {
+                val result = backupManager.restoreBatchScalingFromJson(content, mode)
+                _userMessage.emit(result.message)
+            } else {
+                _userMessage.emit("Failed to read Batch Scaler backup file.")
+            }
         }
     }
 

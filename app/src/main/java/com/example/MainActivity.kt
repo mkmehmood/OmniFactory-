@@ -85,11 +85,13 @@ import com.example.ui.components.OrnamentalThemeBackground
 import com.example.ui.components.SimpleCalculatorDialog
 import com.example.ui.components.TapeHistorySheet
 import com.example.ui.screens.BasicCalculatorScreen
+import com.example.ui.screens.BatchScalingHistoryScreen
 import com.example.ui.screens.BatchScalingScreen
 import com.example.ui.screens.ConverterScreen
 import com.example.ui.screens.ExpensesScreen
 import com.example.ui.screens.LedgerScreen
 import com.example.ui.screens.MixtureCalculatorScreen
+import com.example.ui.screens.MixtureHistoryScreen
 import com.example.ui.screens.SalesScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.theme.DigitalMonospaceFont
@@ -123,7 +125,11 @@ class MainActivity : ComponentActivity() {
             }
 
             BackHandler(enabled = !drawerState.isOpen && currentDestination != DrawerDestination.CALCULATOR) {
-                currentDestination = DrawerDestination.CALCULATOR
+                currentDestination = when (currentDestination) {
+                    DrawerDestination.MIXTURE_HISTORY -> DrawerDestination.MIXTURE_CALCULATOR
+                    DrawerDestination.BATCH_SCALING_HISTORY -> DrawerDestination.BATCH_SCALING
+                    else -> DrawerDestination.CALCULATOR
+                }
             }
 
             LaunchedEffect(Unit) {
@@ -272,7 +278,9 @@ class MainActivity : ComponentActivity() {
                                         DrawerDestination.EXPENSES -> "Expenses"
                                         DrawerDestination.SALES -> "Sales Reconciliation"
                                         DrawerDestination.MIXTURE_CALCULATOR -> "Mixture Calculator"
+                                        DrawerDestination.MIXTURE_HISTORY -> "Mixture History"
                                         DrawerDestination.BATCH_SCALING -> "Batch Scaler"
+                                        DrawerDestination.BATCH_SCALING_HISTORY -> "Batch Scaler History"
                                         DrawerDestination.CONVERTER -> "Units Converter"
                                         else -> "Calculator"
                                     }
@@ -282,7 +290,9 @@ class MainActivity : ComponentActivity() {
                                         DrawerDestination.EXPENSES -> Icons.Default.Receipt
                                         DrawerDestination.SALES -> Icons.Default.ReceiptLong
                                         DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Science
+                                        DrawerDestination.MIXTURE_HISTORY -> Icons.Default.History
                                         DrawerDestination.BATCH_SCALING -> Icons.Default.Scale
+                                        DrawerDestination.BATCH_SCALING_HISTORY -> Icons.Default.History
                                         DrawerDestination.CONVERTER -> Icons.Default.Category
                                         else -> Icons.Default.Calculate
                                     }
@@ -292,8 +302,8 @@ class MainActivity : ComponentActivity() {
                                         DrawerDestination.EXPENSES -> Icons.Default.Add
                                         DrawerDestination.SALES -> Icons.Default.ReceiptLong
                                         DrawerDestination.CONVERTER -> Icons.Default.Calculate
-                                        DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Calculate
-                                        DrawerDestination.BATCH_SCALING -> Icons.Default.Calculate
+                                        DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.History
+                                        DrawerDestination.BATCH_SCALING -> Icons.Default.History
                                         else -> Icons.Default.History
                                     }
                                     val actionDescription = when (currentDestination) {
@@ -302,8 +312,8 @@ class MainActivity : ComponentActivity() {
                                         DrawerDestination.EXPENSES -> "Log Expense"
                                         DrawerDestination.SALES -> "Saved Sales"
                                         DrawerDestination.CONVERTER -> "Quick Calculator"
-                                        DrawerDestination.MIXTURE_CALCULATOR -> "Quick Calculator"
-                                        DrawerDestination.BATCH_SCALING -> "Quick Calculator"
+                                        DrawerDestination.MIXTURE_CALCULATOR -> "Formulations History"
+                                        DrawerDestination.BATCH_SCALING -> "Batch Scaling History"
                                         else -> "Settings"
                                     }
                                     val onActionClick: () -> Unit = when (currentDestination) {
@@ -319,9 +329,13 @@ class MainActivity : ComponentActivity() {
                                         DrawerDestination.SALES -> {
                                             { salesViewModel.setSavedHistorySheetOpen(true) }
                                         }
-                                        DrawerDestination.CONVERTER,
-                                        DrawerDestination.MIXTURE_CALCULATOR,
+                                        DrawerDestination.MIXTURE_CALCULATOR -> {
+                                            { currentDestination = DrawerDestination.MIXTURE_HISTORY }
+                                        }
                                         DrawerDestination.BATCH_SCALING -> {
+                                            { currentDestination = DrawerDestination.BATCH_SCALING_HISTORY }
+                                        }
+                                        DrawerDestination.CONVERTER -> {
                                             { showQuickCalculatorDialog = true }
                                         }
                                         else -> {
@@ -426,30 +440,34 @@ class MainActivity : ComponentActivity() {
                                         }
                                         DrawerDestination.MIXTURE_CALCULATOR -> {
                                             MixtureCalculatorScreen(
-                                                viewModel = mixtureViewModel
+                                                viewModel = mixtureViewModel,
+                                                onNavigateToHistory = { currentDestination = DrawerDestination.MIXTURE_HISTORY }
+                                            )
+                                        }
+                                        DrawerDestination.MIXTURE_HISTORY -> {
+                                            MixtureHistoryScreen(
+                                                viewModel = mixtureViewModel,
+                                                onNavigateBack = { currentDestination = DrawerDestination.MIXTURE_CALCULATOR },
+                                                onLoadRecipe = {
+                                                    mixtureViewModel.loadRecipeFromDb(it)
+                                                    currentDestination = DrawerDestination.MIXTURE_CALCULATOR
+                                                }
                                             )
                                         }
                                         DrawerDestination.BATCH_SCALING -> {
-                                            val batchUiState by batchScalingViewModel.uiState.collectAsStateWithLifecycle()
                                             BatchScalingScreen(
-                                                uiState = batchUiState,
-                                                onAddComponent = { batchScalingViewModel.addComponent() },
-                                                onRemoveComponent = { batchScalingViewModel.removeComponent(it) },
-                                                onUpdateComponentName = { id, name -> batchScalingViewModel.updateComponentName(id, name) },
-                                                onUpdateComponentAmount = { id, amount -> batchScalingViewModel.updateComponentAmount(id, amount) },
-                                                onToggleComponentLock = { batchScalingViewModel.toggleComponentLock(it) },
-                                                onSetScalingMode = { batchScalingViewModel.setScalingMode(it) },
-                                                onSetBatchSubMode = { batchScalingViewModel.setBatchSubMode(it) },
-                                                onSetTargetTotal = { batchScalingViewModel.setTargetTotal(it) },
-                                                onSetBatchSize = { batchScalingViewModel.setBatchSize(it) },
-                                                onSetBatchCount = { batchScalingViewModel.setBatchCount(it) },
-                                                onSetAvailableAmount = { batchScalingViewModel.setAvailableAmount(it) },
-                                                onSetRoundingOption = { batchScalingViewModel.setRoundingOption(it) },
-                                                onToggleFormulaExpanded = { batchScalingViewModel.toggleFormulaExpanded() },
-                                                onApplyMultiplier = { batchScalingViewModel.applyMultiplier(it) },
-                                                onLoadPreset = { batchScalingViewModel.loadPreset(it) },
-                                                onClearAll = { batchScalingViewModel.clearAll() },
-                                                onCopyResults = { copyToClipboard(it, "Batch scaling report") }
+                                                viewModel = batchScalingViewModel,
+                                                onNavigateToHistory = { currentDestination = DrawerDestination.BATCH_SCALING_HISTORY }
+                                            )
+                                        }
+                                        DrawerDestination.BATCH_SCALING_HISTORY -> {
+                                            BatchScalingHistoryScreen(
+                                                viewModel = batchScalingViewModel,
+                                                onNavigateBack = { currentDestination = DrawerDestination.BATCH_SCALING },
+                                                onLoadItem = {
+                                                    batchScalingViewModel.loadFromHistory(it)
+                                                    currentDestination = DrawerDestination.BATCH_SCALING
+                                                }
                                             )
                                         }
                                         DrawerDestination.CONVERTER -> {

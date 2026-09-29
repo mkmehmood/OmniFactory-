@@ -29,11 +29,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Pin
 import androidx.compose.material.icons.filled.RadioButtonChecked
@@ -41,6 +44,8 @@ import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Science
+import com.example.ui.components.MixtureHistorySheet
+import com.example.ui.components.MixtureSaveDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -100,9 +105,11 @@ import com.example.ui.theme.DigitalMonospaceFont
 @Composable
 fun MixtureCalculatorScreen(
     viewModel: MixtureViewModel,
+    onNavigateToHistory: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val persistentRecipes by viewModel.persistentRecipes.collectAsState()
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
 
@@ -236,6 +243,66 @@ fun MixtureCalculatorScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp)
                 .padding(bottom = if (focusedFieldId != null) 300.dp else 0.dp)
         ) {
+            // Top Toolbar: Formulation Title + History Link
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Science,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = uiState.currentRecipeTitle,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Surface(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                        .clickable { onNavigateToHistory() }
+                        .testTag("mixture_top_history_btn"),
+                    shape = RoundedCornerShape(8.dp),
+                    color = surfaceBg
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = "Formulations History",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "History",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            fontFamily = DigitalMonospaceFont,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
             // Top: Horizontal Step Indicator (6 circles in a row)
             HorizontalStepIndicator(
                 currentStep = uiState.currentStep,
@@ -375,6 +442,11 @@ fun MixtureCalculatorScreen(
                             isDark = isDark
                         )
                         6 -> Step6NextActions(
+                            onSaveRecipe = {
+                                viewModel.saveCurrentRecipeToDb()
+                                Toast.makeText(context, "Formulation saved to history", Toast.LENGTH_SHORT).show()
+                            },
+                            onOpenHistory = onNavigateToHistory,
                             onEditTargets = { viewModel.goToStep(1) },
                             onNewBatches = { viewModel.goToStep(5) },
                             onReset = { viewModel.resetAll() },
@@ -494,6 +566,7 @@ fun MixtureCalculatorScreen(
                 }
             )
         }
+
     }
 }
 
@@ -1786,6 +1859,8 @@ private fun Step5DivideIntoBatches(
 // -------------------------------------------------------------
 @Composable
 private fun Step6NextActions(
+    onSaveRecipe: () -> Unit,
+    onOpenHistory: () -> Unit,
     onEditTargets: () -> Unit,
     onNewBatches: () -> Unit,
     onReset: () -> Unit,
@@ -1843,6 +1918,34 @@ private fun Step6NextActions(
             fontFamily = DigitalMonospaceFont,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             letterSpacing = 0.8.sp
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Action: Save Formulation to History
+        NextActionCard(
+            title = "Save Formulation to History",
+            description = "Save calibrated proportions, anchor, and batches to persistent database",
+            icon = Icons.Default.Bookmark,
+            iconTint = Color(0xFFF59E0B),
+            onClick = onSaveRecipe,
+            testTag = "action_card_save_formulation",
+            surfaceBg = surfaceBg,
+            borderColor = borderColor
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Action: View Saved Formulations History
+        NextActionCard(
+            title = "View Saved Formulations History",
+            description = "Browse past recipes, backup to JSON, or restore database",
+            icon = Icons.Default.History,
+            iconTint = primaryColor,
+            onClick = onOpenHistory,
+            testTag = "action_card_view_history",
+            surfaceBg = surfaceBg,
+            borderColor = borderColor
         )
 
         Spacer(modifier = Modifier.height(10.dp))
