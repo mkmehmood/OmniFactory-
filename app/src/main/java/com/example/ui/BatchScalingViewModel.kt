@@ -481,6 +481,9 @@ class BatchScalingViewModel(application: Application) : AndroidViewModel(applica
     }
 }
 
+private fun String.parseCleanDouble(): Double =
+    this.replace(",", ".").replace(" ", "").trim().toDoubleOrNull() ?: 0.0
+
 private fun calculateState(
     components: List<ComponentInput>,
     scalingMode: ScalingMode,
@@ -495,15 +498,15 @@ private fun calculateState(
         ScalingComponent(
             id = it.id,
             name = it.name.ifBlank { "Item" },
-            originalAmount = it.amountText.toDoubleOrNull() ?: 0.0,
+            originalAmount = it.amountText.parseCleanDouble(),
             isLocked = it.isLocked
         )
     }
 
-    val targetTotal = targetTotalText.toDoubleOrNull() ?: 0.0
-    val batchSize = batchSizeText.toDoubleOrNull() ?: 0.0
-    val batchCount = batchCountText.toDoubleOrNull() ?: 1.0
-    val availableAmount = availableAmountText.toDoubleOrNull() ?: 0.0
+    val targetTotal = targetTotalText.parseCleanDouble()
+    val batchSize = batchSizeText.parseCleanDouble()
+    val batchCount = batchCountText.parseCleanDouble().let { if (it <= 0.0) 1.0 else it }
+    val availableAmount = availableAmountText.parseCleanDouble()
 
     return BatchScalingEngine.calculate(
         components = domainComponents,

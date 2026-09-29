@@ -166,7 +166,7 @@ fun SalesScreen(
 
     fun appendNumericToken(current: String, token: String): String {
         return when (token) {
-            "." -> if (current.contains(".")) current else if (current.isEmpty()) "0." else "$current."
+            ".", "," -> if (current.contains(".")) current else if (current.isEmpty()) "0." else "$current."
             "00" -> if (current.isEmpty() || current == "0") "0" else current + "00"
             else -> if (current == "0") token else current + token
         }
@@ -380,12 +380,16 @@ fun SalesScreen(
             SmartStationKeypad(
                 activeFieldLabel = focusedFieldLabel,
                 onDigit = handleAppend,
+                onDoubleZero = { handleAppend("00") },
+                onDecimal = { handleAppend(".") },
                 onBackspace = handleBackspace,
                 onClear = handleClear,
                 onDone = {
                     focusedFieldId = null
                     focusedFieldLabel = null
-                }
+                },
+                showDoubleZeroKey = true,
+                showDecimalKey = true
             )
         }
     }

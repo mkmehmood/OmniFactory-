@@ -512,12 +512,12 @@ class LedgerViewModel(
     }
 
     fun setFormAmountText(amount: String) {
-        _uiState.update { it.copy(formAmountText = amount) }
+        _uiState.update { it.copy(formAmountText = amount.replace(",", ".")) }
     }
 
     fun appendTokenToAmount(token: String) {
         val current = _uiState.value.formAmountText
-        if (token == ".") {
+        if (token == "." || token == ",") {
             if (!current.contains(".")) {
                 val next = if (current.isEmpty()) "0." else "$current."
                 _uiState.update { it.copy(formAmountText = next) }
@@ -561,7 +561,7 @@ class LedgerViewModel(
 
     fun saveFormTransaction() {
         val current = _uiState.value
-        val amount = current.formAmountText.toDoubleOrNull()
+        val amount = current.formAmountText.replace(",", ".").replace(" ", "").trim().toDoubleOrNull()
         if (amount == null || amount <= 0.0) {
             viewModelScope.launch { _userMessage.emit("Please enter a valid amount greater than 0.") }
             return

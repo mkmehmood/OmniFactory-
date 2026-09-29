@@ -113,10 +113,10 @@ fun Modifier.liquidGlassSurface(
         } else {
             Brush.verticalGradient(
                 if (isDark) {
-                    // Dark Charcoal tactile key/surface color (#2C2C2E / #1C1C1E)
+                    // Super AMOLED true black OLED canvas (#0A0A0C / #000000)
                     listOf(
-                        Color(0xFF2C2C2E).copy(alpha = 0.88f),
-                        Color(0xFF1C1C1E).copy(alpha = 0.92f)
+                        Color(0xFF0C0C0E).copy(alpha = 0.94f),
+                        Color(0xFF000000).copy(alpha = 0.98f)
                     )
                 } else {
                     // Pure Light crisp white & soft silver (#FFFFFF / #F2F2F7)

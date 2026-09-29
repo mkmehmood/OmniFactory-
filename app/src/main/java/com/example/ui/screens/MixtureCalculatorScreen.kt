@@ -134,7 +134,7 @@ fun MixtureCalculatorScreen(
 
     fun appendNumericToken(current: String, token: String): String {
         return when (token) {
-            "." -> if (current.contains(".")) current else if (current.isEmpty()) "0." else "$current."
+            ".", "," -> if (current.contains(".")) current else if (current.isEmpty()) "0." else "$current."
             "00" -> if (current.isEmpty() || current == "0") "0" else current + "00"
             else -> if (current == "0") token else current + token
         }
@@ -151,11 +151,7 @@ fun MixtureCalculatorScreen(
                 viewModel.setActualAdded(ingredientId, appendNumericToken(currentVal, token))
             }
             focusedFieldId == "step5_batch_count" -> {
-                if (token != ".") {
-                    val currentVal = uiState.batchCountText
-                    val newVal = if (currentVal == "0" || currentVal.isEmpty()) token else currentVal + token
-                    viewModel.setBatchCountText(newVal)
-                }
+                viewModel.setBatchCountText(appendNumericToken(uiState.batchCountText, token))
             }
         }
     }
@@ -243,64 +239,29 @@ fun MixtureCalculatorScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp)
                 .padding(bottom = if (focusedFieldId != null) 300.dp else 0.dp)
         ) {
-            // Top Toolbar: Formulation Title + History Link
+            // Top Toolbar: Formulation Title
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Science,
-                        contentDescription = null,
-                        tint = primaryColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = uiState.currentRecipeTitle,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Surface(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                        .clickable { onNavigateToHistory() }
-                        .testTag("mixture_top_history_btn"),
-                    shape = RoundedCornerShape(8.dp),
-                    color = surfaceBg
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.History,
-                            contentDescription = "Formulations History",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "History",
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Medium,
-                            fontFamily = DigitalMonospaceFont,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                Icon(
+                    imageVector = Icons.Default.Science,
+                    contentDescription = null,
+                    tint = primaryColor,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = uiState.currentRecipeTitle,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
 
             // Top: Horizontal Step Indicator (6 circles in a row)
@@ -446,7 +407,10 @@ fun MixtureCalculatorScreen(
                                 viewModel.saveCurrentRecipeToDb()
                                 Toast.makeText(context, "Formulation saved to history", Toast.LENGTH_SHORT).show()
                             },
-                            onOpenHistory = onNavigateToHistory,
+                            onOpenHistory = {
+                                viewModel.setDatabaseBrowserSheetOpen(true)
+                                onNavigateToHistory()
+                            },
                             onEditTargets = { viewModel.goToStep(1) },
                             onNewBatches = { viewModel.goToStep(5) },
                             onReset = { viewModel.resetAll() },
@@ -558,12 +522,16 @@ fun MixtureCalculatorScreen(
             SmartStationKeypad(
                 activeFieldLabel = focusedFieldLabel,
                 onDigit = handleAppend,
+                onDoubleZero = { handleAppend("00") },
+                onDecimal = { handleAppend(".") },
                 onBackspace = handleBackspace,
                 onClear = handleClear,
                 onDone = {
                     focusedFieldId = null
                     focusedFieldLabel = null
-                }
+                },
+                showDoubleZeroKey = true,
+                showDecimalKey = true
             )
         }
 
@@ -1930,20 +1898,6 @@ private fun Step6NextActions(
             iconTint = Color(0xFFF59E0B),
             onClick = onSaveRecipe,
             testTag = "action_card_save_formulation",
-            surfaceBg = surfaceBg,
-            borderColor = borderColor
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Action: View Saved Formulations History
-        NextActionCard(
-            title = "View Saved Formulations History",
-            description = "Browse past recipes, backup to JSON, or restore database",
-            icon = Icons.Default.History,
-            iconTint = primaryColor,
-            onClick = onOpenHistory,
-            testTag = "action_card_view_history",
             surfaceBg = surfaceBg,
             borderColor = borderColor
         )

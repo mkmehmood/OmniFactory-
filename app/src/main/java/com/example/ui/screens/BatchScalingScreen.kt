@@ -132,7 +132,10 @@ fun BatchScalingScreen(
             viewModel.saveCurrentToHistory()
             Toast.makeText(context, "Calculation saved to history", Toast.LENGTH_SHORT).show()
         },
-        onOpenHistory = onNavigateToHistory,
+        onOpenHistory = {
+            viewModel.setHistorySheetOpen(true)
+            onNavigateToHistory()
+        },
         modifier = modifier
     )
 }
@@ -189,7 +192,7 @@ fun BatchScalingScreen(
 
     fun appendNumericToken(current: String, token: String): String {
         return when (token) {
-            "." -> if (current.contains(".")) current else if (current.isEmpty()) "0." else "$current."
+            ".", "," -> if (current.contains(".")) current else if (current.isEmpty()) "0." else "$current."
             "00" -> if (current.isEmpty() || current == "0") "0" else current + "00"
             else -> if (current == "0") token else current + token
         }
@@ -298,55 +301,19 @@ fun BatchScalingScreen(
                     }
                 }
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                // Reset Button
+                IconButton(
+                    onClick = onClearAll,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .testTag("clear_batch_components_button")
                 ) {
-                    // History Button
-                    Surface(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                            .clickable { onOpenHistory() }
-                            .testTag("batch_top_history_btn"),
-                        shape = RoundedCornerShape(8.dp),
-                        color = surfaceBg
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.History,
-                                contentDescription = "Batch History",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "History",
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.Medium,
-                                fontFamily = DigitalMonospaceFont,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    // Reset Button
-                    IconButton(
-                        onClick = onClearAll,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .testTag("clear_batch_components_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Reset",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Reset",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
 
@@ -433,59 +400,28 @@ fun BatchScalingScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Post-Calculation Action Bar (Save Calculation, View History)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // Post-Calculation Action Bar (Save Calculation)
+                Button(
+                    onClick = onSaveCalculation,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .testTag("batch_results_save_button"),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
                 ) {
-                    Button(
-                        onClick = onSaveCalculation,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(46.dp)
-                            .testTag("batch_results_save_button"),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Bookmark,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Save Calculation",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont
-                        )
-                    }
-
-                    Button(
-                        onClick = onOpenHistory,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(46.dp)
-                            .testTag("batch_results_history_button"),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.History,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "View History",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Bookmark,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Save Calculation",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont
+                    )
                 }
             }
 

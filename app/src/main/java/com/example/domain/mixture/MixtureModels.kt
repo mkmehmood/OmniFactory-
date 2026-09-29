@@ -218,13 +218,13 @@ object MixtureCalculatorEngine {
     }
 
     /**
-     * Divides recalibrated mixture into equal batches.
+     * Divides recalibrated mixture into equal batches (supports decimal batch counts e.g. 2.5).
      */
     fun divideBatches(
         recalibrationResult: RecalibrationResult,
-        batchCount: Int
+        batchCount: Double
     ): BatchDivisionResult {
-        val count = max(1, batchCount)
+        val count = if (batchCount <= 0.0) 1.0 else batchCount
         val items = recalibrationResult.proportions.map { prop ->
             val perBatch = prop.newRequiredTotal / count
             BatchItem(
@@ -241,12 +241,17 @@ object MixtureCalculatorEngine {
         val primaryUnit = recalibrationResult.proportions.firstOrNull()?.unit ?: "kg"
 
         return BatchDivisionResult(
-            batchCount = count,
+            batchCount = if (count % 1.0 == 0.0) count.toInt() else count.toInt().coerceAtLeast(1),
             items = items,
             totalWeightPerBatch = totalWeightPerBatch,
             formattedWeightPerBatch = "${formatNumber(totalWeightPerBatch)} $primaryUnit"
         )
     }
+
+    fun divideBatches(
+        recalibrationResult: RecalibrationResult,
+        batchCount: Int
+    ): BatchDivisionResult = divideBatches(recalibrationResult, batchCount.toDouble())
 
     private fun formatNumber(value: Double): String {
         return if (value % 1.0 == 0.0) {

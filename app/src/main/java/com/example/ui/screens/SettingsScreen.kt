@@ -213,14 +213,14 @@ fun SettingsScreen(
     var soundDropdownExpanded by remember { mutableStateOf(false) }
 
     val currentSkin = currentAppThemeSkin
-    val isCharcoalTheme = currentSkin == AppThemeSkin.DARK_CHARCOAL
+    val isSuperAmoled = currentSkin == AppThemeSkin.DARK_CHARCOAL || currentSkin == AppThemeSkin.PURE_LIGHT
     val titleBg = when {
-        isCharcoalTheme -> Color(0xFF1C1C1E)
+        isSuperAmoled -> Color(0xFF0D0D0E)
         !isDark -> Color(0xFFF2F2F7)
         else -> currentSkin.surfaceVariant.copy(alpha = 0.55f)
     }
     val titleBorder = when {
-        isCharcoalTheme -> Color(0x33FFFFFF)
+        isSuperAmoled -> Color(0x38FFFFFF)
         !isDark -> Color(0x22000000)
         else -> currentSkin.outline.copy(alpha = 0.35f)
     }
@@ -238,7 +238,7 @@ fun SettingsScreen(
                         shape = RoundedCornerShape(22.dp),
                         color = titleBg,
                         border = BorderStroke(1.dp, titleBorder),
-                        shadowElevation = if (!isDark && !isCharcoalTheme) 1.5.dp else 0.dp,
+                        shadowElevation = if (!isDark && !isSuperAmoled) 1.5.dp else 0.dp,
                         modifier = Modifier.testTag("topbar_title_button")
                     ) {
                         Row(
@@ -308,7 +308,7 @@ fun SettingsScreen(
                         border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
                     ) {
                         Text(
-                            text = "PHOTO THEME",
+                            text = "APPEARANCE",
                             fontSize = 9.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = primaryColor,
@@ -323,9 +323,9 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     LiquidThemeCard(
-                        title = "Dark Charcoal",
+                        title = "Super AMOLED",
                         icon = Icons.Default.DarkMode,
-                        isSelected = currentThemeMode == ThemeMode.DARK,
+                        isSelected = currentSkin == AppThemeSkin.DARK_CHARCOAL,
                         onClick = {
                             onThemeModeChange(ThemeMode.DARK)
                             onAppThemeSkinChange(AppThemeSkin.DARK_CHARCOAL)
@@ -335,7 +335,7 @@ fun SettingsScreen(
                     LiquidThemeCard(
                         title = "Pure Light",
                         icon = Icons.Default.LightMode,
-                        isSelected = currentThemeMode == ThemeMode.LIGHT,
+                        isSelected = currentSkin == AppThemeSkin.PURE_LIGHT,
                         onClick = {
                             onThemeModeChange(ThemeMode.LIGHT)
                             onAppThemeSkinChange(AppThemeSkin.PURE_LIGHT)

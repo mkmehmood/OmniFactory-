@@ -84,14 +84,14 @@ import com.example.ui.components.DrawerDestination
 import com.example.ui.components.OrnamentalThemeBackground
 import com.example.ui.components.SimpleCalculatorDialog
 import com.example.ui.components.TapeHistorySheet
+import com.example.ui.components.BatchScalingHistorySheet
+import com.example.ui.components.MixtureHistorySheet
 import com.example.ui.screens.BasicCalculatorScreen
-import com.example.ui.screens.BatchScalingHistoryScreen
 import com.example.ui.screens.BatchScalingScreen
 import com.example.ui.screens.ConverterScreen
 import com.example.ui.screens.ExpensesScreen
 import com.example.ui.screens.LedgerScreen
 import com.example.ui.screens.MixtureCalculatorScreen
-import com.example.ui.screens.MixtureHistoryScreen
 import com.example.ui.screens.SalesScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.theme.DigitalMonospaceFont
@@ -330,10 +330,10 @@ class MainActivity : ComponentActivity() {
                                             { salesViewModel.setSavedHistorySheetOpen(true) }
                                         }
                                         DrawerDestination.MIXTURE_CALCULATOR -> {
-                                            { currentDestination = DrawerDestination.MIXTURE_HISTORY }
+                                            { mixtureViewModel.setDatabaseBrowserSheetOpen(true) }
                                         }
                                         DrawerDestination.BATCH_SCALING -> {
-                                            { currentDestination = DrawerDestination.BATCH_SCALING_HISTORY }
+                                            { batchScalingViewModel.setHistorySheetOpen(true) }
                                         }
                                         DrawerDestination.CONVERTER -> {
                                             { showQuickCalculatorDialog = true }
@@ -439,36 +439,106 @@ class MainActivity : ComponentActivity() {
                                             )
                                         }
                                         DrawerDestination.MIXTURE_CALCULATOR -> {
+                                            val mixtureUiState by mixtureViewModel.uiState.collectAsStateWithLifecycle()
+                                            val mixtureRecipes by mixtureViewModel.persistentRecipes.collectAsStateWithLifecycle()
+                                            val localContext = LocalContext.current
+
                                             MixtureCalculatorScreen(
                                                 viewModel = mixtureViewModel,
-                                                onNavigateToHistory = { currentDestination = DrawerDestination.MIXTURE_HISTORY }
+                                                onNavigateToHistory = { mixtureViewModel.setDatabaseBrowserSheetOpen(true) }
                                             )
+
+                                            if (mixtureUiState.showDatabaseBrowserSheet) {
+                                                MixtureHistorySheet(
+                                                    recipes = mixtureRecipes,
+                                                    onDismiss = { mixtureViewModel.setDatabaseBrowserSheetOpen(false) },
+                                                    onLoadRecipe = { recipe ->
+                                                        mixtureViewModel.loadRecipeFromDb(recipe)
+                                                        mixtureViewModel.setDatabaseBrowserSheetOpen(false)
+                                                    },
+                                                    onEditRecipe = { recipe, title, category, desc ->
+                                                        mixtureViewModel.updateRecipeInDb(recipe, title, category, desc)
+                                                    },
+                                                    onDeleteRecipe = { recipe ->
+                                                        mixtureViewModel.deleteRecipeFromDb(recipe)
+                                                    },
+                                                    onToggleFavorite = { recipe ->
+                                                        mixtureViewModel.toggleFavorite(recipe)
+                                                    },
+                                                    onClearAll = {
+                                                        mixtureViewModel.clearAllRecipes()
+                                                    },
+                                                    onExportBackupJson = {
+                                                        mixtureViewModel.exportBackupJson()
+                                                    },
+                                                    onRestoreBackupJson = { json, mode ->
+                                                        mixtureViewModel.restoreBackupFromJson(json, mode)
+                                                    },
+                                                    onSaveToUri = { uri ->
+                                                        mixtureViewModel.saveBackupToUri(localContext, uri)
+                                                    },
+                                                    onLoadFromUri = { uri, mode ->
+                                                        mixtureViewModel.loadBackupFromUri(localContext, uri, mode)
+                                                    }
+                                                )
+                                            }
                                         }
                                         DrawerDestination.MIXTURE_HISTORY -> {
-                                            MixtureHistoryScreen(
-                                                viewModel = mixtureViewModel,
-                                                onNavigateBack = { currentDestination = DrawerDestination.MIXTURE_CALCULATOR },
-                                                onLoadRecipe = {
-                                                    mixtureViewModel.loadRecipeFromDb(it)
-                                                    currentDestination = DrawerDestination.MIXTURE_CALCULATOR
-                                                }
-                                            )
+                                            LaunchedEffect(Unit) {
+                                                mixtureViewModel.setDatabaseBrowserSheetOpen(true)
+                                                currentDestination = DrawerDestination.MIXTURE_CALCULATOR
+                                            }
                                         }
                                         DrawerDestination.BATCH_SCALING -> {
+                                            val batchUiState by batchScalingViewModel.uiState.collectAsStateWithLifecycle()
+                                            val batchHistoryList by batchScalingViewModel.historyList.collectAsStateWithLifecycle()
+                                            val localContext = LocalContext.current
+
                                             BatchScalingScreen(
                                                 viewModel = batchScalingViewModel,
-                                                onNavigateToHistory = { currentDestination = DrawerDestination.BATCH_SCALING_HISTORY }
+                                                onNavigateToHistory = { batchScalingViewModel.setHistorySheetOpen(true) }
                                             )
+
+                                            if (batchUiState.showHistorySheet) {
+                                                BatchScalingHistorySheet(
+                                                    historyList = batchHistoryList,
+                                                    onDismiss = { batchScalingViewModel.setHistorySheetOpen(false) },
+                                                    onLoadItem = { entity ->
+                                                        batchScalingViewModel.loadFromHistory(entity)
+                                                        batchScalingViewModel.setHistorySheetOpen(false)
+                                                    },
+                                                    onEditItem = { entity, title, desc, note ->
+                                                        batchScalingViewModel.updateHistoryItem(entity, title, desc, note)
+                                                    },
+                                                    onDeleteItem = { entity ->
+                                                        batchScalingViewModel.deleteHistoryItem(entity)
+                                                    },
+                                                    onTogglePin = { entity ->
+                                                        batchScalingViewModel.togglePin(entity)
+                                                    },
+                                                    onClearAll = {
+                                                        batchScalingViewModel.clearAllHistory()
+                                                    },
+                                                    onExportBackupJson = {
+                                                        batchScalingViewModel.exportBackupJson()
+                                                    },
+                                                    onRestoreBackupJson = { json, mode ->
+                                                        batchScalingViewModel.restoreBackupFromJson(json, mode)
+                                                    },
+                                                    onSaveToUri = { uri ->
+                                                        batchScalingViewModel.saveBackupToUri(localContext, uri)
+                                                    },
+                                                    onLoadFromUri = { uri, mode ->
+                                                        batchScalingViewModel.loadBackupFromUri(localContext, uri, mode)
+                                                    }
+                                                )
+                                            }
                                         }
                                         DrawerDestination.BATCH_SCALING_HISTORY -> {
-                                            BatchScalingHistoryScreen(
-                                                viewModel = batchScalingViewModel,
-                                                onNavigateBack = { currentDestination = DrawerDestination.BATCH_SCALING },
-                                                onLoadItem = {
-                                                    batchScalingViewModel.loadFromHistory(it)
-                                                    currentDestination = DrawerDestination.BATCH_SCALING
-                                                }
-                                            )
+                                            LaunchedEffect(Unit) {
+                                                batchScalingViewModel.setHistorySheetOpen(true)
+                                                currentDestination = DrawerDestination.BATCH_SCALING
+                                            }
                                         }
                                         DrawerDestination.CONVERTER -> {
                                             val converterUiState by converterViewModel.uiState.collectAsStateWithLifecycle()
@@ -570,12 +640,12 @@ private fun LiquidGlassTopBar(
     val primaryColor = MaterialTheme.colorScheme.primary
     val currentSkin = com.example.ui.theme.LocalAppThemeSkin.current
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val isCharcoalTheme = currentSkin == com.example.ui.theme.AppThemeSkin.DARK_CHARCOAL
+    val isSuperAmoled = currentSkin == com.example.ui.theme.AppThemeSkin.DARK_CHARCOAL
 
-    val iconButtonBg = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.5f else 0.7f)
-    val iconButtonBorder = MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.20f)
-    val titleBg = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.55f else 0.75f)
-    val titleBorder = MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.20f)
+    val iconButtonBg = if (isSuperAmoled && isDark) Color(0xFF0D0D0E) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.5f else 0.7f)
+    val iconButtonBorder = if (isSuperAmoled && isDark) Color(0x38FFFFFF) else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.20f)
+    val titleBg = if (isSuperAmoled && isDark) Color(0xFF0D0D0E) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.55f else 0.75f)
+    val titleBorder = if (isSuperAmoled && isDark) Color(0x38FFFFFF) else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.20f)
 
     Box(
         modifier = Modifier
@@ -593,7 +663,7 @@ private fun LiquidGlassTopBar(
                     shape = RoundedCornerShape(22.dp),
                     color = titleBg,
                     border = BorderStroke(1.dp, titleBorder),
-                    shadowElevation = if (!isDark && !isCharcoalTheme) 1.5.dp else 0.dp,
+                    shadowElevation = if (!isDark && !isSuperAmoled) 1.5.dp else 0.dp,
                     modifier = Modifier.testTag("topbar_title_button")
                 ) {
                     Row(

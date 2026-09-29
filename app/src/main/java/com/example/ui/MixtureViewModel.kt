@@ -378,7 +378,7 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
     fun addTargetIngredient() {
         val state = _uiState.value
         val name = state.newIngredientName.trim()
-        val qty = state.newIngredientQty.toDoubleOrNull() ?: 0.0
+        val qty = state.newIngredientQty.replace(",", ".").replace(" ", "").trim().toDoubleOrNull() ?: 0.0
         val unit = state.newIngredientUnit.trim().ifEmpty { "kg" }
 
         if (name.isEmpty() || qty <= 0.0) return
@@ -439,21 +439,27 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun setBatchCountText(text: String) {
-        val count = text.toIntOrNull()?.coerceAtLeast(1) ?: 1
+        val clean = text.replace(",", ".").replace(" ", "").trim()
+        val countDouble = clean.toDoubleOrNull()?.coerceAtLeast(0.01) ?: 1.0
+        val countInt = countDouble.toInt().coerceAtLeast(1)
         _uiState.update { current ->
-            val updated = current.copy(batchCountText = text, batchCount = count)
+            val updated = current.copy(batchCountText = text, batchCount = countInt)
             recalculate(updated)
         }
     }
 
     fun incrementBatchCount() {
-        val newCount = _uiState.value.batchCount + 1
-        setBatchCountText(newCount.toString())
+        val currentDouble = _uiState.value.batchCountText.replace(",", ".").toDoubleOrNull() ?: _uiState.value.batchCount.toDouble()
+        val newCount = (currentDouble + 1.0)
+        val formatted = if (newCount % 1.0 == 0.0) newCount.toInt().toString() else String.format(java.util.Locale.US, "%.1f", newCount)
+        setBatchCountText(formatted)
     }
 
     fun decrementBatchCount() {
-        val newCount = maxOf(1, _uiState.value.batchCount - 1)
-        setBatchCountText(newCount.toString())
+        val currentDouble = _uiState.value.batchCountText.replace(",", ".").toDoubleOrNull() ?: _uiState.value.batchCount.toDouble()
+        val newCount = maxOf(0.5, currentDouble - 1.0)
+        val formatted = if (newCount % 1.0 == 0.0) newCount.toInt().toString() else String.format(java.util.Locale.US, "%.1f", newCount)
+        setBatchCountText(formatted)
     }
 
     private fun recalculate(state: MixtureUiState): MixtureUiState {
@@ -461,7 +467,7 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
 
         val actualMap = state.targetIngredients.associate { item ->
             val text = state.actualAddedTexts[item.id]
-            val numeric = text?.toDoubleOrNull() ?: item.targetQuantity
+            val numeric = text?.replace(",", ".")?.replace(" ", "")?.trim()?.toDoubleOrNull() ?: item.targetQuantity
             item.id to numeric
         }
 
@@ -477,9 +483,12 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
             actualAddedMap = actualMap
         )
 
+        val countDouble = state.batchCountText.replace(",", ".").replace(" ", "").trim().toDoubleOrNull()?.coerceAtLeast(0.01)
+            ?: state.batchCount.toDouble()
+
         val batchResult = MixtureCalculatorEngine.divideBatches(
             recalibrationResult = recalResult,
-            batchCount = state.batchCount
+            batchCount = countDouble
         )
 
         return state.copy(

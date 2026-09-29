@@ -619,7 +619,7 @@ class ConverterViewModel(
                 getCurrent = { _uiState.value.bmiHeightImperialInches },
                 setter = { setBmiImperialInches(it) },
                 token = token,
-                allowDecimal = false
+                allowDecimal = true
             )
             "num_decimal" -> appendToSingleValue(
                 getCurrent = { _uiState.value.numDecimal },
@@ -660,7 +660,7 @@ class ConverterViewModel(
         if (token == "00") {
             if (cur.isEmpty() || cur == "0") setter("0")
             else setter(cur + "00")
-        } else if (token == ".") {
+        } else if (token == "." || token == ",") {
             if (allowDecimal && !cur.contains('.')) {
                 setter(if (cur.isEmpty()) "0." else "$cur.")
             }

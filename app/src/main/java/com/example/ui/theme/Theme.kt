@@ -69,29 +69,29 @@ enum class AppThemeSkin(
     val ornamentalTintColor: Color = Color.Transparent
 ) {
     // ==========================================
-    // PHOTO THEME: PURE LIGHT & DARK CHARCOAL
+    // THEMES: SUPER AMOLED & PURE LIGHT
     // ==========================================
     DARK_CHARCOAL(
-        displayName = "Dark Charcoal",
-        categoryTag = "Photo Theme",
-        description = "Pure black OLED background with tactile dark charcoal number keys, radiant orange operators & high-contrast silver action keys",
+        displayName = "Super AMOLED",
+        categoryTag = "Super AMOLED",
+        description = "Pure black OLED background (#000000) with tactile true black surfaces, luminous orange operator keys & high-contrast crisp text",
         isDark = true,
         background = Color(0xFF000000),
-        surface = Color(0xFF1C1C1E),
-        surfaceVariant = Color(0xFF2C2C2E),
-        surfacePressed = Color(0xFF48484A),
-        outline = Color(0x33FFFFFF),
+        surface = Color(0xFF000000),
+        surfaceVariant = Color(0xFF0A0A0A),
+        surfacePressed = Color(0xFF181818),
+        outline = Color(0x38FFFFFF),
         textPrimary = Color(0xFFFFFFFF),
-        textSecondary = Color(0xFFA5A5A5),
+        textSecondary = Color(0xFFA1A1AA),
         defaultAccent = Color(0xFFFF9F0A),
-        previewColors = listOf(Color(0xFF000000), Color(0xFF2C2C2E), Color(0xFFFF9F0A)),
-        badgeLabel = "PHOTO THEME",
+        previewColors = listOf(Color(0xFF000000), Color(0xFF0A0A0A), Color(0xFFFF9F0A)),
+        badgeLabel = "SUPER AMOLED",
         ornamentalPattern = OrnamentalPatternStyle.NONE,
         ornamentalTintColor = Color.Transparent
     ),
     PURE_LIGHT(
         displayName = "Pure Light",
-        categoryTag = "Photo Theme",
+        categoryTag = "Light Theme",
         description = "Pristine white canvas with crisp tactile keys, radiant orange operators & soft silver action keys",
         isDark = false,
         background = Color(0xFFFFFFFF),
@@ -103,7 +103,7 @@ enum class AppThemeSkin(
         textSecondary = Color(0xFF6E6E73),
         defaultAccent = Color(0xFFFF9F0A),
         previewColors = listOf(Color(0xFFFFFFFF), Color(0xFFF2F2F7), Color(0xFFFF9F0A)),
-        badgeLabel = "PHOTO THEME",
+        badgeLabel = "PURE LIGHT",
         ornamentalPattern = OrnamentalPatternStyle.NONE,
         ornamentalTintColor = Color.Transparent
     ),

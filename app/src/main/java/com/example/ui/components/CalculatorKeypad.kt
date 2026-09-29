@@ -422,27 +422,27 @@ private fun LiquidGlassKey(
     val (keyBg, contentColor, borderColor) = when {
         isCharcoalTheme -> when (type) {
             KeyType.NUMBER, KeyType.DOUBLE_ZERO -> {
-                val bg = if (isPressed) Color(0xFF48484A) else Color(0xFF2C2C2E)
+                val bg = if (isPressed) Color(0xFF1C1C1F) else Color(0xFF060606)
                 val textCol = Color(0xFFFFFFFF)
-                val border = Color(0x2EFFFFFF)
+                val border = Color(0x38FFFFFF)
                 Triple(bg, textCol, border)
             }
             KeyType.ACTION -> {
-                val bg = if (isPressed) Color(0xFFC7C7CC) else Color(0xFFA5A5A5)
-                val textCol = Color(0xFF1C1C1E)
-                val border = Color(0x33000000)
+                val bg = if (isPressed) Color(0xFF2E2E32) else Color(0xFF141416)
+                val textCol = Color(0xFFE4E4E7)
+                val border = Color(0x4DFFFFFF)
                 Triple(bg, textCol, border)
             }
             KeyType.OPERATOR -> {
                 val bg = if (isPressed) Color(0xFFE08900) else Color(0xFFFF9F0A)
                 val textCol = Color(0xFFFFFFFF)
-                val border = Color(0x4DFFFFFF)
+                val border = Color(0x66FFFFFF)
                 Triple(bg, textCol, border)
             }
             KeyType.EQUALS -> {
                 val bg = if (isPressed) Color(0xFFE08900) else Color(0xFFFF9F0A)
                 val textCol = Color(0xFFFFFFFF)
-                val border = Color(0x66FFFFFF)
+                val border = Color(0x80FFFFFF)
                 Triple(bg, textCol, border)
             }
         }
