@@ -161,25 +161,11 @@ fun CurrencySearchBottomSheet(
                 val filters = listOf("All", "Popular", "Americas", "Europe", "Asia", "Middle East", "Africa")
                 items(filters) { filter ->
                     val isSelected = selectedRegionFilter == filter
-                    FilterChip(
+                    DottedFilterChip(
                         selected = isSelected,
                         onClick = { selectedRegionFilter = filter },
-                        label = {
-                            Text(
-                                text = filter,
-                                fontSize = 12.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = primaryColor.copy(alpha = 0.2f),
-                            selectedLabelColor = primaryColor
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = isSelected,
-                            borderColor = if (isSelected) primaryColor else if (isDark) Color(0x22FFFFFF) else Color(0x18000000)
-                        )
+                        label = filter,
+                        accentColor = primaryColor
                     )
                 }
             }

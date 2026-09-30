@@ -71,6 +71,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -667,22 +668,22 @@ private fun FilterChipsRow(
     ) {
         CapsuleFilterGroup.values().forEach { group ->
             val isSelected = selectedGroup == group
+            val dottedColor = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.40f else 0.25f)
             Surface(
                 onClick = { onSelectGroup(group) },
-                shape = RoundedCornerShape(percent = 50),
-                color = if (isSelected) {
-                    primaryColor.copy(alpha = if (isDark) 0.28f else 0.20f)
-                } else {
-                    currentSkin.surfaceVariant.copy(alpha = if (isDark) 0.35f else 0.50f)
-                },
-                border = BorderStroke(
-                    width = if (isSelected) 1.2.dp else 0.8.dp,
-                    color = if (isSelected) primaryColor.copy(alpha = 0.75f) else currentSkin.outline.copy(alpha = 0.25f)
-                ),
-                modifier = Modifier.weight(1f)
+                shape = RectangleShape,
+                color = Color.Transparent,
+                modifier = Modifier
+                    .weight(1f)
+                    .straightDottedLine(
+                        color = dottedColor,
+                        strokeWidth = if (isSelected) 2.dp else 1.2.dp,
+                        dotLength = 4.dp,
+                        spaceLength = 3.dp
+                    )
             ) {
                 Box(
-                    modifier = Modifier.padding(vertical = 5.dp),
+                    modifier = Modifier.padding(vertical = 6.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(

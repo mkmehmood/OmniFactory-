@@ -53,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -387,14 +388,27 @@ fun TapeHistorySheet(
                 }
             },
             confirmButton = {
-                Button(
+                Surface(
                     onClick = {
                         onUpdateNote(entity, noteText)
                         editingEntity = null
                     },
-                    shape = CircleShape
+                    modifier = Modifier
+                        .straightDottedLine(
+                            color = primaryColor,
+                            strokeWidth = 1.3.dp,
+                            dotLength = 4.dp,
+                            spaceLength = 3.dp
+                        ),
+                    shape = RectangleShape,
+                    color = Color.Transparent
                 ) {
-                    Text("Save")
+                    Text(
+                        text = "Save",
+                        fontWeight = FontWeight.Bold,
+                        color = primaryColor,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
                 }
             },
             dismissButton = {

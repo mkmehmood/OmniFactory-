@@ -65,6 +65,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -676,34 +677,30 @@ private fun CurrencyConverterModule(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Search & Click Picker Button
+                    // Search & Click Picker Button (Frameless with straight dotted underline)
                     Surface(
                         modifier = Modifier
-                            .clip(inputShape)
-                            .border(1.dp, primaryColor.copy(alpha = 0.5f), inputShape)
+                            .straightDottedLine(
+                                color = primaryColor,
+                                strokeWidth = 1.5.dp,
+                                dotLength = 4.dp,
+                                spaceLength = 3.dp
+                            )
                             .clickable { showFromSearchSheet = true }
                             .testTag("currency_from_picker"),
-                        shape = inputShape,
-                        color = primaryColor.copy(alpha = 0.12f)
+                        shape = RectangleShape,
+                        color = Color.Transparent
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(primaryColor.copy(alpha = 0.2f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.AccountBalance,
-                                    contentDescription = null,
-                                    tint = primaryColor,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.AccountBalance,
+                                contentDescription = null,
+                                tint = primaryColor,
+                                modifier = Modifier.size(20.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text(
@@ -727,7 +724,7 @@ private fun CurrencyConverterModule(
                         }
                     }
 
-                    // Smart Data-Entry Amount Input Box with Straight Dotted Line
+                    // Smart Data-Entry Amount Input Box with Straight Dotted Line (Frameless)
                     val currencyDotColor = if (isAmountFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
                     Surface(
                         modifier = Modifier
@@ -742,8 +739,8 @@ private fun CurrencyConverterModule(
                                 onFieldClicked("currency_amount", "Amount in ${fromCurrency.code}")
                             }
                             .testTag("currency_amount_input"),
-                        shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
-                        color = if (isAmountFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                        shape = RectangleShape,
+                        color = Color.Transparent
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -774,23 +771,30 @@ private fun CurrencyConverterModule(
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
-                // Quick Amount Presets
+                // Quick Amount Presets (Frameless with straight dotted line)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     listOf("10", "50", "100", "500", "1,000").forEach { preset ->
                         val clean = preset.replace(",", "")
+                        val isPresetSelected = uiState.currencyAmount == clean
+                        val presetDotColor = if (isPresetSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.40f else 0.25f)
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f), RoundedCornerShape(8.dp))
+                                .straightDottedLine(
+                                    color = presetDotColor,
+                                    strokeWidth = if (isPresetSelected) 2.dp else 1.2.dp,
+                                    dotLength = 4.dp,
+                                    spaceLength = 3.dp
+                                )
                                 .clickable {
                                     viewModel.setCurrencyAmount(clean)
                                     onFieldClicked("currency_amount", "Amount in ${fromCurrency.code}")
                                 },
-                            color = if (uiState.currencyAmount == clean) primaryColor.copy(alpha = 0.2f) else Color.Transparent
+                            shape = RectangleShape,
+                            color = Color.Transparent
                         ) {
                             Text(
                                 text = preset,
@@ -798,7 +802,7 @@ private fun CurrencyConverterModule(
                                 fontFamily = DigitalMonospaceFont,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(vertical = 4.dp),
-                                color = if (uiState.currencyAmount == clean) primaryColor else MaterialTheme.colorScheme.onSurface
+                                color = if (isPresetSelected) primaryColor else MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -806,28 +810,41 @@ private fun CurrencyConverterModule(
             }
         }
 
-        // SWAP BUTTON
+        // SWAP BUTTON (Frameless with straight dotted line)
         Box(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
             Surface(
                 modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .border(1.dp, primaryColor.copy(alpha = 0.5f), CircleShape)
+                    .straightDottedLine(
+                        color = primaryColor,
+                        strokeWidth = 1.5.dp,
+                        dotLength = 4.dp,
+                        spaceLength = 3.dp
+                    )
                     .clickable { viewModel.swapCurrency() }
                     .testTag("currency_swap_button"),
-                shape = CircleShape,
-                color = if (isDark) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
-                shadowElevation = 4.dp
+                shape = RectangleShape,
+                color = Color.Transparent
             ) {
-                Box(contentAlignment = Alignment.Center) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Icon(
                         imageVector = Icons.Default.SwapVert,
                         contentDescription = "Swap Currency",
                         tint = primaryColor,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "SWAP",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = primaryColor
                     )
                 }
             }
@@ -857,34 +874,30 @@ private fun CurrencyConverterModule(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Search & Click Picker Button
+                    // Search & Click Picker Button (Frameless with straight dotted line)
                     Surface(
                         modifier = Modifier
-                            .clip(inputShape)
-                            .border(1.dp, primaryColor.copy(alpha = 0.5f), inputShape)
+                            .straightDottedLine(
+                                color = primaryColor,
+                                strokeWidth = 1.5.dp,
+                                dotLength = 4.dp,
+                                spaceLength = 3.dp
+                            )
                             .clickable { showToSearchSheet = true }
                             .testTag("currency_to_picker"),
-                        shape = inputShape,
-                        color = primaryColor.copy(alpha = 0.12f)
+                        shape = RectangleShape,
+                        color = Color.Transparent
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(primaryColor.copy(alpha = 0.2f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.AccountBalance,
-                                    contentDescription = null,
-                                    tint = primaryColor,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.AccountBalance,
+                                contentDescription = null,
+                                tint = primaryColor,
+                                modifier = Modifier.size(20.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text(
@@ -977,50 +990,61 @@ private fun BmiConverterModule(
 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         // Metric / Imperial Toggle
-        Surface(
+        // BMI Unit System Toggle (Frameless with straight dotted line)
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(cardShape)
-                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f), cardShape),
-            shape = cardShape,
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(modifier = Modifier.padding(6.dp)) {
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(inputShape)
-                        .clickable { viewModel.setBmiUnitSystem(BmiUnitSystem.METRIC) }
-                        .testTag("bmi_toggle_metric"),
-                    shape = inputShape,
-                    color = if (uiState.bmiUnitSystem == BmiUnitSystem.METRIC) primaryColor.copy(alpha = 0.2f) else Color.Transparent
-                ) {
-                    Text(
-                        text = "Metric (kg, cm)",
-                        textAlign = TextAlign.Center,
-                        fontWeight = if (uiState.bmiUnitSystem == BmiUnitSystem.METRIC) FontWeight.Bold else FontWeight.Normal,
-                        color = if (uiState.bmiUnitSystem == BmiUnitSystem.METRIC) primaryColor else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(vertical = 10.dp)
+            val isMetric = uiState.bmiUnitSystem == BmiUnitSystem.METRIC
+            val metricDotColor = if (isMetric) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.40f else 0.25f)
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .straightDottedLine(
+                        color = metricDotColor,
+                        strokeWidth = if (isMetric) 2.dp else 1.2.dp,
+                        dotLength = 4.dp,
+                        spaceLength = 3.dp
                     )
-                }
+                    .clickable { viewModel.setBmiUnitSystem(BmiUnitSystem.METRIC) }
+                    .testTag("bmi_toggle_metric"),
+                shape = RectangleShape,
+                color = Color.Transparent
+            ) {
+                Text(
+                    text = "Metric (kg, cm)",
+                    textAlign = TextAlign.Center,
+                    fontWeight = if (isMetric) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isMetric) primaryColor else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
 
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(inputShape)
-                        .clickable { viewModel.setBmiUnitSystem(BmiUnitSystem.IMPERIAL) }
-                        .testTag("bmi_toggle_imperial"),
-                    shape = inputShape,
-                    color = if (uiState.bmiUnitSystem == BmiUnitSystem.IMPERIAL) primaryColor.copy(alpha = 0.2f) else Color.Transparent
-                ) {
-                    Text(
-                        text = "Imperial (lbs, ft & in)",
-                        textAlign = TextAlign.Center,
-                        fontWeight = if (uiState.bmiUnitSystem == BmiUnitSystem.IMPERIAL) FontWeight.Bold else FontWeight.Normal,
-                        color = if (uiState.bmiUnitSystem == BmiUnitSystem.IMPERIAL) primaryColor else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(vertical = 10.dp)
+            val isImperial = uiState.bmiUnitSystem == BmiUnitSystem.IMPERIAL
+            val imperialDotColor = if (isImperial) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.40f else 0.25f)
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .straightDottedLine(
+                        color = imperialDotColor,
+                        strokeWidth = if (isImperial) 2.dp else 1.2.dp,
+                        dotLength = 4.dp,
+                        spaceLength = 3.dp
                     )
-                }
+                    .clickable { viewModel.setBmiUnitSystem(BmiUnitSystem.IMPERIAL) }
+                    .testTag("bmi_toggle_imperial"),
+                shape = RectangleShape,
+                color = Color.Transparent
+            ) {
+                Text(
+                    text = "Imperial (lbs, ft & in)",
+                    textAlign = TextAlign.Center,
+                    fontWeight = if (isImperial) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isImperial) primaryColor else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
             }
         }
 
@@ -1055,10 +1079,10 @@ private fun BmiConverterModule(
                                 )
                                 .clickable { onFieldClicked("bmi_weight_metric", "Weight (kg)") }
                                 .testTag("bmi_input_weight_metric"),
-                            shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
-                            color = if (isWeightFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                            shape = RectangleShape,
+                            color = Color.Transparent
                         ) {
-                            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
                                 Text("Weight (kg)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
                                     text = uiState.bmiWeightMetricKg,
@@ -1083,10 +1107,10 @@ private fun BmiConverterModule(
                                 )
                                 .clickable { onFieldClicked("bmi_height_metric", "Height (cm)") }
                                 .testTag("bmi_input_height_metric"),
-                            shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
-                            color = if (isHeightFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                            shape = RectangleShape,
+                            color = Color.Transparent
                         ) {
-                            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
                                 Text("Height (cm)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
                                     text = uiState.bmiHeightMetricCm,
@@ -1115,10 +1139,10 @@ private fun BmiConverterModule(
                             )
                             .clickable { onFieldClicked("bmi_weight_imperial", "Weight (lbs)") }
                             .testTag("bmi_input_weight_imperial"),
-                        shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
-                        color = if (isImpWeightFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                        shape = RectangleShape,
+                        color = Color.Transparent
                     ) {
-                        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
                             Text("Weight (lbs)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(
                                 text = uiState.bmiWeightImperialLbs,
@@ -1146,10 +1170,10 @@ private fun BmiConverterModule(
                                 )
                                 .clickable { onFieldClicked("bmi_feet_imperial", "Height (Feet)") }
                                 .testTag("bmi_input_feet"),
-                            shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
-                            color = if (isFeetFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                            shape = RectangleShape,
+                            color = Color.Transparent
                         ) {
-                            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
                                 Text("Height (Feet)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
                                     text = uiState.bmiHeightImperialFeet,
@@ -1173,10 +1197,10 @@ private fun BmiConverterModule(
                                 )
                                 .clickable { onFieldClicked("bmi_inches_imperial", "Inches (0-11)") }
                                 .testTag("bmi_input_inches"),
-                            shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
-                            color = if (isInchesFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                            shape = RectangleShape,
+                            color = Color.Transparent
                         ) {
-                            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
                                 Text("Inches (0-11)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
                                     text = uiState.bmiHeightImperialInches,
@@ -1362,19 +1386,23 @@ private fun StandardUnitsConverterModule(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Unit selector dropdown
+                    // Unit selector dropdown (Frameless with straight dotted line)
                     Box {
                         Surface(
                             modifier = Modifier
-                                .clip(inputShape)
-                                .border(1.dp, primaryColor.copy(alpha = 0.4f), inputShape)
+                                .straightDottedLine(
+                                    color = primaryColor,
+                                    strokeWidth = 1.5.dp,
+                                    dotLength = 4.dp,
+                                    spaceLength = 3.dp
+                                )
                                 .clickable { showFromMenu = true }
                                 .testTag("standard_from_picker"),
-                            shape = inputShape,
-                            color = primaryColor.copy(alpha = 0.1f)
+                            shape = RectangleShape,
+                            color = Color.Transparent
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
@@ -1401,7 +1429,7 @@ private fun StandardUnitsConverterModule(
                         }
                     }
 
-                    // Value input box (smart keypad trigger) with straight dotted line
+                    // Value input box (smart keypad trigger) with straight dotted line (Frameless)
                     val stdDotColor = if (isInputFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
                     Surface(
                         modifier = Modifier
@@ -1416,8 +1444,8 @@ private fun StandardUnitsConverterModule(
                                 onFieldClicked("standard_input", "${fromUnit.name} (${fromUnit.symbol})")
                             }
                             .testTag("standard_value_input"),
-                        shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
-                        color = if (isInputFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                        shape = RectangleShape,
+                        color = Color.Transparent
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -1449,28 +1477,41 @@ private fun StandardUnitsConverterModule(
             }
         }
 
-        // SWAP BUTTON
+        // SWAP BUTTON (Frameless with straight dotted line)
         Box(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
             Surface(
                 modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .border(1.dp, primaryColor.copy(alpha = 0.5f), CircleShape)
+                    .straightDottedLine(
+                        color = primaryColor,
+                        strokeWidth = 1.5.dp,
+                        dotLength = 4.dp,
+                        spaceLength = 3.dp
+                    )
                     .clickable { viewModel.swapStandardUnits() }
                     .testTag("standard_swap_button"),
-                shape = CircleShape,
-                color = if (isDark) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
-                shadowElevation = 4.dp
+                shape = RectangleShape,
+                color = Color.Transparent
             ) {
-                Box(contentAlignment = Alignment.Center) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Icon(
                         imageVector = Icons.Default.SwapVert,
                         contentDescription = "Swap Units",
                         tint = primaryColor,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "SWAP",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = primaryColor
                     )
                 }
             }
@@ -1503,15 +1544,19 @@ private fun StandardUnitsConverterModule(
                     Box {
                         Surface(
                             modifier = Modifier
-                                .clip(inputShape)
-                                .border(1.dp, primaryColor.copy(alpha = 0.4f), inputShape)
+                                .straightDottedLine(
+                                    color = primaryColor,
+                                    strokeWidth = 1.5.dp,
+                                    dotLength = 4.dp,
+                                    spaceLength = 3.dp
+                                )
                                 .clickable { showToMenu = true }
                                 .testTag("standard_to_picker"),
-                            shape = inputShape,
-                            color = primaryColor.copy(alpha = 0.1f)
+                            shape = RectangleShape,
+                            color = Color.Transparent
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
@@ -1669,18 +1714,22 @@ private fun TemperatureConverterModule(
                     Box {
                         Surface(
                             modifier = Modifier
-                                .clip(inputShape)
-                                .border(1.dp, primaryColor.copy(alpha = 0.4f), inputShape)
+                                .straightDottedLine(
+                                    color = primaryColor,
+                                    strokeWidth = 1.5.dp,
+                                    dotLength = 4.dp,
+                                    spaceLength = 3.dp
+                                )
                                 .clickable { showFromMenu = true }
                                 .testTag("temp_from_picker"),
-                            shape = inputShape,
-                            color = primaryColor.copy(alpha = 0.1f)
+                            shape = RectangleShape,
+                            color = Color.Transparent
                         ) {
                             Text(
                                 text = "${uiState.tempFromUnit.displayName} (${uiState.tempFromUnit.symbol})",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
                             )
                         }
 
@@ -1700,7 +1749,7 @@ private fun TemperatureConverterModule(
                         }
                     }
 
-                    // Smart Input Field with straight dotted line
+                    // Smart Input Field with straight dotted line (Frameless)
                     val tempDotColor = if (isTempFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
                     Surface(
                         modifier = Modifier
@@ -1715,8 +1764,8 @@ private fun TemperatureConverterModule(
                                 onFieldClicked("temp_input", "Temperature (${uiState.tempFromUnit.symbol})")
                             }
                             .testTag("temp_input_field"),
-                        shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
-                        color = if (isTempFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
+                        shape = RectangleShape,
+                        color = Color.Transparent
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -1748,28 +1797,41 @@ private fun TemperatureConverterModule(
             }
         }
 
-        // SWAP BUTTON
+        // SWAP BUTTON (Frameless with straight dotted line)
         Box(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
             Surface(
                 modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .border(1.dp, primaryColor.copy(alpha = 0.5f), CircleShape)
+                    .straightDottedLine(
+                        color = primaryColor,
+                        strokeWidth = 1.5.dp,
+                        dotLength = 4.dp,
+                        spaceLength = 3.dp
+                    )
                     .clickable { viewModel.swapTempUnits() }
                     .testTag("temp_swap_button"),
-                shape = CircleShape,
-                color = if (isDark) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
-                shadowElevation = 4.dp
+                shape = RectangleShape,
+                color = Color.Transparent
             ) {
-                Box(contentAlignment = Alignment.Center) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Icon(
                         imageVector = Icons.Default.SwapVert,
                         contentDescription = "Swap Temp",
                         tint = primaryColor,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "SWAP",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = primaryColor
                     )
                 }
             }
@@ -1802,18 +1864,22 @@ private fun TemperatureConverterModule(
                     Box {
                         Surface(
                             modifier = Modifier
-                                .clip(inputShape)
-                                .border(1.dp, primaryColor.copy(alpha = 0.4f), inputShape)
+                                .straightDottedLine(
+                                    color = primaryColor,
+                                    strokeWidth = 1.5.dp,
+                                    dotLength = 4.dp,
+                                    spaceLength = 3.dp
+                                )
                                 .clickable { showToMenu = true }
                                 .testTag("temp_to_picker"),
-                            shape = inputShape,
-                            color = primaryColor.copy(alpha = 0.1f)
+                            shape = RectangleShape,
+                            color = Color.Transparent
                         ) {
                             Text(
                                 text = "${uiState.tempToUnit.displayName} (${uiState.tempToUnit.symbol})",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
                             )
                         }
 
@@ -2070,17 +2136,11 @@ private fun SmartNumberBaseCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(cardShape)
-            .border(
-                1.dp,
-                if (isFocused) accentColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f),
-                cardShape
-            )
             .clickable { onCardClicked() },
-        shape = cardShape,
-        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+        shape = RectangleShape,
+        color = Color.Transparent
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -2107,7 +2167,7 @@ private fun SmartNumberBaseCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             val numDotColor = if (isFocused) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
             Surface(
@@ -2120,8 +2180,8 @@ private fun SmartNumberBaseCard(
                         spaceLength = 3.dp
                     )
                     .testTag(testTag),
-                shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
-                color = if (isFocused) accentColor.copy(alpha = 0.08f) else Color.Transparent
+                shape = RectangleShape,
+                color = Color.Transparent
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),

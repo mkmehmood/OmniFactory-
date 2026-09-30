@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -251,10 +252,15 @@ private fun ClipboardSectionButton(
 ) {
     Surface(
         modifier = Modifier
-            .clip(RoundedCornerShape(14.dp))
+            .straightDottedLine(
+                color = primaryColor.copy(alpha = 0.5f),
+                strokeWidth = 1.3.dp,
+                dotLength = 4.dp,
+                spaceLength = 3.dp
+            )
             .clickable { onClick() }
             .testTag(testTag),
-        shape = RoundedCornerShape(14.dp),
+        shape = RectangleShape,
         color = Color.Transparent
     ) {
         Row(

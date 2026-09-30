@@ -265,15 +265,11 @@ fun MixtureHistorySheet(
             ) {
                 categories.forEach { cat ->
                     val isSelected = selectedCategory == cat
-                    FilterChip(
+                    DottedFilterChip(
                         selected = isSelected,
                         onClick = { selectedCategory = cat },
-                        label = { Text(cat, fontSize = 11.sp, fontFamily = DigitalMonospaceFont) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = primaryColor.copy(alpha = 0.2f),
-                            selectedLabelColor = primaryColor
-                        ),
-                        modifier = Modifier.height(32.dp)
+                        label = cat,
+                        accentColor = primaryColor
                     )
                 }
             }

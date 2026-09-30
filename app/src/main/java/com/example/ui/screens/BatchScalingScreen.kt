@@ -67,7 +67,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.luminance
+import com.example.ui.components.straightDottedLine
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -463,73 +465,69 @@ private fun ModeTabSelector(
     primaryColor: Color,
     isDark: Boolean
 ) {
-    Surface(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .border(
-                1.dp,
-                if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
-                RoundedCornerShape(14.dp)
-            ),
-        shape = RoundedCornerShape(14.dp),
-        color = if (isDark) Color(0x10FFFFFF) else Color(0x0C000000)
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(
+        // Mode 1: Target Total (Frameless with straight dotted line)
+        val isTargetTotal = currentMode == ScalingMode.TARGET_TOTAL
+        val targetDotColor = if (isTargetTotal) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.45f else 0.25f)
+        Surface(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(4.dp)
+                .weight(1f)
+                .straightDottedLine(
+                    color = targetDotColor,
+                    strokeWidth = if (isTargetTotal) 2.dp else 1.2.dp,
+                    dotLength = 4.dp,
+                    spaceLength = 3.dp
+                )
+                .clickable { onSelectMode(ScalingMode.TARGET_TOTAL) }
+                .testTag("tab_mode_target_total"),
+            shape = RectangleShape,
+            color = Color.Transparent
         ) {
-            // Mode 1: Target Total
-            Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable { onSelectMode(ScalingMode.TARGET_TOTAL) }
-                    .testTag("tab_mode_target_total"),
-                shape = RoundedCornerShape(10.dp),
-                color = if (currentMode == ScalingMode.TARGET_TOTAL) primaryColor else Color.Transparent
+            Box(
+                modifier = Modifier.padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier.padding(vertical = 11.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Target Total",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (currentMode == ScalingMode.TARGET_TOTAL) {
-                            if (isDark) Color.Black else Color.White
-                        } else MaterialTheme.colorScheme.onSurface
-                    )
-                }
+                Text(
+                    text = "Target Total",
+                    fontSize = 13.sp,
+                    fontWeight = if (isTargetTotal) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isTargetTotal) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
+        }
 
-            Spacer(modifier = Modifier.width(4.dp))
-
-            // Mode 2: Batch Size
-            Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable { onSelectMode(ScalingMode.BATCH_SIZE) }
-                    .testTag("tab_mode_batch_size"),
-                shape = RoundedCornerShape(10.dp),
-                color = if (currentMode == ScalingMode.BATCH_SIZE) primaryColor else Color.Transparent
+        // Mode 2: Batch Size (Frameless with straight dotted line)
+        val isBatchSize = currentMode == ScalingMode.BATCH_SIZE
+        val batchDotColor = if (isBatchSize) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.45f else 0.25f)
+        Surface(
+            modifier = Modifier
+                .weight(1f)
+                .straightDottedLine(
+                    color = batchDotColor,
+                    strokeWidth = if (isBatchSize) 2.dp else 1.2.dp,
+                    dotLength = 4.dp,
+                    spaceLength = 3.dp
+                )
+                .clickable { onSelectMode(ScalingMode.BATCH_SIZE) }
+                .testTag("tab_mode_batch_size"),
+            shape = RectangleShape,
+            color = Color.Transparent
+        ) {
+            Box(
+                modifier = Modifier.padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier.padding(vertical = 11.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Batch Sizing",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (currentMode == ScalingMode.BATCH_SIZE) {
-                            if (isDark) Color.Black else Color.White
-                        } else MaterialTheme.colorScheme.onSurface
-                    )
-                }
+                Text(
+                    text = "Batch Sizing",
+                    fontSize = 13.sp,
+                    fontWeight = if (isBatchSize) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isBatchSize) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
@@ -615,29 +613,40 @@ private fun ComponentsEditorCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Button(
+            Surface(
                 onClick = onAddComponent,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(42.dp)
+                    .straightDottedLine(
+                        color = primaryColor,
+                        strokeWidth = 1.3.dp,
+                        dotLength = 4.dp,
+                        spaceLength = 3.dp
+                    )
                     .testTag("add_component_button"),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = primaryColor.copy(alpha = 0.15f),
-                    contentColor = primaryColor
-                ),
-                contentPadding = PaddingValues(vertical = 9.dp)
+                shape = RectangleShape,
+                color = Color.Transparent
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Add Component",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Add Component",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = primaryColor
+                    )
+                }
             }
         }
     }

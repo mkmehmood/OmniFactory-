@@ -73,7 +73,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.luminance
+import com.example.ui.components.straightDottedLine
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -584,22 +586,22 @@ private fun SalesRepAndDateCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Sales Rep Selector Box
+                // Sales Rep Selector Box (Frameless with straight dotted line)
                 Box(modifier = Modifier.weight(1.2f)) {
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .border(
-                                1.dp,
-                                if (isDark) Color(0x28FFFFFF) else Color(0x20000000),
-                                RoundedCornerShape(10.dp)
+                            .straightDottedLine(
+                                color = if (dropdownExpanded) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f),
+                                strokeWidth = if (dropdownExpanded) 2.dp else 1.3.dp,
+                                dotLength = 4.dp,
+                                spaceLength = 3.dp
                             )
                             .clickable { dropdownExpanded = true }
                             .testTag("sales_rep_dropdown_selector"),
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
+                        shape = RectangleShape,
+                        color = Color.Transparent
                     ) {
                         Row(
                             modifier = Modifier
@@ -681,21 +683,21 @@ private fun SalesRepAndDateCard(
                     }
                 }
 
-                // Date Selector Box
+                // Date Selector Box (Frameless with straight dotted line)
                 Surface(
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .border(
-                            1.dp,
-                            if (isDark) Color(0x28FFFFFF) else Color(0x20000000),
-                            RoundedCornerShape(10.dp)
+                        .straightDottedLine(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f),
+                            strokeWidth = 1.3.dp,
+                            dotLength = 4.dp,
+                            spaceLength = 3.dp
                         )
                         .clickable { onOpenDatePicker() }
                         .testTag("sales_date_picker_button"),
-                    shape = RoundedCornerShape(10.dp),
-                    color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
+                    shape = RectangleShape,
+                    color = Color.Transparent
                 ) {
                     Row(
                         modifier = Modifier
@@ -780,12 +782,19 @@ private fun SalesInputFormCard(
                     letterSpacing = 0.8.sp
                 )
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = primaryColor.copy(alpha = 0.15f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.4f)),
-                    modifier = Modifier.clickable { onOpenCalculator() }.testTag("sales_form_calc_button")
+                    shape = RectangleShape,
+                    color = Color.Transparent,
+                    modifier = Modifier
+                        .straightDottedLine(
+                            color = primaryColor,
+                            strokeWidth = 1.3.dp,
+                            dotLength = 4.dp,
+                            spaceLength = 3.dp
+                        )
+                        .clickable { onOpenCalculator() }
+                        .testTag("sales_form_calc_button")
                 ) {
-                    Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp), contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.Calculate,
                             contentDescription = "Quick Calculator",

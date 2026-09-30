@@ -91,7 +91,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.luminance
+import com.example.ui.components.straightDottedLine
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -629,86 +631,98 @@ private fun LedgerFastActionBar(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Cash In Button
-        Button(
+        // Cash In Button (Frameless with straight dotted line)
+        Surface(
             onClick = onAddCashIn,
             modifier = Modifier
                 .weight(1f)
-                .height(46.dp)
+                .height(44.dp)
+                .straightDottedLine(
+                    color = Color(0xFF10B981),
+                    strokeWidth = 1.5.dp,
+                    dotLength = 4.dp,
+                    spaceLength = 3.dp
+                )
                 .testTag("action_add_cash_in"),
-            shape = RoundedCornerShape(12.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF10B981),
-                contentColor = Color.White
-            )
+            shape = RectangleShape,
+            color = Color.Transparent
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(horizontal = 4.dp)
             ) {
-                Icon(imageVector = Icons.Default.ArrowDownward, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(imageVector = Icons.Default.ArrowDownward, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "+ In",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
+                    fontSize = 13.sp,
+                    color = Color(0xFF10B981)
                 )
             }
         }
 
-        // Cash Out Button
-        Button(
+        // Cash Out Button (Frameless with straight dotted line)
+        Surface(
             onClick = onAddCashOut,
             modifier = Modifier
                 .weight(1f)
-                .height(46.dp)
+                .height(44.dp)
+                .straightDottedLine(
+                    color = Color(0xFFEF4444),
+                    strokeWidth = 1.5.dp,
+                    dotLength = 4.dp,
+                    spaceLength = 3.dp
+                )
                 .testTag("action_add_cash_out"),
-            shape = RoundedCornerShape(12.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFEF4444),
-                contentColor = Color.White
-            )
+            shape = RectangleShape,
+            color = Color.Transparent
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(horizontal = 4.dp)
             ) {
-                Icon(imageVector = Icons.Default.ArrowUpward, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(imageVector = Icons.Default.ArrowUpward, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "- Out",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
+                    fontSize = 13.sp,
+                    color = Color(0xFFEF4444)
                 )
             }
         }
 
-        // Cash Transfer Button
-        Button(
+        // Cash Transfer Button (Frameless with straight dotted line)
+        Surface(
             onClick = onAddTransfer,
             modifier = Modifier
                 .weight(1f)
-                .height(46.dp)
+                .height(44.dp)
+                .straightDottedLine(
+                    color = Color(0xFF3B82F6),
+                    strokeWidth = 1.5.dp,
+                    dotLength = 4.dp,
+                    spaceLength = 3.dp
+                )
                 .testTag("action_add_transfer"),
-            shape = RoundedCornerShape(12.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF3B82F6),
-                contentColor = Color.White
-            )
+            shape = RectangleShape,
+            color = Color.Transparent
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(horizontal = 4.dp)
             ) {
-                Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = null, modifier = Modifier.size(17.dp))
+                Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = null, tint = Color(0xFF3B82F6), modifier = Modifier.size(17.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "Transfer",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
+                    fontSize = 13.sp,
+                    color = Color(0xFF3B82F6)
                 )
             }
         }
@@ -1276,10 +1290,16 @@ private fun LedgerAddEditSheetContent(
                                 if (isCustomFrom) {
                                     item {
                                         Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = Color(0xFF3B82F6).copy(alpha = 0.2f),
-                                            border = BorderStroke(1.dp, Color(0xFF3B82F6)),
-                                            modifier = Modifier.clickable { onPaymentModeChange(typedFrom) }
+                                            shape = RectangleShape,
+                                            color = Color.Transparent,
+                                            modifier = Modifier
+                                                .straightDottedLine(
+                                                    color = Color(0xFF3B82F6),
+                                                    strokeWidth = 1.3.dp,
+                                                    dotLength = 4.dp,
+                                                    spaceLength = 3.dp
+                                                )
+                                                .clickable { onPaymentModeChange(typedFrom) }
                                         ) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
@@ -1294,10 +1314,16 @@ private fun LedgerAddEditSheetContent(
                                 }
                                 items(matchingFromModes) { mode ->
                                     Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = Color(0xFF3B82F6).copy(alpha = 0.15f),
-                                        border = BorderStroke(1.dp, Color(0xFF3B82F6).copy(alpha = 0.35f)),
-                                        modifier = Modifier.clickable { onPaymentModeChange(mode) }
+                                        shape = RectangleShape,
+                                        color = Color.Transparent,
+                                        modifier = Modifier
+                                            .straightDottedLine(
+                                                color = Color(0xFF3B82F6).copy(alpha = 0.5f),
+                                                strokeWidth = 1.2.dp,
+                                                dotLength = 4.dp,
+                                                spaceLength = 3.dp
+                                            )
+                                            .clickable { onPaymentModeChange(mode) }
                                     ) {
                                         Text(
                                             text = mode,
@@ -1363,10 +1389,16 @@ private fun LedgerAddEditSheetContent(
                                 if (isCustomTo) {
                                     item {
                                         Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = Color(0xFF10B981).copy(alpha = 0.2f),
-                                            border = BorderStroke(1.dp, Color(0xFF10B981)),
-                                            modifier = Modifier.clickable { onTransferToModeChange(typedTo) }
+                                            shape = RectangleShape,
+                                            color = Color.Transparent,
+                                            modifier = Modifier
+                                                .straightDottedLine(
+                                                    color = Color(0xFF10B981),
+                                                    strokeWidth = 1.3.dp,
+                                                    dotLength = 4.dp,
+                                                    spaceLength = 3.dp
+                                                )
+                                                .clickable { onTransferToModeChange(typedTo) }
                                         ) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
@@ -1381,10 +1413,16 @@ private fun LedgerAddEditSheetContent(
                                 }
                                 items(matchingToModes) { mode ->
                                     Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = Color(0xFF10B981).copy(alpha = 0.15f),
-                                        border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.35f)),
-                                        modifier = Modifier.clickable { onTransferToModeChange(mode) }
+                                        shape = RectangleShape,
+                                        color = Color.Transparent,
+                                        modifier = Modifier
+                                            .straightDottedLine(
+                                                color = Color(0xFF10B981).copy(alpha = 0.5f),
+                                                strokeWidth = 1.2.dp,
+                                                dotLength = 4.dp,
+                                                spaceLength = 3.dp
+                                            )
+                                            .clickable { onTransferToModeChange(mode) }
                                     ) {
                                         Text(
                                             text = mode,
@@ -1575,14 +1613,20 @@ private fun LedgerAddEditSheetContent(
                             if (isCustomNewCategory) {
                                 item {
                                     Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = primaryColor.copy(alpha = 0.2f),
-                                        border = BorderStroke(1.dp, primaryColor),
-                                        modifier = Modifier.clickable { onCategoryChange(trimmedInputCategory) }
+                                        shape = RectangleShape,
+                                        color = Color.Transparent,
+                                        modifier = Modifier
+                                            .straightDottedLine(
+                                                color = primaryColor,
+                                                strokeWidth = 1.3.dp,
+                                                dotLength = 4.dp,
+                                                spaceLength = 3.dp
+                                            )
+                                            .clickable { onCategoryChange(trimmedInputCategory) }
                                     ) {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
                                         ) {
                                             Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = primaryColor, modifier = Modifier.size(13.dp))
                                             Spacer(modifier = Modifier.width(4.dp))
@@ -1599,14 +1643,20 @@ private fun LedgerAddEditSheetContent(
 
                             items(matchingCategories) { cat ->
                                 Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = primaryColor.copy(alpha = 0.15f),
-                                    border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f)),
-                                    modifier = Modifier.clickable { onCategoryChange(cat) }
+                                    shape = RectangleShape,
+                                    color = Color.Transparent,
+                                    modifier = Modifier
+                                        .straightDottedLine(
+                                            color = primaryColor.copy(alpha = 0.45f),
+                                            strokeWidth = 1.2.dp,
+                                            dotLength = 4.dp,
+                                            spaceLength = 3.dp
+                                        )
+                                        .clickable { onCategoryChange(cat) }
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
                                     ) {
                                         Icon(
                                             imageVector = LedgerCategoryIcons.getCategoryIcon(cat),
@@ -1701,14 +1751,20 @@ private fun LedgerAddEditSheetContent(
                             if (isCustomNewMode) {
                                 item {
                                     Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = primaryColor.copy(alpha = 0.2f),
-                                        border = BorderStroke(1.dp, primaryColor),
-                                        modifier = Modifier.clickable { onPaymentModeChange(typedPaymentMode) }
+                                        shape = RectangleShape,
+                                        color = Color.Transparent,
+                                        modifier = Modifier
+                                            .straightDottedLine(
+                                                color = primaryColor,
+                                                strokeWidth = 1.3.dp,
+                                                dotLength = 4.dp,
+                                                spaceLength = 3.dp
+                                            )
+                                            .clickable { onPaymentModeChange(typedPaymentMode) }
                                     ) {
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
                                         ) {
                                             Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = primaryColor, modifier = Modifier.size(13.dp))
                                             Spacer(modifier = Modifier.width(4.dp))
@@ -1725,14 +1781,20 @@ private fun LedgerAddEditSheetContent(
 
                             items(matchingModes) { mode ->
                                 Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = primaryColor.copy(alpha = 0.15f),
-                                    border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f)),
-                                    modifier = Modifier.clickable { onPaymentModeChange(mode) }
+                                    shape = RectangleShape,
+                                    color = Color.Transparent,
+                                    modifier = Modifier
+                                        .straightDottedLine(
+                                            color = primaryColor.copy(alpha = 0.45f),
+                                            strokeWidth = 1.2.dp,
+                                            dotLength = 4.dp,
+                                            spaceLength = 3.dp
+                                        )
+                                        .clickable { onPaymentModeChange(mode) }
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
                                     ) {
                                         Icon(
                                             imageVector = if (LedgerPaymentUtils.isBankMode(mode)) Icons.Default.AccountBalance else Icons.Default.Payments,
@@ -1819,15 +1881,19 @@ private fun LedgerAddEditSheetContent(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .border(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x28000000), RoundedCornerShape(12.dp))
+                    .straightDottedLine(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f),
+                        strokeWidth = 1.3.dp,
+                        dotLength = 4.dp,
+                        spaceLength = 3.dp
+                    )
                     .clickable { showDatePicker = true }
                     .testTag("form_date_picker_button"),
-                shape = RoundedCornerShape(12.dp),
-                color = if (isDark) Color(0x12FFFFFF) else Color(0x06000000)
+                shape = RectangleShape,
+                color = Color.Transparent
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -1880,42 +1946,53 @@ private fun LedgerAddEditSheetContent(
             )
         }
 
-        // Action Buttons
+        // Action Buttons (Frameless with straight dotted line)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp, bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Button(
+            Surface(
                 onClick = onCancel,
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isDark) Color(0x22FFFFFF) else Color(0x15000000),
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                )
+                    .height(46.dp)
+                    .straightDottedLine(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f),
+                        strokeWidth = 1.3.dp,
+                        dotLength = 4.dp,
+                        spaceLength = 3.dp
+                    ),
+                shape = RectangleShape,
+                color = Color.Transparent
             ) {
-                Text("Cancel")
+                Box(contentAlignment = Alignment.Center) {
+                    Text("Cancel", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                }
             }
 
-            Button(
+            Surface(
                 onClick = onSave,
                 enabled = !uiState.isFormSubmitting,
                 modifier = Modifier
                     .weight(1.5f)
-                    .height(48.dp)
+                    .height(46.dp)
+                    .straightDottedLine(
+                        color = uiState.formType.color,
+                        strokeWidth = 1.8.dp,
+                        dotLength = 4.dp,
+                        spaceLength = 3.dp
+                    )
                     .testTag("form_save_button"),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = uiState.formType.color,
-                    contentColor = Color.White
-                )
+                shape = RectangleShape,
+                color = Color.Transparent
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = uiState.formType.color, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = if (isEditing) "Update Entry" else when {
@@ -1924,7 +2001,8 @@ private fun LedgerAddEditSheetContent(
                             else -> "Save Cash In"
                         },
                         fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
+                        color = uiState.formType.color
                     )
                 }
             }

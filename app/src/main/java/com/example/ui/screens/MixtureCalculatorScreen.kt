@@ -70,7 +70,9 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.luminance
+import com.example.ui.components.straightDottedLine
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -907,34 +909,42 @@ private fun Step1EnterTargetIngredients(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Full-Width Button: "+ Add to Target List"
-                Button(
-                    onClick = {
-                        onAddIngredient()
-                    },
+                // Full-Width Button: "+ Add to Target List" (Frameless with straight dotted line)
+                Surface(
+                    onClick = { onAddIngredient() },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(46.dp)
+                        .height(44.dp)
+                        .straightDottedLine(
+                            color = primaryColor,
+                            strokeWidth = 1.3.dp,
+                            dotLength = 4.dp,
+                            spaceLength = 3.dp
+                        )
                         .testTag("add_to_target_list_button"),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = primaryColor.copy(alpha = 0.2f),
-                        contentColor = primaryColor
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                    shape = RectangleShape,
+                    color = Color.Transparent
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Add to Target List",
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        fontSize = 13.sp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(vertical = 6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = primaryColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Add to Target List",
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            fontSize = 13.sp,
+                            color = primaryColor
+                        )
+                    }
                 }
             }
         }

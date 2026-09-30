@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -59,6 +61,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
@@ -289,15 +292,16 @@ fun LiquidGlassTextField(
         maxLines = maxLines,
         minLines = minLines,
         interactionSource = interactionSource,
-        shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 0.dp, bottomEnd = 0.dp),
+        shape = RectangleShape,
         colors = TextFieldDefaults.colors(
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
             disabledIndicatorColor = Color.Transparent,
             errorIndicatorColor = Color.Transparent,
-            focusedContainerColor = accentColor.copy(alpha = if (isDark) 0.08f else 0.04f),
-            unfocusedContainerColor = (containerBaseColor ?: skin.surfaceVariant).copy(alpha = if (isDark) 0.18f else 0.12f),
+            focusedContainerColor = Color.Transparent,
+            unfocusedContainerColor = Color.Transparent,
             disabledContainerColor = Color.Transparent,
+            errorContainerColor = Color.Transparent,
             cursorColor = accentColor,
             focusedTextColor = MaterialTheme.colorScheme.onSurface,
             unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
@@ -311,6 +315,103 @@ fun LiquidGlassTextField(
             unfocusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     )
+}
+
+/**
+ * Button styled identically to the input fields:
+ * Frameless, with NO outer box covering, resting cleanly on a straight dotted underline.
+ */
+@Composable
+fun DottedLineButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    isSelected: Boolean = false,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
+    testTag: String? = null,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+    content: @Composable RowScope.() -> Unit
+) {
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val dottedLineColor = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f)
+    val dottedLineWidth = if (isSelected) 2.0.dp else 1.3.dp
+    val dotLength = if (isSelected) 4.5.dp else 3.5.dp
+    val spaceLength = if (isSelected) 2.5.dp else 3.0.dp
+
+    Surface(
+        modifier = modifier
+            .straightDottedLine(
+                color = dottedLineColor,
+                strokeWidth = dottedLineWidth,
+                dotLength = dotLength,
+                spaceLength = spaceLength
+            )
+            .clickable(enabled = enabled, onClick = onClick)
+            .let { if (testTag != null) it.testTag(testTag) else it },
+        color = Color.Transparent,
+        shape = RectangleShape
+    ) {
+        Row(
+            modifier = Modifier.padding(contentPadding),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            content = content
+        )
+    }
+}
+
+/**
+ * Filter chip / tag with NO outer box covering, resting on a straight dotted baseline underline.
+ */
+@Composable
+fun DottedFilterChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    leadingIcon: ImageVector? = null,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
+    testTag: String? = null
+) {
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val dottedColor = if (selected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.45f else 0.35f)
+
+    Surface(
+        modifier = modifier
+            .straightDottedLine(
+                color = dottedColor,
+                strokeWidth = if (selected) 2.dp else 1.2.dp,
+                dotLength = 4.dp,
+                spaceLength = 3.dp
+            )
+            .clickable(onClick = onClick)
+            .let { if (testTag != null) it.testTag(testTag) else it },
+        color = Color.Transparent,
+        shape = RectangleShape
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (leadingIcon != null) {
+                Icon(
+                    imageVector = leadingIcon,
+                    contentDescription = null,
+                    tint = if (selected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+            Text(
+                text = label,
+                fontSize = 11.5.sp,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                fontFamily = DigitalMonospaceFont,
+                color = if (selected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }
 
 /**
@@ -501,7 +602,7 @@ fun SpatialFloatingPill(
         label = "spatial_pill_scale"
     )
 
-    val shape = CircleShape
+    val dottedColor = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
 
     Box(
         modifier = modifier
@@ -509,27 +610,11 @@ fun SpatialFloatingPill(
                 scaleX = scale
                 scaleY = scale
             }
-            .spatialGlass(
-                shape = shape,
-                elevation = if (isSelected) 6.dp else 2.dp,
-                borderAlpha = if (isSelected) 0.65f else 0.25f,
-                specularHighlight = true,
-                isDark = isDark,
-                accentColor = if (isSelected) primaryColor else skin.outline
-            )
-            .background(
-                if (isSelected) {
-                    Brush.linearGradient(
-                        listOf(primaryColor.copy(alpha = 0.28f), primaryColor.copy(alpha = 0.12f))
-                    )
-                } else {
-                    Brush.linearGradient(
-                        listOf(
-                            skin.surfaceVariant.copy(alpha = if (isDark) 0.40f else 0.50f),
-                            skin.surface.copy(alpha = if (isDark) 0.60f else 0.70f)
-                        )
-                    )
-                }
+            .straightDottedLine(
+                color = dottedColor,
+                strokeWidth = if (isSelected) 2.dp else 1.2.dp,
+                dotLength = 4.dp,
+                spaceLength = 3.dp
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -539,7 +624,7 @@ fun SpatialFloatingPill(
                 SoundFeedbackHelper.playClickSound(context, view, SoundIntensity.STANDARD)
                 onClick()
             }
-            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .padding(horizontal = 10.dp, vertical = 6.dp)
             .testTag(testTag),
         contentAlignment = Alignment.Center
     ) {

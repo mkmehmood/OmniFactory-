@@ -272,15 +272,11 @@ fun BatchScalingHistorySheet(
                         "PINNED" -> "Pinned ★"
                         else -> opt
                     }
-                    FilterChip(
+                    DottedFilterChip(
                         selected = isSelected,
                         onClick = { selectedFilter = opt },
-                        label = { Text(label, fontSize = 11.sp, fontFamily = DigitalMonospaceFont) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = primaryColor.copy(alpha = 0.2f),
-                            selectedLabelColor = primaryColor
-                        ),
-                        modifier = Modifier.height(32.dp)
+                        label = label,
+                        accentColor = primaryColor
                     )
                 }
             }

@@ -85,7 +85,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.luminance
+import com.example.ui.components.straightDottedLine
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -492,53 +494,47 @@ private fun ExpenseScopeTabBar(
     primaryColor: Color,
     isDark: Boolean
 ) {
-    Surface(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(14.dp)),
-        shape = RoundedCornerShape(14.dp),
-        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            ExpenseScopeTabItem(
-                scope = ExpenseScope.ALL,
-                title = "All Expenses",
-                count = "${summary.count}",
-                isSelected = selectedScope == ExpenseScope.ALL,
-                onClick = { onSelectScope(ExpenseScope.ALL) },
-                icon = Icons.Default.Receipt,
-                primaryColor = primaryColor,
-                modifier = Modifier.weight(1f)
-            )
+        ExpenseScopeTabItem(
+            scope = ExpenseScope.ALL,
+            title = "All",
+            count = "${summary.count}",
+            isSelected = selectedScope == ExpenseScope.ALL,
+            onClick = { onSelectScope(ExpenseScope.ALL) },
+            icon = Icons.Default.Receipt,
+            primaryColor = primaryColor,
+            isDark = isDark,
+            modifier = Modifier.weight(1f)
+        )
 
-            ExpenseScopeTabItem(
-                scope = ExpenseScope.BUSINESS,
-                title = "Business",
-                count = "${summary.businessCount}",
-                isSelected = selectedScope == ExpenseScope.BUSINESS,
-                onClick = { onSelectScope(ExpenseScope.BUSINESS) },
-                icon = Icons.Default.Business,
-                primaryColor = primaryColor,
-                modifier = Modifier.weight(1f)
-            )
+        ExpenseScopeTabItem(
+            scope = ExpenseScope.BUSINESS,
+            title = "Business",
+            count = "${summary.businessCount}",
+            isSelected = selectedScope == ExpenseScope.BUSINESS,
+            onClick = { onSelectScope(ExpenseScope.BUSINESS) },
+            icon = Icons.Default.Business,
+            primaryColor = primaryColor,
+            isDark = isDark,
+            modifier = Modifier.weight(1f)
+        )
 
-            ExpenseScopeTabItem(
-                scope = ExpenseScope.HOME,
-                title = "Home",
-                count = "${summary.homeCount}",
-                isSelected = selectedScope == ExpenseScope.HOME,
-                onClick = { onSelectScope(ExpenseScope.HOME) },
-                icon = Icons.Default.Home,
-                primaryColor = primaryColor,
-                modifier = Modifier.weight(1f)
-            )
-        }
+        ExpenseScopeTabItem(
+            scope = ExpenseScope.HOME,
+            title = "Home",
+            count = "${summary.homeCount}",
+            isSelected = selectedScope == ExpenseScope.HOME,
+            onClick = { onSelectScope(ExpenseScope.HOME) },
+            icon = Icons.Default.Home,
+            primaryColor = primaryColor,
+            isDark = isDark,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -551,32 +547,40 @@ private fun ExpenseScopeTabItem(
     onClick: () -> Unit,
     icon: ImageVector,
     primaryColor: Color,
+    isDark: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    val dottedColor = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.45f else 0.25f)
+    Surface(
+        onClick = onClick,
         modifier = modifier
-            .height(44.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(if (isSelected) primaryColor else Color.Transparent)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
+            .height(40.dp)
+            .straightDottedLine(
+                color = dottedColor,
+                strokeWidth = if (isSelected) 2.dp else 1.2.dp,
+                dotLength = 4.dp,
+                spaceLength = 3.dp
+            ),
+        shape = RectangleShape,
+        color = Color.Transparent
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(horizontal = 4.dp)
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(16.dp)
+                tint = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(15.dp)
             )
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(5.dp))
             Text(
                 text = title,
                 fontSize = 12.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -685,22 +689,27 @@ private fun ExpenseHeroSummaryCard(
             ) {
                 ExpenseTimeFilter.values().forEach { filter ->
                     val isSelected = selectedTimeFilter == filter
+                    val dottedColor = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.45f else 0.25f)
                     Surface(
+                        onClick = { onSelectTimeFilter(filter) },
                         modifier = Modifier
                             .weight(1f)
                             .height(32.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onSelectTimeFilter(filter) },
-                        shape = RoundedCornerShape(8.dp),
-                        color = if (isSelected) primaryColor else if (isDark) Color(0x18FFFFFF) else Color(0x0C000000),
-                        border = BorderStroke(1.dp, if (isSelected) primaryColor else Color.Transparent)
+                            .straightDottedLine(
+                                color = dottedColor,
+                                strokeWidth = if (isSelected) 2.dp else 1.2.dp,
+                                dotLength = 4.dp,
+                                spaceLength = 3.dp
+                            ),
+                        shape = RectangleShape,
+                        color = Color.Transparent
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
                                 text = filter.label,
                                 fontSize = 10.5.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -1456,14 +1465,20 @@ private fun ExpenseAddEditSheetContent(
                     if (isCustomCat) {
                         item {
                             Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFF10B981).copy(alpha = 0.2f),
-                                border = BorderStroke(1.dp, Color(0xFF10B981)),
-                                modifier = Modifier.clickable { onCategoryChange(inputCat) }
+                                shape = RectangleShape,
+                                color = Color.Transparent,
+                                modifier = Modifier
+                                    .straightDottedLine(
+                                        color = Color(0xFF10B981),
+                                        strokeWidth = 1.3.dp,
+                                        dotLength = 4.dp,
+                                        spaceLength = 3.dp
+                                    )
+                                    .clickable { onCategoryChange(inputCat) }
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
@@ -1485,14 +1500,20 @@ private fun ExpenseAddEditSheetContent(
 
                     items(matchingCategories) { cat ->
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = primaryColor.copy(alpha = 0.15f),
-                            border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f)),
-                            modifier = Modifier.clickable { onCategoryChange(cat) }
+                            shape = RectangleShape,
+                            color = Color.Transparent,
+                            modifier = Modifier
+                                .straightDottedLine(
+                                    color = primaryColor.copy(alpha = 0.45f),
+                                    strokeWidth = 1.2.dp,
+                                    dotLength = 4.dp,
+                                    spaceLength = 3.dp
+                                )
+                                .clickable { onCategoryChange(cat) }
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
                             ) {
                                 Icon(
                                     imageVector = LedgerCategoryIcons.getCategoryIcon(cat),
@@ -1575,14 +1596,20 @@ private fun ExpenseAddEditSheetContent(
                     if (isCustomMode) {
                         item {
                             Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFF10B981).copy(alpha = 0.2f),
-                                border = BorderStroke(1.dp, Color(0xFF10B981)),
-                                modifier = Modifier.clickable { onPaymentModeChange(inputMode) }
+                                shape = RectangleShape,
+                                color = Color.Transparent,
+                                modifier = Modifier
+                                    .straightDottedLine(
+                                        color = Color(0xFF10B981),
+                                        strokeWidth = 1.3.dp,
+                                        dotLength = 4.dp,
+                                        spaceLength = 3.dp
+                                    )
+                                    .clickable { onPaymentModeChange(inputMode) }
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
@@ -1604,14 +1631,20 @@ private fun ExpenseAddEditSheetContent(
 
                     items(matchingModes) { mode ->
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = primaryColor.copy(alpha = 0.15f),
-                            border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f)),
-                            modifier = Modifier.clickable { onPaymentModeChange(mode) }
+                            shape = RectangleShape,
+                            color = Color.Transparent,
+                            modifier = Modifier
+                                .straightDottedLine(
+                                    color = primaryColor.copy(alpha = 0.45f),
+                                    strokeWidth = 1.2.dp,
+                                    dotLength = 4.dp,
+                                    spaceLength = 3.dp
+                                )
+                                .clickable { onPaymentModeChange(mode) }
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Payments,
@@ -1647,10 +1680,15 @@ private fun ExpenseAddEditSheetContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .border(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x28000000), RoundedCornerShape(10.dp))
+                    .straightDottedLine(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f),
+                        strokeWidth = 1.3.dp,
+                        dotLength = 4.dp,
+                        spaceLength = 3.dp
+                    )
                     .clickable { showDatePicker = true },
-                color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
+                shape = RectangleShape,
+                color = Color.Transparent
             ) {
                 Row(
                     modifier = Modifier
@@ -1757,45 +1795,59 @@ private fun ExpenseAddEditSheetContent(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Save and Cancel Buttons
+        // Save and Cancel Buttons (Frameless with straight dotted line)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Button(
+            Surface(
                 onClick = onCancel,
                 modifier = Modifier
                     .weight(1f)
-                    .height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isDark) Color(0x22FFFFFF) else Color(0x18000000),
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                )
+                    .height(46.dp)
+                    .straightDottedLine(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f),
+                        strokeWidth = 1.3.dp,
+                        dotLength = 4.dp,
+                        spaceLength = 3.dp
+                    ),
+                shape = RectangleShape,
+                color = Color.Transparent
             ) {
-                Text("Cancel", fontWeight = FontWeight.SemiBold)
+                Box(contentAlignment = Alignment.Center) {
+                    Text("Cancel", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                }
             }
 
-            Button(
+            Surface(
                 onClick = onSave,
                 enabled = !uiState.isSubmitting && uiState.formAmountText.isNotBlank(),
                 modifier = Modifier
                     .weight(1.5f)
-                    .height(50.dp)
+                    .height(46.dp)
+                    .straightDottedLine(
+                        color = Color(0xFFEF4444),
+                        strokeWidth = 1.8.dp,
+                        dotLength = 4.dp,
+                        spaceLength = 3.dp
+                    )
                     .testTag("form_save_expense_btn"),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFEF4444),
-                    contentColor = Color.White
-                )
+                shape = RectangleShape,
+                color = Color.Transparent
             ) {
-                Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (isEditing) "Update Expense" else "Save Expense",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isEditing) "Update Expense" else "Save Expense",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = Color(0xFFEF4444)
+                    )
+                }
             }
         }
 
