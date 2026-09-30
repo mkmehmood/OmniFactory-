@@ -44,6 +44,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -56,6 +58,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
@@ -184,9 +187,32 @@ fun Modifier.liquidGlassSurface(
     )
 
 /**
- * Standardized Liquid Glass Input Field across the entire application.
- * Incorporates modern translucent frosted glass, specular highlight curve,
- * crystalline perimeter border, and comprehensive Material 3 form affordances.
+ * Modifier that draws a crisp, straight dotted line at the bottom of the component.
+ */
+fun Modifier.straightDottedLine(
+    color: Color,
+    strokeWidth: Dp = 1.5.dp,
+    dotLength: Dp = 4.dp,
+    spaceLength: Dp = 3.dp
+): Modifier = this.drawBehind {
+    val strokePx = strokeWidth.toPx()
+    val y = size.height - (strokePx / 2f)
+    drawLine(
+        color = color,
+        start = Offset(0f, y),
+        end = Offset(size.width, y),
+        strokeWidth = strokePx,
+        pathEffect = PathEffect.dashPathEffect(
+            floatArrayOf(dotLength.toPx(), spaceLength.toPx()),
+            0f
+        )
+    )
+}
+
+/**
+ * Standardized Input Field with straight dotted line underline across the entire application.
+ * Replaces bulky boxed borders with a clean, straight dotted line baseline for compact app use
+ * and an appealing, modern look.
  */
 @Composable
 fun LiquidGlassTextField(
@@ -219,24 +245,29 @@ fun LiquidGlassTextField(
 ) {
     val skin = LocalAppThemeSkin.current
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val resolvedShape = shape ?: LocalShapeStructure.current.toInputShape()
 
     val isFocusedInternal by interactionSource.collectIsFocusedAsState()
     val isFieldFocused = forceFocused || isFocusedInternal
-    val effectiveBaseColor = containerBaseColor ?: skin.surfaceVariant
+
+    val dottedLineColor = when {
+        isError -> MaterialTheme.colorScheme.error
+        isFieldFocused -> accentColor
+        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f)
+    }
+    val dottedLineWidth = if (isFieldFocused) 2.0.dp else 1.3.dp
+    val dotLength = if (isFieldFocused) 4.5.dp else 3.5.dp
+    val spaceLength = if (isFieldFocused) 2.5.dp else 3.0.dp
 
     val fieldModifier = modifier
-        .liquidGlassSurface(
-            shape = resolvedShape,
-            elevation = if (isFieldFocused) 6.dp else 2.dp,
-            isDark = isDark,
-            isFocused = isFieldFocused,
-            accentColor = if (isError) MaterialTheme.colorScheme.error else accentColor,
-            containerBaseColor = effectiveBaseColor
+        .straightDottedLine(
+            color = dottedLineColor,
+            strokeWidth = dottedLineWidth,
+            dotLength = dotLength,
+            spaceLength = spaceLength
         )
         .let { if (testTag != null) it.testTag(testTag) else it }
 
-    OutlinedTextField(
+    TextField(
         value = value,
         onValueChange = onValueChange,
         modifier = fieldModifier,
@@ -258,14 +289,14 @@ fun LiquidGlassTextField(
         maxLines = maxLines,
         minLines = minLines,
         interactionSource = interactionSource,
-        shape = resolvedShape,
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Color.Transparent,
-            unfocusedBorderColor = Color.Transparent,
-            disabledBorderColor = Color.Transparent,
-            errorBorderColor = if (isError) MaterialTheme.colorScheme.error else Color.Transparent,
-            focusedContainerColor = Color.Transparent,
-            unfocusedContainerColor = Color.Transparent,
+        shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 0.dp, bottomEnd = 0.dp),
+        colors = TextFieldDefaults.colors(
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+            focusedContainerColor = accentColor.copy(alpha = if (isDark) 0.08f else 0.04f),
+            unfocusedContainerColor = (containerBaseColor ?: skin.surfaceVariant).copy(alpha = if (isDark) 0.18f else 0.12f),
             disabledContainerColor = Color.Transparent,
             cursorColor = accentColor,
             focusedTextColor = MaterialTheme.colorScheme.onSurface,
@@ -283,7 +314,7 @@ fun LiquidGlassTextField(
 }
 
 /**
- * Standardized Liquid Glass Search Field pill matching the pill navigation in the uploaded mockups.
+ * Standardized Search Field with straight dotted line underline.
  */
 @Composable
 fun LiquidGlassSearchField(
@@ -333,7 +364,6 @@ fun LiquidGlassSearchField(
             }
         },
         singleLine = true,
-        shape = CircleShape,
         modifier = modifier.fillMaxWidth(),
         accentColor = primaryColor,
         testTag = testTag

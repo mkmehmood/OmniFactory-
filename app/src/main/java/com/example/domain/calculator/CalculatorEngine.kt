@@ -16,8 +16,11 @@ object CalculatorEngine {
      * - 2 + 5 = 7
      * - 2 + 3 - 2 = (2 + 3) - 2 = 5 - 2 = 3
      * - 10 + 5 ÷ 2 = (10 + 5) ÷ 2 = 15 ÷ 2 = 7.5
+     * - 10 + 5 × 3 ÷ 5 = (10 + 5) × 3 ÷ 5 = 45 ÷ 5 = 9
      * - 100 + 10% = 110
      * - 100 - 10% = 90
+     * - 500 × 15% = 75
+     * - 50% = 0.5
      */
     fun evaluate(expression: String): CalculationResult {
         if (expression.isBlank()) {
@@ -30,7 +33,6 @@ object CalculatorEngine {
 
             // Trim trailing operators for calculation
             sanitized = sanitized.trimEnd('+', '-', '*', '/', '^')
-
             if (sanitized.isBlank()) return CalculationResult.Empty
 
             // Auto-close open parentheses
@@ -43,8 +45,8 @@ object CalculatorEngine {
             val tokens = tokenize(sanitized)
             if (tokens.isEmpty()) return CalculationResult.Empty
 
-            val resultValue = evaluateSequential(tokens)
-            return CalculationResult.Success(resultValue)
+            val resultValue = evaluateSequentialTokens(tokens)
+            return CalculationResult.Success(resultValue.stripTrailingZeros())
         } catch (e: ArithmeticException) {
             return CalculationResult.Error(e.message ?: "Math Error")
         } catch (e: Exception) {
@@ -83,6 +85,9 @@ object CalculatorEngine {
 
             when {
                 c.isDigit() || c == '.' -> {
+                    if (tokens.isNotEmpty() && (tokens.last() == ")" || tokens.last() == "%")) {
+                        tokens.add("*")
+                    }
                     val sb = StringBuilder()
                     while (i < len && (expr[i].isDigit() || expr[i] == '.')) {
                         sb.append(expr[i])
@@ -91,21 +96,27 @@ object CalculatorEngine {
                     tokens.add(sb.toString())
                     continue
                 }
-                c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '^' || c == '(' || c == ')' -> {
+                c == '(' -> {
+                    if (tokens.isNotEmpty() && (tokens.last() == ")" || tokens.last() == "%" || tokens.last().matches(Regex("^-?\\d+(\\.\\d+)?$")))) {
+                        tokens.add("*")
+                    }
+                    tokens.add("(")
+                }
+                c == '+' || c == '-' || c == '*' || c == '/' || c == '%' || c == '^' || c == ')' -> {
                     // Check for unary minus:
                     if (c == '-' && (tokens.isEmpty() || tokens.last() in listOf("+", "-", "*", "/", "(", "%", "^"))) {
-                        i++
-                        val sb = StringBuilder("-")
-                        while (i < len && (expr[i].isDigit() || expr[i] == '.')) {
-                            sb.append(expr[i])
+                        if (i + 1 < len && (expr[i + 1].isDigit() || expr[i + 1] == '.')) {
                             i++
-                        }
-                        if (sb.length > 1) {
+                            val sb = StringBuilder("-")
+                            while (i < len && (expr[i].isDigit() || expr[i] == '.')) {
+                                sb.append(expr[i])
+                                i++
+                            }
                             tokens.add(sb.toString())
+                            continue
                         } else {
                             tokens.add("-")
                         }
-                        continue
                     } else {
                         tokens.add(c.toString())
                     }
@@ -117,11 +128,10 @@ object CalculatorEngine {
     }
 
     /**
-     * Sequential Left-To-Right execution.
-     * Evaluates sub-expressions within parentheses first, and chains operations in series.
+     * Resolves parentheses and then performs series/sequential left-to-right evaluation.
      */
-    private fun evaluateSequential(tokens: List<String>): BigDecimal {
-        // Resolve parentheses recursively first if present
+    private fun evaluateSequentialTokens(tokens: List<String>): BigDecimal {
+        // Resolve parentheses recursively first
         val resolvedTokens = mutableListOf<String>()
         var i = 0
         while (i < tokens.size) {
@@ -138,7 +148,7 @@ object CalculatorEngine {
                     }
                     i++
                 }
-                val subResult = evaluateSequential(sub)
+                val subResult = evaluateSequentialTokens(sub)
                 resolvedTokens.add(subResult.toPlainString())
             } else {
                 resolvedTokens.add(tokens[i])
@@ -148,11 +158,22 @@ object CalculatorEngine {
 
         if (resolvedTokens.isEmpty()) return BigDecimal.ZERO
 
-        // Sequential computation: acc starts with the first operand, then operator + operand pairs
-        var acc = resolvedTokens[0].toBigDecimalOrNull()
-            ?: throw IllegalArgumentException("Invalid initial number: ${resolvedTokens[0]}")
+        // Handle unary minus at start if present before resolved expression
+        var startIndex = 0
+        var isInitialNegated = false
+        if (resolvedTokens[0] == "-") {
+            isInitialNegated = true
+            startIndex = 1
+        }
+        if (startIndex >= resolvedTokens.size) return BigDecimal.ZERO
 
-        var idx = 1
+        var acc = resolvedTokens[startIndex].toBigDecimalOrNull()
+            ?: throw IllegalArgumentException("Invalid initial number: ${resolvedTokens[startIndex]}")
+        if (isInitialNegated) {
+            acc = acc.negate()
+        }
+
+        var idx = startIndex + 1
         while (idx < resolvedTokens.size) {
             val op = resolvedTokens[idx]
             if (op == "%") {
@@ -166,16 +187,33 @@ object CalculatorEngine {
                 break
             }
 
-            val nextToken = resolvedTokens[idx + 1]
+            var nextToken = resolvedTokens[idx + 1]
+            var isNextNegated = false
+            var consumedSteps = 2
+
+            // Handle unary minus on the operand, e.g. 5 * - 2
+            if (nextToken == "-") {
+                if (idx + 2 < resolvedTokens.size) {
+                    isNextNegated = true
+                    nextToken = resolvedTokens[idx + 2]
+                    consumedSteps = 3
+                } else {
+                    break
+                }
+            }
+
             var nextNum = nextToken.toBigDecimalOrNull()
                 ?: throw IllegalArgumentException("Invalid operand: $nextToken")
+            if (isNextNegated) {
+                nextNum = nextNum.negate()
+            }
 
-            var consumedSteps = 2
-            var isPercent = false
             // Check if next number has an immediate percent attached (e.g. 100 + 10%)
-            if (idx + 2 < resolvedTokens.size && resolvedTokens[idx + 2] == "%") {
+            var isPercent = false
+            val percentIndex = idx + consumedSteps
+            if (percentIndex < resolvedTokens.size && resolvedTokens[percentIndex] == "%") {
                 isPercent = true
-                consumedSteps = 3
+                consumedSteps++
             }
 
             acc = when (op) {
@@ -222,7 +260,7 @@ object CalculatorEngine {
             idx += consumedSteps
         }
 
-        return acc.stripTrailingZeros()
+        return acc
     }
 
     /**

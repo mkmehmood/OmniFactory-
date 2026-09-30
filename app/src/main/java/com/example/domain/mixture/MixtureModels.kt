@@ -84,7 +84,8 @@ object MixtureCalculatorEngine {
      * Calculates simplified whole-number ratio (e.g. 10 : 1 or 5 : 2 : 1) from list of ingredients.
      */
     fun calculateSimplifiedRatio(ingredients: List<TargetIngredient>): RatioCalculationResult {
-        if (ingredients.isEmpty()) {
+        val validIngredients = ingredients.filter { it.targetQuantity > 0.0 }
+        if (validIngredients.isEmpty()) {
             return RatioCalculationResult(
                 simplifiedRatioString = "No ingredients",
                 ratioParts = emptyList(),
@@ -94,11 +95,11 @@ object MixtureCalculatorEngine {
             )
         }
 
-        val totalWeight = ingredients.sumOf { it.targetQuantity }
-        val primaryUnit = ingredients.firstOrNull()?.unit ?: "kg"
+        val totalWeight = validIngredients.sumOf { it.targetQuantity }
+        val primaryUnit = validIngredients.firstOrNull()?.unit ?: "kg"
 
-        if (ingredients.size == 1) {
-            val item = ingredients.first()
+        if (validIngredients.size == 1) {
+            val item = validIngredients.first()
             return RatioCalculationResult(
                 simplifiedRatioString = "${item.name} (1)",
                 ratioParts = listOf(item.name to 1L),
@@ -110,7 +111,7 @@ object MixtureCalculatorEngine {
 
         // To handle fractional quantities (e.g. 2.5, 0.5, 1.25), scale all up to integers (by factor of 100 or 1000)
         val scalingFactor = 1000.0
-        val integerQuantities = ingredients.map {
+        val integerQuantities = validIngredients.map {
             max(1L, (it.targetQuantity * scalingFactor).roundToLong())
         }
 
@@ -120,9 +121,9 @@ object MixtureCalculatorEngine {
             commonGcd = gcd(commonGcd, integerQuantities[i])
         }
 
-        val reducedParts = ingredients.indices.map { i ->
+        val reducedParts = validIngredients.indices.map { i ->
             val reduced = max(1L, integerQuantities[i] / commonGcd)
-            ingredients[i].name to reduced
+            validIngredients[i].name to reduced
         }
 
         val ratioString = reducedParts.joinToString(" : ") { "${it.first} (${it.second})" }

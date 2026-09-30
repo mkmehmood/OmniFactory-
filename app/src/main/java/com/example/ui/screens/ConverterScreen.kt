@@ -83,6 +83,7 @@ import com.example.ui.ConverterUiState
 import com.example.ui.ConverterViewModel
 import com.example.ui.components.BlinkingCursorPointer
 import com.example.ui.components.CurrencySearchBottomSheet
+import com.example.ui.components.straightDottedLine
 import com.example.ui.components.SmartStationKeypad
 import com.example.ui.theme.AnimationIntensity
 import com.example.ui.theme.ComponentSizeStyle
@@ -726,21 +727,22 @@ private fun CurrencyConverterModule(
                         }
                     }
 
-                    // Smart Data-Entry Amount Input Box
+                    // Smart Data-Entry Amount Input Box with Straight Dotted Line
+                    val currencyDotColor = if (isAmountFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
                     Surface(
                         modifier = Modifier
                             .width(170.dp)
-                            .clip(inputShape)
-                            .border(
-                                1.5.dp,
-                                if (isAmountFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
-                                inputShape
+                            .straightDottedLine(
+                                color = currencyDotColor,
+                                strokeWidth = if (isAmountFocused) 2.dp else 1.3.dp,
+                                dotLength = 4.dp,
+                                spaceLength = 3.dp
                             )
                             .clickable {
                                 onFieldClicked("currency_amount", "Amount in ${fromCurrency.code}")
                             }
                             .testTag("currency_amount_input"),
-                        shape = inputShape,
+                        shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
                         color = if (isAmountFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
                     ) {
                         Row(
@@ -1041,18 +1043,19 @@ private fun BmiConverterModule(
                         val isHeightFocused = focusedFieldId == "bmi_height_metric"
 
                         // Weight Metric
+                        val weightDotColor = if (isWeightFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(inputShape)
-                                .border(
-                                    1.5.dp,
-                                    if (isWeightFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
-                                    inputShape
+                                .straightDottedLine(
+                                    color = weightDotColor,
+                                    strokeWidth = if (isWeightFocused) 2.dp else 1.3.dp,
+                                    dotLength = 4.dp,
+                                    spaceLength = 3.dp
                                 )
                                 .clickable { onFieldClicked("bmi_weight_metric", "Weight (kg)") }
                                 .testTag("bmi_input_weight_metric"),
-                            shape = inputShape,
+                            shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
                             color = if (isWeightFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
                         ) {
                             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
@@ -1068,18 +1071,19 @@ private fun BmiConverterModule(
                         }
 
                         // Height Metric
+                        val heightDotColor = if (isHeightFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(inputShape)
-                                .border(
-                                    1.5.dp,
-                                    if (isHeightFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
-                                    inputShape
+                                .straightDottedLine(
+                                    color = heightDotColor,
+                                    strokeWidth = if (isHeightFocused) 2.dp else 1.3.dp,
+                                    dotLength = 4.dp,
+                                    spaceLength = 3.dp
                                 )
                                 .clickable { onFieldClicked("bmi_height_metric", "Height (cm)") }
                                 .testTag("bmi_input_height_metric"),
-                            shape = inputShape,
+                            shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
                             color = if (isHeightFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
                         ) {
                             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
@@ -1099,18 +1103,19 @@ private fun BmiConverterModule(
                     val isFeetFocused = focusedFieldId == "bmi_feet_imperial"
                     val isInchesFocused = focusedFieldId == "bmi_inches_imperial"
 
+                    val impWeightDotColor = if (isImpWeightFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(inputShape)
-                            .border(
-                                1.5.dp,
-                                if (isImpWeightFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
-                                inputShape
+                            .straightDottedLine(
+                                color = impWeightDotColor,
+                                strokeWidth = if (isImpWeightFocused) 2.dp else 1.3.dp,
+                                dotLength = 4.dp,
+                                spaceLength = 3.dp
                             )
                             .clickable { onFieldClicked("bmi_weight_imperial", "Weight (lbs)") }
                             .testTag("bmi_input_weight_imperial"),
-                        shape = inputShape,
+                        shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
                         color = if (isImpWeightFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
                     ) {
                         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
@@ -1129,18 +1134,19 @@ private fun BmiConverterModule(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        val feetDotColor = if (isFeetFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(inputShape)
-                                .border(
-                                    1.5.dp,
-                                    if (isFeetFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
-                                    inputShape
+                                .straightDottedLine(
+                                    color = feetDotColor,
+                                    strokeWidth = if (isFeetFocused) 2.dp else 1.3.dp,
+                                    dotLength = 4.dp,
+                                    spaceLength = 3.dp
                                 )
                                 .clickable { onFieldClicked("bmi_feet_imperial", "Height (Feet)") }
                                 .testTag("bmi_input_feet"),
-                            shape = inputShape,
+                            shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
                             color = if (isFeetFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
                         ) {
                             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
@@ -1155,18 +1161,19 @@ private fun BmiConverterModule(
                             }
                         }
 
+                        val inchesDotColor = if (isInchesFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(inputShape)
-                                .border(
-                                    1.5.dp,
-                                    if (isInchesFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
-                                    inputShape
+                                .straightDottedLine(
+                                    color = inchesDotColor,
+                                    strokeWidth = if (isInchesFocused) 2.dp else 1.3.dp,
+                                    dotLength = 4.dp,
+                                    spaceLength = 3.dp
                                 )
                                 .clickable { onFieldClicked("bmi_inches_imperial", "Inches (0-11)") }
                                 .testTag("bmi_input_inches"),
-                            shape = inputShape,
+                            shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
                             color = if (isInchesFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
                         ) {
                             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
@@ -1394,21 +1401,22 @@ private fun StandardUnitsConverterModule(
                         }
                     }
 
-                    // Value input box (smart keypad trigger)
+                    // Value input box (smart keypad trigger) with straight dotted line
+                    val stdDotColor = if (isInputFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
                     Surface(
                         modifier = Modifier
                             .width(160.dp)
-                            .clip(inputShape)
-                            .border(
-                                1.5.dp,
-                                if (isInputFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
-                                inputShape
+                            .straightDottedLine(
+                                color = stdDotColor,
+                                strokeWidth = if (isInputFocused) 2.dp else 1.3.dp,
+                                dotLength = 4.dp,
+                                spaceLength = 3.dp
                             )
                             .clickable {
                                 onFieldClicked("standard_input", "${fromUnit.name} (${fromUnit.symbol})")
                             }
                             .testTag("standard_value_input"),
-                        shape = inputShape,
+                        shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
                         color = if (isInputFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
                     ) {
                         Row(
@@ -1692,21 +1700,22 @@ private fun TemperatureConverterModule(
                         }
                     }
 
-                    // Smart Input Field
+                    // Smart Input Field with straight dotted line
+                    val tempDotColor = if (isTempFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
                     Surface(
                         modifier = Modifier
                             .width(160.dp)
-                            .clip(inputShape)
-                            .border(
-                                1.5.dp,
-                                if (isTempFocused) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
-                                inputShape
+                            .straightDottedLine(
+                                color = tempDotColor,
+                                strokeWidth = if (isTempFocused) 2.dp else 1.3.dp,
+                                dotLength = 4.dp,
+                                spaceLength = 3.dp
                             )
                             .clickable {
                                 onFieldClicked("temp_input", "Temperature (${uiState.tempFromUnit.symbol})")
                             }
                             .testTag("temp_input_field"),
-                        shape = inputShape,
+                        shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
                         color = if (isTempFocused) primaryColor.copy(alpha = 0.08f) else Color.Transparent
                     ) {
                         Row(
@@ -2100,17 +2109,18 @@ private fun SmartNumberBaseCard(
 
             Spacer(modifier = Modifier.height(6.dp))
 
+            val numDotColor = if (isFocused) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(inputShape)
-                    .border(
-                        1.5.dp,
-                        if (isFocused) accentColor else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
-                        inputShape
+                    .straightDottedLine(
+                        color = numDotColor,
+                        strokeWidth = if (isFocused) 2.dp else 1.3.dp,
+                        dotLength = 4.dp,
+                        spaceLength = 3.dp
                     )
                     .testTag(testTag),
-                shape = inputShape,
+                shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp),
                 color = if (isFocused) accentColor.copy(alpha = 0.08f) else Color.Transparent
             ) {
                 Row(

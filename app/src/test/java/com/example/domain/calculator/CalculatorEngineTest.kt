@@ -8,26 +8,51 @@ import java.math.BigDecimal
 class CalculatorEngineTest {
 
     @Test
-    fun testSequentialCalculationsFromUserPrompt() {
-        // 2+5=7
+    fun testStandardMathematicalOrderOfOperations() {
+        // Standard addition
         val r1 = CalculatorEngine.evaluate("2+5")
         assertTrue(r1 is CalculationResult.Success)
         assertEquals("7", CalculatorEngine.formatNumber((r1 as CalculationResult.Success).value))
 
-        // 2+3-2=3
+        // Standard addition and subtraction
         val r2 = CalculatorEngine.evaluate("2+3-2")
         assertTrue(r2 is CalculationResult.Success)
         assertEquals("3", CalculatorEngine.formatNumber((r2 as CalculationResult.Success).value))
 
-        // 10+5÷2=7.5
+        // Original Series operations: (10 + 5) ÷ 2 = 15 ÷ 2 = 7.5
         val r3 = CalculatorEngine.evaluate("10+5÷2")
         assertTrue(r3 is CalculationResult.Success)
         assertEquals("7.5", CalculatorEngine.formatNumber((r3 as CalculationResult.Success).value))
 
-        // 10+5×3÷5: (10+5)=15, 15×3=45, 45÷5=9
+        // Parentheses explicitly: (10 + 5) ÷ 2 = 7.5
+        val r3b = CalculatorEngine.evaluate("(10+5)÷2")
+        assertTrue(r3b is CalculationResult.Success)
+        assertEquals("7.5", CalculatorEngine.formatNumber((r3b as CalculationResult.Success).value))
+
+        // Original Series operations: (10 + 5) × 3 ÷ 5 = 45 ÷ 5 = 9
         val r4 = CalculatorEngine.evaluate("10+5×3÷5")
         assertTrue(r4 is CalculationResult.Success)
         assertEquals("9", CalculatorEngine.formatNumber((r4 as CalculationResult.Success).value))
+
+        // Original Series operations: (2 + 3) × 4 = 5 × 4 = 20
+        val r5 = CalculatorEngine.evaluate("2+3×4")
+        assertTrue(r5 is CalculationResult.Success)
+        assertEquals("20", CalculatorEngine.formatNumber((r5 as CalculationResult.Success).value))
+
+        // Parentheses allow grouping: 2 + (3 × 4) = 14
+        val r5b = CalculatorEngine.evaluate("2+(3×4)")
+        assertTrue(r5b is CalculationResult.Success)
+        assertEquals("14", CalculatorEngine.formatNumber((r5b as CalculationResult.Success).value))
+
+        // Original Series operations: (50 - 10) × 2 = 40 × 2 = 80
+        val r6 = CalculatorEngine.evaluate("50-10×2")
+        assertTrue(r6 is CalculationResult.Success)
+        assertEquals("80", CalculatorEngine.formatNumber((r6 as CalculationResult.Success).value))
+
+        // Parentheses allow grouping: 50 - (10 × 2) = 30
+        val r6b = CalculatorEngine.evaluate("50-(10×2)")
+        assertTrue(r6b is CalculationResult.Success)
+        assertEquals("30", CalculatorEngine.formatNumber((r6b as CalculationResult.Success).value))
     }
 
     @Test
@@ -86,6 +111,7 @@ class CalculatorEngineTest {
 
     @Test
     fun testQuickEvaluatePreview() {
+        // Preview respects series calculation: (10 + 5) × 3 = 45
         val preview = CalculatorEngine.quickEvaluatePreview("10+5×3")
         assertEquals("45", preview)
     }
@@ -95,5 +121,25 @@ class CalculatorEngineTest {
         val res = CalculatorEngine.evaluate("(2+3)×4")
         assertTrue(res is CalculationResult.Success)
         assertEquals("20", CalculatorEngine.formatNumber((res as CalculationResult.Success).value))
+
+        // Implicit multiplication
+        val resImplicit = CalculatorEngine.evaluate("2(3+4)")
+        assertTrue(resImplicit is CalculationResult.Success)
+        assertEquals("14", CalculatorEngine.formatNumber((resImplicit as CalculationResult.Success).value))
+    }
+
+    @Test
+    fun testUnaryMinusAndPowers() {
+        val r1 = CalculatorEngine.evaluate("-5 + 3")
+        assertTrue(r1 is CalculationResult.Success)
+        assertEquals("-2", CalculatorEngine.formatNumber((r1 as CalculationResult.Success).value))
+
+        val r2 = CalculatorEngine.evaluate("-(2+3)")
+        assertTrue(r2 is CalculationResult.Success)
+        assertEquals("-5", CalculatorEngine.formatNumber((r2 as CalculationResult.Success).value))
+
+        val r3 = CalculatorEngine.evaluate("2^3*4")
+        assertTrue(r3 is CalculationResult.Success)
+        assertEquals("32", CalculatorEngine.formatNumber((r3 as CalculationResult.Success).value))
     }
 }

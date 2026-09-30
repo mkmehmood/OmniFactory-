@@ -160,7 +160,7 @@ fun AppNavigationDrawer(
                 item {
                     DrawerNavItem(
                         label = "Standard Calculator",
-                        subtitle = "Sequential math & history tape",
+                        subtitle = "Standard math & history tape",
                         icon = Icons.Default.Calculate,
                         isSelected = currentDestination == DrawerDestination.CALCULATOR,
                         onClick = { onSelectDestination(DrawerDestination.CALCULATOR) },

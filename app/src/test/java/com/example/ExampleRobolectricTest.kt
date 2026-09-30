@@ -31,16 +31,21 @@ class ExampleRobolectricTest {
   }
 
   @Test
-  fun `test sequential series order of operations`() {
-    // 10 + 5 ÷ 2 = (10 + 5) ÷ 2 = 7.5
+  fun `test standard mathematical order of operations`() {
+    // 10 + 5 ÷ 2 = 10 + 2.5 = 12.5
     val result = CalculatorEngine.evaluate("10+5÷2")
     assertTrue(result is CalculationResult.Success)
-    assertEquals(0, BigDecimal("7.5").compareTo((result as CalculationResult.Success).value))
+    assertEquals(0, BigDecimal("12.5").compareTo((result as CalculationResult.Success).value))
 
-    // 10 + 5 × 3 ÷ 5 = (10 + 5) × 3 ÷ 5 = 15 × 3 ÷ 5 = 45 ÷ 5 = 9
+    // (10 + 5) ÷ 2 = 7.5
+    val resultParentheses = CalculatorEngine.evaluate("(10+5)÷2")
+    assertTrue(resultParentheses is CalculationResult.Success)
+    assertEquals(0, BigDecimal("7.5").compareTo((resultParentheses as CalculationResult.Success).value))
+
+    // 10 + 5 × 3 ÷ 5 = 10 + (15 ÷ 5) = 13
     val result2 = CalculatorEngine.evaluate("10+5×3÷5")
     assertTrue(result2 is CalculationResult.Success)
-    assertEquals(0, BigDecimal("9").compareTo((result2 as CalculationResult.Success).value))
+    assertEquals(0, BigDecimal("13").compareTo((result2 as CalculationResult.Success).value))
   }
 
   @Test
