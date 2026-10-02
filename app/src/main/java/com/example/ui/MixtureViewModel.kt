@@ -438,7 +438,9 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
         _uiState.update { current ->
             val updatedList = current.targetIngredients + newIngredient
             val anchorId = if (current.anchorIngredientId.isEmpty()) newIngredient.id else current.anchorIngredientId
-            val updatedActuals = current.actualAddedTexts + (newIngredient.id to qty.toString())
+            val isFirst = current.targetIngredients.isEmpty()
+            val initialActual = if (isFirst) qty.toString() else "0"
+            val updatedActuals = current.actualAddedTexts + (newIngredient.id to initialActual)
             val updated = current.copy(
                 targetIngredients = updatedList,
                 anchorIngredientId = anchorId,
@@ -553,8 +555,10 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
             val text = state.actualAddedTexts[item.id]
             val numeric = if (text != null && text.isBlank()) {
                 0.0
+            } else if (text != null) {
+                text.replace(",", ".").replace(" ", "").trim().toDoubleOrNull() ?: 0.0
             } else {
-                text?.replace(",", ".")?.replace(" ", "")?.trim()?.toDoubleOrNull() ?: item.targetQuantity
+                if (item.id == state.anchorIngredientId) item.targetQuantity else 0.0
             }
             item.id to numeric
         }

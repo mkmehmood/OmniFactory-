@@ -93,17 +93,18 @@ class MixtureCalculatorEngineTest {
     }
 
     @Test
-    fun testRecalibrate_AnchorReduced_InTubMode_CannotRemove() {
+    fun testRecalibrate_AnchorReduced_AdditionOption_CalculatesOtherComponentsToAdd() {
         val ingredients = listOf(
             TargetIngredient(id = "1", name = "Cement", targetQuantity = 100.0, unit = "kg"),
             TargetIngredient(id = "2", name = "Sand", targetQuantity = 200.0, unit = "kg")
         )
-        // User reduced Cement to 50 kg (0.50x), but 200 kg of Sand is ALREADY in the tub (1.00x)!
-        // Because mixture is in the tub and sand cannot be removed,
-        // Option 1 scales up to 1.00x: Cement must be added (+50 kg) to balance the 200 kg of sand in the tub.
+        // User reduced Cement (Anchor) to 50 kg (0.50x scale).
+        // Sand has not been added yet (0 kg in tub).
+        // Option 1 must NOT tell the user to add Cement! Cement is locked at 50 kg (0 to add).
+        // Option 1 calculates that Sand needs +100 kg added to match the scaled anchor.
         val actualMap = mapOf(
             "1" to 50.0,
-            "2" to 200.0
+            "2" to 0.0
         )
         val result = MixtureCalculatorEngine.recalibrate(
             ingredients = ingredients,
@@ -112,12 +113,46 @@ class MixtureCalculatorEngineTest {
             mode = MixtureAdjustmentMode.ADD_TO_BALANCE
         )
 
-        assertEquals(1.00, result.scaleFactor, 0.001)
-        assertEquals(300.0, result.totalNewMixtureWeight, 0.001) // 100 + 200
+        assertEquals(0.50, result.scaleFactor, 0.001)
+        assertEquals(150.0, result.totalNewMixtureWeight, 0.001) // 50 + 100
         val cement = result.proportions.find { it.ingredientId == "1" }!!
-        assertEquals(50.0, cement.stillNeeded, 0.001) // Need to ADD +50 kg cement
+        assertEquals(0.0, cement.stillNeeded, 0.001) // Anchor must NEVER be added!
+        assertEquals(50.0, cement.newRequiredTotal, 0.001)
+
         val sand = result.proportions.find { it.ingredientId == "2" }!!
-        assertEquals(0.0, sand.stillNeeded, 0.001) // 0 needed, sand is already in tub
+        assertEquals(100.0, sand.newRequiredTotal, 0.001)
+        assertEquals(100.0, sand.stillNeeded, 0.001) // Need to ADD +100 kg sand
+        assertEquals(100.0, result.totalStillNeededWeight, 0.001)
+    }
+
+    @Test
+    fun testRecalibrate_AnchorReduced_WithPartialSandInTub() {
+        val ingredients = listOf(
+            TargetIngredient(id = "1", name = "Cement", targetQuantity = 100.0, unit = "kg"),
+            TargetIngredient(id = "2", name = "Sand", targetQuantity = 200.0, unit = "kg")
+        )
+        // User reduced Cement to 50 kg (0.50x scale).
+        // 40 kg of Sand is already in the tub.
+        // Cement Still Needed = 0.0 kg.
+        // Sand Scaled Target = 100 kg -> Still Needed = 100 - 40 = 60 kg!
+        val actualMap = mapOf(
+            "1" to 50.0,
+            "2" to 40.0
+        )
+        val result = MixtureCalculatorEngine.recalibrate(
+            ingredients = ingredients,
+            anchorId = "1",
+            actualAddedMap = actualMap,
+            mode = MixtureAdjustmentMode.ADD_TO_BALANCE
+        )
+
+        val cement = result.proportions.find { it.ingredientId == "1" }!!
+        assertEquals(0.0, cement.stillNeeded, 0.001)
+
+        val sand = result.proportions.find { it.ingredientId == "2" }!!
+        assertEquals(100.0, sand.newRequiredTotal, 0.001)
+        assertEquals(60.0, sand.stillNeeded, 0.001)
+        assertEquals(60.0, result.totalStillNeededWeight, 0.001)
     }
 
     @Test
@@ -148,20 +183,22 @@ class MixtureCalculatorEngineTest {
         val sand = result.proportions.find { it.ingredientId == "2" }!!
         assertEquals(100.0, sand.newRequiredTotal, 0.001)
         assertEquals(100.0, sand.excessAmount, 0.001) // Must reduce 100 kg
+        assertEquals(100.0, sand.reductionFromOriginal, 0.001) // 200 - 100
     }
 
     @Test
-    fun testRecalibrate_AnchorAdded_InTubAndReduceModes() {
+    fun testRecalibrate_AnchorAdded_AdditionOption_CalculatesOtherComponentsToAdd() {
         val ingredients = listOf(
             TargetIngredient(id = "1", name = "Cement", targetQuantity = 100.0, unit = "kg"),
             TargetIngredient(id = "2", name = "Sand", targetQuantity = 200.0, unit = "kg")
         )
-        // User added 150 kg of Cement (1.50x), Sand in tub is 350 kg (1.75x ratio).
-        // Option 1: In-Tub mode -> Limiting factor is Sand (1.75x). Scale = 1.75x.
-        // Cement required = 175 kg. In tub = 150 kg -> ADD +25 kg Cement!
+        // User added 120 kg of Cement (1.20x scale).
+        // Sand in tub is 150 kg.
+        // Option 1: Cement is locked at 120 kg (0 to add).
+        // Sand target is 240 kg. In tub = 150 kg -> ADD +90 kg Sand!
         val actualMap = mapOf(
-            "1" to 150.0,
-            "2" to 350.0
+            "1" to 120.0,
+            "2" to 150.0
         )
         val addResult = MixtureCalculatorEngine.recalibrate(
             ingredients = ingredients,
@@ -169,20 +206,13 @@ class MixtureCalculatorEngineTest {
             actualAddedMap = actualMap,
             mode = MixtureAdjustmentMode.ADD_TO_BALANCE
         )
-        assertEquals(1.75, addResult.scaleFactor, 0.001)
+        assertEquals(1.20, addResult.scaleFactor, 0.001)
         val cementAdd = addResult.proportions.find { it.ingredientId == "1" }!!
-        assertEquals(25.0, cementAdd.stillNeeded, 0.001)
+        assertEquals(0.0, cementAdd.stillNeeded, 0.001) // Anchor must NEVER be added!
 
-        // Option 2: Strictly scale to Cement = 150 kg (1.50x).
-        // Sand required = 300 kg. In tub = 350 kg -> EXCESS = 50 kg to REDUCE / REMOVE!
-        val reduceResult = MixtureCalculatorEngine.recalibrate(
-            ingredients = ingredients,
-            anchorId = "1",
-            actualAddedMap = actualMap,
-            mode = MixtureAdjustmentMode.REDUCE_TO_TARGET
-        )
-        assertEquals(1.50, reduceResult.scaleFactor, 0.001)
-        val sandReduce = reduceResult.proportions.find { it.ingredientId == "2" }!!
-        assertEquals(50.0, sandReduce.excessAmount, 0.001)
+        val sandAdd = addResult.proportions.find { it.ingredientId == "2" }!!
+        assertEquals(240.0, sandAdd.newRequiredTotal, 0.001)
+        assertEquals(90.0, sandAdd.stillNeeded, 0.001)
+        assertEquals(90.0, addResult.totalStillNeededWeight, 0.001)
     }
 }

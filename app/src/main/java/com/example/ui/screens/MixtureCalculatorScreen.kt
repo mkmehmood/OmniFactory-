@@ -1993,7 +1993,20 @@ private fun Step4RecalibratedProportions(
                                     modifier = Modifier.weight(1.2f),
                                     horizontalAlignment = Alignment.End
                                 ) {
-                                    if (addRow.stillNeeded > 0.0001) {
+                                    if (addRow.isAnchor) {
+                                        Text(
+                                            text = "0 (Anchor Scaled)",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontFamily = DigitalMonospaceFont,
+                                            color = primaryColor
+                                        )
+                                        Text(
+                                            text = "Set: ${addRow.formattedNewTotal}",
+                                            fontSize = 9.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    } else if (addRow.stillNeeded > 0.0001) {
                                         Text(
                                             text = "+${addRow.formattedStillNeeded}",
                                             fontSize = 11.sp,
@@ -2008,7 +2021,7 @@ private fun Step4RecalibratedProportions(
                                         )
                                     } else {
                                         Text(
-                                            text = "0 Balanced",
+                                            text = "0 (In Tub >= Target)",
                                             fontSize = 10.sp,
                                             fontFamily = DigitalMonospaceFont,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -2347,20 +2360,37 @@ private fun Step4RecalibratedProportions(
                                 horizontalAlignment = Alignment.End
                             ) {
                                 if (isOption1) {
-                                    // Option 1: Always Additions
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = if (hasStillNeeded) Color(0xFF10B981).copy(alpha = 0.15f) else Color.Transparent
-                                    ) {
-                                        Text(
-                                            text = if (hasStillNeeded) "+${prop.formattedStillNeeded}" else "0 ${prop.unit}",
-                                            fontSize = 11.sp,
-                                            fontFamily = DigitalMonospaceFont,
-                                            fontWeight = if (hasStillNeeded) FontWeight.Bold else FontWeight.Normal,
-                                            color = if (hasStillNeeded) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            textAlign = TextAlign.End,
-                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                        )
+                                    // Option 1: Always Additions (Anchor is locked at scaled quantity, calculates other components to add)
+                                    if (prop.isAnchor) {
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = primaryColor.copy(alpha = 0.12f)
+                                        ) {
+                                            Text(
+                                                text = "0 (Anchor Scaled)",
+                                                fontSize = 10.sp,
+                                                fontFamily = DigitalMonospaceFont,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = primaryColor,
+                                                textAlign = TextAlign.End,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    } else {
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = if (hasStillNeeded) Color(0xFF10B981).copy(alpha = 0.15f) else Color.Transparent
+                                        ) {
+                                            Text(
+                                                text = if (hasStillNeeded) "+${prop.formattedStillNeeded} ADD" else "0 (In Tub >= Target)",
+                                                fontSize = 10.sp,
+                                                fontFamily = DigitalMonospaceFont,
+                                                fontWeight = if (hasStillNeeded) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (hasStillNeeded) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                textAlign = TextAlign.End,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                            )
+                                        }
                                     }
                                 } else {
                                     // Option 2: Reductions or Additions
@@ -3068,27 +3098,32 @@ private fun buildRecalibrationReportText(result: RecalibrationResult): String {
         appendLine("Anchor Component: ${result.anchorIngredientName}")
         appendLine("Target Recipe: ${formatNumber(result.anchorTargetQty)} $unit")
         appendLine("Actual in Tub: ${formatNumber(result.anchorActualAdded)} $unit")
-        appendLine("Strict Anchor Scale: ${result.formattedStrictAnchorScaleFactor}")
-        appendLine("In-Tub Scale (Cannot Remove): ${result.formattedInTubScaleFactor}")
+        appendLine("Scaled Anchor Factor: ${result.formattedStrictAnchorScaleFactor}")
         appendLine("Active Adjustment Pathway: ${result.adjustmentMode.title}")
         appendLine("")
         appendLine("----------------------------------------")
-        appendLine("OPTION 1: IN-TUB ADDITIONS (CANNOT REMOVE)")
+        appendLine("OPTION 1: ADD OTHER COMPONENTS TO MATCH SCALED ANCHOR")
         appendLine("----------------------------------------")
-        appendLine("Scale Factor: ${result.formattedInTubScaleFactor} | Total Balanced Weight: ${result.formattedAddModeTotalWeight}")
-        appendLine("Limiting In-Tub Component: ${result.limitingIngredientName}")
+        appendLine("Anchor Locked: ${result.anchorIngredientName} = ${formatNumber(result.anchorActualAdded)} $unit (0 to add)")
         appendLine("Total Material to Add: +${result.formattedTotalStillNeededWeight}")
+        appendLine("Total Mixture Weight: ${result.formattedTotalNewWeight}")
         result.addModeProportions.forEach { prop ->
-            val needed = if (prop.stillNeeded > 0.0001) "+${prop.formattedStillNeeded} [ADD TO TUB]" else "0 $unit [Balanced]"
-            appendLine("• ${prop.ingredientName}: Target=${prop.formattedTarget} | In-Tub=${prop.formattedAlreadyAdded} | Balanced Total=${prop.formattedNewTotal} | To Add: $needed")
+            val toAdd = if (prop.isAnchor) {
+                "0 $unit [Anchor Scaled / 0 to Add]"
+            } else if (prop.stillNeeded > 0.0001) {
+                "+${prop.formattedStillNeeded} [ADD TO TUB]"
+            } else {
+                "0 $unit [In Tub >= Target]"
+            }
+            appendLine("• ${prop.ingredientName}: Scaled Target=${prop.formattedNewTotal} | In-Tub=${prop.formattedAlreadyAdded} | To Add: $toAdd")
         }
         appendLine("")
         appendLine("----------------------------------------")
-        appendLine("OPTION 2: PROPORTIONAL REDUCTIONS (REMOVE EXCESS)")
+        appendLine("OPTION 2: PROPORTIONAL REDUCTIONS & TUB EXCESS")
         appendLine("----------------------------------------")
-        appendLine("Scale Factor: ${result.formattedStrictAnchorScaleFactor} | Total Scaled Weight: ${result.formattedReduceModeTotalWeight}")
+        appendLine("Total Recipe Reduction: -${result.formattedTotalReduction}")
         if (result.hasExcessInTub) {
-            appendLine("TOTAL EXCESS MATERIAL TO REDUCE/REMOVE: ${result.formattedTotalExcessWeight}")
+            appendLine("TOTAL EXCESS IN TUB TO REDUCE/REMOVE: -${result.formattedTotalExcessWeight}")
         }
         result.reduceModeProportions.forEach { prop ->
             val action = when {
@@ -3096,7 +3131,7 @@ private fun buildRecalibrationReportText(result: RecalibrationResult): String {
                 prop.stillNeeded > 0.0001 -> "+${prop.formattedStillNeeded} [ADD TO TUB]"
                 else -> "0 $unit [Balanced]"
             }
-            val origReduction = if (prop.reductionFromOriginal > 0.0001) " (-${prop.formattedReductionFromOriginal} from original recipe)" else ""
+            val origReduction = if (prop.reductionFromOriginal > 0.0001) " (-${prop.formattedReductionFromOriginal} vs original)" else ""
             appendLine("• ${prop.ingredientName}: Target=${prop.formattedTarget} | In-Tub=${prop.formattedAlreadyAdded} | Scaled Target=${prop.formattedNewTotal} | Action: $action$origReduction")
         }
         appendLine("========================================")

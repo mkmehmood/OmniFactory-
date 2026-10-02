@@ -22,14 +22,14 @@ data class RatioCalculationResult(
 
 enum class MixtureAdjustmentMode(val title: String, val badge: String, val description: String) {
     ADD_TO_BALANCE(
-        title = "In-Tub Addition (Cannot Remove)",
-        badge = "Add to Balance",
-        description = "Mixture is locked in the tub. Materials cannot be removed. Scales up to the highest in-tub component so all adjustments are additions (+)."
+        title = "Add Components (To Match Scaled Anchor)",
+        badge = "Option 1: Add Other Components",
+        description = "Anchor is fixed at your scaled quantity (never asks to add anchor). Calculates which OTHER components must be added (+) to reach the scaled formulation."
     ),
     REDUCE_TO_TARGET(
-        title = "Proportional Reduction (Remove Excess)",
-        badge = "Reduce / Remove",
-        description = "Strictly scales down/to the anchor quantity. Shows which components need to be reduced or removed from the tub to reach the exact target."
+        title = "Reduce Components (Proportional Reductions)",
+        badge = "Option 2: Reduce / Remove Excess",
+        description = "Shows how each component is reduced from the original recipe target, and indicates any excess materials in the tub that must be reduced/removed."
     )
 }
 
@@ -209,34 +209,20 @@ object MixtureCalculatorEngine {
         val anchorTarget = max(0.0001, anchor.targetQuantity)
         val anchorActual = max(0.0, actualAddedMap[anchor.id] ?: anchor.targetQuantity)
 
-        // 1. Strict Anchor Scale Factor
+        // 1. Strict Anchor Scale Factor (Scale is strictly determined by the chosen calibration anchor)
         val strictAnchorScaleFactor = anchorActual / anchorTarget
 
-        // 2. In-Tub Scale Factor (Cannot remove anything from the tub)
-        // Find the maximum ratio of in-tub actual to target quantity across all ingredients
-        var maxRatioInTub = strictAnchorScaleFactor
-        var limitingIngredient: TargetIngredient = anchor
-        for (item in ingredients) {
-            val itemTarget = max(0.0001, item.targetQuantity)
-            val itemActual = max(0.0, actualAddedMap[item.id] ?: 0.0)
-            val ratio = itemActual / itemTarget
-            if (ratio > maxRatioInTub + 0.000001) {
-                maxRatioInTub = ratio
-                limitingIngredient = item
-            }
-        }
-        val inTubScaleFactor = maxRatioInTub
-
-        // BUILD OPTION 1: ADD_TO_BALANCE (In-Tub Mode / Cannot Remove)
-        // Scales by inTubScaleFactor so newRequiredTotal >= alreadyAdded for ALL ingredients.
+        // Option 1: ADD_TO_BALANCE (Add Other Components to Match Scaled Anchor)
+        // The anchor is fixed at anchorActual (never asks to add anchor).
+        // Calculates which OTHER components must be added (+) to reach the scaled formulation.
         val addModeProportions = ingredients.map { item ->
             val isAnchor = item.id == anchor.id
-            val isLimiting = item.id == limitingIngredient.id
             val target = item.targetQuantity
-            val newTotal = target * inTubScaleFactor
-            val alreadyAdded = if (isAnchor && (actualAddedMap[anchor.id] == null)) anchorActual else (actualAddedMap[item.id] ?: 0.0)
-            val stillNeeded = max(0.0, newTotal - alreadyAdded)
-            val excess = 0.0
+            val newTotal = target * strictAnchorScaleFactor
+            val alreadyAdded = if (isAnchor) anchorActual else max(0.0, actualAddedMap[item.id] ?: 0.0)
+            // Anchor is already at anchorActual, so stillNeeded for anchor is strictly 0.0!
+            val stillNeeded = if (isAnchor) 0.0 else max(0.0, newTotal - alreadyAdded)
+            val excess = if (isAnchor) 0.0 else max(0.0, alreadyAdded - newTotal)
             val reductionFromOriginal = max(0.0, target - newTotal)
 
             ProportionRow(
@@ -250,27 +236,27 @@ object MixtureCalculatorEngine {
                 excessAmount = excess,
                 reductionFromOriginal = reductionFromOriginal,
                 isAnchor = isAnchor,
-                isLimitingFactor = isLimiting,
+                isLimitingFactor = false,
                 formattedTarget = "${formatNumber(target)} ${item.unit}",
                 formattedNewTotal = "${formatNumber(newTotal)} ${item.unit}",
                 formattedAlreadyAdded = "${formatNumber(alreadyAdded)} ${item.unit}",
                 formattedStillNeeded = "${formatNumber(stillNeeded)} ${item.unit}",
-                formattedExcess = "0.00 ${item.unit}",
+                formattedExcess = "${formatNumber(excess)} ${item.unit}",
                 formattedReductionFromOriginal = "${formatNumber(reductionFromOriginal)} ${item.unit}"
             )
         }
         val addModeTotalWeight = addModeProportions.sumOf { it.newRequiredTotal }
         val addModeStillNeededTotal = addModeProportions.sumOf { it.stillNeeded }
 
-        // BUILD OPTION 2: REDUCE_TO_TARGET (Proportional Reduction / Remove Excess)
-        // Strictly scales by strictAnchorScaleFactor. If alreadyAdded > newTotal, it's excess that must be reduced/removed.
+        // Option 2: REDUCE_TO_TARGET (Proportional Reduction / Remove Excess)
+        // Strictly scales by strictAnchorScaleFactor. Shows recipe reductions and tub excess to remove.
         val reduceModeProportions = ingredients.map { item ->
             val isAnchor = item.id == anchor.id
             val target = item.targetQuantity
             val newTotal = target * strictAnchorScaleFactor
-            val alreadyAdded = if (isAnchor && (actualAddedMap[anchor.id] == null)) anchorActual else (actualAddedMap[item.id] ?: 0.0)
-            val stillNeeded = max(0.0, newTotal - alreadyAdded)
-            val excess = max(0.0, alreadyAdded - newTotal)
+            val alreadyAdded = if (isAnchor) anchorActual else max(0.0, actualAddedMap[item.id] ?: 0.0)
+            val stillNeeded = if (isAnchor) 0.0 else max(0.0, newTotal - alreadyAdded)
+            val excess = if (isAnchor) 0.0 else max(0.0, alreadyAdded - newTotal)
             val reductionFromOriginal = max(0.0, target - newTotal)
 
             ProportionRow(
@@ -298,39 +284,36 @@ object MixtureCalculatorEngine {
         val totalReductionFromOriginal = reduceModeProportions.sumOf { it.reductionFromOriginal }
         val hasExcessInTub = totalExcessWeight > 0.0001
 
-        // Active mode selection
-        val activeScaleFactor = if (mode == MixtureAdjustmentMode.ADD_TO_BALANCE) inTubScaleFactor else strictAnchorScaleFactor
+        val activeScaleFactor = strictAnchorScaleFactor
         val activeProportions = if (mode == MixtureAdjustmentMode.ADD_TO_BALANCE) addModeProportions else reduceModeProportions
         val activeTotalWeight = if (mode == MixtureAdjustmentMode.ADD_TO_BALANCE) addModeTotalWeight else reduceModeTotalWeight
 
         val scaleFormatted = String.format(Locale.US, "%.2f", activeScaleFactor)
-        val inTubScaleFormatted = String.format(Locale.US, "%.2f", inTubScaleFactor)
-        val strictScaleFormatted = String.format(Locale.US, "%.2f", strictAnchorScaleFactor)
+        val strictScaleFormatted = scaleFormatted
         val anchorTargetFormatted = formatNumber(anchor.targetQuantity)
         val anchorActualFormatted = formatNumber(anchorActual)
 
         // Explanations tailored to each mode
         val explanation = when (mode) {
             MixtureAdjustmentMode.ADD_TO_BALANCE -> {
-                if (inTubScaleFactor > strictAnchorScaleFactor + 0.001) {
-                    val anchorNeededMore = max(0.0, anchor.targetQuantity * inTubScaleFactor - anchorActual)
-                    "In-Tub Mode (Cannot Remove): '${limitingIngredient.name}' in the tub has a higher ratio (${inTubScaleFormatted}x) than the anchor (${strictScaleFormatted}x). Because materials cannot be scooped out of the tub, the mixture scaled to ${inTubScaleFormatted}x. Add the required components (including +${formatNumber(anchorNeededMore)} ${anchor.unit} of ${anchor.name}) to balance the recipe perfectly."
+                if (strictAnchorScaleFactor < 0.999) {
+                    val pct = formatNumber((1.0 - strictAnchorScaleFactor) * 100)
+                    "Option 1 (Add to Scaled Anchor): Anchor '${anchor.name}' was reduced to $anchorActualFormatted ${anchor.unit} (${strictScaleFormatted}x, -$pct%). The anchor is locked at this scaled quantity (0 to add). Add the other components (+${formatNumber(addModeStillNeededTotal)} $primaryUnit total) to match this scaled anchor formulation."
                 } else if (strictAnchorScaleFactor > 1.001) {
-                    "In-Tub Mode: Because you added $anchorActualFormatted ${anchor.unit} of ${anchor.name} (overshoot from target $anchorTargetFormatted ${anchor.unit}), the scale factor is ${inTubScaleFormatted}x. Add the remaining components to complete your balanced batch without removing anything."
-                } else if (strictAnchorScaleFactor < 0.999) {
-                    "In-Tub Mode: Anchor was reduced to $anchorActualFormatted ${anchor.unit} (${inTubScaleFormatted}x). Add the indicated components to match this scaled anchor without removing anything from the tub."
+                    val pct = formatNumber((strictAnchorScaleFactor - 1.0) * 100)
+                    "Option 1 (Add to Scaled Anchor): Anchor '${anchor.name}' was increased to $anchorActualFormatted ${anchor.unit} (${strictScaleFormatted}x, +$pct%). The anchor is locked at this scaled quantity (0 to add). Add the other components (+${formatNumber(addModeStillNeededTotal)} $primaryUnit total) to balance the batch."
                 } else {
-                    "In-Tub Mode: Mixture is at exact 1.00x recipe proportions. Add the remaining ingredients to reach the final weight."
+                    "Option 1 (Add to Scaled Anchor): Anchor '${anchor.name}' is at exact 1.00x recipe proportions. Add the other components (+${formatNumber(addModeStillNeededTotal)} $primaryUnit total) to complete the batch."
                 }
             }
             MixtureAdjustmentMode.REDUCE_TO_TARGET -> {
                 if (hasExcessInTub) {
-                    "Reduction Mode: Strictly scaling to Anchor ${anchor.name} ($anchorActualFormatted ${anchor.unit} = ${strictScaleFormatted}x). Attention: ${formatNumber(totalExcessWeight)} $primaryUnit of excess material is in the tub across ingredients that exceed this scaled target and must be reduced/removed."
+                    "Option 2 (Proportional Reductions): Scaled to Anchor '${anchor.name}' ($anchorActualFormatted ${anchor.unit} = ${strictScaleFormatted}x). Attention: ${formatNumber(totalExcessWeight)} $primaryUnit of excess material is in the tub across ingredients exceeding their scaled target and must be reduced/removed."
                 } else if (strictAnchorScaleFactor < 0.999) {
                     val pct = formatNumber((1.0 - strictAnchorScaleFactor) * 100)
-                    "Reduction Mode: Reduced anchor to $anchorActualFormatted ${anchor.unit} (${strictScaleFormatted}x, -$pct% reduction). All components are scaled down proportionally to match."
+                    "Option 2 (Proportional Reductions): Anchor '${anchor.name}' was reduced to $anchorActualFormatted ${anchor.unit} (${strictScaleFormatted}x, -$pct% reduction). All components are reduced proportionally from the original formulation (-${formatNumber(totalReductionFromOriginal)} $primaryUnit total reduction)."
                 } else {
-                    "Reduction Mode: Scaled to Anchor ${anchor.name} at ${strictScaleFormatted}x. Components are adjusted to match the target formulation."
+                    "Option 2 (Proportional Reductions): Scaled to Anchor '${anchor.name}' at ${strictScaleFormatted}x. Components are adjusted to match the target formulation."
                 }
             }
         }
@@ -347,18 +330,18 @@ object MixtureCalculatorEngine {
             totalNewMixtureWeight = activeTotalWeight,
             formattedTotalNewWeight = "${formatNumber(activeTotalWeight)} $primaryUnit",
             adjustmentMode = mode,
-            inTubScaleFactor = inTubScaleFactor,
-            formattedInTubScaleFactor = "${inTubScaleFormatted}x",
+            inTubScaleFactor = strictAnchorScaleFactor,
+            formattedInTubScaleFactor = "${strictScaleFormatted}x",
             strictAnchorScaleFactor = strictAnchorScaleFactor,
             formattedStrictAnchorScaleFactor = "${strictScaleFormatted}x",
             hasExcessInTub = hasExcessInTub,
             totalExcessWeight = totalExcessWeight,
             formattedTotalExcessWeight = "${formatNumber(totalExcessWeight)} $primaryUnit",
-            totalStillNeededWeight = if (mode == MixtureAdjustmentMode.ADD_TO_BALANCE) addModeStillNeededTotal else reduceModeProportions.sumOf { it.stillNeeded },
-            formattedTotalStillNeededWeight = "${formatNumber(if (mode == MixtureAdjustmentMode.ADD_TO_BALANCE) addModeStillNeededTotal else reduceModeProportions.sumOf { it.stillNeeded })} $primaryUnit",
+            totalStillNeededWeight = addModeStillNeededTotal,
+            formattedTotalStillNeededWeight = "${formatNumber(addModeStillNeededTotal)} $primaryUnit",
             totalReductionFromOriginal = totalReductionFromOriginal,
             formattedTotalReduction = "${formatNumber(totalReductionFromOriginal)} $primaryUnit",
-            limitingIngredientName = limitingIngredient.name,
+            limitingIngredientName = anchor.name,
             addModeProportions = addModeProportions,
             reduceModeProportions = reduceModeProportions,
             addModeTotalWeight = addModeTotalWeight,
