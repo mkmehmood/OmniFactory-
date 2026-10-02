@@ -215,4 +215,98 @@ class MixtureCalculatorEngineTest {
         assertEquals(90.0, sandAdd.stillNeeded, 0.001)
         assertEquals(90.0, addResult.totalStillNeededWeight, 0.001)
     }
+
+    @Test
+    fun testRecalibrate_ConstantTotalWeight_LockedTotalMixtureWeight() {
+        // Initial targets: Cement = 100 kg, Sand = 200 kg, Gravel = 300 kg. Total Initial = 600 kg.
+        val ingredients = listOf(
+            TargetIngredient(id = "1", name = "Cement", targetQuantity = 100.0, unit = "kg"),
+            TargetIngredient(id = "2", name = "Sand", targetQuantity = 200.0, unit = "kg"),
+            TargetIngredient(id = "3", name = "Gravel", targetQuantity = 300.0, unit = "kg")
+        )
+        // User changed Anchor (Cement) actual added to 150 kg (+50 kg exact anchor update).
+        // Total mixture weight must remain locked at 600.0 kg!
+        // Remaining weight for others = 600 - 150 = 450 kg.
+        // Initial sum of others = 200 + 300 = 500 kg.
+        // Others scale factor = 450 / 500 = 0.90 (90%).
+        // Sand new target = 200 * 0.90 = 180 kg (delta: -20 kg).
+        // Gravel new target = 300 * 0.90 = 270 kg (delta: -30 kg).
+        // Total new sum = 150 + 180 + 270 = 600 kg (EXACTLY CONSTANT!).
+        val actualMap = mapOf(
+            "1" to 150.0,
+            "2" to 0.0,
+            "3" to 0.0
+        )
+        val result = MixtureCalculatorEngine.recalibrate(
+            ingredients = ingredients,
+            anchorId = "1",
+            actualAddedMap = actualMap,
+            mode = MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT
+        )
+
+        assertEquals(600.0, result.lockedInitialTotalWeight, 0.001)
+        assertEquals(600.0, result.totalNewMixtureWeight, 0.001)
+
+        val cement = result.constantWeightProportions.find { it.ingredientId == "1" }!!
+        assertEquals(150.0, cement.newRequiredTotal, 0.001)
+        assertTrue(cement.isAnchor)
+        assertEquals(50.0, cement.suggestedAdjustmentDelta, 0.001)
+
+        val sand = result.constantWeightProportions.find { it.ingredientId == "2" }!!
+        assertEquals(180.0, sand.newRequiredTotal, 0.001)
+        assertEquals(-20.0, sand.suggestedAdjustmentDelta, 0.001)
+
+        val gravel = result.constantWeightProportions.find { it.ingredientId == "3" }!!
+        assertEquals(270.0, gravel.newRequiredTotal, 0.001)
+        assertEquals(-30.0, gravel.suggestedAdjustmentDelta, 0.001)
+
+        // Sum of all new required totals must equal 600.0 kg
+        val totalCalculated = result.constantWeightProportions.sumOf { it.newRequiredTotal }
+        assertEquals(600.0, totalCalculated, 0.001)
+    }
+
+    @Test
+    fun testBatchScaling_DivideAndMultiply() {
+        val ingredients = listOf(
+            TargetIngredient(id = "1", name = "Resin", targetQuantity = 100.0, unit = "kg"),
+            TargetIngredient(id = "2", name = "Hardener", targetQuantity = 50.0, unit = "kg")
+        )
+        val actualMap = mapOf(
+            "1" to 100.0,
+            "2" to 50.0
+        )
+        val recal = MixtureCalculatorEngine.recalibrate(ingredients, "1", actualMap, MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT)
+        // Base mixture weight = 150 kg
+
+        // 1. DIVIDE into 3 batches
+        val divideResult = MixtureCalculatorEngine.calculateBatches(
+            recalibrationResult = recal,
+            batchCount = 3.0,
+            mode = BatchOperationMode.DIVIDE
+        )
+        assertEquals(3, divideResult.batchCount)
+        assertEquals(50.0, divideResult.totalWeightPerBatch, 0.001) // 150 / 3
+        assertEquals(150.0, divideResult.totalResultWeight, 0.001)
+
+        val resinDiv = divideResult.items.find { it.ingredientName == "Resin" }!!
+        assertEquals(33.333, resinDiv.amountPerBatch, 0.01) // 100 / 3
+        assertEquals(100.0, resinDiv.totalAmount, 0.001)
+
+        // 2. MULTIPLY by 4 batches to get Mixture
+        val multiplyResult = MixtureCalculatorEngine.calculateBatches(
+            recalibrationResult = recal,
+            batchCount = 4.0,
+            mode = BatchOperationMode.MULTIPLY
+        )
+        assertEquals(4, multiplyResult.batchCount)
+        assertEquals(150.0, multiplyResult.totalWeightPerBatch, 0.001) // single batch
+        assertEquals(600.0, multiplyResult.totalResultWeight, 0.001) // 150 * 4
+
+        val resinMul = multiplyResult.items.find { it.ingredientName == "Resin" }!!
+        assertEquals(100.0, resinMul.amountPerBatch, 0.001) // single batch amount
+        assertEquals(400.0, resinMul.totalAmount, 0.001) // 100 * 4
+        val hardenerMul = multiplyResult.items.find { it.ingredientName == "Hardener" }!!
+        assertEquals(50.0, hardenerMul.amountPerBatch, 0.001)
+        assertEquals(200.0, hardenerMul.totalAmount, 0.001)
+    }
 }

@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import com.example.domain.mixture.BatchOperationMode
 import com.example.domain.mixture.MixtureAdjustmentMode
 import java.util.UUID
 
@@ -40,19 +41,21 @@ data class MixtureUiState(
     val newIngredientUnit: String = "kg",
     val batchCountText: String = "1",
     val batchCount: Int = 1,
+    val batchOperationMode: BatchOperationMode = BatchOperationMode.DIVIDE,
     val currentRecipeTitle: String = "Custom Formulation",
     val showDatabaseBrowserSheet: Boolean = false,
     val showSaveRecipeDialog: Boolean = false,
     val showBackupRestoreDialog: Boolean = false,
     val historySearchQuery: String = "",
     val historyCategoryFilter: String = "ALL",
-    val selectedAdjustmentMode: MixtureAdjustmentMode = MixtureAdjustmentMode.ADD_TO_BALANCE,
+    val selectedAdjustmentMode: MixtureAdjustmentMode = MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT,
     val showCompareBothModes: Boolean = false,
     val simplifiedRatio: RatioCalculationResult = MixtureCalculatorEngine.calculateSimplifiedRatio(emptyList()),
-    val recalibrationResult: RecalibrationResult = MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap(), MixtureAdjustmentMode.ADD_TO_BALANCE),
-    val batchDivisionResult: BatchDivisionResult = MixtureCalculatorEngine.divideBatches(
-        MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap(), MixtureAdjustmentMode.ADD_TO_BALANCE),
-        1
+    val recalibrationResult: RecalibrationResult = MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap(), MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT),
+    val batchDivisionResult: BatchDivisionResult = MixtureCalculatorEngine.calculateBatches(
+        MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap(), MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT),
+        1.0,
+        BatchOperationMode.DIVIDE
     )
 )
 
@@ -135,14 +138,16 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
             newIngredientUnit = "kg",
             batchCountText = "1",
             batchCount = 1,
+            batchOperationMode = BatchOperationMode.DIVIDE,
             currentRecipeTitle = "Custom Formulation",
-            selectedAdjustmentMode = MixtureAdjustmentMode.ADD_TO_BALANCE,
+            selectedAdjustmentMode = MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT,
             showCompareBothModes = false,
             simplifiedRatio = MixtureCalculatorEngine.calculateSimplifiedRatio(emptyList()),
-            recalibrationResult = MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap(), MixtureAdjustmentMode.ADD_TO_BALANCE),
-            batchDivisionResult = MixtureCalculatorEngine.divideBatches(
-                MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap(), MixtureAdjustmentMode.ADD_TO_BALANCE),
-                1
+            recalibrationResult = MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap(), MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT),
+            batchDivisionResult = MixtureCalculatorEngine.calculateBatches(
+                MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap(), MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT),
+                1.0,
+                BatchOperationMode.DIVIDE
             )
         )
     }
@@ -516,6 +521,13 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun setBatchOperationMode(mode: BatchOperationMode) {
+        _uiState.update { current ->
+            val updated = current.copy(batchOperationMode = mode)
+            recalculate(updated)
+        }
+    }
+
     fun toggleCompareBothModes() {
         _uiState.update { it.copy(showCompareBothModes = !it.showCompareBothModes) }
     }
@@ -579,9 +591,10 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
         val countDouble = state.batchCountText.replace(",", ".").replace(" ", "").trim().toDoubleOrNull()?.coerceAtLeast(0.01)
             ?: state.batchCount.toDouble()
 
-        val batchResult = MixtureCalculatorEngine.divideBatches(
+        val batchResult = MixtureCalculatorEngine.calculateBatches(
             recalibrationResult = recalResult,
-            batchCount = countDouble
+            batchCount = countDouble,
+            mode = state.batchOperationMode
         )
 
         return state.copy(

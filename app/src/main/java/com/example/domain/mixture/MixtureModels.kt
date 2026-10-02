@@ -20,15 +20,33 @@ data class RatioCalculationResult(
     val formattedTotalWeight: String
 )
 
+enum class BatchOperationMode(val label: String, val shortSymbol: String, val description: String) {
+    DIVIDE(
+        label = "Divide into Batches (÷)",
+        shortSymbol = "÷",
+        description = "Split the mixture into equal smaller batches or containers"
+    ),
+    MULTIPLY(
+        label = "Multiply Batches (×)",
+        shortSymbol = "×",
+        description = "Multiply the mixture recipe to produce multiple batches"
+    )
+}
+
 enum class MixtureAdjustmentMode(val title: String, val badge: String, val description: String) {
+    CONSTANT_TOTAL_WEIGHT(
+        title = "Lock Total Weight (Constant Mixture)",
+        badge = "Lock Total Weight",
+        description = "Total mixture weight is strictly locked to initial entry. Anchor is updated to actual, and other components adjust proportionally."
+    ),
     ADD_TO_BALANCE(
-        title = "Add Components (To Match Scaled Anchor)",
-        badge = "Option 1: Add Other Components",
+        title = "Scale to Anchor (Add Components)",
+        badge = "Add Other Components",
         description = "Anchor is fixed at your scaled quantity (never asks to add anchor). Calculates which OTHER components must be added (+) to reach the scaled formulation."
     ),
     REDUCE_TO_TARGET(
-        title = "Reduce Components (Proportional Reductions)",
-        badge = "Option 2: Reduce / Remove Excess",
+        title = "Scale to Anchor (Reduce Excess)",
+        badge = "Reduce / Remove Excess",
         description = "Shows how each component is reduced from the original recipe target, and indicates any excess materials in the tub that must be reduced/removed."
     )
 }
@@ -50,7 +68,9 @@ data class ProportionRow(
     val formattedAlreadyAdded: String,
     val formattedStillNeeded: String,
     val formattedExcess: String = "0.00 $unit",
-    val formattedReductionFromOriginal: String = "0.00 $unit"
+    val formattedReductionFromOriginal: String = "0.00 $unit",
+    val suggestedAdjustmentDelta: Double = 0.0,
+    val formattedSuggestedAdjustmentDelta: String = "0.00 $unit"
 )
 
 data class RecalibrationResult(
@@ -64,7 +84,7 @@ data class RecalibrationResult(
     val proportions: List<ProportionRow>,
     val totalNewMixtureWeight: Double,
     val formattedTotalNewWeight: String,
-    val adjustmentMode: MixtureAdjustmentMode = MixtureAdjustmentMode.ADD_TO_BALANCE,
+    val adjustmentMode: MixtureAdjustmentMode = MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT,
     val inTubScaleFactor: Double = scaleFactor,
     val formattedInTubScaleFactor: String = formattedScaleFactor,
     val strictAnchorScaleFactor: Double = scaleFactor,
@@ -77,6 +97,9 @@ data class RecalibrationResult(
     val totalReductionFromOriginal: Double = 0.0,
     val formattedTotalReduction: String = "0.00 kg",
     val limitingIngredientName: String = anchorIngredientName,
+    val lockedInitialTotalWeight: Double = totalNewMixtureWeight,
+    val formattedLockedInitialTotalWeight: String = formattedTotalNewWeight,
+    val constantWeightProportions: List<ProportionRow> = emptyList(),
     val addModeProportions: List<ProportionRow> = emptyList(),
     val reduceModeProportions: List<ProportionRow> = emptyList(),
     val addModeTotalWeight: Double = totalNewMixtureWeight,
@@ -98,7 +121,14 @@ data class BatchDivisionResult(
     val batchCount: Int,
     val items: List<BatchItem>,
     val totalWeightPerBatch: Double,
-    val formattedWeightPerBatch: String
+    val formattedWeightPerBatch: String,
+    val operationMode: BatchOperationMode = BatchOperationMode.DIVIDE,
+    val batchCountDouble: Double = batchCount.toDouble(),
+    val baseMixtureWeight: Double = totalWeightPerBatch * batchCount,
+    val formattedBaseMixtureWeight: String = formattedWeightPerBatch,
+    val totalResultWeight: Double = totalWeightPerBatch,
+    val formattedResultWeight: String = formattedWeightPerBatch,
+    val explanation: String = ""
 )
 
 object MixtureCalculatorEngine {
@@ -209,18 +239,62 @@ object MixtureCalculatorEngine {
         val anchorTarget = max(0.0001, anchor.targetQuantity)
         val anchorActual = max(0.0, actualAddedMap[anchor.id] ?: anchor.targetQuantity)
 
-        // 1. Strict Anchor Scale Factor (Scale is strictly determined by the chosen calibration anchor)
+        // 1. LOCKED INITIAL TOTAL WEIGHT (Keep Total Mixture Weight Constant of initial entry)
+        val lockedInitialTotalWeight = ingredients.sumOf { it.targetQuantity }
+        val remainingWeightForOthers = max(0.0, lockedInitialTotalWeight - anchorActual)
+        val initialOthersSum = max(0.0001, lockedInitialTotalWeight - anchor.targetQuantity)
+        val othersLockScalingFactor = remainingWeightForOthers / initialOthersSum
+
+        val constantWeightProportions = ingredients.map { item ->
+            val isAnchor = item.id == anchor.id
+            val target = item.targetQuantity
+            val newTotal = if (isAnchor) anchorActual else (target * othersLockScalingFactor)
+            val alreadyAdded = if (isAnchor) anchorActual else max(0.0, actualAddedMap[item.id] ?: 0.0)
+            val stillNeeded = if (isAnchor) 0.0 else max(0.0, newTotal - alreadyAdded)
+            val excess = if (isAnchor) 0.0 else max(0.0, alreadyAdded - newTotal)
+            val reductionFromOriginal = target - newTotal
+            val delta = if (isAnchor) (anchorActual - target) else (newTotal - target)
+            val formattedDelta = when {
+                delta > 0.0001 -> "+${formatNumber(delta)} ${item.unit}"
+                delta < -0.0001 -> "-${formatNumber(abs(delta))} ${item.unit}"
+                else -> "0.00 ${item.unit}"
+            }
+
+            ProportionRow(
+                ingredientId = item.id,
+                ingredientName = item.name,
+                unit = item.unit,
+                targetQty = target,
+                newRequiredTotal = newTotal,
+                alreadyAdded = alreadyAdded,
+                stillNeeded = stillNeeded,
+                excessAmount = excess,
+                reductionFromOriginal = max(0.0, reductionFromOriginal),
+                isAnchor = isAnchor,
+                isLimitingFactor = false,
+                formattedTarget = "${formatNumber(target)} ${item.unit}",
+                formattedNewTotal = "${formatNumber(newTotal)} ${item.unit}",
+                formattedAlreadyAdded = "${formatNumber(alreadyAdded)} ${item.unit}",
+                formattedStillNeeded = "${formatNumber(stillNeeded)} ${item.unit}",
+                formattedExcess = "${formatNumber(excess)} ${item.unit}",
+                formattedReductionFromOriginal = "${formatNumber(max(0.0, reductionFromOriginal))} ${item.unit}",
+                suggestedAdjustmentDelta = delta,
+                formattedSuggestedAdjustmentDelta = formattedDelta
+            )
+        }
+        val constantWeightTotal = constantWeightProportions.sumOf { it.newRequiredTotal }
+        val constantWeightStillNeededTotal = constantWeightProportions.sumOf { it.stillNeeded }
+        val constantWeightExcessTotal = constantWeightProportions.sumOf { it.excessAmount }
+
+        // 2. Strict Anchor Scale Factor (Scale is strictly determined by chosen calibration anchor)
         val strictAnchorScaleFactor = anchorActual / anchorTarget
 
-        // Option 1: ADD_TO_BALANCE (Add Other Components to Match Scaled Anchor)
-        // The anchor is fixed at anchorActual (never asks to add anchor).
-        // Calculates which OTHER components must be added (+) to reach the scaled formulation.
+        // Option: ADD_TO_BALANCE (Add Other Components to Match Scaled Anchor)
         val addModeProportions = ingredients.map { item ->
             val isAnchor = item.id == anchor.id
             val target = item.targetQuantity
             val newTotal = target * strictAnchorScaleFactor
             val alreadyAdded = if (isAnchor) anchorActual else max(0.0, actualAddedMap[item.id] ?: 0.0)
-            // Anchor is already at anchorActual, so stillNeeded for anchor is strictly 0.0!
             val stillNeeded = if (isAnchor) 0.0 else max(0.0, newTotal - alreadyAdded)
             val excess = if (isAnchor) 0.0 else max(0.0, alreadyAdded - newTotal)
             val reductionFromOriginal = max(0.0, target - newTotal)
@@ -248,8 +322,7 @@ object MixtureCalculatorEngine {
         val addModeTotalWeight = addModeProportions.sumOf { it.newRequiredTotal }
         val addModeStillNeededTotal = addModeProportions.sumOf { it.stillNeeded }
 
-        // Option 2: REDUCE_TO_TARGET (Proportional Reduction / Remove Excess)
-        // Strictly scales by strictAnchorScaleFactor. Shows recipe reductions and tub excess to remove.
+        // Option: REDUCE_TO_TARGET (Proportional Reduction / Remove Excess)
         val reduceModeProportions = ingredients.map { item ->
             val isAnchor = item.id == anchor.id
             val target = item.targetQuantity
@@ -284,36 +357,50 @@ object MixtureCalculatorEngine {
         val totalReductionFromOriginal = reduceModeProportions.sumOf { it.reductionFromOriginal }
         val hasExcessInTub = totalExcessWeight > 0.0001
 
-        val activeScaleFactor = strictAnchorScaleFactor
-        val activeProportions = if (mode == MixtureAdjustmentMode.ADD_TO_BALANCE) addModeProportions else reduceModeProportions
-        val activeTotalWeight = if (mode == MixtureAdjustmentMode.ADD_TO_BALANCE) addModeTotalWeight else reduceModeTotalWeight
+        val activeScaleFactor = if (mode == MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT) 1.0 else strictAnchorScaleFactor
+        val activeProportions = when (mode) {
+            MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT -> constantWeightProportions
+            MixtureAdjustmentMode.ADD_TO_BALANCE -> addModeProportions
+            MixtureAdjustmentMode.REDUCE_TO_TARGET -> reduceModeProportions
+        }
+        val activeTotalWeight = when (mode) {
+            MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT -> constantWeightTotal
+            MixtureAdjustmentMode.ADD_TO_BALANCE -> addModeTotalWeight
+            MixtureAdjustmentMode.REDUCE_TO_TARGET -> reduceModeTotalWeight
+        }
 
         val scaleFormatted = String.format(Locale.US, "%.2f", activeScaleFactor)
-        val strictScaleFormatted = scaleFormatted
+        val strictScaleFormatted = String.format(Locale.US, "%.2f", strictAnchorScaleFactor)
         val anchorTargetFormatted = formatNumber(anchor.targetQuantity)
         val anchorActualFormatted = formatNumber(anchorActual)
 
         // Explanations tailored to each mode
         val explanation = when (mode) {
+            MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT -> {
+                val anchorDelta = anchorActual - anchor.targetQuantity
+                val sign = if (anchorDelta >= 0) "+" else ""
+                val deltaFormatted = "$sign${formatNumber(anchorDelta)} ${anchor.unit}"
+                "Locked Total Weight Mode: Total mixture weight is strictly locked at ${formatNumber(lockedInitialTotalWeight)} $primaryUnit (initial entry). Anchor '${anchor.name}' is set to $anchorActualFormatted ${anchor.unit} ($deltaFormatted). Other components are adjusted proportionally to keep the total mixture weight constant."
+            }
             MixtureAdjustmentMode.ADD_TO_BALANCE -> {
                 if (strictAnchorScaleFactor < 0.999) {
                     val pct = formatNumber((1.0 - strictAnchorScaleFactor) * 100)
-                    "Option 1 (Add to Scaled Anchor): Anchor '${anchor.name}' was reduced to $anchorActualFormatted ${anchor.unit} (${strictScaleFormatted}x, -$pct%). The anchor is locked at this scaled quantity (0 to add). Add the other components (+${formatNumber(addModeStillNeededTotal)} $primaryUnit total) to match this scaled anchor formulation."
+                    "Option (Add to Scaled Anchor): Anchor '${anchor.name}' was reduced to $anchorActualFormatted ${anchor.unit} (${strictScaleFormatted}x, -$pct%). The anchor is locked at this scaled quantity (0 to add). Add the other components (+${formatNumber(addModeStillNeededTotal)} $primaryUnit total) to match this scaled anchor formulation."
                 } else if (strictAnchorScaleFactor > 1.001) {
                     val pct = formatNumber((strictAnchorScaleFactor - 1.0) * 100)
-                    "Option 1 (Add to Scaled Anchor): Anchor '${anchor.name}' was increased to $anchorActualFormatted ${anchor.unit} (${strictScaleFormatted}x, +$pct%). The anchor is locked at this scaled quantity (0 to add). Add the other components (+${formatNumber(addModeStillNeededTotal)} $primaryUnit total) to balance the batch."
+                    "Option (Add to Scaled Anchor): Anchor '${anchor.name}' was increased to $anchorActualFormatted ${anchor.unit} (${strictScaleFormatted}x, +$pct%). The anchor is locked at this scaled quantity (0 to add). Add the other components (+${formatNumber(addModeStillNeededTotal)} $primaryUnit total) to balance the batch."
                 } else {
-                    "Option 1 (Add to Scaled Anchor): Anchor '${anchor.name}' is at exact 1.00x recipe proportions. Add the other components (+${formatNumber(addModeStillNeededTotal)} $primaryUnit total) to complete the batch."
+                    "Option (Add to Scaled Anchor): Anchor '${anchor.name}' is at exact 1.00x recipe proportions. Add the other components (+${formatNumber(addModeStillNeededTotal)} $primaryUnit total) to complete the batch."
                 }
             }
             MixtureAdjustmentMode.REDUCE_TO_TARGET -> {
                 if (hasExcessInTub) {
-                    "Option 2 (Proportional Reductions): Scaled to Anchor '${anchor.name}' ($anchorActualFormatted ${anchor.unit} = ${strictScaleFormatted}x). Attention: ${formatNumber(totalExcessWeight)} $primaryUnit of excess material is in the tub across ingredients exceeding their scaled target and must be reduced/removed."
+                    "Option (Proportional Reductions): Scaled to Anchor '${anchor.name}' ($anchorActualFormatted ${anchor.unit} = ${strictScaleFormatted}x). Attention: ${formatNumber(totalExcessWeight)} $primaryUnit of excess material is in the tub across ingredients exceeding their scaled target and must be reduced/removed."
                 } else if (strictAnchorScaleFactor < 0.999) {
                     val pct = formatNumber((1.0 - strictAnchorScaleFactor) * 100)
-                    "Option 2 (Proportional Reductions): Anchor '${anchor.name}' was reduced to $anchorActualFormatted ${anchor.unit} (${strictScaleFormatted}x, -$pct% reduction). All components are reduced proportionally from the original formulation (-${formatNumber(totalReductionFromOriginal)} $primaryUnit total reduction)."
+                    "Option (Proportional Reductions): Anchor '${anchor.name}' was reduced to $anchorActualFormatted ${anchor.unit} (${strictScaleFormatted}x, -$pct% reduction). All components are reduced proportionally from the original formulation (-${formatNumber(totalReductionFromOriginal)} $primaryUnit total reduction)."
                 } else {
-                    "Option 2 (Proportional Reductions): Scaled to Anchor '${anchor.name}' at ${strictScaleFormatted}x. Components are adjusted to match the target formulation."
+                    "Option (Proportional Reductions): Scaled to Anchor '${anchor.name}' at ${strictScaleFormatted}x. Components are adjusted to match the target formulation."
                 }
             }
         }
@@ -324,7 +411,7 @@ object MixtureCalculatorEngine {
             anchorTargetQty = anchor.targetQuantity,
             anchorActualAdded = anchorActual,
             scaleFactor = activeScaleFactor,
-            formattedScaleFactor = "${scaleFormatted}x",
+            formattedScaleFactor = if (mode == MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT) "1.00x (Locked)" else "${scaleFormatted}x",
             scaleExplanation = explanation,
             proportions = activeProportions,
             totalNewMixtureWeight = activeTotalWeight,
@@ -335,13 +422,16 @@ object MixtureCalculatorEngine {
             strictAnchorScaleFactor = strictAnchorScaleFactor,
             formattedStrictAnchorScaleFactor = "${strictScaleFormatted}x",
             hasExcessInTub = hasExcessInTub,
-            totalExcessWeight = totalExcessWeight,
-            formattedTotalExcessWeight = "${formatNumber(totalExcessWeight)} $primaryUnit",
-            totalStillNeededWeight = addModeStillNeededTotal,
-            formattedTotalStillNeededWeight = "${formatNumber(addModeStillNeededTotal)} $primaryUnit",
+            totalExcessWeight = if (mode == MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT) constantWeightExcessTotal else totalExcessWeight,
+            formattedTotalExcessWeight = "${formatNumber(if (mode == MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT) constantWeightExcessTotal else totalExcessWeight)} $primaryUnit",
+            totalStillNeededWeight = if (mode == MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT) constantWeightStillNeededTotal else addModeStillNeededTotal,
+            formattedTotalStillNeededWeight = "${formatNumber(if (mode == MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT) constantWeightStillNeededTotal else addModeStillNeededTotal)} $primaryUnit",
             totalReductionFromOriginal = totalReductionFromOriginal,
             formattedTotalReduction = "${formatNumber(totalReductionFromOriginal)} $primaryUnit",
             limitingIngredientName = anchor.name,
+            lockedInitialTotalWeight = lockedInitialTotalWeight,
+            formattedLockedInitialTotalWeight = "${formatNumber(lockedInitialTotalWeight)} $primaryUnit",
+            constantWeightProportions = constantWeightProportions,
             addModeProportions = addModeProportions,
             reduceModeProportions = reduceModeProportions,
             addModeTotalWeight = addModeTotalWeight,
@@ -352,35 +442,78 @@ object MixtureCalculatorEngine {
     }
 
     /**
+     * Calculates batches: supports both DIVIDE (equal smaller batches) and MULTIPLY (producing multiple batches).
+     */
+    fun calculateBatches(
+        recalibrationResult: RecalibrationResult,
+        batchCount: Double,
+        mode: BatchOperationMode = BatchOperationMode.DIVIDE
+    ): BatchDivisionResult {
+        val count = if (batchCount <= 0.0) 1.0 else batchCount
+        val primaryUnit = recalibrationResult.proportions.firstOrNull()?.unit ?: "kg"
+        val baseMixtureWeight = recalibrationResult.totalNewMixtureWeight
+
+        val items = recalibrationResult.proportions.map { prop ->
+            val perBatchAmount = if (mode == BatchOperationMode.DIVIDE) {
+                prop.newRequiredTotal / count
+            } else {
+                prop.newRequiredTotal
+            }
+            val totalAmount = if (mode == BatchOperationMode.DIVIDE) {
+                prop.newRequiredTotal
+            } else {
+                prop.newRequiredTotal * count
+            }
+            BatchItem(
+                ingredientName = prop.ingredientName,
+                amountPerBatch = perBatchAmount,
+                unit = prop.unit,
+                totalAmount = totalAmount,
+                formattedPerBatch = "${formatNumber(perBatchAmount)} ${prop.unit}",
+                formattedTotal = "${formatNumber(totalAmount)} ${prop.unit}"
+            )
+        }
+
+        val weightPerBatch = if (mode == BatchOperationMode.DIVIDE) {
+            baseMixtureWeight / count
+        } else {
+            baseMixtureWeight
+        }
+
+        val totalResultWeight = if (mode == BatchOperationMode.DIVIDE) {
+            baseMixtureWeight
+        } else {
+            baseMixtureWeight * count
+        }
+
+        val explanation = if (mode == BatchOperationMode.DIVIDE) {
+            "Dividing ${formatNumber(baseMixtureWeight)} $primaryUnit mixture into ${formatNumber(count)} equal batches (${formatNumber(weightPerBatch)} $primaryUnit per batch)."
+        } else {
+            "Multiplying single batch recipe of ${formatNumber(baseMixtureWeight)} $primaryUnit by ${formatNumber(count)} batches to produce a total mixture of ${formatNumber(totalResultWeight)} $primaryUnit."
+        }
+
+        return BatchDivisionResult(
+            batchCount = if (count % 1.0 == 0.0) count.toInt() else count.toInt().coerceAtLeast(1),
+            items = items,
+            totalWeightPerBatch = weightPerBatch,
+            formattedWeightPerBatch = "${formatNumber(weightPerBatch)} $primaryUnit",
+            operationMode = mode,
+            batchCountDouble = count,
+            baseMixtureWeight = baseMixtureWeight,
+            formattedBaseMixtureWeight = "${formatNumber(baseMixtureWeight)} $primaryUnit",
+            totalResultWeight = totalResultWeight,
+            formattedResultWeight = "${formatNumber(totalResultWeight)} $primaryUnit",
+            explanation = explanation
+        )
+    }
+
+    /**
      * Divides recalibrated mixture into equal batches (supports decimal batch counts e.g. 2.5).
      */
     fun divideBatches(
         recalibrationResult: RecalibrationResult,
         batchCount: Double
-    ): BatchDivisionResult {
-        val count = if (batchCount <= 0.0) 1.0 else batchCount
-        val items = recalibrationResult.proportions.map { prop ->
-            val perBatch = prop.newRequiredTotal / count
-            BatchItem(
-                ingredientName = prop.ingredientName,
-                amountPerBatch = perBatch,
-                unit = prop.unit,
-                totalAmount = prop.newRequiredTotal,
-                formattedPerBatch = "${formatNumber(perBatch)} ${prop.unit}",
-                formattedTotal = "${formatNumber(prop.newRequiredTotal)} ${prop.unit}"
-            )
-        }
-
-        val totalWeightPerBatch = recalibrationResult.totalNewMixtureWeight / count
-        val primaryUnit = recalibrationResult.proportions.firstOrNull()?.unit ?: "kg"
-
-        return BatchDivisionResult(
-            batchCount = if (count % 1.0 == 0.0) count.toInt() else count.toInt().coerceAtLeast(1),
-            items = items,
-            totalWeightPerBatch = totalWeightPerBatch,
-            formattedWeightPerBatch = "${formatNumber(totalWeightPerBatch)} $primaryUnit"
-        )
-    }
+    ): BatchDivisionResult = calculateBatches(recalibrationResult, batchCount, BatchOperationMode.DIVIDE)
 
     fun divideBatches(
         recalibrationResult: RecalibrationResult,
