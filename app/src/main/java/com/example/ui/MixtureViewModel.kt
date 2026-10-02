@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import com.example.domain.mixture.MixtureAdjustmentMode
 import java.util.UUID
 
 data class MixtureUiState(
@@ -45,10 +46,12 @@ data class MixtureUiState(
     val showBackupRestoreDialog: Boolean = false,
     val historySearchQuery: String = "",
     val historyCategoryFilter: String = "ALL",
+    val selectedAdjustmentMode: MixtureAdjustmentMode = MixtureAdjustmentMode.ADD_TO_BALANCE,
+    val showCompareBothModes: Boolean = false,
     val simplifiedRatio: RatioCalculationResult = MixtureCalculatorEngine.calculateSimplifiedRatio(emptyList()),
-    val recalibrationResult: RecalibrationResult = MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap()),
+    val recalibrationResult: RecalibrationResult = MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap(), MixtureAdjustmentMode.ADD_TO_BALANCE),
     val batchDivisionResult: BatchDivisionResult = MixtureCalculatorEngine.divideBatches(
-        MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap()),
+        MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap(), MixtureAdjustmentMode.ADD_TO_BALANCE),
         1
     )
 )
@@ -133,10 +136,12 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
             batchCountText = "1",
             batchCount = 1,
             currentRecipeTitle = "Custom Formulation",
+            selectedAdjustmentMode = MixtureAdjustmentMode.ADD_TO_BALANCE,
+            showCompareBothModes = false,
             simplifiedRatio = MixtureCalculatorEngine.calculateSimplifiedRatio(emptyList()),
-            recalibrationResult = MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap()),
+            recalibrationResult = MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap(), MixtureAdjustmentMode.ADD_TO_BALANCE),
             batchDivisionResult = MixtureCalculatorEngine.divideBatches(
-                MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap()),
+                MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap(), MixtureAdjustmentMode.ADD_TO_BALANCE),
                 1
             )
         )
@@ -502,12 +507,55 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
         setBatchCountText(formatted)
     }
 
+    fun setAdjustmentMode(mode: MixtureAdjustmentMode) {
+        _uiState.update { current ->
+            val updated = current.copy(selectedAdjustmentMode = mode)
+            recalculate(updated)
+        }
+    }
+
+    fun toggleCompareBothModes() {
+        _uiState.update { it.copy(showCompareBothModes = !it.showCompareBothModes) }
+    }
+
+    fun setAllActualsToZeroExceptAnchor() {
+        _uiState.update { current ->
+            val anchor = current.targetIngredients.find { it.id == current.anchorIngredientId }
+                ?: current.targetIngredients.firstOrNull()
+            val anchorActual = current.actualAddedTexts[anchor?.id] ?: anchor?.targetQuantity?.toString() ?: "0"
+            val updatedActuals = current.targetIngredients.associate { item ->
+                if (item.id == anchor?.id) {
+                    item.id to anchorActual
+                } else {
+                    item.id to "0"
+                }
+            }
+            val updated = current.copy(actualAddedTexts = updatedActuals)
+            recalculate(updated)
+        }
+    }
+
+    fun setAllActualsToTarget() {
+        _uiState.update { current ->
+            val updatedActuals = current.targetIngredients.associate { item ->
+                val text = if (item.targetQuantity % 1.0 == 0.0) item.targetQuantity.toLong().toString() else item.targetQuantity.toString()
+                item.id to text
+            }
+            val updated = current.copy(actualAddedTexts = updatedActuals)
+            recalculate(updated)
+        }
+    }
+
     private fun recalculate(state: MixtureUiState): MixtureUiState {
         val ratioResult = MixtureCalculatorEngine.calculateSimplifiedRatio(state.targetIngredients)
 
         val actualMap = state.targetIngredients.associate { item ->
             val text = state.actualAddedTexts[item.id]
-            val numeric = text?.replace(",", ".")?.replace(" ", "")?.trim()?.toDoubleOrNull() ?: item.targetQuantity
+            val numeric = if (text != null && text.isBlank()) {
+                0.0
+            } else {
+                text?.replace(",", ".")?.replace(" ", "")?.trim()?.toDoubleOrNull() ?: item.targetQuantity
+            }
             item.id to numeric
         }
 
@@ -520,7 +568,8 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
         val recalResult = MixtureCalculatorEngine.recalibrate(
             ingredients = state.targetIngredients,
             anchorId = anchorId,
-            actualAddedMap = actualMap
+            actualAddedMap = actualMap,
+            mode = state.selectedAdjustmentMode
         )
 
         val countDouble = state.batchCountText.replace(",", ".").replace(" ", "").trim().toDoubleOrNull()?.coerceAtLeast(0.01)

@@ -96,9 +96,15 @@ import androidx.compose.runtime.LaunchedEffect
 import com.example.ui.components.BlinkingCursorPointer
 import com.example.ui.components.InputFieldCopyPasteMenu
 import com.example.domain.mixture.BatchDivisionResult
+import com.example.domain.mixture.MixtureAdjustmentMode
 import com.example.domain.mixture.RatioCalculationResult
 import com.example.domain.mixture.RecalibrationResult
 import com.example.domain.mixture.TargetIngredient
+import androidx.compose.material.icons.filled.RemoveCircleOutline
+import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.CompareArrows
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.SwapHoriz
 import com.example.ui.components.SmartStationKeypad
 import com.example.ui.MixtureUiState
 import com.example.ui.MixtureViewModel
@@ -391,6 +397,10 @@ fun MixtureCalculatorScreen(
                             anchorId = uiState.anchorIngredientId,
                             actualAddedTexts = uiState.actualAddedTexts,
                             focusedFieldId = focusedFieldId,
+                            selectedMode = uiState.selectedAdjustmentMode,
+                            onSelectMode = { viewModel.setAdjustmentMode(it) },
+                            onSetAnchorOnly = { viewModel.setAllActualsToZeroExceptAnchor() },
+                            onSetAllTargets = { viewModel.setAllActualsToTarget() },
                             onFocusField = { id, label ->
                                 if (focusedFieldId == id) {
                                     focusedFieldId = null
@@ -409,6 +419,10 @@ fun MixtureCalculatorScreen(
                         )
                         4 -> Step4RecalibratedProportions(
                             recalibrationResult = uiState.recalibrationResult,
+                            selectedMode = uiState.selectedAdjustmentMode,
+                            onSelectMode = { viewModel.setAdjustmentMode(it) },
+                            showCompareBoth = uiState.showCompareBothModes,
+                            onToggleCompareBoth = { viewModel.toggleCompareBothModes() },
                             onCopyAdjustments = {
                                 val report = buildRecalibrationReportText(uiState.recalibrationResult)
                                 clipboardManager.setText(AnnotatedString(report))
@@ -422,6 +436,8 @@ fun MixtureCalculatorScreen(
                         5 -> Step5DivideIntoBatches(
                             recalibrationResult = uiState.recalibrationResult,
                             batchDivisionResult = uiState.batchDivisionResult,
+                            selectedMode = uiState.selectedAdjustmentMode,
+                            onSelectMode = { viewModel.setAdjustmentMode(it) },
                             batchCountText = uiState.batchCountText,
                             batchCount = uiState.batchCount,
                             isBatchCountFocused = focusedFieldId == "step5_batch_count",
@@ -1166,6 +1182,10 @@ private fun Step3ReferenceAndActualAdded(
     anchorId: String,
     actualAddedTexts: Map<String, String>,
     focusedFieldId: String?,
+    selectedMode: MixtureAdjustmentMode,
+    onSelectMode: (MixtureAdjustmentMode) -> Unit,
+    onSetAnchorOnly: () -> Unit,
+    onSetAllTargets: () -> Unit,
     onFocusField: (id: String, label: String) -> Unit,
     onSelectAnchor: (String) -> Unit,
     onActualAddedChange: (String, String) -> Unit,
@@ -1176,7 +1196,7 @@ private fun Step3ReferenceAndActualAdded(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "SELECT CALIBRATION ANCHOR & ACTUALS",
+            text = "SELECT CALIBRATION ANCHOR & IN-TUB QUANTITIES",
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = DigitalMonospaceFont,
@@ -1185,6 +1205,215 @@ private fun Step3ReferenceAndActualAdded(
         )
 
         Spacer(modifier = Modifier.height(10.dp))
+
+        // 1. Dual Adjustment Pathway Selector Card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("adjustment_pathway_mode_card"),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = surfaceBg),
+            border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SwapHoriz,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "ADJUSTMENT PATHWAY (IN-TUB vs REDUCE)",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = primaryColor,
+                        letterSpacing = 0.8.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Choose how to balance when you reduce or add components in the tub:",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 16.sp
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Mode Selector Buttons Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Option 1: In-Tub Additions (Cannot Remove)
+                    val isOption1 = selectedMode == MixtureAdjustmentMode.ADD_TO_BALANCE
+                    val opt1Border = if (isOption1) Color(0xFF10B981) else borderColor
+                    val opt1Bg = if (isOption1) Color(0xFF10B981).copy(alpha = 0.12f) else if (isDark) Color(0x10FFFFFF) else Color(0x06000000)
+
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(if (isOption1) 1.5.dp else 1.dp, opt1Border, RoundedCornerShape(12.dp))
+                            .clickable { onSelectMode(MixtureAdjustmentMode.ADD_TO_BALANCE) }
+                            .testTag("pathway_option1_button"),
+                        shape = RoundedCornerShape(12.dp),
+                        color = opt1Bg
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Option 1",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = if (isOption1) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurface
+                                )
+                                if (isOption1) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = Color(0xFF10B981),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "In-Tub Mode",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Cannot remove from tub. Add (+) to balance.",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 13.sp
+                            )
+                        }
+                    }
+
+                    // Option 2: Proportional Reductions (Remove Excess)
+                    val isOption2 = selectedMode == MixtureAdjustmentMode.REDUCE_TO_TARGET
+                    val opt2Border = if (isOption2) Color(0xFFF59E0B) else borderColor
+                    val opt2Bg = if (isOption2) Color(0xFFF59E0B).copy(alpha = 0.12f) else if (isDark) Color(0x10FFFFFF) else Color(0x06000000)
+
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(if (isOption2) 1.5.dp else 1.dp, opt2Border, RoundedCornerShape(12.dp))
+                            .clickable { onSelectMode(MixtureAdjustmentMode.REDUCE_TO_TARGET) }
+                            .testTag("pathway_option2_button"),
+                        shape = RoundedCornerShape(12.dp),
+                        color = opt2Bg
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Option 2",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = if (isOption2) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurface
+                                )
+                                if (isOption2) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = Color(0xFFF59E0B),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Reduce Mode",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Scale to anchor. Reduce (-) excess from tub.",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 13.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Quick In-Tub Filling Shortcuts Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .border(1.dp, borderColor.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                    .clickable { onSetAnchorOnly() }
+                    .testTag("set_anchor_only_button"),
+                shape = RoundedCornerShape(10.dp),
+                color = surfaceBg
+            ) {
+                Text(
+                    text = "Anchor Only in Tub (0 for rest)",
+                    fontSize = 10.sp,
+                    fontFamily = DigitalMonospaceFont,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp)
+                )
+            }
+
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .border(1.dp, borderColor.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                    .clickable { onSetAllTargets() }
+                    .testTag("set_all_targets_button"),
+                shape = RoundedCornerShape(10.dp),
+                color = surfaceBg
+            ) {
+                Text(
+                    text = "All Target Quantities in Tub",
+                    fontSize = 10.sp,
+                    fontFamily = DigitalMonospaceFont,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Cards per ingredient
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1197,6 +1426,10 @@ private fun Step3ReferenceAndActualAdded(
 
                 val cardBg = if (isAnchor) primaryColor.copy(alpha = 0.12f) else surfaceBg
                 val cardBorder = if (isAnchor) primaryColor.copy(alpha = 0.6f) else borderColor
+
+                val actualDouble = actualText.replace(",", ".").replace(" ", "").trim().toDoubleOrNull()
+                val hasActual = actualDouble != null
+                val ratio = if (hasActual && item.targetQuantity > 0) actualDouble!! / item.targetQuantity else 1.0
 
                 Card(
                     modifier = Modifier
@@ -1241,20 +1474,41 @@ private fun Step3ReferenceAndActualAdded(
                                 }
                             }
 
-                            if (isAnchor) {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = primaryColor,
-                                    modifier = Modifier.testTag("calibration_anchor_badge")
-                                ) {
-                                    Text(
-                                        text = "CALIBRATION ANCHOR",
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        fontFamily = DigitalMonospaceFont,
-                                        color = if (isDark) Color.Black else Color.White,
-                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                                    )
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                if (hasActual && kotlin.math.abs(ratio - 1.0) > 0.005) {
+                                    val isOvershot = ratio > 1.0
+                                    val deltaPct = kotlin.math.abs((ratio - 1.0) * 100).toInt()
+                                    val badgeColor = if (isOvershot) Color(0xFF10B981) else Color(0xFFF59E0B)
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = badgeColor.copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            text = if (isOvershot) "+$deltaPct% (+)" else "-$deltaPct% (-)",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = DigitalMonospaceFont,
+                                            color = badgeColor,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                }
+
+                                if (isAnchor) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = primaryColor,
+                                        modifier = Modifier.testTag("calibration_anchor_badge")
+                                    ) {
+                                        Text(
+                                            text = "CALIBRATION ANCHOR",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = DigitalMonospaceFont,
+                                            color = if (isDark) Color.Black else Color.White,
+                                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1272,7 +1526,7 @@ private fun Step3ReferenceAndActualAdded(
                                 value = actualText,
                                 onValueChange = { onActualAddedChange(item.id, it) },
                                 readOnly = true,
-                                label = { Text("Actual Added (${item.unit})") },
+                                label = { Text("Actual in Tub (${item.unit})") },
                                 placeholder = { Text(formatNumber(item.targetQuantity)) },
                                 suffix = {
                                     if (isFocused) {
@@ -1323,232 +1577,926 @@ private fun Step3ReferenceAndActualAdded(
 @Composable
 private fun Step4RecalibratedProportions(
     recalibrationResult: RecalibrationResult,
+    selectedMode: MixtureAdjustmentMode,
+    onSelectMode: (MixtureAdjustmentMode) -> Unit,
+    showCompareBoth: Boolean,
+    onToggleCompareBoth: () -> Unit,
     onCopyAdjustments: () -> Unit,
     primaryColor: Color,
     surfaceBg: Color,
     borderColor: Color,
     isDark: Boolean
 ) {
+    val isOption1 = selectedMode == MixtureAdjustmentMode.ADD_TO_BALANCE
+    val activeProportions = if (isOption1) recalibrationResult.addModeProportions else recalibrationResult.reduceModeProportions
+    val primaryUnit = recalibrationResult.proportions.firstOrNull()?.unit ?: "kg"
+
     Column(modifier = Modifier.fillMaxWidth()) {
-        // 1. Info Box explaining scale factor in plain language
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .border(1.dp, primaryColor.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-                .testTag("step4_scale_factor_box"),
-            shape = RoundedCornerShape(16.dp),
-            color = primaryColor.copy(alpha = 0.12f)
+        // Top Header Row with Title & Quick Copy Button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "RECALIBRATION SCALE FACTOR: ${recalibrationResult.formattedScaleFactor}",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = primaryColor,
-                        letterSpacing = 1.sp
-                    )
+            Text(
+                text = "RECALIBRATION & PROPORTION ADJUSTMENTS",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DigitalMonospaceFont,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 0.8.sp
+            )
 
-                    IconButton(
-                        onClick = onCopyAdjustments,
-                        modifier = Modifier.size(28.dp).testTag("copy_proportions_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = "Copy report",
-                            tint = primaryColor,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = recalibrationResult.scaleExplanation,
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    lineHeight = 18.sp
+            IconButton(
+                onClick = onCopyAdjustments,
+                modifier = Modifier
+                    .size(28.dp)
+                    .testTag("copy_proportions_button")
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = "Copy report",
+                    tint = primaryColor,
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        // 2. Proportion Adjustments Detail Table
+        // DUAL OPTION SELECTOR & COMPARE BAR
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .testTag("proportions_adjustment_table"),
+                .testTag("step4_option_mode_switcher_card"),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = surfaceBg),
             border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
-                Text(
-                    text = "PROPORTION ADJUSTMENTS DETAIL",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = DigitalMonospaceFont,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    letterSpacing = 0.8.sp
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Table Header
+            Column(modifier = Modifier.padding(10.dp)) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 6.dp, vertical = 6.dp)
-                        .background(if (isDark) Color(0x10FFFFFF) else Color(0x08000000), RoundedCornerShape(8.dp)),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(
-                        text = "Ingredient",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1.3f)
-                    )
-                    Text(
-                        text = "New Req",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = "Added",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = "Still Needed",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = primaryColor,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier.weight(1.1f)
-                    )
+                    // Option 1 Tab: In-Tub Additions (Cannot Remove)
+                    val opt1Selected = !showCompareBoth && isOption1
+                    val opt1Border = if (opt1Selected) Color(0xFF10B981) else borderColor.copy(alpha = 0.5f)
+                    val opt1Bg = if (opt1Selected) Color(0xFF10B981).copy(alpha = 0.15f) else Color.Transparent
+
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .border(if (opt1Selected) 1.5.dp else 1.dp, opt1Border, RoundedCornerShape(10.dp))
+                            .clickable {
+                                if (showCompareBoth) onToggleCompareBoth()
+                                onSelectMode(MixtureAdjustmentMode.ADD_TO_BALANCE)
+                            }
+                            .testTag("step4_tab_option1_add"),
+                        shape = RoundedCornerShape(10.dp),
+                        color = opt1Bg
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(vertical = 8.dp, horizontal = 6.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.AddCircleOutline,
+                                    contentDescription = null,
+                                    tint = if (opt1Selected) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Option 1: Add",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = if (opt1Selected) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Text(
+                                text = "In-Tub (Cannot Remove)",
+                                fontSize = 9.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+                    // Option 2 Tab: Proportional Reductions (Remove Excess)
+                    val opt2Selected = !showCompareBoth && !isOption1
+                    val opt2Border = if (opt2Selected) Color(0xFFF59E0B) else borderColor.copy(alpha = 0.5f)
+                    val opt2Bg = if (opt2Selected) Color(0xFFF59E0B).copy(alpha = 0.15f) else Color.Transparent
+
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .border(if (opt2Selected) 1.5.dp else 1.dp, opt2Border, RoundedCornerShape(10.dp))
+                            .clickable {
+                                if (showCompareBoth) onToggleCompareBoth()
+                                onSelectMode(MixtureAdjustmentMode.REDUCE_TO_TARGET)
+                            }
+                            .testTag("step4_tab_option2_reduce"),
+                        shape = RoundedCornerShape(10.dp),
+                        color = opt2Bg
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(vertical = 8.dp, horizontal = 6.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.RemoveCircleOutline,
+                                    contentDescription = null,
+                                    tint = if (opt2Selected) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Option 2: Reduce",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = if (opt2Selected) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Text(
+                                text = "Scale to Anchor",
+                                fontSize = 9.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1
+                            )
+                        }
+                    }
+
+                    // Compare Both Tab
+                    val compareBorder = if (showCompareBoth) primaryColor else borderColor.copy(alpha = 0.5f)
+                    val compareBg = if (showCompareBoth) primaryColor.copy(alpha = 0.15f) else Color.Transparent
+
+                    Surface(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .border(if (showCompareBoth) 1.5.dp else 1.dp, compareBorder, RoundedCornerShape(10.dp))
+                            .clickable { onToggleCompareBoth() }
+                            .testTag("step4_tab_compare_both"),
+                        shape = RoundedCornerShape(10.dp),
+                        color = compareBg
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(vertical = 8.dp, horizontal = 10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CompareArrows,
+                                contentDescription = null,
+                                tint = if (showCompareBoth) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = "Compare",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = if (showCompareBoth) primaryColor else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // VIEW RENDERING: Either Compare View or Specific Option View
+        if (showCompareBoth) {
+            // ==========================================
+            // COMPARISON VIEW: DUAL OPTIONS SIDE-BY-SIDE
+            // ==========================================
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Dual Summary Header Card
+                Card(
+                    modifier = Modifier.fillMaxWidth().testTag("step4_compare_summary_card"),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = surfaceBg),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CompareArrows,
+                                contentDescription = null,
+                                tint = primaryColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "SIDE-BY-SIDE OPTION COMPARISON",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = primaryColor,
+                                letterSpacing = 0.8.sp
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Option 1 Mini Card
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .border(1.dp, Color(0xFF10B981).copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color(0xFF10B981).copy(alpha = 0.08f)
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Text(
+                                        text = "OPTION 1: IN-TUB",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = DigitalMonospaceFont,
+                                        color = Color(0xFF10B981)
+                                    )
+                                    Text(
+                                        text = "Scale: ${recalibrationResult.formattedInTubScaleFactor}",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = DigitalMonospaceFont,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "Total Weight: ${recalibrationResult.formattedAddModeTotalWeight}",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = "To Add: +${recalibrationResult.formattedTotalStillNeededWeight}",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF10B981)
+                                    )
+                                    Text(
+                                        text = "Removals: 0 (Add only)",
+                                        fontSize = 9.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            // Option 2 Mini Card
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .border(1.dp, Color(0xFFF59E0B).copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color(0xFFF59E0B).copy(alpha = 0.08f)
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Text(
+                                        text = "OPTION 2: REDUCE",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = DigitalMonospaceFont,
+                                        color = Color(0xFFF59E0B)
+                                    )
+                                    Text(
+                                        text = "Scale: ${recalibrationResult.formattedStrictAnchorScaleFactor}",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = DigitalMonospaceFont,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "Total Weight: ${recalibrationResult.formattedReduceModeTotalWeight}",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = "To Reduce: -${recalibrationResult.formattedTotalExcessWeight}",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (recalibrationResult.hasExcessInTub) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = "To Add: +${formatNumber(recalibrationResult.reduceModeProportions.sumOf { it.stillNeeded })} $primaryUnit",
+                                        fontSize = 9.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                // Comparative Table Card
+                Card(
+                    modifier = Modifier.fillMaxWidth().testTag("compare_table_card"),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = surfaceBg),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            text = "COMPONENT ADJUSTMENT COMPARISON",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            letterSpacing = 0.8.sp
+                        )
 
-                // Table Rows
-                recalibrationResult.proportions.forEach { prop ->
-                    val hasStillNeeded = prop.stillNeeded > 0.001
-                    val neededColor = if (hasStillNeeded) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant
+                        Spacer(modifier = Modifier.height(10.dp))
 
+                        // Table Header
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 6.dp, vertical = 6.dp)
+                                .background(if (isDark) Color(0x10FFFFFF) else Color(0x08000000), RoundedCornerShape(8.dp)),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Ingredient (In Tub)",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1.3f)
+                            )
+                            Text(
+                                text = "Option 1 (To Add)",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = Color(0xFF10B981),
+                                textAlign = TextAlign.End,
+                                modifier = Modifier.weight(1.2f)
+                            )
+                            Text(
+                                text = "Option 2 (Action)",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = Color(0xFFF59E0B),
+                                textAlign = TextAlign.End,
+                                modifier = Modifier.weight(1.2f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Table Rows
+                        recalibrationResult.addModeProportions.indices.forEach { index ->
+                            val addRow = recalibrationResult.addModeProportions[index]
+                            val reduceRow = recalibrationResult.reduceModeProportions.getOrNull(index) ?: addRow
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 6.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1.3f)) {
+                                    Text(
+                                        text = addRow.ingredientName,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = "In tub: ${addRow.formattedAlreadyAdded}",
+                                        fontSize = 9.sp,
+                                        fontFamily = DigitalMonospaceFont,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                // Option 1 Column: What to add
+                                Column(
+                                    modifier = Modifier.weight(1.2f),
+                                    horizontalAlignment = Alignment.End
+                                ) {
+                                    if (addRow.stillNeeded > 0.0001) {
+                                        Text(
+                                            text = "+${addRow.formattedStillNeeded}",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = DigitalMonospaceFont,
+                                            color = Color(0xFF10B981)
+                                        )
+                                        Text(
+                                            text = "Total: ${addRow.formattedNewTotal}",
+                                            fontSize = 9.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "0 Balanced",
+                                            fontSize = 10.sp,
+                                            fontFamily = DigitalMonospaceFont,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                // Option 2 Column: Action (reduce or add)
+                                Column(
+                                    modifier = Modifier.weight(1.2f),
+                                    horizontalAlignment = Alignment.End
+                                ) {
+                                    when {
+                                        reduceRow.excessAmount > 0.0001 -> {
+                                            Text(
+                                                text = "-${reduceRow.formattedExcess}",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                fontFamily = DigitalMonospaceFont,
+                                                color = Color(0xFFEF4444)
+                                            )
+                                            Text(
+                                                text = "REDUCE / REMOVE",
+                                                fontSize = 8.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFFEF4444)
+                                            )
+                                        }
+                                        reduceRow.stillNeeded > 0.0001 -> {
+                                            Text(
+                                                text = "+${reduceRow.formattedStillNeeded}",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                fontFamily = DigitalMonospaceFont,
+                                                color = Color(0xFF10B981)
+                                            )
+                                            Text(
+                                                text = "ADD TO TUB",
+                                                fontSize = 8.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF10B981)
+                                            )
+                                        }
+                                        else -> {
+                                            Text(
+                                                text = "0 Balanced",
+                                                fontSize = 10.sp,
+                                                fontFamily = DigitalMonospaceFont,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            HorizontalDivider(color = borderColor.copy(alpha = 0.4f))
+                        }
+                    }
+                }
+            }
+        } else {
+            // ==========================================
+            // SINGLE OPTION VIEW (Option 1 OR Option 2)
+            // ==========================================
+            val bannerAccent = if (isOption1) Color(0xFF10B981) else Color(0xFFF59E0B)
+
+            // 1. Info Banner Box explaining the active mode
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(1.dp, bannerAccent.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                    .testTag("step4_scale_factor_box"),
+                shape = RoundedCornerShape(16.dp),
+                color = bannerAccent.copy(alpha = 0.10f)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 6.dp, vertical = 8.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1.3f)) {
-                            Text(
-                                text = prop.ingredientName,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (isOption1) Icons.Default.AddCircleOutline else Icons.Default.RemoveCircleOutline,
+                                contentDescription = null,
+                                tint = bannerAccent,
+                                modifier = Modifier.size(18.dp)
                             )
-                            if (prop.isAnchor) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (isOption1) "OPTION 1: IN-TUB ADDITIONS" else "OPTION 2: PROPORTIONAL REDUCTIONS",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = bannerAccent,
+                                letterSpacing = 0.8.sp
+                            )
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = bannerAccent
+                        ) {
+                            Text(
+                                text = if (isOption1) "CANNOT REMOVE" else "SCALE TO ANCHOR",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = if (isDark) Color.Black else Color.White,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = recalibrationResult.scaleExplanation,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        lineHeight = 18.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 3 Metric Badges Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Metric 1: Scale Factor
+                        Surface(
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
+                        ) {
+                            Column(modifier = Modifier.padding(8.dp)) {
                                 Text(
-                                    text = "Anchor",
-                                    fontSize = 9.sp,
+                                    text = if (isOption1) "IN-TUB SCALE" else "ANCHOR SCALE",
+                                    fontSize = 8.sp,
                                     fontFamily = DigitalMonospaceFont,
-                                    color = primaryColor
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = recalibrationResult.formattedScaleFactor,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
 
-                        Text(
-                            text = prop.formattedNewTotal,
-                            fontSize = 11.sp,
-                            fontFamily = DigitalMonospaceFont,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.End,
-                            modifier = Modifier.weight(1f)
-                        )
+                        // Metric 2: Total Weight
+                        Surface(
+                            modifier = Modifier.weight(1.2f),
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
+                        ) {
+                            Column(modifier = Modifier.padding(8.dp)) {
+                                Text(
+                                    text = "TOTAL WEIGHT",
+                                    fontSize = 8.sp,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = recalibrationResult.formattedTotalNewWeight,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
 
+                        // Metric 3: Total Action (Add or Excess)
+                        Surface(
+                            modifier = Modifier.weight(1.2f),
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
+                        ) {
+                            Column(modifier = Modifier.padding(8.dp)) {
+                                Text(
+                                    text = if (isOption1) "TOTAL TO ADD" else "EXCESS TO REDUCE",
+                                    fontSize = 8.sp,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = bannerAccent
+                                )
+                                Text(
+                                    text = if (isOption1) "+${recalibrationResult.formattedTotalStillNeededWeight}" else "-${recalibrationResult.formattedTotalExcessWeight}",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = bannerAccent
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 2. Proportion Adjustments Detail Table
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("proportions_adjustment_table"),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = surfaceBg),
+                border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        text = if (isOption1) "IN-TUB BALANCED PROPORTIONS" else "SCALED ANCHOR REDUCTION PROPORTIONS",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        letterSpacing = 0.8.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Table Header
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 6.dp, vertical = 6.dp)
+                            .background(if (isDark) Color(0x10FFFFFF) else Color(0x08000000), RoundedCornerShape(8.dp)),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Text(
-                            text = prop.formattedAlreadyAdded,
-                            fontSize = 11.sp,
+                            text = "Ingredient",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1.3f)
+                        )
+                        Text(
+                            text = if (isOption1) "Balanced" else "Scaled Req",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
                             fontFamily = DigitalMonospaceFont,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.End,
                             modifier = Modifier.weight(1f)
                         )
+                        Text(
+                            text = "In Tub",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.End,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = if (isOption1) "To Add (+)" else "Action",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = bannerAccent,
+                            textAlign = TextAlign.End,
+                            modifier = Modifier.weight(1.3f)
+                        )
+                    }
 
-                        // Visually emphasized "Still Needed"
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = if (hasStillNeeded) neededColor.copy(alpha = 0.15f) else Color.Transparent,
-                            modifier = Modifier.weight(1.1f)
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Table Rows
+                    activeProportions.forEach { prop ->
+                        val hasStillNeeded = prop.stillNeeded > 0.001
+                        val hasExcess = prop.excessAmount > 0.001
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 6.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
+                            Column(modifier = Modifier.weight(1.3f)) {
+                                Text(
+                                    text = prop.ingredientName,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    if (prop.isAnchor) {
+                                        Text(
+                                            text = "Anchor",
+                                            fontSize = 9.sp,
+                                            fontFamily = DigitalMonospaceFont,
+                                            color = primaryColor
+                                        )
+                                    }
+                                    if (isOption1 && prop.isLimitingFactor && !prop.isAnchor) {
+                                        Text(
+                                            text = "Limiting in Tub",
+                                            fontSize = 9.sp,
+                                            fontFamily = DigitalMonospaceFont,
+                                            color = Color(0xFF10B981)
+                                        )
+                                    }
+                                }
+                            }
+
                             Text(
-                                text = if (hasStillNeeded) "+${prop.formattedStillNeeded}" else "0 ${prop.unit}",
+                                text = prop.formattedNewTotal,
                                 fontSize = 11.sp,
                                 fontFamily = DigitalMonospaceFont,
-                                fontWeight = if (hasStillNeeded) FontWeight.Bold else FontWeight.Normal,
-                                color = neededColor,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 textAlign = TextAlign.End,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            Text(
+                                text = prop.formattedAlreadyAdded,
+                                fontSize = 11.sp,
+                                fontFamily = DigitalMonospaceFont,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.End,
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            // Emphasized Action Column
+                            Column(
+                                modifier = Modifier.weight(1.3f),
+                                horizontalAlignment = Alignment.End
+                            ) {
+                                if (isOption1) {
+                                    // Option 1: Always Additions
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = if (hasStillNeeded) Color(0xFF10B981).copy(alpha = 0.15f) else Color.Transparent
+                                    ) {
+                                        Text(
+                                            text = if (hasStillNeeded) "+${prop.formattedStillNeeded}" else "0 ${prop.unit}",
+                                            fontSize = 11.sp,
+                                            fontFamily = DigitalMonospaceFont,
+                                            fontWeight = if (hasStillNeeded) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (hasStillNeeded) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            textAlign = TextAlign.End,
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                } else {
+                                    // Option 2: Reductions or Additions
+                                    when {
+                                        hasExcess -> {
+                                            Surface(
+                                                shape = RoundedCornerShape(6.dp),
+                                                color = Color(0xFFEF4444).copy(alpha = 0.15f)
+                                            ) {
+                                                Text(
+                                                    text = "-${prop.formattedExcess} REDUCE",
+                                                    fontSize = 10.sp,
+                                                    fontFamily = DigitalMonospaceFont,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFFEF4444),
+                                                    textAlign = TextAlign.End,
+                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+                                        hasStillNeeded -> {
+                                            Surface(
+                                                shape = RoundedCornerShape(6.dp),
+                                                color = Color(0xFF10B981).copy(alpha = 0.15f)
+                                            ) {
+                                                Text(
+                                                    text = "+${prop.formattedStillNeeded} ADD",
+                                                    fontSize = 10.sp,
+                                                    fontFamily = DigitalMonospaceFont,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF10B981),
+                                                    textAlign = TextAlign.End,
+                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+                                        else -> {
+                                            Text(
+                                                text = "0 Balanced",
+                                                fontSize = 10.sp,
+                                                fontFamily = DigitalMonospaceFont,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                textAlign = TextAlign.End
+                                            )
+                                        }
+                                    }
+
+                                    if (prop.reductionFromOriginal > 0.0001) {
+                                        Text(
+                                            text = "(-${prop.formattedReductionFromOriginal})",
+                                            fontSize = 8.sp,
+                                            fontFamily = DigitalMonospaceFont,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        HorizontalDivider(color = borderColor.copy(alpha = 0.4f))
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Footer: Total Recalibrated Mixture Weight
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        color = bannerAccent.copy(alpha = 0.10f)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (isOption1) "TOTAL IN-TUB BALANCED WEIGHT:" else "TOTAL SCALED TARGET WEIGHT:",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = bannerAccent
+                            )
+                            Text(
+                                text = recalibrationResult.formattedTotalNewWeight,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DigitalMonospaceFont,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
-                    HorizontalDivider(color = borderColor.copy(alpha = 0.4f))
                 }
+            }
 
-                Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-                // Footer: Total Recalibrated Mixture Weight
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
-                    color = primaryColor.copy(alpha = 0.10f)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "TOTAL RECALIBRATED WEIGHT:",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            color = primaryColor
-                        )
-                        Text(
-                            text = recalibrationResult.formattedTotalNewWeight,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            color = MaterialTheme.colorScheme.onSurface
+            // Switch Option Suggestion Card
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(1.dp, borderColor.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                    .clickable {
+                        onSelectMode(
+                            if (isOption1) MixtureAdjustmentMode.REDUCE_TO_TARGET else MixtureAdjustmentMode.ADD_TO_BALANCE
                         )
                     }
+                    .testTag("switch_to_alternate_mode_button"),
+                shape = RoundedCornerShape(12.dp),
+                color = surfaceBg
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isOption1) "Want to strictly scale down to anchor by removing excess?" else "Mixture locked in tub and cannot scoop anything out?",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = if (isOption1) "Switch to Option 2: Proportional Reductions" else "Switch to Option 1: In-Tub Additions (Add only)",
+                            fontSize = 10.sp,
+                            color = primaryColor
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.Default.SwapHoriz,
+                        contentDescription = null,
+                        tint = primaryColor,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
@@ -1562,6 +2510,8 @@ private fun Step4RecalibratedProportions(
 private fun Step5DivideIntoBatches(
     recalibrationResult: RecalibrationResult,
     batchDivisionResult: BatchDivisionResult,
+    selectedMode: MixtureAdjustmentMode,
+    onSelectMode: (MixtureAdjustmentMode) -> Unit,
     batchCountText: String,
     batchCount: Int,
     isBatchCountFocused: Boolean,
@@ -1603,7 +2553,40 @@ private fun Step5DivideIntoBatches(
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Basis Mode Chip
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (selectedMode == MixtureAdjustmentMode.ADD_TO_BALANCE) Color(0xFF10B981).copy(alpha = 0.12f) else Color(0xFFF59E0B).copy(alpha = 0.12f),
+                    modifier = Modifier.clickable {
+                        onSelectMode(
+                            if (selectedMode == MixtureAdjustmentMode.ADD_TO_BALANCE) MixtureAdjustmentMode.REDUCE_TO_TARGET else MixtureAdjustmentMode.ADD_TO_BALANCE
+                        )
+                    }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = if (selectedMode == MixtureAdjustmentMode.ADD_TO_BALANCE) "Basis: Option 1 (In-Tub Additions)" else "Basis: Option 2 (Proportional Reductions)",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = if (selectedMode == MixtureAdjustmentMode.ADD_TO_BALANCE) Color(0xFF10B981) else Color(0xFFF59E0B)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.SwapHoriz,
+                            contentDescription = "Switch basis mode",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 var showBatchCopyPasteMenu by remember { mutableStateOf(false) }
 
@@ -2077,14 +3060,45 @@ private fun formatNumber(value: Double): String {
 }
 
 private fun buildRecalibrationReportText(result: RecalibrationResult): String {
+    val unit = result.proportions.firstOrNull()?.unit ?: "kg"
     return buildString {
-        appendLine("=== MIXTURE RATIO RECALIBRATION ===")
-        appendLine("Anchor: ${result.anchorIngredientName} (Actual: ${formatNumber(result.anchorActualAdded)} / Target: ${formatNumber(result.anchorTargetQty)})")
-        appendLine("Scale Factor: ${result.formattedScaleFactor}")
-        appendLine("Total Weight: ${result.formattedTotalNewWeight}")
-        appendLine("\n--- PROPORTIONS ---")
-        result.proportions.forEach { prop ->
-            appendLine("• ${prop.ingredientName}: New Total = ${prop.formattedNewTotal} | Added = ${prop.formattedAlreadyAdded} | Still Needed = ${prop.formattedStillNeeded}")
+        appendLine("========================================")
+        appendLine("    MIXTURE FORMULATION CALIBRATION     ")
+        appendLine("========================================")
+        appendLine("Anchor Component: ${result.anchorIngredientName}")
+        appendLine("Target Recipe: ${formatNumber(result.anchorTargetQty)} $unit")
+        appendLine("Actual in Tub: ${formatNumber(result.anchorActualAdded)} $unit")
+        appendLine("Strict Anchor Scale: ${result.formattedStrictAnchorScaleFactor}")
+        appendLine("In-Tub Scale (Cannot Remove): ${result.formattedInTubScaleFactor}")
+        appendLine("Active Adjustment Pathway: ${result.adjustmentMode.title}")
+        appendLine("")
+        appendLine("----------------------------------------")
+        appendLine("OPTION 1: IN-TUB ADDITIONS (CANNOT REMOVE)")
+        appendLine("----------------------------------------")
+        appendLine("Scale Factor: ${result.formattedInTubScaleFactor} | Total Balanced Weight: ${result.formattedAddModeTotalWeight}")
+        appendLine("Limiting In-Tub Component: ${result.limitingIngredientName}")
+        appendLine("Total Material to Add: +${result.formattedTotalStillNeededWeight}")
+        result.addModeProportions.forEach { prop ->
+            val needed = if (prop.stillNeeded > 0.0001) "+${prop.formattedStillNeeded} [ADD TO TUB]" else "0 $unit [Balanced]"
+            appendLine("• ${prop.ingredientName}: Target=${prop.formattedTarget} | In-Tub=${prop.formattedAlreadyAdded} | Balanced Total=${prop.formattedNewTotal} | To Add: $needed")
         }
+        appendLine("")
+        appendLine("----------------------------------------")
+        appendLine("OPTION 2: PROPORTIONAL REDUCTIONS (REMOVE EXCESS)")
+        appendLine("----------------------------------------")
+        appendLine("Scale Factor: ${result.formattedStrictAnchorScaleFactor} | Total Scaled Weight: ${result.formattedReduceModeTotalWeight}")
+        if (result.hasExcessInTub) {
+            appendLine("TOTAL EXCESS MATERIAL TO REDUCE/REMOVE: ${result.formattedTotalExcessWeight}")
+        }
+        result.reduceModeProportions.forEach { prop ->
+            val action = when {
+                prop.excessAmount > 0.0001 -> "-${prop.formattedExcess} [REDUCE / REMOVE FROM TUB]"
+                prop.stillNeeded > 0.0001 -> "+${prop.formattedStillNeeded} [ADD TO TUB]"
+                else -> "0 $unit [Balanced]"
+            }
+            val origReduction = if (prop.reductionFromOriginal > 0.0001) " (-${prop.formattedReductionFromOriginal} from original recipe)" else ""
+            appendLine("• ${prop.ingredientName}: Target=${prop.formattedTarget} | In-Tub=${prop.formattedAlreadyAdded} | Scaled Target=${prop.formattedNewTotal} | Action: $action$origReduction")
+        }
+        appendLine("========================================")
     }
 }
