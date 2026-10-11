@@ -28,7 +28,15 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import com.example.domain.mixture.BatchOperationMode
+import com.example.domain.mixture.ComponentRole
+import com.example.domain.mixture.EquationComponent
+import com.example.domain.mixture.EquationMode
 import com.example.domain.mixture.MixtureAdjustmentMode
+import com.example.domain.mixture.MixtureEquationEngine
+import com.example.domain.mixture.ReferenceComponent
+import com.example.domain.mixture.ReferenceResult
+import com.example.domain.mixture.ReferenceRole
+import com.example.domain.mixture.TargetTotalResult
 import java.util.UUID
 
 data class MixtureUiState(
@@ -50,6 +58,18 @@ data class MixtureUiState(
     val historyCategoryFilter: String = "ALL",
     val selectedAdjustmentMode: MixtureAdjustmentMode = MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT,
     val showCompareBothModes: Boolean = false,
+    // --- Equation solver (target total / per reference) ---
+    val equationMode: EquationMode = EquationMode.TARGET_TOTAL,
+    val targetTotalText: String = "",
+    val targetTotalUnit: String = "kg",
+    val componentRoles: Map<String, ComponentRole> = emptyMap(),
+    val fixedTexts: Map<String, String> = emptyMap(),
+    val referenceRoles: Map<String, ReferenceRole> = emptyMap(),
+    val referenceWeightText: String = "",
+    val referenceUnit: String = "kg",
+    val referenceResultUnit: String = "kg",
+    val targetTotalResult: TargetTotalResult? = null,
+    val referenceResult: ReferenceResult? = null,
     val simplifiedRatio: RatioCalculationResult = MixtureCalculatorEngine.calculateSimplifiedRatio(emptyList()),
     val recalibrationResult: RecalibrationResult = MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap(), MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT),
     val batchDivisionResult: BatchDivisionResult = MixtureCalculatorEngine.calculateBatches(
@@ -560,6 +580,128 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    // ---------------------------------------------------------------------------------
+    // Equation solver
+    // ---------------------------------------------------------------------------------
+
+    fun setEquationMode(mode: EquationMode) {
+        _uiState.update { recalculate(it.copy(equationMode = mode)) }
+    }
+
+    fun setTargetTotalText(text: String) {
+        _uiState.update { recalculate(it.copy(targetTotalText = text)) }
+    }
+
+    fun setTargetTotalUnit(unit: String) {
+        _uiState.update { recalculate(it.copy(targetTotalUnit = unit)) }
+    }
+
+    fun setComponentRole(id: String, role: ComponentRole) {
+        _uiState.update { current ->
+            // Seed the fixed amount with the ingredient's own quantity the first time it is fixed.
+            val seeded = if (role == ComponentRole.FIXED && current.fixedTexts[id].isNullOrBlank()) {
+                val qty = current.targetIngredients.find { it.id == id }?.targetQuantity
+                if (qty != null) current.fixedTexts + (id to formatInputNumber(qty)) else current.fixedTexts
+            } else {
+                current.fixedTexts
+            }
+            recalculate(current.copy(componentRoles = current.componentRoles + (id to role), fixedTexts = seeded))
+        }
+    }
+
+    fun setFixedText(id: String, text: String) {
+        _uiState.update { recalculate(it.copy(fixedTexts = it.fixedTexts + (id to text))) }
+    }
+
+    fun setReferenceRole(id: String, role: ReferenceRole) {
+        _uiState.update { recalculate(it.copy(referenceRoles = it.referenceRoles + (id to role))) }
+    }
+
+    fun setReferenceWeightText(text: String) {
+        _uiState.update { recalculate(it.copy(referenceWeightText = text)) }
+    }
+
+    fun setReferenceUnit(unit: String) {
+        _uiState.update { recalculate(it.copy(referenceUnit = unit)) }
+    }
+
+    fun setReferenceResultUnit(unit: String) {
+        _uiState.update { recalculate(it.copy(referenceResultUnit = unit)) }
+    }
+
+    /**
+     * Replaces the ingredient list with the one-reference-portion recipe (e.g. A 2,044.44 g,
+     * B 255.56 g, C 400 g, D 150 g) and switches to Target Total mode, so the Per Reference
+     * result can be scaled to a new batch weight, with fixed/removed ingredients.
+     */
+    fun useReferenceRecipeAsBase() {
+        _uiState.update { current ->
+            val result = current.referenceResult
+            if (result == null || !result.isValid) return@update current
+            val newIngredients = result.rows.map { row ->
+                TargetIngredient(
+                    id = row.id,
+                    name = row.name,
+                    targetQuantity = row.perReferenceQty,
+                    unit = result.resultUnit
+                )
+            }
+            val updated = current.copy(
+                targetIngredients = newIngredients,
+                anchorIngredientId = newIngredients.firstOrNull()?.id ?: "",
+                actualAddedTexts = emptyMap(),
+                componentRoles = emptyMap(),
+                fixedTexts = emptyMap(),
+                equationMode = EquationMode.TARGET_TOTAL,
+                targetTotalUnit = result.resultUnit
+            )
+            recalculate(updated)
+        }
+    }
+
+    private fun parseDecimal(text: String): Double? =
+        text.replace(",", ".").replace(" ", "").trim().toDoubleOrNull()
+
+    private fun formatInputNumber(value: Double): String =
+        if (value % 1.0 == 0.0) value.toLong().toString()
+        else String.format(java.util.Locale.US, "%.4f", value).trimEnd('0').trimEnd('.')
+
+    private fun computeTargetTotal(state: MixtureUiState): TargetTotalResult? {
+        val total = parseDecimal(state.targetTotalText) ?: return null
+        val components = state.targetIngredients.map { item ->
+            val role = state.componentRoles[item.id] ?: ComponentRole.SCALE
+            EquationComponent(
+                id = item.id,
+                name = item.name,
+                baseQty = item.targetQuantity,
+                unit = item.unit,
+                role = role,
+                fixedQty = state.fixedTexts[item.id]?.let { parseDecimal(it) },
+                fixedUnit = item.unit
+            )
+        }
+        return MixtureEquationEngine.solveTargetTotal(components, total, state.targetTotalUnit)
+    }
+
+    private fun computeReference(state: MixtureUiState): ReferenceResult? {
+        val reference = parseDecimal(state.referenceWeightText) ?: return null
+        val components = state.targetIngredients.map { item ->
+            ReferenceComponent(
+                id = item.id,
+                name = item.name,
+                qty = item.targetQuantity,
+                unit = item.unit,
+                role = state.referenceRoles[item.id] ?: ReferenceRole.MAIN
+            )
+        }
+        return MixtureEquationEngine.solvePerReference(
+            components = components,
+            referenceWeight = reference,
+            referenceUnit = state.referenceUnit,
+            resultUnit = state.referenceResultUnit
+        )
+    }
+
     private fun recalculate(state: MixtureUiState): MixtureUiState {
         val ratioResult = MixtureCalculatorEngine.calculateSimplifiedRatio(state.targetIngredients)
 
@@ -601,7 +743,9 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
             anchorIngredientId = anchorId,
             simplifiedRatio = ratioResult,
             recalibrationResult = recalResult,
-            batchDivisionResult = batchResult
+            batchDivisionResult = batchResult,
+            targetTotalResult = computeTargetTotal(state),
+            referenceResult = computeReference(state)
         )
     }
 

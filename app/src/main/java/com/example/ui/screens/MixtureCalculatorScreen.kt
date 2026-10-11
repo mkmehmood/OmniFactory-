@@ -107,6 +107,7 @@ import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Lock
+import com.example.ui.components.MixtureEquationSolverCard
 import com.example.ui.components.SmartStationKeypad
 import com.example.ui.MixtureUiState
 import com.example.ui.MixtureViewModel
@@ -478,6 +479,37 @@ fun MixtureCalculatorScreen(
                             surfaceBg = surfaceBg,
                             borderColor = cardBorderColor,
                             isDark = isDark
+                        )
+                    }
+
+                    if (uiState.currentStep == 3) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        MixtureEquationSolverCard(
+                            ingredients = uiState.targetIngredients,
+                            mode = uiState.equationMode,
+                            onModeChange = { viewModel.setEquationMode(it) },
+                            targetTotalText = uiState.targetTotalText,
+                            targetTotalUnit = uiState.targetTotalUnit,
+                            onTargetTotalChange = { viewModel.setTargetTotalText(it) },
+                            onTargetUnitChange = { viewModel.setTargetTotalUnit(it) },
+                            roles = uiState.componentRoles,
+                            fixedTexts = uiState.fixedTexts,
+                            onRoleChange = { id, role -> viewModel.setComponentRole(id, role) },
+                            onFixedChange = { id, text -> viewModel.setFixedText(id, text) },
+                            targetResult = uiState.targetTotalResult,
+                            referenceRoles = uiState.referenceRoles,
+                            referenceWeightText = uiState.referenceWeightText,
+                            referenceUnit = uiState.referenceUnit,
+                            referenceResultUnit = uiState.referenceResultUnit,
+                            onReferenceRoleChange = { id, role -> viewModel.setReferenceRole(id, role) },
+                            onReferenceWeightChange = { viewModel.setReferenceWeightText(it) },
+                            onReferenceUnitChange = { viewModel.setReferenceUnit(it) },
+                            onReferenceResultUnitChange = { viewModel.setReferenceResultUnit(it) },
+                            referenceResult = uiState.referenceResult,
+                            onUseAsBase = { viewModel.useReferenceRecipeAsBase() },
+                            primaryColor = primaryColor,
+                            surfaceBg = surfaceBg,
+                            borderColor = cardBorderColor
                         )
                     }
 
