@@ -15,6 +15,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,6 +27,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.domain.mixture.BaseBatchResult
+import com.example.domain.mixture.BatchRole
 import com.example.domain.mixture.ComponentRole
 import com.example.domain.mixture.EquationMode
 import com.example.domain.mixture.ReferenceResult
@@ -35,7 +41,8 @@ private val WarnAmber = Color(0xFFF59E0B)
 private val OkGreen = Color(0xFF10B981)
 
 /**
- * Equation solver for problems such as:
+ * Solver controls for the non-anchor formulation methods. Part of Step 3; results flow into Step 4+.
+ * Problems covered:
  *  - "Total batch is 2.3 kg. Keep C = 400 g and D = 150 g, split the rest between A and B by ratio."
  *  - "C and D are per 2.3 kg of A+B. A+B is actually 90 kg. How much C and D?"
  *
@@ -45,7 +52,6 @@ private val OkGreen = Color(0xFF10B981)
 fun MixtureEquationSolverCard(
     ingredients: List<TargetIngredient>,
     mode: EquationMode,
-    onModeChange: (EquationMode) -> Unit,
     // Target total mode
     targetTotalText: String,
     targetTotalUnit: String,
@@ -67,6 +73,20 @@ fun MixtureEquationSolverCard(
     onReferenceResultUnitChange: (String) -> Unit,
     referenceResult: ReferenceResult?,
     onUseAsBase: () -> Unit,
+    // Base + additives mode
+    batchRoles: Map<String, BatchRole>,
+    baseTargetText: String,
+    baseTargetUnit: String,
+    batchMultiplierText: String,
+    onBatchRoleChange: (String, BatchRole) -> Unit,
+    onBaseTargetChange: (String) -> Unit,
+    onBaseTargetUnitChange: (String) -> Unit,
+    onBatchMultiplierChange: (String) -> Unit,
+    baseBatchResult: BaseBatchResult?,
+    // Optional: what is already in the tub (shared by all methods)
+    inTubTexts: Map<String, String>,
+    onInTubChange: (String, String) -> Unit,
+    onClearInTub: () -> Unit,
     primaryColor: Color,
     surfaceBg: Color,
     borderColor: Color,
@@ -80,31 +100,10 @@ fun MixtureEquationSolverCard(
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
-                text = "Equation Solver",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = primaryColor
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = "Fix a total batch weight, lock or remove ingredients, or scale amounts quoted per a reference weight.",
+                text = mode.hint,
                 fontSize = 11.sp,
                 color = primaryColor.copy(alpha = 0.7f)
             )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                EquationMode.values().forEach { m ->
-                    Chip(
-                        label = m.label,
-                        selected = mode == m,
-                        color = primaryColor,
-                        onClick = { onModeChange(m) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -117,7 +116,17 @@ fun MixtureEquationSolverCard(
                 return@Column
             }
 
+            InTubBlock(
+                ingredients = ingredients,
+                texts = inTubTexts,
+                onChange = onInTubChange,
+                onClear = onClearInTub,
+                primaryColor = primaryColor,
+                borderColor = borderColor
+            )
+
             when (mode) {
+                EquationMode.ANCHOR -> Unit
                 EquationMode.TARGET_TOTAL -> TargetTotalSection(
                     ingredients = ingredients,
                     targetTotalText = targetTotalText,
@@ -147,6 +156,108 @@ fun MixtureEquationSolverCard(
                     primaryColor = primaryColor,
                     borderColor = borderColor
                 )
+                EquationMode.BASE_BATCH -> BaseBatchSection(
+                    ingredients = ingredients,
+                    roles = batchRoles,
+                    baseTargetText = baseTargetText,
+                    baseTargetUnit = baseTargetUnit,
+                    multiplierText = batchMultiplierText,
+                    onRoleChange = onBatchRoleChange,
+                    onBaseTargetChange = onBaseTargetChange,
+                    onBaseUnitChange = onBaseTargetUnitChange,
+                    onMultiplierChange = onBatchMultiplierChange,
+                    result = baseBatchResult,
+                    primaryColor = primaryColor,
+                    borderColor = borderColor
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InTubBlock(
+    ingredients: List<TargetIngredient>,
+    texts: Map<String, String>,
+    onChange: (String, String) -> Unit,
+    onClear: () -> Unit,
+    primaryColor: Color,
+    borderColor: Color
+) {
+    val hasValues = texts.values.any { it.isNotBlank() }
+    var expanded by remember { mutableStateOf(hasValues) }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Chip(
+            label = if (expanded) "Hide in-tub amounts" else "Already in tub? (optional)",
+            selected = expanded || hasValues,
+            color = WarnAmber,
+            onClick = { expanded = !expanded },
+            modifier = Modifier.weight(1f)
+        )
+        if (hasValues) {
+            Chip(
+                label = "Clear",
+                selected = false,
+                color = ErrorRed,
+                onClick = onClear,
+                modifier = Modifier.weight(0.4f)
+            )
+        }
+    }
+
+    if (expanded) {
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Enter what is already mixed in. The result shows what to add, or what to remove if you are over.",
+            fontSize = 11.sp,
+            color = primaryColor.copy(alpha = 0.7f)
+        )
+        ingredients.forEach { item ->
+            Spacer(modifier = Modifier.height(6.dp))
+            LiquidGlassTextField(
+                value = texts[item.id] ?: "",
+                onValueChange = { onChange(item.id, it) },
+                label = { Text("${item.name} in tub (${item.unit})") },
+                placeholder = { Text("0") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                singleLine = true,
+                accentColor = WarnAmber,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+    Spacer(modifier = Modifier.height(12.dp))
+    HorizontalDivider(color = borderColor)
+    Spacer(modifier = Modifier.height(12.dp))
+}
+
+/**
+ * Method picker shown at the top of Step 3. Anchor Scale keeps the in-tub calibration flow; the other
+ * methods solve a formulation that feeds the same result, batch-scaling and history steps.
+ */
+@Composable
+fun FormulaMethodSelector(
+    mode: EquationMode,
+    onModeChange: (EquationMode) -> Unit,
+    primaryColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        EquationMode.values().toList().chunked(2).forEach { pair ->
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                pair.forEach { m ->
+                    Chip(
+                        label = m.label,
+                        selected = mode == m,
+                        color = primaryColor,
+                        onClick = { onModeChange(m) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
     }
@@ -424,6 +535,148 @@ private fun PerReferenceSection(
         onClick = onUseAsBase,
         modifier = Modifier.fillMaxWidth()
     )
+}
+
+@Composable
+private fun BaseBatchSection(
+    ingredients: List<TargetIngredient>,
+    roles: Map<String, BatchRole>,
+    baseTargetText: String,
+    baseTargetUnit: String,
+    multiplierText: String,
+    onRoleChange: (String, BatchRole) -> Unit,
+    onBaseTargetChange: (String) -> Unit,
+    onBaseUnitChange: (String) -> Unit,
+    onMultiplierChange: (String) -> Unit,
+    result: BaseBatchResult?,
+    primaryColor: Color,
+    borderColor: Color
+) {
+    Text(
+        text = "Ratio = shares the base left after fixed items, by its amount as a ratio (e.g. 80 : 10). " +
+            "Fixed = exact weight inside the base. Additive = exact weight added on top of the base. " +
+            "The multiplier scales every item.",
+        fontSize = 11.sp,
+        color = primaryColor.copy(alpha = 0.7f)
+    )
+    Spacer(modifier = Modifier.height(10.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        LiquidGlassTextField(
+            value = baseTargetText,
+            onValueChange = onBaseTargetChange,
+            label = { Text("Base target weight") },
+            placeholder = { Text("e.g. 3") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            singleLine = true,
+            accentColor = primaryColor,
+            modifier = Modifier.weight(1.4f)
+        )
+        LiquidGlassTextField(
+            value = baseTargetUnit,
+            onValueChange = onBaseUnitChange,
+            label = { Text("Unit") },
+            placeholder = { Text("kg / g") },
+            singleLine = true,
+            accentColor = primaryColor,
+            modifier = Modifier.weight(1f)
+        )
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    LiquidGlassTextField(
+        value = multiplierText,
+        onValueChange = onMultiplierChange,
+        label = { Text("Batch multiplier (x)") },
+        placeholder = { Text("e.g. 10") },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        singleLine = true,
+        accentColor = primaryColor,
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    ingredients.forEach { item ->
+        val role = roles[item.id] ?: BatchRole.PROPORTIONAL
+        Spacer(modifier = Modifier.height(10.dp))
+        HorizontalDivider(color = borderColor)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "${item.name}  (${formatQty(item.targetQuantity)} ${item.unit})",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = primaryColor
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            BatchRole.values().forEach { r ->
+                Chip(
+                    label = r.label,
+                    selected = role == r,
+                    color = when (r) {
+                        BatchRole.PROPORTIONAL -> primaryColor
+                        BatchRole.FIXED_BASE -> OkGreen
+                        BatchRole.ADDITIVE -> WarnAmber
+                    },
+                    onClick = { onRoleChange(item.id, r) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+
+    Spacer(modifier = Modifier.height(14.dp))
+
+    if (result == null) {
+        Text("Enter a base target weight to see the breakdown.", fontSize = 12.sp, color = primaryColor.copy(alpha = 0.7f))
+        return
+    }
+    if (!result.isValid) {
+        Text(
+            text = result.errorMessage ?: "Cannot solve with these inputs.",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = ErrorRed
+        )
+        result.steps.forEach { StepLine(it, primaryColor) }
+        return
+    }
+
+    Text("Result", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = primaryColor)
+    Spacer(modifier = Modifier.height(6.dp))
+    result.rows.forEach { row ->
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 3.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(row.name, fontSize = 12.sp, color = primaryColor)
+                Text(
+                    text = "${row.role.label}  |  x1: ${row.formattedUnscaled}",
+                    fontSize = 10.sp,
+                    color = primaryColor.copy(alpha = 0.6f)
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(row.formattedFinal, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = primaryColor)
+                Text(row.formattedShare, fontSize = 10.sp, color = primaryColor.copy(alpha = 0.6f))
+            }
+        }
+    }
+    HorizontalDivider(color = borderColor, modifier = Modifier.padding(vertical = 6.dp))
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text("Unscaled total", fontSize = 12.sp, color = primaryColor)
+        Text(result.formattedUnscaledTotal, fontSize = 12.sp, color = primaryColor)
+    }
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text("Final total", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = primaryColor)
+        Text(result.formattedFinalTotal, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = OkGreen)
+    }
+    result.warnings.forEach {
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(it, fontSize = 11.sp, color = WarnAmber)
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    result.steps.forEach { StepLine(it, primaryColor) }
 }
 
 @Composable

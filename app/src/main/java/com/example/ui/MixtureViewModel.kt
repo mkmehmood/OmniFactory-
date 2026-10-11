@@ -29,8 +29,16 @@ import org.json.JSONArray
 import org.json.JSONObject
 import com.example.domain.mixture.BatchOperationMode
 import com.example.domain.mixture.ComponentRole
+import com.example.domain.mixture.BaseBatchResult
+import com.example.domain.mixture.BatchComponent
+import com.example.domain.mixture.BatchRole
 import com.example.domain.mixture.EquationComponent
 import com.example.domain.mixture.EquationMode
+import com.example.domain.mixture.FormulaSummary
+import com.example.domain.mixture.IngredientFormulaConfig
+import com.example.domain.mixture.MixtureFormulaConfig
+import com.example.domain.mixture.MixtureFormulaBridge
+import com.example.domain.mixture.MixtureUnits
 import com.example.domain.mixture.MixtureAdjustmentMode
 import com.example.domain.mixture.MixtureEquationEngine
 import com.example.domain.mixture.ReferenceComponent
@@ -59,7 +67,7 @@ data class MixtureUiState(
     val selectedAdjustmentMode: MixtureAdjustmentMode = MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT,
     val showCompareBothModes: Boolean = false,
     // --- Equation solver (target total / per reference) ---
-    val equationMode: EquationMode = EquationMode.TARGET_TOTAL,
+    val equationMode: EquationMode = EquationMode.ANCHOR,
     val targetTotalText: String = "",
     val targetTotalUnit: String = "kg",
     val componentRoles: Map<String, ComponentRole> = emptyMap(),
@@ -70,6 +78,18 @@ data class MixtureUiState(
     val referenceResultUnit: String = "kg",
     val targetTotalResult: TargetTotalResult? = null,
     val referenceResult: ReferenceResult? = null,
+    // --- Base + Additives + Multiplier ---
+    val batchRoles: Map<String, BatchRole> = emptyMap(),
+    val baseTargetText: String = "",
+    val baseTargetUnit: String = "kg",
+    val batchMultiplierText: String = "1",
+    val baseBatchResult: BaseBatchResult? = null,
+    /** Optional "already in the tub" amounts for solver methods, in each ingredient's own unit. */
+    val inTubTexts: Map<String, String> = emptyMap(),
+    /** Solved formulation of the active non-anchor method; null while on Anchor or while inputs are incomplete. */
+    val formulaSummary: FormulaSummary? = null,
+    /** Why the active non-anchor method cannot produce a formulation yet (null when ready or on Anchor). */
+    val formulaBlockingMessage: String? = null,
     val simplifiedRatio: RatioCalculationResult = MixtureCalculatorEngine.calculateSimplifiedRatio(emptyList()),
     val recalibrationResult: RecalibrationResult = MixtureCalculatorEngine.recalibrate(emptyList(), "", emptyMap(), MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT),
     val batchDivisionResult: BatchDivisionResult = MixtureCalculatorEngine.calculateBatches(
@@ -268,8 +288,9 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
             val anchorId = parsedIngredients.find { it.name.contains(entity.anchorIngredientName, ignoreCase = true) }?.id
                 ?: parsedIngredients.first().id
 
+            val savedConfig = MixtureFormulaConfig.fromJson(entity.formulaConfigJson)
             _uiState.update { current ->
-                val updated = current.copy(
+                val base = current.copy(
                     currentRecipeTitle = entity.title,
                     targetIngredients = parsedIngredients,
                     anchorIngredientId = anchorId,
@@ -278,6 +299,12 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
                     batchCount = entity.batchCount,
                     showDatabaseBrowserSheet = false
                 )
+                // Restore the saved method and solver inputs; older recipes fall back to Anchor with clean inputs.
+                val updated = if (savedConfig != null) {
+                    applyFormulaConfig(base, parsedIngredients, savedConfig)
+                } else {
+                    applyFormulaConfig(base, parsedIngredients, MixtureFormulaConfig())
+                }
                 recalculate(updated)
             }
             viewModelScope.launch {
@@ -351,7 +378,8 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
             recalibratedProportionsJson = recalibratedArray.toString(),
             totalNewMixtureWeight = state.recalibrationResult.totalNewMixtureWeight,
             batchDivisionJson = batchItemsArray.toString(),
-            totalWeightPerBatch = state.batchDivisionResult.totalWeightPerBatch
+            totalWeightPerBatch = state.batchDivisionResult.totalWeightPerBatch,
+            formulaConfigJson = buildFormulaConfig(state).toJson()
         )
 
         viewModelScope.launch {
@@ -585,7 +613,18 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
     // ---------------------------------------------------------------------------------
 
     fun setEquationMode(mode: EquationMode) {
-        _uiState.update { recalculate(it.copy(equationMode = mode)) }
+        _uiState.update { current ->
+            var next = current.copy(equationMode = mode)
+            // Smart default: Target Total starts at the recipe's own total (scale 1.0) so the user edits from a valid state.
+            if (mode == EquationMode.TARGET_TOTAL && next.targetTotalText.isBlank() && next.targetIngredients.isNotEmpty()) {
+                val unit = next.targetTotalUnit
+                if (next.targetIngredients.all { MixtureUnits.areCompatible(it.unit, unit) }) {
+                    val total = next.targetIngredients.sumOf { MixtureUnits.convert(it.targetQuantity, it.unit, unit) }
+                    next = next.copy(targetTotalText = formatInputNumber(total))
+                }
+            }
+            recalculate(next)
+        }
     }
 
     fun setTargetTotalText(text: String) {
@@ -629,6 +668,30 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
         _uiState.update { recalculate(it.copy(referenceResultUnit = unit)) }
     }
 
+    fun setInTubText(id: String, text: String) {
+        _uiState.update { recalculate(it.copy(inTubTexts = it.inTubTexts + (id to text))) }
+    }
+
+    fun clearInTubTexts() {
+        _uiState.update { recalculate(it.copy(inTubTexts = emptyMap())) }
+    }
+
+    fun setBatchRole(id: String, role: BatchRole) {
+        _uiState.update { recalculate(it.copy(batchRoles = it.batchRoles + (id to role))) }
+    }
+
+    fun setBaseTargetText(text: String) {
+        _uiState.update { recalculate(it.copy(baseTargetText = text)) }
+    }
+
+    fun setBaseTargetUnit(unit: String) {
+        _uiState.update { recalculate(it.copy(baseTargetUnit = unit)) }
+    }
+
+    fun setBatchMultiplierText(text: String) {
+        _uiState.update { recalculate(it.copy(batchMultiplierText = text)) }
+    }
+
     /**
      * Replaces the ingredient list with the one-reference-portion recipe (e.g. A 2,044.44 g,
      * B 255.56 g, C 400 g, D 150 g) and switches to Target Total mode, so the Per Reference
@@ -652,6 +715,7 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
                 actualAddedTexts = emptyMap(),
                 componentRoles = emptyMap(),
                 fixedTexts = emptyMap(),
+                inTubTexts = emptyMap(),
                 equationMode = EquationMode.TARGET_TOTAL,
                 targetTotalUnit = result.resultUnit
             )
@@ -681,6 +745,70 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
             )
         }
         return MixtureEquationEngine.solveTargetTotal(components, total, state.targetTotalUnit)
+    }
+
+    /** Snapshot of the formulation method and solver inputs, matched to ingredients by position. */
+    private fun buildFormulaConfig(state: MixtureUiState): MixtureFormulaConfig =
+        MixtureFormulaConfig(
+            method = state.equationMode,
+            targetTotalText = state.targetTotalText,
+            targetTotalUnit = state.targetTotalUnit,
+            referenceWeightText = state.referenceWeightText,
+            referenceUnit = state.referenceUnit,
+            referenceResultUnit = state.referenceResultUnit,
+            baseTargetText = state.baseTargetText,
+            baseTargetUnit = state.baseTargetUnit,
+            batchMultiplierText = state.batchMultiplierText,
+            ingredients = state.targetIngredients.map { item ->
+                IngredientFormulaConfig(
+                    componentRole = state.componentRoles[item.id] ?: ComponentRole.SCALE,
+                    fixedText = state.fixedTexts[item.id] ?: "",
+                    referenceRole = state.referenceRoles[item.id] ?: ReferenceRole.MAIN,
+                    batchRole = state.batchRoles[item.id] ?: BatchRole.PROPORTIONAL,
+                    inTubText = state.inTubTexts[item.id] ?: ""
+                )
+            }
+        )
+
+    private fun applyFormulaConfig(
+        state: MixtureUiState,
+        ingredients: List<TargetIngredient>,
+        config: MixtureFormulaConfig
+    ): MixtureUiState {
+        fun <T> byId(pick: (IngredientFormulaConfig) -> T): Map<String, T> =
+            ingredients.mapIndexedNotNull { i, ing -> config.ingredients.getOrNull(i)?.let { ing.id to pick(it) } }.toMap()
+        return state.copy(
+            equationMode = config.method,
+            targetTotalText = config.targetTotalText,
+            targetTotalUnit = config.targetTotalUnit,
+            referenceWeightText = config.referenceWeightText,
+            referenceUnit = config.referenceUnit,
+            referenceResultUnit = config.referenceResultUnit,
+            baseTargetText = config.baseTargetText,
+            baseTargetUnit = config.baseTargetUnit,
+            batchMultiplierText = config.batchMultiplierText,
+            componentRoles = byId { it.componentRole },
+            fixedTexts = byId { it.fixedText },
+            referenceRoles = byId { it.referenceRole },
+            batchRoles = byId { it.batchRole },
+            inTubTexts = byId { it.inTubText }.filterValues { it.isNotBlank() }
+        )
+    }
+
+    private fun computeBaseBatch(state: MixtureUiState): BaseBatchResult? {
+        val base = parseDecimal(state.baseTargetText) ?: return null
+        val multiplier = if (state.batchMultiplierText.isBlank()) 1.0
+        else parseDecimal(state.batchMultiplierText) ?: return null
+        val components = state.targetIngredients.map { item ->
+            BatchComponent(
+                id = item.id,
+                name = item.name,
+                qty = item.targetQuantity,
+                unit = item.unit,
+                role = state.batchRoles[item.id] ?: BatchRole.PROPORTIONAL
+            )
+        }
+        return MixtureEquationEngine.solveBaseBatch(components, base, state.baseTargetUnit, multiplier)
     }
 
     private fun computeReference(state: MixtureUiState): ReferenceResult? {
@@ -723,12 +851,38 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
             state.targetIngredients.firstOrNull()?.id ?: ""
         }
 
-        val recalResult = MixtureCalculatorEngine.recalibrate(
+        val anchorResult = MixtureCalculatorEngine.recalibrate(
             ingredients = state.targetIngredients,
             anchorId = anchorId,
             actualAddedMap = actualMap,
             mode = state.selectedAdjustmentMode
         )
+
+        // Solver methods feed the same pipeline: their formulation replaces the anchor result downstream.
+        val targetRes = computeTargetTotal(state)
+        val referenceRes = computeReference(state)
+        val baseBatchRes = computeBaseBatch(state)
+
+        val inTub = state.inTubTexts.mapNotNull { (id, text) ->
+            parseDecimal(text)?.takeIf { it > 0.0 }?.let { id to it }
+        }.toMap()
+
+        val outcome = when (state.equationMode) {
+            EquationMode.ANCHOR -> null
+            EquationMode.TARGET_TOTAL -> targetRes?.let { MixtureFormulaBridge.fromTargetTotal(it, state.targetIngredients, inTub) }
+            EquationMode.PER_REFERENCE -> referenceRes?.let { MixtureFormulaBridge.fromReference(it, state.targetIngredients, inTub) }
+            EquationMode.BASE_BATCH -> baseBatchRes?.let { MixtureFormulaBridge.fromBaseBatch(it, state.targetIngredients, inTub) }
+        }
+        val blocking: String? = when {
+            state.equationMode == EquationMode.ANCHOR || outcome != null -> null
+            else -> when (state.equationMode) {
+                EquationMode.TARGET_TOTAL -> targetRes?.errorMessage ?: "Enter a target total to continue."
+                EquationMode.PER_REFERENCE -> referenceRes?.errorMessage ?: "Enter a reference weight to continue."
+                EquationMode.BASE_BATCH -> baseBatchRes?.errorMessage ?: "Enter a base target weight to continue."
+                EquationMode.ANCHOR -> null
+            }
+        }
+        val recalResult = outcome?.recalibration ?: anchorResult
 
         val countDouble = state.batchCountText.replace(",", ".").replace(" ", "").trim().toDoubleOrNull()?.coerceAtLeast(0.01)
             ?: state.batchCount.toDouble()
@@ -744,8 +898,11 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
             simplifiedRatio = ratioResult,
             recalibrationResult = recalResult,
             batchDivisionResult = batchResult,
-            targetTotalResult = computeTargetTotal(state),
-            referenceResult = computeReference(state)
+            targetTotalResult = targetRes,
+            referenceResult = referenceRes,
+            baseBatchResult = baseBatchRes,
+            formulaSummary = outcome?.summary,
+            formulaBlockingMessage = blocking
         )
     }
 

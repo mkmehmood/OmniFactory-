@@ -108,6 +108,9 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Lock
 import com.example.ui.components.MixtureEquationSolverCard
+import com.example.ui.components.FormulaMethodSelector
+import com.example.ui.components.FormulaResultCard
+import com.example.domain.mixture.EquationMode
 import com.example.ui.components.SmartStationKeypad
 import com.example.ui.MixtureUiState
 import com.example.ui.MixtureViewModel
@@ -395,7 +398,53 @@ fun MixtureCalculatorScreen(
                             borderColor = cardBorderColor,
                             isDark = isDark
                         )
-                        3 -> Step3ReferenceAndActualAdded(
+                        3 -> Column(modifier = Modifier.fillMaxWidth()) {
+                          FormulaMethodSelector(
+                            mode = uiState.equationMode,
+                            onModeChange = { viewModel.setEquationMode(it) },
+                            primaryColor = primaryColor
+                          )
+                          Spacer(modifier = Modifier.height(12.dp))
+                          if (uiState.equationMode != EquationMode.ANCHOR) {
+                            MixtureEquationSolverCard(
+                            ingredients = uiState.targetIngredients,
+                            mode = uiState.equationMode,
+                            targetTotalText = uiState.targetTotalText,
+                            targetTotalUnit = uiState.targetTotalUnit,
+                            onTargetTotalChange = { viewModel.setTargetTotalText(it) },
+                            onTargetUnitChange = { viewModel.setTargetTotalUnit(it) },
+                            roles = uiState.componentRoles,
+                            fixedTexts = uiState.fixedTexts,
+                            onRoleChange = { id, role -> viewModel.setComponentRole(id, role) },
+                            onFixedChange = { id, text -> viewModel.setFixedText(id, text) },
+                            targetResult = uiState.targetTotalResult,
+                            referenceRoles = uiState.referenceRoles,
+                            referenceWeightText = uiState.referenceWeightText,
+                            referenceUnit = uiState.referenceUnit,
+                            referenceResultUnit = uiState.referenceResultUnit,
+                            onReferenceRoleChange = { id, role -> viewModel.setReferenceRole(id, role) },
+                            onReferenceWeightChange = { viewModel.setReferenceWeightText(it) },
+                            onReferenceUnitChange = { viewModel.setReferenceUnit(it) },
+                            onReferenceResultUnitChange = { viewModel.setReferenceResultUnit(it) },
+                            referenceResult = uiState.referenceResult,
+                            onUseAsBase = { viewModel.useReferenceRecipeAsBase() },
+                            batchRoles = uiState.batchRoles,
+                            baseTargetText = uiState.baseTargetText,
+                            baseTargetUnit = uiState.baseTargetUnit,
+                            batchMultiplierText = uiState.batchMultiplierText,
+                            onBatchRoleChange = { id, role -> viewModel.setBatchRole(id, role) },
+                            onBaseTargetChange = { viewModel.setBaseTargetText(it) },
+                            onBaseTargetUnitChange = { viewModel.setBaseTargetUnit(it) },
+                            onBatchMultiplierChange = { viewModel.setBatchMultiplierText(it) },
+                            baseBatchResult = uiState.baseBatchResult,
+                            inTubTexts = uiState.inTubTexts,
+                            onInTubChange = { id, text -> viewModel.setInTubText(id, text) },
+                            onClearInTub = { viewModel.clearInTubTexts() },
+                            primaryColor = primaryColor,
+                            surfaceBg = surfaceBg,
+                            borderColor = cardBorderColor
+                        )
+                          } else Step3ReferenceAndActualAdded(
                             ingredients = uiState.targetIngredients,
                             anchorId = uiState.anchorIngredientId,
                             actualAddedTexts = uiState.actualAddedTexts,
@@ -419,15 +468,31 @@ fun MixtureCalculatorScreen(
                             surfaceBg = surfaceBg,
                             borderColor = cardBorderColor,
                             isDark = isDark
-                        )
-                        4 -> Step4RecalibratedProportions(
+                          )
+                        }
+                        4 -> if (uiState.equationMode != EquationMode.ANCHOR && uiState.formulaSummary != null) {
+                            FormulaResultCard(
+                                summary = uiState.formulaSummary!!,
+                                primaryColor = primaryColor,
+                                surfaceBg = surfaceBg,
+                                borderColor = cardBorderColor
+                            )
+                        } else if (uiState.equationMode != EquationMode.ANCHOR) {
+                            Text(
+                                text = uiState.formulaBlockingMessage ?: "Complete the inputs in Step 3 to see the formulation.",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFFEF4444)
+                            )
+                        } else Step4RecalibratedProportions(
                             recalibrationResult = uiState.recalibrationResult,
                             selectedMode = uiState.selectedAdjustmentMode,
                             onSelectMode = { viewModel.setAdjustmentMode(it) },
                             showCompareBoth = uiState.showCompareBothModes,
                             onToggleCompareBoth = { viewModel.toggleCompareBothModes() },
                             onCopyAdjustments = {
-                                val report = buildRecalibrationReportText(uiState.recalibrationResult)
+                                val report = uiState.formulaSummary?.takeIf { uiState.equationMode != EquationMode.ANCHOR }?.reportText()
+                                    ?: buildRecalibrationReportText(uiState.recalibrationResult)
                                 clipboardManager.setText(AnnotatedString(report))
                                 Toast.makeText(context, "Proportions copied to clipboard", Toast.LENGTH_SHORT).show()
                             },
@@ -441,6 +506,7 @@ fun MixtureCalculatorScreen(
                             batchDivisionResult = uiState.batchDivisionResult,
                             selectedMode = uiState.selectedAdjustmentMode,
                             onSelectMode = { viewModel.setAdjustmentMode(it) },
+                            solverBasisLabel = if (uiState.equationMode != EquationMode.ANCHOR) uiState.formulaSummary?.basisLabel else null,
                             batchOperationMode = uiState.batchOperationMode,
                             onSelectBatchOperationMode = { viewModel.setBatchOperationMode(it) },
                             batchCountText = uiState.batchCountText,
@@ -479,37 +545,6 @@ fun MixtureCalculatorScreen(
                             surfaceBg = surfaceBg,
                             borderColor = cardBorderColor,
                             isDark = isDark
-                        )
-                    }
-
-                    if (uiState.currentStep == 3) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        MixtureEquationSolverCard(
-                            ingredients = uiState.targetIngredients,
-                            mode = uiState.equationMode,
-                            onModeChange = { viewModel.setEquationMode(it) },
-                            targetTotalText = uiState.targetTotalText,
-                            targetTotalUnit = uiState.targetTotalUnit,
-                            onTargetTotalChange = { viewModel.setTargetTotalText(it) },
-                            onTargetUnitChange = { viewModel.setTargetTotalUnit(it) },
-                            roles = uiState.componentRoles,
-                            fixedTexts = uiState.fixedTexts,
-                            onRoleChange = { id, role -> viewModel.setComponentRole(id, role) },
-                            onFixedChange = { id, text -> viewModel.setFixedText(id, text) },
-                            targetResult = uiState.targetTotalResult,
-                            referenceRoles = uiState.referenceRoles,
-                            referenceWeightText = uiState.referenceWeightText,
-                            referenceUnit = uiState.referenceUnit,
-                            referenceResultUnit = uiState.referenceResultUnit,
-                            onReferenceRoleChange = { id, role -> viewModel.setReferenceRole(id, role) },
-                            onReferenceWeightChange = { viewModel.setReferenceWeightText(it) },
-                            onReferenceUnitChange = { viewModel.setReferenceUnit(it) },
-                            onReferenceResultUnitChange = { viewModel.setReferenceResultUnit(it) },
-                            referenceResult = uiState.referenceResult,
-                            onUseAsBase = { viewModel.useReferenceRecipeAsBase() },
-                            primaryColor = primaryColor,
-                            surfaceBg = surfaceBg,
-                            borderColor = cardBorderColor
                         )
                     }
 
@@ -575,7 +610,8 @@ fun MixtureCalculatorScreen(
                             .height(52.dp)
                             .testTag("mixture_primary_action_button"),
                         shape = RoundedCornerShape(16.dp),
-                        enabled = uiState.currentStep != 1 || isStep1Valid,
+                        enabled = (uiState.currentStep != 1 || isStep1Valid) &&
+                            !(uiState.currentStep == 3 && uiState.equationMode != EquationMode.ANCHOR && uiState.formulaBlockingMessage != null),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = primaryColor,
                             contentColor = MaterialTheme.colorScheme.onPrimary
@@ -2861,6 +2897,7 @@ private fun Step5BatchScaling(
     batchDivisionResult: BatchDivisionResult,
     selectedMode: MixtureAdjustmentMode,
     onSelectMode: (MixtureAdjustmentMode) -> Unit,
+    solverBasisLabel: String? = null,
     batchOperationMode: BatchOperationMode,
     onSelectBatchOperationMode: (BatchOperationMode) -> Unit,
     batchCountText: String,
@@ -2998,7 +3035,21 @@ private fun Step5BatchScaling(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Basis Mode Chip
-                Surface(
+                if (solverBasisLabel != null) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = primaryColor.copy(alpha = 0.12f)
+                    ) {
+                        Text(
+                            text = solverBasisLabel,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = primaryColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                } else Surface(
                     shape = RoundedCornerShape(8.dp),
                     color = when (selectedMode) {
                         MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT -> Color(0xFF06B6D4).copy(alpha = 0.12f)

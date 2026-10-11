@@ -172,4 +172,151 @@ class MixtureEquationEngineTest {
         assertFalse(MixtureEquationEngine.solveTargetTotal(baseRecipe(), 0.0, "kg").isValid)
         assertFalse(MixtureEquationEngine.solveTargetTotal(emptyList(), 5.0, "kg").isValid)
     }
+
+    // ---- Base + Additives + Multiplier (spec: Mixture Calculator Summary) ----------------------
+
+    private fun specComponents() = listOf(
+        BatchComponent("a", "Chemical", 80.0, "kg", BatchRole.PROPORTIONAL),
+        BatchComponent("b", "Berlinza", 10.0, "kg", BatchRole.PROPORTIONAL),
+        BatchComponent("c", "Taman", 0.5, "kg", BatchRole.FIXED_BASE),
+        BatchComponent("d", "Lime", 0.15, "kg", BatchRole.FIXED_BASE),
+        BatchComponent("e", "Powder", 0.7, "kg", BatchRole.FIXED_BASE),
+        BatchComponent("f", "Orange", 2.1, "kg", BatchRole.ADDITIVE),
+        BatchComponent("g", "Ajmal White", 1.6, "kg", BatchRole.ADDITIVE),
+        BatchComponent("h", "White", 0.53, "kg", BatchRole.ADDITIVE),
+        BatchComponent("i", "Green", 0.53, "kg", BatchRole.ADDITIVE),
+        BatchComponent("j", "Furman", 0.26, "kg", BatchRole.ADDITIVE)
+    )
+
+    @Test
+    fun baseBatch_unscaledMatchesSpec() {
+        val r = MixtureEquationEngine.solveBaseBatch(specComponents(), 3.0, "kg", 1.0)
+        assertTrue(r.isValid)
+        assertEquals(1.35, r.fixedTotal, 1e-9)
+        assertEquals(1.65, r.remainingForRatio, 1e-9)
+        assertEquals(1.4667, r.rows.first { it.id == "a" }.unscaledQty, 1e-3)
+        assertEquals(0.1833, r.rows.first { it.id == "b" }.unscaledQty, 1e-3)
+        assertEquals(5.02, r.additiveTotal, 1e-9)
+        assertEquals(8.02, r.unscaledTotal, 1e-9)
+        assertEquals(8.02, r.rows.sumOf { it.unscaledQty }, 1e-9)
+    }
+
+    @Test
+    fun baseBatch_scaledByTenMatchesSpec() {
+        val r = MixtureEquationEngine.solveBaseBatch(specComponents(), 3.0, "kg", 10.0)
+        assertTrue(r.isValid)
+        assertEquals(14.667, r.rows.first { it.id == "a" }.finalQty, 1e-3)
+        assertEquals(1.833, r.rows.first { it.id == "b" }.finalQty, 1e-3)
+        assertEquals(21.0, r.rows.first { it.id == "f" }.finalQty, 1e-9)
+        assertEquals(80.2, r.finalTotal, 1e-9)
+        assertEquals(80.2, r.rows.sumOf { it.finalQty }, 1e-9)
+    }
+
+    @Test
+    fun baseBatch_mixedUnitsAreConverted() {
+        val comps = listOf(
+            BatchComponent("a", "A", 1.0, "kg", BatchRole.PROPORTIONAL),
+            BatchComponent("c", "C", 500.0, "g", BatchRole.FIXED_BASE),
+            BatchComponent("f", "F", 250.0, "g", BatchRole.ADDITIVE)
+        )
+        val r = MixtureEquationEngine.solveBaseBatch(comps, 2.0, "kg", 2.0)
+        assertTrue(r.isValid)
+        assertEquals(1.5, r.rows.first { it.id == "a" }.unscaledQty, 1e-9)
+        assertEquals(2.25, r.unscaledTotal, 1e-9)
+        assertEquals(4.5, r.finalTotal, 1e-9)
+    }
+
+    @Test
+    fun baseBatch_rejectsBadInput() {
+        assertFalse(MixtureEquationEngine.solveBaseBatch(specComponents(), 1.0, "kg", 1.0).isValid) // fixed > base
+        assertFalse(MixtureEquationEngine.solveBaseBatch(specComponents(), 3.0, "kg", 0.0).isValid)
+        assertFalse(MixtureEquationEngine.solveBaseBatch(specComponents(), 0.0, "kg", 1.0).isValid)
+        val noRatio = specComponents().filter { it.role != BatchRole.PROPORTIONAL }
+        assertFalse(MixtureEquationEngine.solveBaseBatch(noRatio, 3.0, "kg", 1.0).isValid)
+    }
+
+    // ---- Bridge: solver output feeds the shared pipeline ---------------------------------------
+
+    private fun specIngredients() = specComponents().map {
+        TargetIngredient(id = it.id, name = it.name, targetQuantity = it.qty, unit = it.unit)
+    }
+
+    @Test
+    fun bridge_baseBatchFeedsBatchScaling() {
+        val solved = MixtureEquationEngine.solveBaseBatch(specComponents(), 3.0, "kg", 10.0)
+        val outcome = MixtureFormulaBridge.fromBaseBatch(solved, specIngredients())!!
+        val recal = outcome.recalibration
+        assertEquals(80.2, recal.totalNewMixtureWeight, 1e-9)
+        assertEquals(10, recal.proportions.size)
+        assertEquals(10.0, recal.scaleFactor, 1e-9)
+        // Same rows regardless of which legacy list the UI reads.
+        assertEquals(recal.proportions, recal.addModeProportions)
+        // Step 5 multiply x2 doubles the solved formulation.
+        val batches = MixtureCalculatorEngine.calculateBatches(recal, 2.0, BatchOperationMode.MULTIPLY)
+        assertEquals(160.4, batches.totalResultWeight, 1e-9)
+        // Divide into 4 containers.
+        val divided = MixtureCalculatorEngine.calculateBatches(recal, 4.0, BatchOperationMode.DIVIDE)
+        assertEquals(20.05, divided.totalWeightPerBatch, 1e-9)
+    }
+
+    @Test
+    fun bridge_targetTotalKeepsTargetAndMarksLargestAsAnchor() {
+        val comps = listOf(
+            EquationComponent("a", "A", 80.0, "kg"),
+            EquationComponent("b", "B", 10.0, "kg"),
+            EquationComponent("c", "C", 400.0, "g", ComponentRole.FIXED, 400.0, "g")
+        )
+        val ings = comps.map { TargetIngredient(it.id, it.name, it.baseQty, it.unit) }
+        val solved = MixtureEquationEngine.solveTargetTotal(comps, 2.3, "kg")
+        val recal = MixtureFormulaBridge.fromTargetTotal(solved, ings)!!.recalibration
+        assertEquals(2.3, recal.totalNewMixtureWeight, 1e-9)
+        assertEquals("A", recal.anchorIngredientName)
+        assertEquals(2.3, recal.proportions.sumOf { it.newRequiredTotal }, 1e-9)
+    }
+
+    @Test
+    fun bridge_returnsNullForInvalidResult() {
+        val bad = MixtureEquationEngine.solveBaseBatch(specComponents(), 1.0, "kg", 1.0)
+        assertFalse(bad.isValid)
+        assertEquals(null, MixtureFormulaBridge.fromBaseBatch(bad, specIngredients()))
+    }
+
+    // ---- In-tub amounts for solver methods -----------------------------------------------------
+
+    @Test
+    fun bridge_inTubGivesAddAndRemoveAmounts() {
+        val solved = MixtureEquationEngine.solveBaseBatch(specComponents(), 3.0, "kg", 10.0)
+        // 10 kg of Chemical already in the tub (needs 14.667) and 6 kg of Powder (needs 7.0 -> over? no, under).
+        // Orange needs 21 kg; 25 kg in tub is 4 kg over. Powder is given in g to test conversion: 8000 g = 8 kg (1 kg over).
+        val ings = specIngredients().map { if (it.id == "e") it.copy(unit = "g", targetQuantity = 700.0) else it }
+        val comps = specComponents().map { if (it.id == "e") it.copy(unit = "g", qty = 700.0) else it }
+        val s2 = MixtureEquationEngine.solveBaseBatch(comps, 3.0, "kg", 10.0)
+        val inTub = mapOf("a" to 10.0, "f" to 25.0, "e" to 8000.0)
+        val summary = MixtureFormulaBridge.fromBaseBatch(s2, ings, inTub)!!.summary
+        val a = summary.lines.first { it.id == "a" }
+        val f = summary.lines.first { it.id == "f" }
+        val e = summary.lines.first { it.id == "e" }
+        assertEquals(10.0, a.inTubQty, 1e-9)
+        assertEquals(14.6667 - 10.0, a.stillNeeded, 1e-3)
+        assertEquals(4.0, f.excess, 1e-9)
+        assertEquals(8.0, e.inTubQty, 1e-9)   // 8000 g converted to kg
+        assertEquals(1.0, e.excess, 1e-9)
+        assertTrue(summary.hasInTub)
+        assertTrue(summary.totalExcess >= 5.0 - 1e-9)
+        // The same figures reach the calculator's result used by Step 5 and history.
+        val recal = MixtureFormulaBridge.fromBaseBatch(s2, ings, inTub)!!.recalibration
+        assertTrue(recal.hasExcessInTub)
+        assertEquals(summary.totalStillNeeded, recal.totalStillNeededWeight, 1e-9)
+        assertEquals(80.2, recal.totalNewMixtureWeight, 1e-9)
+        assertNotNull(solved)
+    }
+
+    @Test
+    fun bridge_noInTubMeansEverythingStillNeeded() {
+        val solved = MixtureEquationEngine.solveBaseBatch(specComponents(), 3.0, "kg", 1.0)
+        val summary = MixtureFormulaBridge.fromBaseBatch(solved, specIngredients())!!.summary
+        assertFalse(summary.hasInTub)
+        assertEquals(8.02, summary.totalStillNeeded, 1e-9)
+        assertEquals(0.0, summary.totalExcess, 1e-9)
+    }
 }

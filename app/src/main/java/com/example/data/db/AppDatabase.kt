@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [
@@ -13,7 +15,7 @@ import androidx.room.RoomDatabase
         LedgerTransactionEntity::class,
         BatchScalingEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -24,6 +26,13 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun batchScalingDao(): BatchScalingDao
 
     companion object {
+        /** Adds the stored formulation method / solver inputs to saved mixture recipes without losing data. */
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE mixture_recipes ADD COLUMN formulaConfigJson TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -34,6 +43,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "calculator_persistent_db"
                 )
+                .addMigrations(MIGRATION_12_13)
                 .fallbackToDestructiveMigration(dropAllTables = false)
                 .build()
                 INSTANCE = instance

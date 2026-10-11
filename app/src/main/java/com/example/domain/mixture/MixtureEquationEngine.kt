@@ -17,9 +17,33 @@ import kotlin.math.abs
  *    e.g. A = 80, B = 10 (kg), C = 400 g and D = 150 g per 2.3 kg of A+B.
  */
 
-enum class EquationMode(val label: String) {
-    TARGET_TOTAL("Target Total"),
-    PER_REFERENCE("Per Reference")
+enum class EquationMode(val label: String, val hint: String) {
+    ANCHOR(
+        "Anchor Scale",
+        "Calibrate to what is already in the tub: pick an anchor ingredient and its actual quantity."
+    ),
+    TARGET_TOTAL(
+        "Target Total",
+        "The whole batch must weigh a set amount. Lock or remove ingredients; the rest share it by ratio."
+    ),
+    PER_REFERENCE(
+        "Per Reference",
+        "Some amounts are quoted per a reference weight of the main mix. Scale them to the real mix."
+    ),
+    BASE_BATCH(
+        "Base + Additives",
+        "Ratio items share a base weight, fixed items sit inside it, additives go on top, then a batch multiplier."
+    )
+}
+
+/** Role of a component in BASE_BATCH mode. */
+enum class BatchRole(val label: String) {
+    /** Shares the remaining base weight with other proportional items by ratio. */
+    PROPORTIONAL("Ratio"),
+    /** Absolute weight that occupies space inside the base target weight. */
+    FIXED_BASE("Fixed"),
+    /** Absolute weight added on top of the base, outside the base target. */
+    ADDITIVE("Additive")
 }
 
 /** Role of a component in TARGET_TOTAL mode. */
@@ -169,6 +193,52 @@ data class ReferenceResult(
 ) {
     /** One reference portion expressed as a complete recipe, ready to be reused as a base recipe. */
     fun perReferenceRecipe(): List<Pair<String, Double>> = rows.map { it.name to it.perReferenceQty }
+}
+
+// ---------------------------------------------------------------------------------------------
+// BASE BATCH  (proportional + fixed base + additives, then a global multiplier)
+// ---------------------------------------------------------------------------------------------
+
+data class BatchComponent(
+    val id: String,
+    val name: String,
+    /** Ratio coefficient for PROPORTIONAL, absolute weight for FIXED_BASE and ADDITIVE. */
+    val qty: Double,
+    val unit: String,
+    val role: BatchRole
+)
+
+data class BatchRow(
+    val id: String,
+    val name: String,
+    val role: BatchRole,
+    /** Weight inside the unscaled batch (multiplier = 1). */
+    val unscaledQty: Double,
+    /** Weight after applying the multiplier. */
+    val finalQty: Double,
+    val sharePercent: Double,
+    val formattedUnscaled: String,
+    val formattedFinal: String,
+    val formattedShare: String
+)
+
+data class BaseBatchResult(
+    val isValid: Boolean,
+    val errorMessage: String?,
+    val warnings: List<String>,
+    val rows: List<BatchRow>,
+    val baseTarget: Double,
+    val fixedTotal: Double,
+    val remainingForRatio: Double,
+    val additiveTotal: Double,
+    val unscaledTotal: Double,
+    val multiplier: Double,
+    val finalTotal: Double,
+    val resultUnit: String,
+    val steps: List<String>
+) {
+    val formattedUnscaledTotal: String get() = EquationFormat.withUnit(unscaledTotal, resultUnit)
+    val formattedFinalTotal: String get() = EquationFormat.withUnit(finalTotal, resultUnit)
 }
 
 object EquationFormat {
@@ -426,6 +496,119 @@ object MixtureEquationEngine {
             scaleFactor = factor,
             resultUnit = rUnit,
             steps = steps
+        )
+    }
+
+    // -----------------------------------------------------------------------------------------
+    // BASE BATCH
+    // -----------------------------------------------------------------------------------------
+
+    /**
+     *   Fixed_Total   = SUM(FIXED_BASE)
+     *   W_remain      = baseTarget - Fixed_Total
+     *   W_j           = W_remain * ratio_j / SUM(ratios)        (PROPORTIONAL)
+     *   Unscaled      = baseTarget + SUM(ADDITIVE)
+     *   Final         = item * multiplier
+     *
+     * All amounts are converted to [resultUnit] first, so mixed kg / g input works.
+     */
+    fun solveBaseBatch(
+        components: List<BatchComponent>,
+        baseTarget: Double,
+        baseUnit: String,
+        multiplier: Double = 1.0
+    ): BaseBatchResult {
+        val unit = baseUnit.trim().ifEmpty { "kg" }
+
+        fun invalid(message: String, steps: List<String> = emptyList()) = BaseBatchResult(
+            isValid = false, errorMessage = message, warnings = emptyList(), rows = emptyList(),
+            baseTarget = baseTarget, fixedTotal = 0.0, remainingForRatio = 0.0, additiveTotal = 0.0,
+            unscaledTotal = 0.0, multiplier = multiplier, finalTotal = 0.0, resultUnit = unit, steps = steps
+        )
+
+        if (components.isEmpty()) return invalid("Add at least one ingredient first.")
+        if (baseTarget.isNaN() || baseTarget <= 0.0) return invalid("Enter a base target weight greater than 0.")
+        if (multiplier.isNaN() || multiplier <= 0.0) return invalid("Enter a multiplier greater than 0.")
+        for (c in components) {
+            if (!MixtureUnits.areCompatible(c.unit, unit)) {
+                return invalid("'${c.name}' is in ${c.unit}, which cannot be converted to $unit.")
+            }
+            if (c.qty < 0.0 || c.qty.isNaN()) return invalid("'${c.name}' has an invalid amount.")
+        }
+
+        val amounts = components.associate { it.id to MixtureUnits.convert(it.qty, it.unit, unit) }
+        val fixed = components.filter { it.role == BatchRole.FIXED_BASE }
+        val ratio = components.filter { it.role == BatchRole.PROPORTIONAL }
+        val additive = components.filter { it.role == BatchRole.ADDITIVE }
+
+        val fixedTotal = fixed.sumOf { amounts.getValue(it.id) }
+        val remaining = baseTarget - fixedTotal
+        val ratioSum = ratio.sumOf { c -> c.qty }
+        val additiveTotal = additive.sumOf { amounts.getValue(it.id) }
+
+        val steps = mutableListOf<String>()
+        steps += "Fixed total = ${EquationFormat.withUnit(fixedTotal, unit)}"
+        steps += "Remaining for ratio items = ${EquationFormat.number(baseTarget)} - ${EquationFormat.number(fixedTotal)} = ${EquationFormat.withUnit(remaining, unit)}"
+
+        if (remaining < -EPS) {
+            return invalid(
+                "Fixed items (${EquationFormat.withUnit(fixedTotal, unit)}) exceed the base target " +
+                    "by ${EquationFormat.withUnit(-remaining, unit)}.",
+                steps
+            )
+        }
+        if (ratio.isEmpty()) {
+            if (abs(remaining) > 1e-6) {
+                return invalid(
+                    "No Ratio items, so ${EquationFormat.withUnit(remaining, unit)} of the base cannot be allocated. " +
+                        "Mark an item as Ratio or change the base target.",
+                    steps
+                )
+            }
+        } else if (ratioSum <= EPS) {
+            return invalid("Ratio items need coefficients greater than 0.", steps)
+        }
+
+        val unscaled = components.associate { c ->
+            val v = when (c.role) {
+                BatchRole.PROPORTIONAL -> remaining * (c.qty / ratioSum)
+                BatchRole.FIXED_BASE, BatchRole.ADDITIVE -> amounts.getValue(c.id)
+            }
+            c.id to v
+        }
+        val unscaledTotal = baseTarget + additiveTotal
+        val finalTotal = unscaledTotal * multiplier
+
+        if (ratio.isNotEmpty()) {
+            steps += "Ratio parts = ${ratio.joinToString(" : ") { EquationFormat.number(it.qty) }}"
+        }
+        steps += "Unscaled total = ${EquationFormat.number(baseTarget)} + ${EquationFormat.number(additiveTotal)} = ${EquationFormat.withUnit(unscaledTotal, unit)}"
+        steps += "Final total = ${EquationFormat.number(unscaledTotal)} x ${EquationFormat.number(multiplier)} = ${EquationFormat.withUnit(finalTotal, unit)}"
+
+        val rows = components.map { c ->
+            val u = unscaled.getValue(c.id)
+            val f = u * multiplier
+            val share = if (unscaledTotal > EPS) u / unscaledTotal * 100.0 else 0.0
+            BatchRow(
+                id = c.id, name = c.name, role = c.role,
+                unscaledQty = u, finalQty = f, sharePercent = share,
+                formattedUnscaled = EquationFormat.withUnit(u, unit),
+                formattedFinal = EquationFormat.withUnit(f, unit),
+                formattedShare = EquationFormat.percent(share)
+            )
+        }
+
+        val warnings = mutableListOf<String>()
+        val sum = rows.sumOf { it.unscaledQty }
+        if (abs(sum - unscaledTotal) > 1e-6) {
+            warnings += "Item weights add up to ${EquationFormat.withUnit(sum, unit)}, not ${EquationFormat.withUnit(unscaledTotal, unit)}."
+        }
+
+        return BaseBatchResult(
+            isValid = true, errorMessage = null, warnings = warnings, rows = rows,
+            baseTarget = baseTarget, fixedTotal = fixedTotal, remainingForRatio = remaining,
+            additiveTotal = additiveTotal, unscaledTotal = unscaledTotal, multiplier = multiplier,
+            finalTotal = finalTotal, resultUnit = unit, steps = steps
         )
     }
 }

@@ -1,5 +1,6 @@
 package com.example.data.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -32,5 +33,8 @@ data class MixtureRecipeEntity(
     val recalibratedProportionsJson: String = "[]",
     val totalNewMixtureWeight: Double = 0.0,
     val batchDivisionJson: String = "[]",
-    val totalWeightPerBatch: Double = 0.0
+    val totalWeightPerBatch: Double = 0.0,
+    /** JSON of the formulation method and solver inputs; empty for recipes saved before it existed. */
+    @ColumnInfo(defaultValue = "''")
+    val formulaConfigJson: String = ""
 )

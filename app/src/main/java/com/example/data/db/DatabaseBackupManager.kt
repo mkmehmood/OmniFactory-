@@ -201,6 +201,7 @@ class DatabaseBackupManager(private val context: Context) {
                 put("batchCount", m.batchCount)
                 put("timestamp", m.timestamp)
                 put("isFavorite", m.isFavorite)
+                put("formulaConfigJson", m.formulaConfigJson)
             }
             mixtureArray.put(obj)
         }
@@ -454,7 +455,8 @@ class DatabaseBackupManager(private val context: Context) {
                             ingredientsJson = obj.optString("ingredientsJson", "[]"),
                             batchCount = obj.optInt("batchCount", 1),
                             timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
-                            isFavorite = obj.optBoolean("isFavorite", false)
+                            isFavorite = obj.optBoolean("isFavorite", false),
+                            formulaConfigJson = obj.optString("formulaConfigJson", "")
                         )
                     )
                 }
@@ -637,6 +639,7 @@ class DatabaseBackupManager(private val context: Context) {
                 put("totalNewMixtureWeight", m.totalNewMixtureWeight)
                 put("batchDivisionJson", m.batchDivisionJson)
                 put("totalWeightPerBatch", m.totalWeightPerBatch)
+                put("formulaConfigJson", m.formulaConfigJson)
             }
             mixtureArray.put(obj)
         }
@@ -678,7 +681,8 @@ class DatabaseBackupManager(private val context: Context) {
                         recalibratedProportionsJson = obj.optString("recalibratedProportionsJson", "[]"),
                         totalNewMixtureWeight = obj.optDouble("totalNewMixtureWeight", 0.0),
                         batchDivisionJson = obj.optString("batchDivisionJson", "[]"),
-                        totalWeightPerBatch = obj.optDouble("totalWeightPerBatch", 0.0)
+                        totalWeightPerBatch = obj.optDouble("totalWeightPerBatch", 0.0),
+                        formulaConfigJson = obj.optString("formulaConfigJson", "")
                     )
                 )
             }
