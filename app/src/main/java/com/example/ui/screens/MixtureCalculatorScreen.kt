@@ -96,6 +96,11 @@ import androidx.compose.runtime.LaunchedEffect
 import com.example.ui.components.BlinkingCursorPointer
 import com.example.ui.components.InputFieldCopyPasteMenu
 import com.example.domain.mixture.BatchDivisionResult
+import com.example.domain.mixture.ScaleMode
+import com.example.domain.calculator.BatchScalingEngine
+import com.example.domain.calculator.BatchScalingOutput
+import com.example.domain.calculator.RoundingOption
+import androidx.compose.material.icons.filled.LockOpen
 import com.example.domain.mixture.BatchOperationMode
 import com.example.domain.mixture.MixtureAdjustmentMode
 import com.example.domain.mixture.RatioCalculationResult
@@ -165,7 +170,11 @@ fun MixtureCalculatorScreen(
                 viewModel.setActualAdded(ingredientId, appendNumericToken(currentVal, token))
             }
             focusedFieldId == "step5_batch_count" -> {
-                viewModel.setBatchCountText(appendNumericToken(uiState.batchCountText, token))
+                if (uiState.scaleMode.usesBatchCount) {
+                    viewModel.setBatchCountText(appendNumericToken(uiState.batchCountText, token))
+                } else {
+                    viewModel.setScaleValueText(appendNumericToken(uiState.scaleValueText, token))
+                }
             }
         }
     }
@@ -185,8 +194,12 @@ fun MixtureCalculatorScreen(
                 }
             }
             focusedFieldId == "step5_batch_count" -> {
-                if (uiState.batchCountText.isNotEmpty()) {
-                    viewModel.setBatchCountText(uiState.batchCountText.dropLast(1))
+                if (uiState.scaleMode.usesBatchCount) {
+                    if (uiState.batchCountText.isNotEmpty()) {
+                        viewModel.setBatchCountText(uiState.batchCountText.dropLast(1))
+                    }
+                } else if (uiState.scaleValueText.isNotEmpty()) {
+                    viewModel.setScaleValueText(uiState.scaleValueText.dropLast(1))
                 }
             }
         }
@@ -202,7 +215,8 @@ fun MixtureCalculatorScreen(
                 viewModel.setActualAdded(ingredientId, "")
             }
             focusedFieldId == "step5_batch_count" -> {
-                viewModel.setBatchCountText("")
+                if (uiState.scaleMode.usesBatchCount) viewModel.setBatchCountText("")
+                else viewModel.setScaleValueText("")
             }
         }
     }
@@ -212,7 +226,7 @@ fun MixtureCalculatorScreen(
         "TARGET RECIPE & SIMPLIFIED RATIO",
         "REFERENCE & ACTUAL INGREDIENTS ADDED",
         "RECALIBRATED MIXTURE PROPORTIONS",
-        "BATCH SCALING: DIVIDE OR MULTIPLY",
+        "SCALE & BATCH",
         "WHAT WOULD YOU LIKE TO DO NEXT?"
     )
 
@@ -220,7 +234,7 @@ fun MixtureCalculatorScreen(
         "Proceed to Step 2: Calculate Ratio",
         "Added Ingredient?",
         "Recalibrate Ratio",
-        "Batch Scaling (÷ / ×)",
+        "Scale & Batch",
         "Options",
         "" // No primary button on Step 6
     )
@@ -393,6 +407,7 @@ fun MixtureCalculatorScreen(
                                 clipboardManager.setText(AnnotatedString(uiState.simplifiedRatio.simplifiedRatioString))
                                 Toast.makeText(context, "Ratio copied to clipboard", Toast.LENGTH_SHORT).show()
                             },
+                            onSkipToScale = { viewModel.goToStep(5) },
                             primaryColor = primaryColor,
                             surfaceBg = surfaceBg,
                             borderColor = cardBorderColor,
@@ -504,26 +519,39 @@ fun MixtureCalculatorScreen(
                         5 -> Step5BatchScaling(
                             recalibrationResult = uiState.recalibrationResult,
                             batchDivisionResult = uiState.batchDivisionResult,
+                            scaleOutput = uiState.scaleOutput,
+                            scaleMessage = uiState.scaleMessage,
+                            scaleMode = uiState.scaleMode,
+                            onSelectScaleMode = {
+                                focusedFieldId = null
+                                focusedFieldLabel = null
+                                viewModel.setScaleMode(it)
+                            },
                             selectedMode = uiState.selectedAdjustmentMode,
                             onSelectMode = { viewModel.setAdjustmentMode(it) },
                             solverBasisLabel = if (uiState.equationMode != EquationMode.ANCHOR) uiState.formulaSummary?.basisLabel else null,
-                            batchOperationMode = uiState.batchOperationMode,
-                            onSelectBatchOperationMode = { viewModel.setBatchOperationMode(it) },
-                            batchCountText = uiState.batchCountText,
+                            inputText = if (uiState.scaleMode.usesBatchCount) uiState.batchCountText else uiState.scaleValueText,
                             batchCount = uiState.batchCount,
-                            isBatchCountFocused = focusedFieldId == "step5_batch_count",
-                            onFocusBatchCount = {
+                            isInputFocused = focusedFieldId == "step5_batch_count",
+                            onFocusInput = {
                                 if (focusedFieldId == "step5_batch_count") {
                                     focusedFieldId = null
                                     focusedFieldLabel = null
                                 } else {
                                     focusedFieldId = "step5_batch_count"
-                                    focusedFieldLabel = if (uiState.batchOperationMode == BatchOperationMode.DIVIDE) "Batches to Divide" else "Batch Multiplier"
+                                    focusedFieldLabel = uiState.scaleMode.prompt
                                 }
                             },
-                            onBatchCountChange = { viewModel.setBatchCountText(it) },
+                            onInputChange = {
+                                if (uiState.scaleMode.usesBatchCount) viewModel.setBatchCountText(it)
+                                else viewModel.setScaleValueText(it)
+                            },
                             onIncrement = { viewModel.incrementBatchCount() },
                             onDecrement = { viewModel.decrementBatchCount() },
+                            lockedIds = uiState.lockedScaleIds,
+                            onToggleLock = { viewModel.toggleScaleLock(it) },
+                            rounding = uiState.scaleRounding,
+                            onSelectRounding = { viewModel.setScaleRounding(it) },
                             primaryColor = primaryColor,
                             surfaceBg = surfaceBg,
                             borderColor = cardBorderColor,
@@ -1047,6 +1075,7 @@ private fun Step2TargetRecipeAndRatio(
     ratioResult: RatioCalculationResult,
     ingredients: List<TargetIngredient>,
     onCopyRatio: () -> Unit,
+    onSkipToScale: () -> Unit,
     primaryColor: Color,
     surfaceBg: Color,
     borderColor: Color,
@@ -1240,6 +1269,39 @@ private fun Step2TargetRecipeAndRatio(
                         )
                     }
                 }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .border(1.dp, primaryColor.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                .clickable { onSkipToScale() }
+                .testTag("skip_to_scale_button"),
+            shape = RoundedCornerShape(12.dp),
+            color = primaryColor.copy(alpha = 0.10f)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Scale,
+                    contentDescription = null,
+                    tint = primaryColor,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Just scale this recipe → skip to Scale & Batch",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = DigitalMonospaceFont,
+                    color = primaryColor
+                )
             }
         }
     }
@@ -2889,34 +2951,46 @@ private fun Step4RecalibratedProportions(
 }
 
 // -------------------------------------------------------------
-// STEP 5 — Batch Scaling: Divide or Multiply
+// STEP 5 — Scale & Batch: Multiply / Split / Target total / Stock, with ingredient locks
+// (the former standalone Batch & Ratio Scaler, running on the same recalibrated recipe)
 // -------------------------------------------------------------
 @Composable
 private fun Step5BatchScaling(
     recalibrationResult: RecalibrationResult,
     batchDivisionResult: BatchDivisionResult,
+    scaleOutput: BatchScalingOutput?,
+    scaleMessage: String?,
+    scaleMode: ScaleMode,
+    onSelectScaleMode: (ScaleMode) -> Unit,
     selectedMode: MixtureAdjustmentMode,
     onSelectMode: (MixtureAdjustmentMode) -> Unit,
     solverBasisLabel: String? = null,
-    batchOperationMode: BatchOperationMode,
-    onSelectBatchOperationMode: (BatchOperationMode) -> Unit,
-    batchCountText: String,
+    inputText: String,
     batchCount: Int,
-    isBatchCountFocused: Boolean,
-    onFocusBatchCount: () -> Unit,
-    onBatchCountChange: (String) -> Unit,
+    isInputFocused: Boolean,
+    onFocusInput: () -> Unit,
+    onInputChange: (String) -> Unit,
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
+    lockedIds: Set<String>,
+    onToggleLock: (String) -> Unit,
+    rounding: RoundingOption,
+    onSelectRounding: (RoundingOption) -> Unit,
     primaryColor: Color,
     surfaceBg: Color,
     borderColor: Color,
     isDark: Boolean
 ) {
-    val isDivide = batchOperationMode == BatchOperationMode.DIVIDE
     val primaryUnit = recalibrationResult.proportions.firstOrNull()?.unit ?: "kg"
+    val accent = when (scaleMode) {
+        ScaleMode.MULTIPLY -> Color(0xFFF59E0B)
+        ScaleMode.DIVIDE -> primaryColor
+        ScaleMode.TARGET_TOTAL -> Color(0xFF10B981)
+        ScaleMode.AVAILABLE -> Color(0xFF06B6D4)
+    }
+    val showPerBatch = scaleMode != ScaleMode.TARGET_TOTAL
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        // 1. Dual Mode Selector Card: Divide vs Multiply
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -2927,114 +3001,73 @@ private fun Step5BatchScaling(
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
                 Text(
-                    text = "BATCH SCALING OPERATION",
+                    text = "SCALE & BATCH",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = DigitalMonospaceFont,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 0.8.sp
                 )
-
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // Divide Tab
-                    val divideSelected = isDivide
-                    val divideBorder = if (divideSelected) primaryColor else borderColor.copy(alpha = 0.5f)
-                    val divideBg = if (divideSelected) primaryColor.copy(alpha = 0.15f) else Color.Transparent
-
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(if (divideSelected) 1.5.dp else 1.dp, divideBorder, RoundedCornerShape(12.dp))
-                            .clickable { onSelectBatchOperationMode(BatchOperationMode.DIVIDE) }
-                            .testTag("batch_mode_divide_button"),
-                        shape = RoundedCornerShape(12.dp),
-                        color = divideBg
+                // Mode selector: 2 x 2 grid
+                val modeRows = ScaleMode.values().toList().chunked(2)
+                modeRows.forEachIndexed { rowIndex, rowModes ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(10.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "÷",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (divideSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "DIVIDE MIXTURE",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = DigitalMonospaceFont,
-                                    color = if (divideSelected) primaryColor else MaterialTheme.colorScheme.onSurface
-                                )
+                        rowModes.forEach { m ->
+                            val chipAccent = when (m) {
+                                ScaleMode.MULTIPLY -> Color(0xFFF59E0B)
+                                ScaleMode.DIVIDE -> primaryColor
+                                ScaleMode.TARGET_TOTAL -> Color(0xFF10B981)
+                                ScaleMode.AVAILABLE -> Color(0xFF06B6D4)
                             }
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                text = "Split mixture into equal batches",
-                                fontSize = 9.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
+                            val selected = m == scaleMode
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .border(
+                                        if (selected) 1.5.dp else 1.dp,
+                                        if (selected) chipAccent else borderColor.copy(alpha = 0.5f),
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable { onSelectScaleMode(m) }
+                                    .testTag("scale_mode_${m.name.lowercase()}_button"),
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (selected) chipAccent.copy(alpha = 0.15f) else Color.Transparent
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = m.symbol,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (selected) chipAccent else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = m.label.uppercase(),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = DigitalMonospaceFont,
+                                        color = if (selected) chipAccent else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
                         }
                     }
-
-                    // Multiply Tab
-                    val multiplySelected = !isDivide
-                    val multiplyBorder = if (multiplySelected) Color(0xFFF59E0B) else borderColor.copy(alpha = 0.5f)
-                    val multiplyBg = if (multiplySelected) Color(0xFFF59E0B).copy(alpha = 0.15f) else Color.Transparent
-
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(if (multiplySelected) 1.5.dp else 1.dp, multiplyBorder, RoundedCornerShape(12.dp))
-                            .clickable { onSelectBatchOperationMode(BatchOperationMode.MULTIPLY) }
-                            .testTag("batch_mode_multiply_button"),
-                        shape = RoundedCornerShape(12.dp),
-                        color = multiplyBg
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(10.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "×",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (multiplySelected) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "MULTIPLY MIXTURE",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = DigitalMonospaceFont,
-                                    color = if (multiplySelected) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                text = "Multiply single batch to total mix",
-                                fontSize = 9.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
+                    if (rowIndex < modeRows.lastIndex) Spacer(modifier = Modifier.height(8.dp))
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Basis Mode Chip
+                // Basis chip (how the recipe itself was derived)
                 if (solverBasisLabel != null) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
@@ -3097,11 +3130,11 @@ private fun Step5BatchScaling(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Formula explanation banner
+                // One-line explanation of what the current mode is doing
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp),
-                    color = if (isDivide) primaryColor.copy(alpha = 0.08f) else Color(0xFFF59E0B).copy(alpha = 0.08f)
+                    color = accent.copy(alpha = 0.08f)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
@@ -3111,7 +3144,7 @@ private fun Step5BatchScaling(
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = null,
-                            tint = if (isDivide) primaryColor else Color(0xFFF59E0B),
+                            tint = accent,
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
@@ -3127,56 +3160,58 @@ private fun Step5BatchScaling(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = if (isDivide) "How many equal batches to divide into?" else "How many batches to multiply to get total mixture?",
+                    text = scaleMode.prompt,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-
                 Spacer(modifier = Modifier.height(10.dp))
 
-                var showBatchCopyPasteMenu by remember { mutableStateOf(false) }
-
+                var showInputCopyPasteMenu by remember { mutableStateOf(false) }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Decrement Stepper
-                    Surface(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
-                            .clickable { onDecrement() }
-                            .testTag("decrement_batch_count_button"),
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text("−", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = primaryColor)
+                    if (scaleMode.usesBatchCount) {
+                        Surface(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .border(1.dp, borderColor, RoundedCornerShape(12.dp))
+                                .clickable { onDecrement() }
+                                .testTag("decrement_batch_count_button"),
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("−", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = primaryColor)
+                            }
                         }
                     }
 
-                    // Numeric input
                     val keyboardController = LocalSoftwareKeyboardController.current
                     val focusManager = LocalFocusManager.current
-
-                    Box(
-                        modifier = Modifier.weight(1f)
-                    ) {
+                    Box(modifier = Modifier.weight(1f)) {
                         LiquidGlassTextField(
-                            value = batchCountText,
-                            onValueChange = onBatchCountChange,
+                            value = inputText,
+                            onValueChange = onInputChange,
                             readOnly = true,
                             suffix = {
-                                if (isBatchCountFocused) {
-                                    BlinkingCursorPointer(color = primaryColor)
+                                if (isInputFocused) {
+                                    BlinkingCursorPointer(color = accent)
+                                } else if (!scaleMode.usesBatchCount) {
+                                    Text(
+                                        text = primaryUnit,
+                                        fontSize = 12.sp,
+                                        fontFamily = DigitalMonospaceFont,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             },
                             singleLine = true,
-                            forceFocused = isBatchCountFocused,
-                            accentColor = if (isDivide) primaryColor else Color(0xFFF59E0B),
+                            forceFocused = isInputFocused,
+                            accentColor = accent,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .testTag("batch_count_input"),
@@ -3187,7 +3222,6 @@ private fun Step5BatchScaling(
                                 textAlign = TextAlign.Center
                             )
                         )
-
                         Box(
                             modifier = Modifier
                                 .matchParentSize()
@@ -3196,68 +3230,110 @@ private fun Step5BatchScaling(
                                         onTap = {
                                             focusManager.clearFocus()
                                             keyboardController?.hide()
-                                            onFocusBatchCount()
+                                            onFocusInput()
                                         },
-                                        onLongPress = { showBatchCopyPasteMenu = true }
+                                        onLongPress = { showInputCopyPasteMenu = true }
                                     )
                                 }
                         )
-
                         InputFieldCopyPasteMenu(
-                            expanded = showBatchCopyPasteMenu,
-                            onDismissRequest = { showBatchCopyPasteMenu = false },
-                            value = batchCountText,
-                            onPaste = { onBatchCountChange(it) }
+                            expanded = showInputCopyPasteMenu,
+                            onDismissRequest = { showInputCopyPasteMenu = false },
+                            value = inputText,
+                            onPaste = { onInputChange(it) }
                         )
                     }
 
-                    // Increment Stepper
-                    Surface(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
-                            .clickable { onIncrement() }
-                            .testTag("increment_batch_count_button"),
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = primaryColor)
+                    if (scaleMode.usesBatchCount) {
+                        Surface(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .border(1.dp, borderColor, RoundedCornerShape(12.dp))
+                                .clickable { onIncrement() }
+                                .testTag("increment_batch_count_button"),
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("+", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = primaryColor)
+                            }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                // Quick presets (batch-count modes only)
+                if (scaleMode.usesBatchCount) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    val presets = if (scaleMode == ScaleMode.DIVIDE) listOf(2, 3, 4, 5, 6, 8) else listOf(1, 2, 3, 5, 10, 20)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        presets.forEach { preset ->
+                            val isSelected = batchCount == preset
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .border(1.dp, if (isSelected) accent else borderColor, RoundedCornerShape(8.dp))
+                                    .clickable { onInputChange(preset.toString()) },
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (isSelected) accent.copy(alpha = 0.2f) else Color.Transparent
+                            ) {
+                                Text(
+                                    text = "${preset}x",
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = if (isSelected) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
+                }
 
-                // Quick preset buttons
-                val presets = if (isDivide) listOf(2, 3, 4, 5, 6, 8) else listOf(1, 2, 3, 5, 10, 20)
+                // Rounding
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "ROUNDING",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = DigitalMonospaceFont,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 0.8.sp
+                )
+                Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    presets.forEach { preset ->
-                        val isSelected = batchCount == preset
-                        val chipColor = if (isDivide) primaryColor else Color(0xFFF59E0B)
+                    RoundingOption.values().forEach { option ->
+                        val isSelected = option == rounding
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(8.dp))
-                                .border(
-                                    1.dp,
-                                    if (isSelected) chipColor else borderColor,
-                                    RoundedCornerShape(8.dp)
-                                )
-                                .clickable { onBatchCountChange(preset.toString()) },
+                                .border(1.dp, if (isSelected) accent else borderColor, RoundedCornerShape(8.dp))
+                                .clickable { onSelectRounding(option) }
+                                .testTag("scale_rounding_${option.name.lowercase()}"),
                             shape = RoundedCornerShape(8.dp),
-                            color = if (isSelected) chipColor.copy(alpha = 0.2f) else Color.Transparent
+                            color = if (isSelected) accent.copy(alpha = 0.2f) else Color.Transparent
                         ) {
                             Text(
-                                text = "${preset}x",
+                                text = when (option) {
+                                    RoundingOption.EXACT -> "Exact"
+                                    RoundingOption.WHOLE -> "0"
+                                    RoundingOption.ONE_DECIMAL -> "0.0"
+                                    RoundingOption.TWO_DECIMALS -> "0.00"
+                                    RoundingOption.THREE_DECIMALS -> "0.000"
+                                },
                                 fontSize = 11.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                 fontFamily = DigitalMonospaceFont,
-                                color = if (isSelected) chipColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = if (isSelected) accent else MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(vertical = 6.dp)
                             )
@@ -3269,7 +3345,7 @@ private fun Step5BatchScaling(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // 2. Quantity Table Card
+        // Results table
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -3280,21 +3356,50 @@ private fun Step5BatchScaling(
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
                 Text(
-                    text = if (isDivide) {
-                        "QUANTITY PER BATCH (DIVIDE TOTAL BY $batchCount BATCHES)"
-                    } else {
-                        "TOTAL MIXTURE (MULTIPLY SINGLE BATCH BY $batchCount BATCHES)"
+                    text = when (scaleMode) {
+                        ScaleMode.DIVIDE -> "QUANTITY PER BATCH (TOTAL ÷ $batchCount BATCHES)"
+                        ScaleMode.MULTIPLY -> "TOTAL MIXTURE (RECIPE × $batchCount BATCHES)"
+                        ScaleMode.TARGET_TOTAL -> "RECIPE SCALED TO TARGET TOTAL"
+                        ScaleMode.AVAILABLE -> "FULL BATCHES FROM YOUR STOCK"
                     },
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = DigitalMonospaceFont,
-                    color = if (isDivide) primaryColor else Color(0xFFF59E0B),
+                    color = accent,
                     letterSpacing = 0.8.sp
                 )
-
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Table Header
+                if (scaleMessage != null) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFFF59E0B).copy(alpha = 0.12f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = Color(0xFFF59E0B),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = scaleMessage,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+
+                // Table header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -3310,34 +3415,36 @@ private fun Step5BatchScaling(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1.4f)
                     )
+                    if (showPerBatch) {
+                        Text(
+                            text = "Per Batch",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DigitalMonospaceFont,
+                            color = if (scaleMode == ScaleMode.DIVIDE) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.End,
+                            modifier = Modifier.weight(1.2f)
+                        )
+                    }
                     Text(
-                        text = if (isDivide) "Per Batch (÷)" else "Per Batch (1x)",
+                        text = "Total",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = DigitalMonospaceFont,
-                        color = if (isDivide) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier.weight(1.2f)
-                    )
-                    Text(
-                        text = if (isDivide) "Total Mix" else "Total Scaled (×)",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DigitalMonospaceFont,
-                        color = if (!isDivide) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (scaleMode == ScaleMode.DIVIDE) MaterialTheme.colorScheme.onSurfaceVariant else accent,
                         textAlign = TextAlign.End,
                         modifier = Modifier.weight(1.3f)
                     )
+                    Spacer(modifier = Modifier.width(36.dp))
                 }
-
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Table Rows
                 batchDivisionResult.items.forEach { item ->
+                    val isLocked = item.ingredientId in lockedIds
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -3348,78 +3455,126 @@ private fun Step5BatchScaling(
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1.4f)
                         )
-                        Text(
-                            text = item.formattedPerBatch,
-                            fontSize = 12.sp,
-                            fontWeight = if (isDivide) FontWeight.Bold else FontWeight.Medium,
-                            fontFamily = DigitalMonospaceFont,
-                            color = if (isDivide) primaryColor else MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.End,
-                            modifier = Modifier.weight(1.2f)
-                        )
+                        if (showPerBatch) {
+                            Text(
+                                text = item.formattedPerBatch,
+                                fontSize = 12.sp,
+                                fontWeight = if (scaleMode == ScaleMode.DIVIDE) FontWeight.Bold else FontWeight.Medium,
+                                fontFamily = DigitalMonospaceFont,
+                                color = if (scaleMode == ScaleMode.DIVIDE) accent else MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.End,
+                                modifier = Modifier.weight(1.2f)
+                            )
+                        }
                         Text(
                             text = item.formattedTotal,
                             fontSize = 12.sp,
-                            fontWeight = if (!isDivide) FontWeight.Bold else FontWeight.Medium,
+                            fontWeight = if (scaleMode == ScaleMode.DIVIDE) FontWeight.Medium else FontWeight.Bold,
                             fontFamily = DigitalMonospaceFont,
-                            color = if (!isDivide) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (scaleMode == ScaleMode.DIVIDE) MaterialTheme.colorScheme.onSurfaceVariant else accent,
                             textAlign = TextAlign.End,
                             modifier = Modifier.weight(1.3f)
                         )
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onToggleLock(item.ingredientId) }
+                                .testTag("scale_lock_${item.ingredientId}"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                                contentDescription = if (isLocked) "Unlock ${item.ingredientName}" else "Lock ${item.ingredientName}",
+                                tint = if (isLocked) accent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                     HorizontalDivider(color = borderColor.copy(alpha = 0.4f))
                 }
 
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Tap a lock to hold that ingredient at its recipe amount; the others scale to fit.",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 13.sp
+                )
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Footer: Total Weight Summary
+                // Footer summary
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp),
-                    color = if (isDivide) primaryColor.copy(alpha = 0.12f) else Color(0xFFF59E0B).copy(alpha = 0.12f)
+                    color = accent.copy(alpha = 0.12f)
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                        if (showPerBatch) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "WEIGHT PER BATCH:",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = accent
+                                )
+                                Text(
+                                    text = batchDivisionResult.formattedWeightPerBatch,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (isDivide) "WEIGHT PER BATCH (÷):" else "SINGLE BATCH WEIGHT:",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
+                                text = if (showPerBatch) "TOTAL MIXTURE:" else "SCALED TOTAL:",
+                                fontSize = if (showPerBatch) 10.sp else 11.sp,
+                                fontWeight = if (showPerBatch) FontWeight.Normal else FontWeight.Bold,
                                 fontFamily = DigitalMonospaceFont,
-                                color = if (isDivide) primaryColor else Color(0xFFF59E0B)
+                                color = if (showPerBatch) MaterialTheme.colorScheme.onSurfaceVariant else accent
                             )
                             Text(
-                                text = batchDivisionResult.formattedWeightPerBatch,
-                                fontSize = 14.sp,
+                                text = batchDivisionResult.formattedResultWeight,
+                                fontSize = if (showPerBatch) 12.sp else 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = DigitalMonospaceFont,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = if (isDivide) "TOTAL MIXTURE DIVIDED:" else "TOTAL PRODUCTION MIXTURE (×):",
-                                fontSize = 10.sp,
-                                fontFamily = DigitalMonospaceFont,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = batchDivisionResult.formattedResultWeight,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = DigitalMonospaceFont,
-                                color = if (!isDivide) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurface
-                            )
+                        if (scaleMode == ScaleMode.AVAILABLE && scaleOutput != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "FULL BATCHES / LEFTOVER:",
+                                    fontSize = 10.sp,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "${scaleOutput.fullBatchesCount} / " +
+                                        "${BatchScalingEngine.formatNumber(scaleOutput.remainderAmount ?: 0.0, rounding)} $primaryUnit",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = DigitalMonospaceFont,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
                         }
                     }
                 }

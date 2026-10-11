@@ -38,6 +38,10 @@ import com.example.domain.mixture.FormulaSummary
 import com.example.domain.mixture.IngredientFormulaConfig
 import com.example.domain.mixture.MixtureFormulaConfig
 import com.example.domain.mixture.MixtureFormulaBridge
+import com.example.domain.mixture.MixtureScaleEngine
+import com.example.domain.mixture.ScaleMode
+import com.example.domain.calculator.BatchScalingOutput
+import com.example.domain.calculator.RoundingOption
 import com.example.domain.mixture.MixtureUnits
 import com.example.domain.mixture.MixtureAdjustmentMode
 import com.example.domain.mixture.MixtureEquationEngine
@@ -58,6 +62,15 @@ data class MixtureUiState(
     val batchCountText: String = "1",
     val batchCount: Int = 1,
     val batchOperationMode: BatchOperationMode = BatchOperationMode.DIVIDE,
+    // --- Unified Scale & Batch step (replaces the standalone Batch Scaler) ---
+    val scaleMode: ScaleMode = ScaleMode.DIVIDE,
+    /** Weight input for TARGET_TOTAL / AVAILABLE modes (MULTIPLY / DIVIDE use [batchCountText]). */
+    val scaleValueText: String = "",
+    /** Ingredients held at their recipe amount while the rest scale. */
+    val lockedScaleIds: Set<String> = emptySet(),
+    val scaleRounding: RoundingOption = RoundingOption.TWO_DECIMALS,
+    val scaleOutput: BatchScalingOutput? = null,
+    val scaleMessage: String? = null,
     val currentRecipeTitle: String = "Custom Formulation",
     val showDatabaseBrowserSheet: Boolean = false,
     val showSaveRecipeDialog: Boolean = false,
@@ -179,6 +192,7 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
             batchCountText = "1",
             batchCount = 1,
             batchOperationMode = BatchOperationMode.DIVIDE,
+            scaleMode = ScaleMode.DIVIDE,
             currentRecipeTitle = "Custom Formulation",
             selectedAdjustmentMode = MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT,
             showCompareBothModes = false,
@@ -570,10 +584,37 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun setBatchOperationMode(mode: BatchOperationMode) {
+        setScaleMode(if (mode == BatchOperationMode.DIVIDE) ScaleMode.DIVIDE else ScaleMode.MULTIPLY)
+    }
+
+    fun setScaleMode(mode: ScaleMode) {
         _uiState.update { current ->
-            val updated = current.copy(batchOperationMode = mode)
+            val updated = current.copy(
+                scaleMode = mode,
+                batchOperationMode = when (mode) {
+                    ScaleMode.DIVIDE -> BatchOperationMode.DIVIDE
+                    ScaleMode.MULTIPLY -> BatchOperationMode.MULTIPLY
+                    else -> current.batchOperationMode
+                }
+            )
             recalculate(updated)
         }
+    }
+
+    fun setScaleValueText(text: String) {
+        _uiState.update { recalculate(it.copy(scaleValueText = text)) }
+    }
+
+    fun toggleScaleLock(ingredientId: String) {
+        _uiState.update { current ->
+            val locks = if (ingredientId in current.lockedScaleIds) current.lockedScaleIds - ingredientId
+            else current.lockedScaleIds + ingredientId
+            recalculate(current.copy(lockedScaleIds = locks))
+        }
+    }
+
+    fun setScaleRounding(option: RoundingOption) {
+        _uiState.update { recalculate(it.copy(scaleRounding = option)) }
     }
 
     fun toggleCompareBothModes() {
@@ -887,17 +928,23 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
         val countDouble = state.batchCountText.replace(",", ".").replace(" ", "").trim().toDoubleOrNull()?.coerceAtLeast(0.01)
             ?: state.batchCount.toDouble()
 
-        val batchResult = MixtureCalculatorEngine.calculateBatches(
-            recalibrationResult = recalResult,
-            batchCount = countDouble,
-            mode = state.batchOperationMode
+        val scaleValue = if (state.scaleMode.usesBatchCount) countDouble
+        else parseDecimal(state.scaleValueText) ?: 0.0
+        val scaled = MixtureScaleEngine.scale(
+            recipe = recalResult,
+            mode = state.scaleMode,
+            value = scaleValue,
+            lockedIds = state.lockedScaleIds,
+            rounding = state.scaleRounding
         )
 
         return state.copy(
             anchorIngredientId = anchorId,
             simplifiedRatio = ratioResult,
             recalibrationResult = recalResult,
-            batchDivisionResult = batchResult,
+            batchDivisionResult = scaled.division,
+            scaleOutput = scaled.output,
+            scaleMessage = scaled.message,
             targetTotalResult = targetRes,
             referenceResult = referenceRes,
             baseBatchResult = baseBatchRes,

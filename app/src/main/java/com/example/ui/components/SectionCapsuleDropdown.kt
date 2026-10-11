@@ -161,21 +161,11 @@ val APP_SECTION_ITEMS = listOf(
         destination = DrawerDestination.MIXTURE_CALCULATOR,
         title = "Mixture Calculator",
         shortTitle = "Mixture Calc",
-        subtitle = "6-step ratio recalibration wizard",
+        subtitle = "Recalibrate, scale & batch",
         categoryTag = "CHEM/LAB",
         suiteAccent = Color(0xFFFF9F0A),
         icon = Icons.Default.Science,
         testTag = "drawer_item_mixture_calculator"
-    ),
-    SectionCapsuleItem(
-        destination = DrawerDestination.BATCH_SCALING,
-        title = "Batch & Ratio Scaler",
-        shortTitle = "Batch Scaler",
-        subtitle = "Proportional recipes & locking",
-        categoryTag = "RECIPES",
-        suiteAccent = Color(0xFFFF9F0A),
-        icon = Icons.Default.Scale,
-        testTag = "drawer_item_batch_scaling"
     ),
     SectionCapsuleItem(
         destination = DrawerDestination.SETTINGS,
@@ -406,8 +396,7 @@ fun SectionCapsuleDropdownMenu(
             CapsuleFilterGroup.MATH -> APP_SECTION_ITEMS.filter {
                 it.destination in listOf(
                     DrawerDestination.CALCULATOR,
-                    DrawerDestination.MIXTURE_CALCULATOR,
-                    DrawerDestination.BATCH_SCALING
+                    DrawerDestination.MIXTURE_CALCULATOR
                 )
             }
             CapsuleFilterGroup.BUSINESS -> APP_SECTION_ITEMS.filter {

@@ -114,7 +114,8 @@ data class BatchItem(
     val unit: String,
     val totalAmount: Double,
     val formattedPerBatch: String,
-    val formattedTotal: String
+    val formattedTotal: String,
+    val ingredientId: String = ""
 )
 
 data class BatchDivisionResult(

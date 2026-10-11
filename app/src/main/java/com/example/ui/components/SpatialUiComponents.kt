@@ -761,7 +761,7 @@ fun SpatialFloatingDock(
         Triple(DrawerDestination.LEDGER, Icons.Default.AccountBalanceWallet, "Ledger"),
         Triple(DrawerDestination.EXPENSES, Icons.Default.Receipt, "Expenses"),
         Triple(DrawerDestination.CONVERTER, Icons.Default.SwapHoriz, "Units"),
-        Triple(DrawerDestination.BATCH_SCALING, Icons.Default.Scale, "Batch"),
+        Triple(DrawerDestination.MIXTURE_CALCULATOR, Icons.Default.Science, "Mixture"),
         Triple(DrawerDestination.SETTINGS, Icons.Default.Settings, "Config")
     )
 

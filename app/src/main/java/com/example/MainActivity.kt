@@ -71,7 +71,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.ui.BatchScalingViewModel
 import com.example.ui.CalculatorViewModel
 import com.example.ui.ConverterViewModel
 import com.example.ui.ExpensesViewModel
@@ -84,10 +83,8 @@ import com.example.ui.components.DrawerDestination
 import com.example.ui.components.OrnamentalThemeBackground
 import com.example.ui.components.SimpleCalculatorDialog
 import com.example.ui.components.TapeHistorySheet
-import com.example.ui.components.BatchScalingHistorySheet
 import com.example.ui.components.MixtureHistorySheet
 import com.example.ui.screens.BasicCalculatorScreen
-import com.example.ui.screens.BatchScalingScreen
 import com.example.ui.screens.ConverterScreen
 import com.example.ui.screens.ExpensesScreen
 import com.example.ui.screens.LedgerScreen
@@ -100,7 +97,6 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val calculatorViewModel: CalculatorViewModel by viewModels()
-    private val batchScalingViewModel: BatchScalingViewModel by viewModels()
     private val salesViewModel: SalesViewModel by viewModels()
     private val ledgerViewModel: LedgerViewModel by viewModels()
     private val expensesViewModel: ExpensesViewModel by viewModels()
@@ -127,7 +123,6 @@ class MainActivity : ComponentActivity() {
             BackHandler(enabled = !drawerState.isOpen && currentDestination != DrawerDestination.CALCULATOR) {
                 currentDestination = when (currentDestination) {
                     DrawerDestination.MIXTURE_HISTORY -> DrawerDestination.MIXTURE_CALCULATOR
-                    DrawerDestination.BATCH_SCALING_HISTORY -> DrawerDestination.BATCH_SCALING
                     else -> DrawerDestination.CALCULATOR
                 }
             }
@@ -279,8 +274,6 @@ class MainActivity : ComponentActivity() {
                                         DrawerDestination.SALES -> "Sales Reconciliation"
                                         DrawerDestination.MIXTURE_CALCULATOR -> "Mixture Calculator"
                                         DrawerDestination.MIXTURE_HISTORY -> "Mixture History"
-                                        DrawerDestination.BATCH_SCALING -> "Batch Scaler"
-                                        DrawerDestination.BATCH_SCALING_HISTORY -> "Batch Scaler History"
                                         DrawerDestination.CONVERTER -> "Units Converter"
                                         else -> "Calculator"
                                     }
@@ -291,8 +284,6 @@ class MainActivity : ComponentActivity() {
                                         DrawerDestination.SALES -> Icons.Default.ReceiptLong
                                         DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.Science
                                         DrawerDestination.MIXTURE_HISTORY -> Icons.Default.History
-                                        DrawerDestination.BATCH_SCALING -> Icons.Default.Scale
-                                        DrawerDestination.BATCH_SCALING_HISTORY -> Icons.Default.History
                                         DrawerDestination.CONVERTER -> Icons.Default.Category
                                         else -> Icons.Default.Calculate
                                     }
@@ -303,7 +294,6 @@ class MainActivity : ComponentActivity() {
                                         DrawerDestination.SALES -> Icons.Default.ReceiptLong
                                         DrawerDestination.CONVERTER -> Icons.Default.Calculate
                                         DrawerDestination.MIXTURE_CALCULATOR -> Icons.Default.History
-                                        DrawerDestination.BATCH_SCALING -> Icons.Default.History
                                         else -> Icons.Default.History
                                     }
                                     val actionDescription = when (currentDestination) {
@@ -313,7 +303,6 @@ class MainActivity : ComponentActivity() {
                                         DrawerDestination.SALES -> "Saved Sales"
                                         DrawerDestination.CONVERTER -> "Quick Calculator"
                                         DrawerDestination.MIXTURE_CALCULATOR -> "Formulations History"
-                                        DrawerDestination.BATCH_SCALING -> "Batch Scaling History"
                                         else -> "Settings"
                                     }
                                     val onActionClick: () -> Unit = when (currentDestination) {
@@ -331,9 +320,6 @@ class MainActivity : ComponentActivity() {
                                         }
                                         DrawerDestination.MIXTURE_CALCULATOR -> {
                                             { mixtureViewModel.setDatabaseBrowserSheetOpen(true) }
-                                        }
-                                        DrawerDestination.BATCH_SCALING -> {
-                                            { batchScalingViewModel.setHistorySheetOpen(true) }
                                         }
                                         DrawerDestination.CONVERTER -> {
                                             { showQuickCalculatorDialog = true }
@@ -487,57 +473,6 @@ class MainActivity : ComponentActivity() {
                                             LaunchedEffect(Unit) {
                                                 mixtureViewModel.setDatabaseBrowserSheetOpen(true)
                                                 currentDestination = DrawerDestination.MIXTURE_CALCULATOR
-                                            }
-                                        }
-                                        DrawerDestination.BATCH_SCALING -> {
-                                            val batchUiState by batchScalingViewModel.uiState.collectAsStateWithLifecycle()
-                                            val batchHistoryList by batchScalingViewModel.historyList.collectAsStateWithLifecycle()
-                                            val localContext = LocalContext.current
-
-                                            BatchScalingScreen(
-                                                viewModel = batchScalingViewModel,
-                                                onNavigateToHistory = { batchScalingViewModel.setHistorySheetOpen(true) }
-                                            )
-
-                                            if (batchUiState.showHistorySheet) {
-                                                BatchScalingHistorySheet(
-                                                    historyList = batchHistoryList,
-                                                    onDismiss = { batchScalingViewModel.setHistorySheetOpen(false) },
-                                                    onLoadItem = { entity ->
-                                                        batchScalingViewModel.loadFromHistory(entity)
-                                                        batchScalingViewModel.setHistorySheetOpen(false)
-                                                    },
-                                                    onEditItem = { entity, title, desc, note ->
-                                                        batchScalingViewModel.updateHistoryItem(entity, title, desc, note)
-                                                    },
-                                                    onDeleteItem = { entity ->
-                                                        batchScalingViewModel.deleteHistoryItem(entity)
-                                                    },
-                                                    onTogglePin = { entity ->
-                                                        batchScalingViewModel.togglePin(entity)
-                                                    },
-                                                    onClearAll = {
-                                                        batchScalingViewModel.clearAllHistory()
-                                                    },
-                                                    onExportBackupJson = {
-                                                        batchScalingViewModel.exportBackupJson()
-                                                    },
-                                                    onRestoreBackupJson = { json, mode ->
-                                                        batchScalingViewModel.restoreBackupFromJson(json, mode)
-                                                    },
-                                                    onSaveToUri = { uri ->
-                                                        batchScalingViewModel.saveBackupToUri(localContext, uri)
-                                                    },
-                                                    onLoadFromUri = { uri, mode ->
-                                                        batchScalingViewModel.loadBackupFromUri(localContext, uri, mode)
-                                                    }
-                                                )
-                                            }
-                                        }
-                                        DrawerDestination.BATCH_SCALING_HISTORY -> {
-                                            LaunchedEffect(Unit) {
-                                                batchScalingViewModel.setHistorySheetOpen(true)
-                                                currentDestination = DrawerDestination.BATCH_SCALING
                                             }
                                         }
                                         DrawerDestination.CONVERTER -> {

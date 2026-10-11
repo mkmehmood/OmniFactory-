@@ -60,8 +60,6 @@ enum class DrawerDestination {
     SALES,
     MIXTURE_CALCULATOR,
     MIXTURE_HISTORY,
-    BATCH_SCALING,
-    BATCH_SCALING_HISTORY,
     CONVERTER,
     SETTINGS
 }
@@ -233,25 +231,11 @@ fun AppNavigationDrawer(
                 item {
                     DrawerNavItem(
                         label = "Mixture Calculator",
-                        subtitle = "6-step ratio recalibration wizard",
+                        subtitle = "Recalibrate, scale & batch",
                         icon = Icons.Default.Science,
                         isSelected = currentDestination == DrawerDestination.MIXTURE_CALCULATOR,
                         onClick = { onSelectDestination(DrawerDestination.MIXTURE_CALCULATOR) },
                         testTag = "drawer_item_mixture_calculator",
-                        primaryColor = primaryColor,
-                        isDark = isDark
-                    )
-                }
-
-                // 7. Batch Scaling
-                item {
-                    DrawerNavItem(
-                        label = "Batch & Ratio Scaler",
-                        subtitle = "Proportional recipes & locking",
-                        icon = Icons.Default.Scale,
-                        isSelected = currentDestination == DrawerDestination.BATCH_SCALING,
-                        onClick = { onSelectDestination(DrawerDestination.BATCH_SCALING) },
-                        testTag = "drawer_item_batch_scaling",
                         primaryColor = primaryColor,
                         isDark = isDark
                     )
