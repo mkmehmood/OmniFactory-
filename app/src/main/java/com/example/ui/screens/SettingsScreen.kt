@@ -1045,7 +1045,12 @@ fun SettingsScreen(
                                 icon = Icons.Default.LinearScale,
                                 modifier = Modifier.weight(1f)
                             )
-                            Spacer(modifier = Modifier.weight(1f))
+                            DbStatPill(
+                                title = "Calc Formulas",
+                                value = "${settingsUiState.stats.calculatorFormulasCount}",
+                                icon = Icons.Default.Science,
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                     }
 
@@ -1357,6 +1362,9 @@ fun SettingsScreen(
                                     Text("Cashbook Ledger: ${validation.ledgerTransactionsCount} entries", fontSize = 11.sp)
                                     Text("Sales Audits: ${validation.salesTransactionsCount} transactions", fontSize = 11.sp)
                                     Text("Mixture Recipes: ${validation.mixtureRecipesCount} formulas", fontSize = 11.sp)
+                                    if (validation.hasMixtureCalculator) {
+                                        Text("Mixture Calculator: ${validation.calculatorFormulasCount} saved formulas + names & session", fontSize = 11.sp)
+                                    }
                                     Text("App Settings: ${if (validation.hasPreferences) "Included" else "None"}", fontSize = 11.sp)
                                 }
                             }
@@ -1565,7 +1573,7 @@ fun SettingsScreen(
                                     colors = CheckboxDefaults.colors(checkedColor = Color(0xFFEF4444))
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Mixture Wizard Recipes (${settingsUiState.stats.mixtureRecipesCount} recipes)", fontSize = 12.sp)
+                                Text("Mixture Wizard Recipes + Calculator data (${settingsUiState.stats.mixtureRecipesCount} recipes, ${settingsUiState.stats.calculatorFormulasCount} formulas)", fontSize = 12.sp)
                             }
 
                             Row(
