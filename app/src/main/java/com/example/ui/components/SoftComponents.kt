@@ -79,11 +79,12 @@ fun SoftSurface(
     tonalElevation: Dp = 0.dp,
     shadowElevation: Dp = 0.dp,
     border: BorderStroke? = null,
+    interactionSource: MutableInteractionSource? = null,
     content: @Composable () -> Unit
 ) {
     val skin = LocalAppThemeSkin.current
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val interaction = remember { MutableInteractionSource() }
+    val interaction = interactionSource ?: remember { MutableInteractionSource() }
     val pressedByTouch by interaction.collectIsPressedAsState()
 
     val role = softRoleOf(color)
