@@ -75,6 +75,7 @@ import com.example.ui.CalculatorViewModel
 import com.example.ui.ConverterViewModel
 import com.example.ui.ExpensesViewModel
 import com.example.ui.LedgerViewModel
+import com.example.ui.MixtureCalculatorViewModel
 import com.example.ui.MixtureViewModel
 import com.example.ui.SalesViewModel
 import com.example.ui.SettingsViewModel
@@ -101,8 +102,16 @@ class MainActivity : ComponentActivity() {
     private val ledgerViewModel: LedgerViewModel by viewModels()
     private val expensesViewModel: ExpensesViewModel by viewModels()
     private val mixtureViewModel: MixtureViewModel by viewModels()
+    private val mixtureCalculatorViewModelLazy = viewModels<MixtureCalculatorViewModel>()
+    private val mixtureCalculatorViewModel: MixtureCalculatorViewModel by mixtureCalculatorViewModelLazy
     private val converterViewModel: ConverterViewModel by viewModels()
     private val settingsViewModel: SettingsViewModel by viewModels()
+
+    override fun onStop() {
+        // Make sure the Mixture Calculator's latest edits are on disk before the app can be killed.
+        if (mixtureCalculatorViewModelLazy.isInitialized()) mixtureCalculatorViewModel.flush()
+        super.onStop()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -430,8 +439,8 @@ class MainActivity : ComponentActivity() {
                                             val localContext = LocalContext.current
 
                                             MixtureCalculatorScreen(
-                                                viewModel = mixtureViewModel,
-                                                onNavigateToHistory = { mixtureViewModel.setDatabaseBrowserSheetOpen(true) }
+                                                onNavigateToHistory = { mixtureViewModel.setDatabaseBrowserSheetOpen(true) },
+                                                calcViewModel = mixtureCalculatorViewModel
                                             )
 
                                             if (mixtureUiState.showDatabaseBrowserSheet) {

@@ -57,7 +57,8 @@ data class BackupValidationResult(
     val hasPreferences: Boolean = false,
     val errorMessage: String? = null,
     val hasMixtureCalculator: Boolean = false,
-    val calculatorFormulasCount: Int = 0
+    val calculatorFormulasCount: Int = 0,
+    val calculatorNamesCount: Int = 0
 ) {
     val totalItems: Int get() = calculationsCount + salesTransactionsCount + mixtureRecipesCount + ledgerTransactionsCount + batchScalingCount + calculatorFormulasCount
 
@@ -84,7 +85,8 @@ data class RestoreSummary(
     val restoredBatchScaling: Int = 0,
     val restoredSettings: Boolean = false,
     val message: String,
-    val restoredCalculatorFormulas: Int = 0
+    val restoredCalculatorFormulas: Int = 0,
+    val restoredCalculatorNames: Int = 0
 )
 
 class DatabaseBackupManager(private val context: Context) {
@@ -320,8 +322,11 @@ class DatabaseBackupManager(private val context: Context) {
             val settingsObj = root.optJSONObject("settings")
             val calculatorObj = root.optJSONObject("mixtureCalculator")
 
-            val calculatorFormulas = calculatorObj?.optJSONArray("formulas")?.length() ?: 0
-            val hasCalculator = calculatorObj != null
+            // Count what would really be restored (rows the calculator would reject are not counted)
+            val cleanCalculator = calculatorObj?.let { MixtureCalculatorStore.sanitize(it) }
+            val calculatorFormulas = cleanCalculator?.optJSONArray("formulas")?.length() ?: 0
+            val calculatorNames = cleanCalculator?.optJSONArray("savedNames")?.length() ?: 0
+            val hasCalculator = cleanCalculator != null
             val calcCount = calcArray?.length() ?: 0
             val salesCount = salesArray?.length() ?: 0
             val mixtureCount = mixtureArray?.length() ?: 0
@@ -346,7 +351,8 @@ class DatabaseBackupManager(private val context: Context) {
                     batchScalingCount = batchCount,
                     hasPreferences = hasSettings,
                     hasMixtureCalculator = hasCalculator,
-                    calculatorFormulasCount = calculatorFormulas
+                    calculatorFormulasCount = calculatorFormulas,
+                    calculatorNamesCount = calculatorNames
                 )
             }
         } catch (e: Exception) {
@@ -548,14 +554,17 @@ class DatabaseBackupManager(private val context: Context) {
 
             // 5b. Mixture Calculator (names, formulas, session)
             var restoredCalculatorFormulas = 0
+            var restoredCalculatorNames = 0
+            var calculatorFailed = false
             val calculatorObj = root.optJSONObject("mixtureCalculator")
             if (calculatorObj != null) {
-                if (mode == RestoreMode.OVERWRITE) {
-                    MixtureCalculatorStore.replace(context, calculatorObj)
+                val calcResult = MixtureCalculatorStore.importObject(context, calculatorObj, mode == RestoreMode.OVERWRITE)
+                if (calcResult.ok) {
+                    restoredCalculatorFormulas = calcResult.formulas
+                    restoredCalculatorNames = calcResult.names
                 } else {
-                    MixtureCalculatorStore.merge(context, calculatorObj)
+                    calculatorFailed = true
                 }
-                restoredCalculatorFormulas = calculatorObj.optJSONArray("formulas")?.length() ?: 0
             }
 
             // 6. Settings
@@ -611,7 +620,9 @@ class DatabaseBackupManager(private val context: Context) {
                 restoredBatchScaling = restoredBatch,
                 restoredSettings = restoredSettingsFlag,
                 restoredCalculatorFormulas = restoredCalculatorFormulas,
-                message = "Database successfully $modeText: $restoredCalcs calculations, $restoredSales sales audits, $restoredMixtures mixtures, $restoredLedger ledger transactions, $restoredBatch batch recipes, $restoredCalculatorFormulas calculator formulas."
+                restoredCalculatorNames = restoredCalculatorNames,
+                message = "Database successfully $modeText: $restoredCalcs calculations, $restoredSales sales audits, $restoredMixtures mixtures, $restoredLedger ledger transactions, $restoredBatch batch recipes, $restoredCalculatorFormulas calculator formulas, $restoredCalculatorNames calculator names." +
+                    if (calculatorFailed) " Calculator data in the backup could not be restored." else ""
             )
         } catch (e: Exception) {
             RestoreSummary(
@@ -698,19 +709,26 @@ class DatabaseBackupManager(private val context: Context) {
                 return@withContext RestoreSummary(success = false, message = "No mixture recipes or calculator data found in backup.")
             }
             var restoredCalculatorFormulas = 0
+            var restoredCalculatorNames = 0
+            var calculatorFailed = false
             if (calculatorObj != null) {
-                if (mode == RestoreMode.OVERWRITE) {
-                    MixtureCalculatorStore.replace(context, calculatorObj)
+                val calcResult = MixtureCalculatorStore.importObject(context, calculatorObj, mode == RestoreMode.OVERWRITE)
+                if (calcResult.ok) {
+                    restoredCalculatorFormulas = calcResult.formulas
+                    restoredCalculatorNames = calcResult.names
                 } else {
-                    MixtureCalculatorStore.merge(context, calculatorObj)
+                    calculatorFailed = true
                 }
-                restoredCalculatorFormulas = calculatorObj.optJSONArray("formulas")?.length() ?: 0
+            }
+            if (!hasRecipes && calculatorFailed) {
+                return@withContext RestoreSummary(success = false, message = "Calculator data in this backup is not valid.")
             }
             if (!hasRecipes || mixtureArray == null) {
                 return@withContext RestoreSummary(
                     success = true,
                     restoredCalculatorFormulas = restoredCalculatorFormulas,
-                    message = "Restored mixture calculator data ($restoredCalculatorFormulas saved formulas)."
+                    restoredCalculatorNames = restoredCalculatorNames,
+                    message = "Restored mixture calculator data ($restoredCalculatorFormulas saved formulas, $restoredCalculatorNames saved names)."
                 )
             }
             if (mode == RestoreMode.OVERWRITE) {
@@ -750,7 +768,9 @@ class DatabaseBackupManager(private val context: Context) {
                 success = true,
                 restoredMixtures = list.size,
                 restoredCalculatorFormulas = restoredCalculatorFormulas,
-                message = "Successfully ${if (mode == RestoreMode.OVERWRITE) "restored" else "merged"} ${list.size} mixture formulations and $restoredCalculatorFormulas calculator formulas."
+                restoredCalculatorNames = restoredCalculatorNames,
+                message = "Successfully ${if (mode == RestoreMode.OVERWRITE) "restored" else "merged"} ${list.size} mixture formulations, $restoredCalculatorFormulas calculator formulas and $restoredCalculatorNames calculator names." +
+                    if (calculatorFailed) " Calculator data in the backup could not be restored." else ""
             )
         } catch (e: Exception) {
             RestoreSummary(success = false, message = "Mixture restore failed: ${e.localizedMessage ?: "Invalid JSON"}")

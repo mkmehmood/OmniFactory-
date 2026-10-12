@@ -1363,7 +1363,7 @@ fun SettingsScreen(
                                     Text("Sales Audits: ${validation.salesTransactionsCount} transactions", fontSize = 11.sp)
                                     Text("Mixture Recipes: ${validation.mixtureRecipesCount} formulas", fontSize = 11.sp)
                                     if (validation.hasMixtureCalculator) {
-                                        Text("Mixture Calculator: ${validation.calculatorFormulasCount} saved formulas + names & session", fontSize = 11.sp)
+                                        Text("Mixture Calculator: ${validation.calculatorFormulasCount} saved formulas, ${validation.calculatorNamesCount} saved names + last session", fontSize = 11.sp)
                                     }
                                     Text("App Settings: ${if (validation.hasPreferences) "Included" else "None"}", fontSize = 11.sp)
                                 }
@@ -1573,7 +1573,7 @@ fun SettingsScreen(
                                     colors = CheckboxDefaults.colors(checkedColor = Color(0xFFEF4444))
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Mixture Wizard Recipes + Calculator data (${settingsUiState.stats.mixtureRecipesCount} recipes, ${settingsUiState.stats.calculatorFormulasCount} formulas)", fontSize = 12.sp)
+                                Text("Mixture Wizard Recipes + Calculator data (${settingsUiState.stats.mixtureRecipesCount} recipes, ${settingsUiState.stats.calculatorFormulasCount} formulas, ${settingsUiState.stats.calculatorNamesCount} names)", fontSize = 12.sp)
                             }
 
                             Row(
