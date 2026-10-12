@@ -242,7 +242,7 @@ class MixtureCalculatorViewModel(application: Application) : AndroidViewModel(ap
         newNameInput = name
     }
 
-    fun setNewNameInput(text: String) {
+    fun onNewNameChange(text: String) {
         newNameInput = text
     }
 
@@ -293,7 +293,7 @@ class MixtureCalculatorViewModel(application: Application) : AndroidViewModel(ap
 
     // ================================================================== saved formulas
 
-    fun setFormulaNameInput(text: String) {
+    fun onFormulaNameChange(text: String) {
         formulaNameInput = text
     }
 
@@ -390,7 +390,7 @@ class MixtureCalculatorViewModel(application: Application) : AndroidViewModel(ap
 
     // ================================================================== backup / restore
 
-    fun setRestoreText(text: String) {
+    fun onRestoreTextChange(text: String) {
         restoreText = text
     }
 

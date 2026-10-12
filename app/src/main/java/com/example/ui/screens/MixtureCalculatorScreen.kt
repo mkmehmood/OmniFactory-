@@ -472,7 +472,7 @@ private fun SavedNamesManager(vm: MixtureCalculatorViewModel) {
         )
         LiquidGlassTextField(
             value = vm.newNameInput,
-            onValueChange = vm::setNewNameInput,
+            onValueChange = vm::onNewNameChange,
             label = { Text("Name (Urdu / local)", fontSize = 11.sp) },
             singleLine = true,
             modifier = Modifier
@@ -507,7 +507,7 @@ private fun SavedFormulasAndBackup(vm: MixtureCalculatorViewModel, onNavigateToH
         ) {
             LiquidGlassTextField(
                 value = vm.formulaNameInput,
-                onValueChange = vm::setFormulaNameInput,
+                onValueChange = vm::onFormulaNameChange,
                 label = { Text("Formula name", fontSize = 11.sp) },
                 singleLine = true,
                 modifier = Modifier
@@ -539,7 +539,7 @@ private fun SavedFormulasAndBackup(vm: MixtureCalculatorViewModel, onNavigateToH
         )
         LiquidGlassTextField(
             value = vm.restoreText,
-            onValueChange = vm::setRestoreText,
+            onValueChange = vm::onRestoreTextChange,
             label = { Text("Paste a backup here to restore", fontSize = 11.sp) },
             singleLine = false,
             minLines = 3,
