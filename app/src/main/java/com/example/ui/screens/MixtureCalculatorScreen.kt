@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import com.example.ui.components.SoftButton
+import com.example.ui.components.SoftAlertDialog
+import com.example.ui.components.SoftIconButton
+import com.example.ui.components.softWell
+import com.example.ui.components.SoftDivider
+import com.example.ui.theme.SoftColors
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -84,8 +90,8 @@ import com.example.ui.components.SpatialGlassStatCard
 import com.example.ui.components.straightDottedLine
 import com.example.ui.theme.DigitalMonospaceFont
 
-private val AmberColor = Color(0xFFF59E0B)
-private val DangerColor = Color(0xFFEF4444)
+private val AmberColor = SoftColors.warning
+private val DangerColor = SoftColors.negative
 
 /**
  * Mixture Calculator (native Compose).
@@ -203,7 +209,7 @@ private fun CalcHeader(
                 )
             }
             ActionButton("Save", Icons.Default.Bookmark, onSave, testTag = "calc_save")
-            IconButton(onClick = onReset, modifier = Modifier.testTag("calc_reset")) {
+            SoftIconButton(onClick = onReset, modifier = Modifier.testTag("calc_reset")) {
                 Icon(
                     Icons.Default.RestartAlt,
                     contentDescription = "Reset",
@@ -313,7 +319,7 @@ private fun FormulaTab(vm: MixtureCalculatorViewModel, onNavigateToHistory: () -
                 modifier = Modifier.weight(1f),
                 trailing = if (inputs.capText.isNotEmpty() || inputs.multText.isNotEmpty()) {
                     {
-                        IconButton(onClick = vm::clearCap, modifier = Modifier.size(32.dp)) {
+                        SoftIconButton(onClick = vm::clearCap, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.Close, contentDescription = "Clear target batch", modifier = Modifier.size(16.dp))
                         }
                     }
@@ -339,7 +345,7 @@ private fun FormulaTab(vm: MixtureCalculatorViewModel, onNavigateToHistory: () -
         }
     ) {
         SavedNamesManager(vm)
-        HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f))
+        SoftDivider()
 
         val nameOptions = remember(vm.savedNames) {
             listOf(DropdownOption("", "— None / Hide —")) + vm.savedNames.map { DropdownOption(it, it) }
@@ -361,7 +367,7 @@ private fun FormulaTab(vm: MixtureCalculatorViewModel, onNavigateToHistory: () -
                         onSelect = { vm.setRowName(row.id, it) },
                         modifier = Modifier.weight(1f)
                     )
-                    IconButton(onClick = { vm.deleteRow(row.id) }, modifier = Modifier.size(40.dp)) {
+                    SoftIconButton(onClick = { vm.deleteRow(row.id) }, modifier = Modifier.size(40.dp)) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete ingredient", tint = DangerColor)
                     }
                 }
@@ -498,7 +504,7 @@ private fun SaveFormulaDialog(vm: MixtureCalculatorViewModel, onDismiss: () -> U
     var pendingDelete by remember { mutableStateOf<CalcSavedFormula?>(null) }
     val sorted = remember(vm.formulas) { vm.formulas.sortedByDescending { it.savedAt } }
 
-    AlertDialog(
+    SoftAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Save Formula", fontWeight = FontWeight.Bold) },
         text = {
@@ -518,7 +524,7 @@ private fun SaveFormulaDialog(vm: MixtureCalculatorViewModel, onDismiss: () -> U
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 if (sorted.isNotEmpty()) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f))
+                    SoftDivider()
                     Text(
                         "Saved formulas (${sorted.size}) — tap to load or use the name",
                         fontSize = 11.sp,
@@ -547,13 +553,13 @@ private fun SaveFormulaDialog(vm: MixtureCalculatorViewModel, onDismiss: () -> U
                                     overflow = TextOverflow.Ellipsis,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
-                                IconButton(onClick = {
+                                SoftIconButton(onClick = {
                                     vm.loadFormula(f.id)
                                     onDismiss()
                                 }) {
                                     Icon(Icons.Default.Restore, contentDescription = "Load ${f.name}", tint = MaterialTheme.colorScheme.primary)
                                 }
-                                IconButton(onClick = { pendingDelete = f }) {
+                                SoftIconButton(onClick = { pendingDelete = f }) {
                                     Icon(Icons.Default.Delete, contentDescription = "Delete ${f.name}", tint = DangerColor)
                                 }
                             }
@@ -563,26 +569,26 @@ private fun SaveFormulaDialog(vm: MixtureCalculatorViewModel, onDismiss: () -> U
             }
         },
         confirmButton = {
-            TextButton(
+            SoftButton(
                 onClick = { if (vm.saveFormula(name)) onDismiss() },
                 modifier = Modifier.testTag("calc_formula_save")
             ) { Text("Save", fontWeight = FontWeight.Bold) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { SoftButton(onClick = onDismiss) { Text("Cancel") } }
     )
 
     pendingDelete?.let { f ->
-        AlertDialog(
+        SoftAlertDialog(
             onDismissRequest = { pendingDelete = null },
             title = { Text("Delete formula?") },
             text = { Text("\"${f.name}\" will be removed from your saved formulas.") },
             confirmButton = {
-                TextButton(onClick = {
+                SoftButton(onClick = {
                     vm.deleteFormula(f.id)
                     pendingDelete = null
                 }) { Text("Delete", color = DangerColor) }
             },
-            dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text("Cancel") } }
+            dismissButton = { SoftButton(onClick = { pendingDelete = null }) { Text("Cancel") } }
         )
     }
 }
@@ -854,13 +860,10 @@ private fun SectionCard(
 @Composable
 private fun RowCard(content: @Composable ColumnScope.() -> Unit) {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val border = if (isDark) Color(0x28FFFFFF) else Color(0x1E000000)
-    val fill = if (isDark) Color(0x12FFFFFF) else Color(0x08000000)
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(fill, RoundedCornerShape(12.dp))
-            .border(1.dp, border, RoundedCornerShape(12.dp))
+            .softWell(RoundedCornerShape(12.dp))
             .padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
         content = content
@@ -907,7 +910,6 @@ private fun TotalLine(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .straightDottedLine(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f), 1.dp)
             .padding(vertical = 8.dp, horizontal = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -958,8 +960,7 @@ private fun TypeBadge(type: CalcIngType) {
         fontWeight = FontWeight.Bold,
         color = color,
         modifier = Modifier
-            .background(color.copy(alpha = 0.12f), RoundedCornerShape(50))
-            .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(50))
+            .softWell(RoundedCornerShape(50), tint = color)
             .padding(horizontal = 8.dp, vertical = 2.dp)
     )
 }
@@ -1055,7 +1056,7 @@ private fun DropdownField(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .straightDottedLine(line, 1.3.dp)
+                .softWell(RoundedCornerShape(10.dp))
                 .clickable { expanded = true }
                 .padding(horizontal = 4.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,

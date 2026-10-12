@@ -1,5 +1,14 @@
 package com.example.ui.screens
 
+import com.example.ui.components.SoftAlertDialog
+import com.example.ui.components.SoftButton
+import com.example.ui.components.SoftIconButton
+import com.example.ui.components.softWell
+import com.example.ui.components.softToggle
+import com.example.ui.components.SoftDivider
+import com.example.ui.components.SoftSurface
+import com.example.ui.components.SoftCard
+import com.example.ui.theme.SoftColors
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -182,7 +191,7 @@ fun LedgerScreen(
                     amount = uiState.summary.formattedCashIn,
                     count = "${uiState.summary.cashInCount} entries",
                     icon = Icons.Default.ArrowDownward,
-                    accentColor = Color(0xFF10B981),
+                    accentColor = SoftColors.positive,
                     isDark = isDark,
                     modifier = Modifier.weight(1f)
                 )
@@ -192,13 +201,13 @@ fun LedgerScreen(
                     amount = uiState.summary.formattedCashOut,
                     count = "${uiState.summary.cashOutCount} entries",
                     icon = Icons.Default.ArrowUpward,
-                    accentColor = Color(0xFFEF4444),
+                    accentColor = SoftColors.negative,
                     isDark = isDark,
                     modifier = Modifier.weight(1f)
                 )
 
                 val isSurplus = uiState.summary.totalCashInHand >= 0
-                val netAccent = if (isSurplus) Color(0xFF0284C7) else Color(0xFFF59E0B)
+                val netAccent = if (isSurplus) SoftColors.sky else SoftColors.warning
                 LedgerMetricCard(
                     title = "Net Balance",
                     amount = uiState.summary.formattedNetCashFlow,
@@ -247,7 +256,7 @@ fun LedgerScreen(
             ModalBottomSheet(
                 onDismissRequest = { viewModel.closeAddSheet() },
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
                 LedgerAddEditSheetContent(
@@ -295,7 +304,7 @@ fun LedgerScreen(
             ModalBottomSheet(
                 onDismissRequest = { viewModel.setHistoryPanelOpen(false) },
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
                 LedgerHistoryPanelSheetContent(
@@ -356,12 +365,12 @@ fun LedgerScreen(
                 "Are you sure you want to delete this ${tx.type.replace('_', ' ')} entry of ${PkrNumberFormatter.formatPkrAmount(tx.amount)} (${tx.category})?"
             }
 
-            AlertDialog(
+            SoftAlertDialog(
                 onDismissRequest = { transactionToDelete = null },
                 title = { Text(titleText) },
                 text = { Text(detailText) },
                 confirmButton = {
-                    TextButton(
+                    SoftButton(
                         onClick = {
                             viewModel.deleteTransaction(tx)
                             transactionToDelete = null
@@ -371,7 +380,7 @@ fun LedgerScreen(
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { transactionToDelete = null }) {
+                    SoftButton(onClick = { transactionToDelete = null }) {
                         Text("Cancel")
                     }
                 }
@@ -392,19 +401,13 @@ private fun LedgerHeroBalanceCard(
 ) {
     val isPositive = summary.totalCashInHand >= 0
     val cardColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
-    val accentColor = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
+    val accentColor = if (isPositive) SoftColors.positive else SoftColors.negative
 
-    Surface(
+    SoftSurface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f)),
-                RoundedCornerShape(18.dp)
-            )
             .testTag("ledger_hero_balance_card"),
         shape = RoundedCornerShape(18.dp),
-        color = cardColor,
         shadowElevation = 3.dp
     ) {
         Column(
@@ -435,10 +438,8 @@ private fun LedgerHeroBalanceCard(
                     )
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-                ) {
+                SoftSurface(
+                    shape = RoundedCornerShape(6.dp)) {
                     Text(
                         text = "${summary.transactionCount} Entries",
                         fontSize = 10.sp,
@@ -457,11 +458,11 @@ private fun LedgerHeroBalanceCard(
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,
                 fontFamily = DigitalMonospaceFont,
-                color = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
+                color = if (isPositive) SoftColors.positive else SoftColors.negative
             )
 
             Spacer(modifier = Modifier.height(10.dp))
-            HorizontalDivider(thickness = 0.8.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.25f else 0.15f))
+            SoftDivider()
             Spacer(modifier = Modifier.height(10.dp))
 
             // Payment Mode Breakdown Pills: Cash, Bank, and Others
@@ -503,14 +504,11 @@ private fun ModeMiniPill(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    SoftSurface(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
             .clickable { onClick() }
             .testTag("mode_pill_${label.lowercase()}"),
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-    ) {
+        shape = RoundedCornerShape(8.dp)) {
         Column(
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -538,7 +536,7 @@ private fun ModeMiniPill(
                 fontSize = 11.5.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DigitalMonospaceFont,
-                color = if (amount >= 0) MaterialTheme.colorScheme.onSurface else Color(0xFFEF4444),
+                color = if (amount >= 0) MaterialTheme.colorScheme.onSurface else SoftColors.negative,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -560,13 +558,9 @@ private fun LedgerMetricCard(
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .border(1.dp, accentColor.copy(alpha = 0.35f), RoundedCornerShape(14.dp)),
-        shape = RoundedCornerShape(14.dp),
-        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-    ) {
+    SoftSurface(
+        modifier = modifier,
+        shape = RoundedCornerShape(14.dp)) {
         Column(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 10.dp)
         ) {
@@ -632,17 +626,11 @@ private fun LedgerFastActionBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // Cash In Button (Frameless with straight dotted line)
-        Surface(
+        SoftSurface(
             onClick = onAddCashIn,
             modifier = Modifier
                 .weight(1f)
                 .height(44.dp)
-                .straightDottedLine(
-                    color = Color(0xFF10B981),
-                    strokeWidth = 1.5.dp,
-                    dotLength = 4.dp,
-                    spaceLength = 3.dp
-                )
                 .testTag("action_add_cash_in"),
             shape = RectangleShape,
             color = Color.Transparent
@@ -652,29 +640,23 @@ private fun LedgerFastActionBar(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.padding(horizontal = 4.dp)
             ) {
-                Icon(imageVector = Icons.Default.ArrowDownward, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(16.dp))
+                Icon(imageVector = Icons.Default.ArrowDownward, contentDescription = null, tint = SoftColors.positive, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "+ In",
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
-                    color = Color(0xFF10B981)
+                    color = SoftColors.positive
                 )
             }
         }
 
         // Cash Out Button (Frameless with straight dotted line)
-        Surface(
+        SoftSurface(
             onClick = onAddCashOut,
             modifier = Modifier
                 .weight(1f)
                 .height(44.dp)
-                .straightDottedLine(
-                    color = Color(0xFFEF4444),
-                    strokeWidth = 1.5.dp,
-                    dotLength = 4.dp,
-                    spaceLength = 3.dp
-                )
                 .testTag("action_add_cash_out"),
             shape = RectangleShape,
             color = Color.Transparent
@@ -684,29 +666,23 @@ private fun LedgerFastActionBar(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.padding(horizontal = 4.dp)
             ) {
-                Icon(imageVector = Icons.Default.ArrowUpward, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(16.dp))
+                Icon(imageVector = Icons.Default.ArrowUpward, contentDescription = null, tint = SoftColors.negative, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "- Out",
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
-                    color = Color(0xFFEF4444)
+                    color = SoftColors.negative
                 )
             }
         }
 
         // Cash Transfer Button (Frameless with straight dotted line)
-        Surface(
+        SoftSurface(
             onClick = onAddTransfer,
             modifier = Modifier
                 .weight(1f)
                 .height(44.dp)
-                .straightDottedLine(
-                    color = Color(0xFF3B82F6),
-                    strokeWidth = 1.5.dp,
-                    dotLength = 4.dp,
-                    spaceLength = 3.dp
-                )
                 .testTag("action_add_transfer"),
             shape = RectangleShape,
             color = Color.Transparent
@@ -716,13 +692,13 @@ private fun LedgerFastActionBar(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.padding(horizontal = 4.dp)
             ) {
-                Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = null, tint = Color(0xFF3B82F6), modifier = Modifier.size(17.dp))
+                Icon(imageVector = Icons.Default.SwapHoriz, contentDescription = null, tint = SoftColors.info, modifier = Modifier.size(17.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "Transfer",
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
-                    color = Color(0xFF3B82F6)
+                    color = SoftColors.info
                 )
             }
         }
@@ -739,14 +715,10 @@ private fun LedgerPaymentModeBreakdownCard(
     onModeClick: (String) -> Unit,
     isDark: Boolean
 ) {
-    Surface(
+    SoftSurface(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
-        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-    ) {
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -786,14 +758,10 @@ private fun LedgerPaymentModeBreakdownCard(
             ) {
                 items(modes.entries.toList()) { entry ->
                     val isPositive = entry.value >= 0
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
                             .clickable { onModeClick(entry.key) },
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000),
-                        border = BorderStroke(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000))
-                    ) {
+                        shape = RoundedCornerShape(10.dp)) {
                         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
                             Text(
                                 text = entry.key,
@@ -807,7 +775,7 @@ private fun LedgerPaymentModeBreakdownCard(
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = DigitalMonospaceFont,
-                                color = if (isPositive) Color(0xFF10B981) else Color(0xFFEF4444)
+                                color = if (isPositive) SoftColors.positive else SoftColors.negative
                             )
                         }
                     }
@@ -827,14 +795,10 @@ private fun LedgerCategoryBreakdownCard(
     primaryColor: Color,
     isDark: Boolean
 ) {
-    Surface(
+    SoftSurface(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
-        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-    ) {
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -973,20 +937,16 @@ private fun LedgerAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            IconButton(onClick = onCancel, modifier = Modifier.size(32.dp)) {
+            SoftIconButton(onClick = onCancel, modifier = Modifier.size(32.dp)) {
                 Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
             }
         }
 
         // 1. Transaction Type Toggle: 3 Tabs (Cash In, Cash Out, Transfer)
-        Surface(
+        SoftSurface(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .border(1.dp, if (isDark) Color(0x28FFFFFF) else Color(0x18000000), RoundedCornerShape(12.dp)),
-            shape = RoundedCornerShape(12.dp),
-            color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
-        ) {
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -998,8 +958,7 @@ private fun LedgerAddEditSheetContent(
                     modifier = Modifier
                         .weight(1f)
                         .height(42.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (isCashIn) Color(0xFF10B981) else Color.Transparent)
+                        .softToggle(RoundedCornerShape(8.dp), selected = isCashIn, tint = SoftColors.positive)
                         .clickable { onTypeChange(LedgerType.CASH_IN) }
                         .testTag("form_type_cash_in"),
                     contentAlignment = Alignment.Center
@@ -1029,8 +988,7 @@ private fun LedgerAddEditSheetContent(
                     modifier = Modifier
                         .weight(1f)
                         .height(42.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (isCashOut) Color(0xFFEF4444) else Color.Transparent)
+                        .softToggle(RoundedCornerShape(8.dp), selected = isCashOut, tint = SoftColors.negative)
                         .clickable { onTypeChange(LedgerType.CASH_OUT) }
                         .testTag("form_type_cash_out"),
                     contentAlignment = Alignment.Center
@@ -1060,8 +1018,7 @@ private fun LedgerAddEditSheetContent(
                     modifier = Modifier
                         .weight(1f)
                         .height(42.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (isTransfer) Color(0xFF3B82F6) else Color.Transparent)
+                        .softToggle(RoundedCornerShape(8.dp), selected = isTransfer, tint = SoftColors.info)
                         .clickable { onTypeChange(LedgerType.CASH_TRANSFER) }
                         .testTag("form_type_transfer"),
                     contentAlignment = Alignment.Center
@@ -1103,7 +1060,7 @@ private fun LedgerAddEditSheetContent(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = DigitalMonospaceFont,
-                        color = Color(0xFFEF4444)
+                        color = SoftColors.negative
                     )
                     Text(
                         text = "Syncs with Expenses Manager",
@@ -1112,13 +1069,10 @@ private fun LedgerAddEditSheetContent(
                     )
                 }
 
-                Surface(
+                SoftSurface(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .border(1.dp, Color(0x33EF4444), RoundedCornerShape(12.dp)),
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else Color(0xFFFEF2F2)
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Row(
                         modifier = Modifier
@@ -1131,8 +1085,7 @@ private fun LedgerAddEditSheetContent(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(38.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (isBizScope) Color(0xFFEF4444) else Color.Transparent)
+                                .softToggle(RoundedCornerShape(8.dp), selected = isBizScope, tint = SoftColors.negative)
                                 .clickable { onExpenseScopeChange("BUSINESS") }
                                 .testTag("expense_scope_biz_toggle"),
                             contentAlignment = Alignment.Center
@@ -1159,8 +1112,7 @@ private fun LedgerAddEditSheetContent(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(38.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (isHomeScope) Color(0xFFF97316) else Color.Transparent)
+                                .softToggle(RoundedCornerShape(8.dp), selected = isHomeScope, tint = SoftColors.orange)
                                 .clickable { onExpenseScopeChange("HOME") }
                                 .testTag("expense_scope_home_toggle"),
                             contentAlignment = Alignment.Center
@@ -1190,13 +1142,10 @@ private fun LedgerAddEditSheetContent(
         // CASH TRANSFER CHANNEL SELECTORS (FROM ACCOUNT ➔ TO ACCOUNT)
         // =========================================================================
         if (isTransfer) {
-            Surface(
+            SoftSurface(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .border(1.dp, Color(0x443B82F6), RoundedCornerShape(14.dp)),
-                shape = RoundedCornerShape(14.dp),
-                color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else Color(0xFFEFF6FF)
+                    .fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp)
             ) {
                 Column(
                     modifier = Modifier
@@ -1213,7 +1162,7 @@ private fun LedgerAddEditSheetContent(
                             Icon(
                                 imageVector = Icons.Default.SyncAlt,
                                 contentDescription = null,
-                                tint = Color(0xFF3B82F6),
+                                tint = SoftColors.info,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -1222,18 +1171,18 @@ private fun LedgerAddEditSheetContent(
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = DigitalMonospaceFont,
-                                color = Color(0xFF3B82F6)
+                                color = SoftColors.info
                             )
                         }
 
-                        IconButton(
+                        SoftIconButton(
                             onClick = onSwapTransferModes,
                             modifier = Modifier.size(28.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.SwapHoriz,
                                 contentDescription = "Swap Accounts",
-                                tint = Color(0xFF3B82F6),
+                                tint = SoftColors.info,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -1256,12 +1205,12 @@ private fun LedgerAddEditSheetContent(
                                 Icon(
                                     imageVector = if (LedgerPaymentUtils.isBankMode(uiState.formPaymentMode)) Icons.Default.AccountBalance else Icons.Default.AccountBalanceWallet,
                                     contentDescription = null,
-                                    tint = Color(0xFFEF4444),
+                                    tint = SoftColors.negative,
                                     modifier = Modifier.size(18.dp)
                                 )
                             },
                             singleLine = true,
-                            accentColor = Color(0xFF3B82F6),
+                            accentColor = SoftColors.info,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .onFocusChanged {
@@ -1289,47 +1238,35 @@ private fun LedgerAddEditSheetContent(
                             ) {
                                 if (isCustomFrom) {
                                     item {
-                                        Surface(
+                                        SoftSurface(
                                             shape = RectangleShape,
                                             color = Color.Transparent,
                                             modifier = Modifier
-                                                .straightDottedLine(
-                                                    color = Color(0xFF3B82F6),
-                                                    strokeWidth = 1.3.dp,
-                                                    dotLength = 4.dp,
-                                                    spaceLength = 3.dp
-                                                )
                                                 .clickable { onPaymentModeChange(typedFrom) }
                                         ) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                             ) {
-                                                Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = Color(0xFF3B82F6), modifier = Modifier.size(12.dp))
+                                                Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = SoftColors.info, modifier = Modifier.size(12.dp))
                                                 Spacer(modifier = Modifier.width(3.dp))
-                                                Text(text = "Use '$typedFrom'", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF3B82F6))
+                                                Text(text = "Use '$typedFrom'", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = SoftColors.info)
                                             }
                                         }
                                     }
                                 }
                                 items(matchingFromModes) { mode ->
-                                    Surface(
+                                    SoftSurface(
                                         shape = RectangleShape,
                                         color = Color.Transparent,
                                         modifier = Modifier
-                                            .straightDottedLine(
-                                                color = Color(0xFF3B82F6).copy(alpha = 0.5f),
-                                                strokeWidth = 1.2.dp,
-                                                dotLength = 4.dp,
-                                                spaceLength = 3.dp
-                                            )
                                             .clickable { onPaymentModeChange(mode) }
                                     ) {
                                         Text(
                                             text = mode,
                                             fontSize = 10.5.sp,
                                             fontWeight = FontWeight.Medium,
-                                            color = Color(0xFF3B82F6),
+                                            color = SoftColors.info,
                                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                         )
                                     }
@@ -1355,12 +1292,12 @@ private fun LedgerAddEditSheetContent(
                                 Icon(
                                     imageVector = if (LedgerPaymentUtils.isBankMode(uiState.formTransferToMode)) Icons.Default.AccountBalance else Icons.Default.AccountBalanceWallet,
                                     contentDescription = null,
-                                    tint = Color(0xFF10B981),
+                                    tint = SoftColors.positive,
                                     modifier = Modifier.size(18.dp)
                                 )
                             },
                             singleLine = true,
-                            accentColor = Color(0xFF3B82F6),
+                            accentColor = SoftColors.info,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .onFocusChanged {
@@ -1388,47 +1325,35 @@ private fun LedgerAddEditSheetContent(
                             ) {
                                 if (isCustomTo) {
                                     item {
-                                        Surface(
+                                        SoftSurface(
                                             shape = RectangleShape,
                                             color = Color.Transparent,
                                             modifier = Modifier
-                                                .straightDottedLine(
-                                                    color = Color(0xFF10B981),
-                                                    strokeWidth = 1.3.dp,
-                                                    dotLength = 4.dp,
-                                                    spaceLength = 3.dp
-                                                )
                                                 .clickable { onTransferToModeChange(typedTo) }
                                         ) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                             ) {
-                                                Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(12.dp))
+                                                Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = SoftColors.positive, modifier = Modifier.size(12.dp))
                                                 Spacer(modifier = Modifier.width(3.dp))
-                                                Text(text = "Use '$typedTo'", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                                                Text(text = "Use '$typedTo'", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = SoftColors.positive)
                                             }
                                         }
                                     }
                                 }
                                 items(matchingToModes) { mode ->
-                                    Surface(
+                                    SoftSurface(
                                         shape = RectangleShape,
                                         color = Color.Transparent,
                                         modifier = Modifier
-                                            .straightDottedLine(
-                                                color = Color(0xFF10B981).copy(alpha = 0.5f),
-                                                strokeWidth = 1.2.dp,
-                                                dotLength = 4.dp,
-                                                spaceLength = 3.dp
-                                            )
                                             .clickable { onTransferToModeChange(mode) }
                                     ) {
                                         Text(
                                             text = mode,
                                             fontSize = 10.5.sp,
                                             fontWeight = FontWeight.Medium,
-                                            color = Color(0xFF10B981),
+                                            color = SoftColors.positive,
                                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                         )
                                     }
@@ -1461,14 +1386,14 @@ private fun LedgerAddEditSheetContent(
                     trailingIcon = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (uiState.formAmountText.isNotEmpty()) {
-                                IconButton(
+                                SoftIconButton(
                                     onClick = onClearAmount,
                                     modifier = Modifier.size(28.dp)
                                 ) {
                                     Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
                                 }
                             }
-                            IconButton(
+                            SoftIconButton(
                                 onClick = onOpenCalculator,
                                 modifier = Modifier.size(28.dp).testTag("amount_calc_icon_button")
                             ) {
@@ -1557,7 +1482,7 @@ private fun LedgerAddEditSheetContent(
                     },
                     trailingIcon = {
                         if (uiState.formCategory.isNotEmpty()) {
-                            IconButton(onClick = { onCategoryChange("") }) {
+                            SoftIconButton(onClick = { onCategoryChange("") }) {
                                 Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
                             }
                         }
@@ -1612,16 +1537,10 @@ private fun LedgerAddEditSheetContent(
                         ) {
                             if (isCustomNewCategory) {
                                 item {
-                                    Surface(
+                                    SoftSurface(
                                         shape = RectangleShape,
                                         color = Color.Transparent,
                                         modifier = Modifier
-                                            .straightDottedLine(
-                                                color = primaryColor,
-                                                strokeWidth = 1.3.dp,
-                                                dotLength = 4.dp,
-                                                spaceLength = 3.dp
-                                            )
                                             .clickable { onCategoryChange(trimmedInputCategory) }
                                     ) {
                                         Row(
@@ -1642,16 +1561,10 @@ private fun LedgerAddEditSheetContent(
                             }
 
                             items(matchingCategories) { cat ->
-                                Surface(
+                                SoftSurface(
                                     shape = RectangleShape,
                                     color = Color.Transparent,
                                     modifier = Modifier
-                                        .straightDottedLine(
-                                            color = primaryColor.copy(alpha = 0.45f),
-                                            strokeWidth = 1.2.dp,
-                                            dotLength = 4.dp,
-                                            spaceLength = 3.dp
-                                        )
                                         .clickable { onCategoryChange(cat) }
                                 ) {
                                     Row(
@@ -1705,7 +1618,7 @@ private fun LedgerAddEditSheetContent(
                     },
                     trailingIcon = {
                         if (uiState.formPaymentMode.isNotEmpty()) {
-                            IconButton(onClick = { onPaymentModeChange("") }) {
+                            SoftIconButton(onClick = { onPaymentModeChange("") }) {
                                 Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
                             }
                         }
@@ -1750,16 +1663,10 @@ private fun LedgerAddEditSheetContent(
                         ) {
                             if (isCustomNewMode) {
                                 item {
-                                    Surface(
+                                    SoftSurface(
                                         shape = RectangleShape,
                                         color = Color.Transparent,
                                         modifier = Modifier
-                                            .straightDottedLine(
-                                                color = primaryColor,
-                                                strokeWidth = 1.3.dp,
-                                                dotLength = 4.dp,
-                                                spaceLength = 3.dp
-                                            )
                                             .clickable { onPaymentModeChange(typedPaymentMode) }
                                     ) {
                                         Row(
@@ -1780,16 +1687,10 @@ private fun LedgerAddEditSheetContent(
                             }
 
                             items(matchingModes) { mode ->
-                                Surface(
+                                SoftSurface(
                                     shape = RectangleShape,
                                     color = Color.Transparent,
                                     modifier = Modifier
-                                        .straightDottedLine(
-                                            color = primaryColor.copy(alpha = 0.45f),
-                                            strokeWidth = 1.2.dp,
-                                            dotLength = 4.dp,
-                                            spaceLength = 3.dp
-                                        )
                                         .clickable { onPaymentModeChange(mode) }
                                 ) {
                                     Row(
@@ -1849,10 +1750,8 @@ private fun LedgerAddEditSheetContent(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         items(uiState.distinctParties) { party ->
-                            Surface(
+                            SoftSurface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000),
-                                border = BorderStroke(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000)),
                                 modifier = Modifier.clickable { onPartyNameChange(party) }
                             ) {
                                 Text(
@@ -1878,15 +1777,9 @@ private fun LedgerAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Surface(
+            SoftSurface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .straightDottedLine(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f),
-                        strokeWidth = 1.3.dp,
-                        dotLength = 4.dp,
-                        spaceLength = 3.dp
-                    )
                     .clickable { showDatePicker = true }
                     .testTag("form_date_picker_button"),
                 shape = RectangleShape,
@@ -1953,17 +1846,11 @@ private fun LedgerAddEditSheetContent(
                 .padding(top = 8.dp, bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Surface(
+            SoftSurface(
                 onClick = onCancel,
                 modifier = Modifier
                     .weight(1f)
-                    .height(46.dp)
-                    .straightDottedLine(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f),
-                        strokeWidth = 1.3.dp,
-                        dotLength = 4.dp,
-                        spaceLength = 3.dp
-                    ),
+                    .height(46.dp),
                 shape = RectangleShape,
                 color = Color.Transparent
             ) {
@@ -1972,18 +1859,12 @@ private fun LedgerAddEditSheetContent(
                 }
             }
 
-            Surface(
+            SoftSurface(
                 onClick = onSave,
                 enabled = !uiState.isFormSubmitting,
                 modifier = Modifier
                     .weight(1.5f)
                     .height(46.dp)
-                    .straightDottedLine(
-                        color = uiState.formType.color,
-                        strokeWidth = 1.8.dp,
-                        dotLength = 4.dp,
-                        spaceLength = 3.dp
-                    )
                     .testTag("form_save_button"),
                 shape = RectangleShape,
                 color = Color.Transparent
@@ -2016,10 +1897,8 @@ private fun LedgerAddEditSheetContent(
         exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
         modifier = Modifier.align(Alignment.BottomCenter)
     ) {
-        Surface(
+        SoftSurface(
             shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f)),
             shadowElevation = 16.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -2044,7 +1923,7 @@ private fun LedgerAddEditSheetContent(
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(
+                SoftButton(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { onDateChange(it) }
                         showDatePicker = false
@@ -2054,7 +1933,7 @@ private fun LedgerAddEditSheetContent(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
+                SoftButton(onClick = { showDatePicker = false }) {
                     Text("Cancel")
                 }
             }
@@ -2111,7 +1990,7 @@ private fun LedgerHistoryPanelSheetContent(
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 // Copy Full Audit Log
-                IconButton(
+                SoftIconButton(
                     onClick = {
                         val audit = viewModel.buildPeriodAuditSummary()
                         val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
@@ -2123,7 +2002,7 @@ private fun LedgerHistoryPanelSheetContent(
                     Icon(imageVector = Icons.Default.ContentCopy, contentDescription = "Copy Audit", tint = primaryColor)
                 }
 
-                IconButton(onClick = onClose, modifier = Modifier.size(34.dp)) {
+                SoftIconButton(onClick = onClose, modifier = Modifier.size(34.dp)) {
                     Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
                 }
             }
@@ -2168,7 +2047,7 @@ private fun LedgerHistoryPanelSheetContent(
                     icon = Icons.Default.ArrowDownward,
                     isSelected = uiState.selectedTypeFilter == "CASH_IN",
                     onClick = { viewModel.setTypeFilter("CASH_IN") },
-                    primaryColor = Color(0xFF10B981),
+                    primaryColor = SoftColors.positive,
                     isDark = isDark
                 )
             }
@@ -2179,7 +2058,7 @@ private fun LedgerHistoryPanelSheetContent(
                     icon = Icons.Default.ArrowUpward,
                     isSelected = uiState.selectedTypeFilter == "CASH_OUT",
                     onClick = { viewModel.setTypeFilter("CASH_OUT") },
-                    primaryColor = Color(0xFFEF4444),
+                    primaryColor = SoftColors.negative,
                     isDark = isDark
                 )
             }
@@ -2190,7 +2069,7 @@ private fun LedgerHistoryPanelSheetContent(
                     icon = Icons.Default.SwapHoriz,
                     isSelected = uiState.selectedTypeFilter == "TRANSFER",
                     onClick = { viewModel.setTypeFilter("TRANSFER") },
-                    primaryColor = Color(0xFF3B82F6),
+                    primaryColor = SoftColors.info,
                     isDark = isDark
                 )
             }
@@ -2201,7 +2080,7 @@ private fun LedgerHistoryPanelSheetContent(
                     icon = Icons.Default.Business,
                     isSelected = uiState.selectedTypeFilter == "BUSINESS_EXPENSE",
                     onClick = { viewModel.setTypeFilter("BUSINESS_EXPENSE") },
-                    primaryColor = Color(0xFFEF4444),
+                    primaryColor = SoftColors.negative,
                     isDark = isDark
                 )
             }
@@ -2212,7 +2091,7 @@ private fun LedgerHistoryPanelSheetContent(
                     icon = Icons.Default.Home,
                     isSelected = uiState.selectedTypeFilter == "HOME_EXPENSE",
                     onClick = { viewModel.setTypeFilter("HOME_EXPENSE") },
-                    primaryColor = Color(0xFFF97316),
+                    primaryColor = SoftColors.orange,
                     isDark = isDark
                 )
             }
@@ -2311,14 +2190,11 @@ private fun HistoryFilterSvgChip(
     primaryColor: Color,
     isDark: Boolean
 ) {
-    Surface(
+    SoftSurface(
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
             .clickable { onClick() },
         shape = RoundedCornerShape(8.dp),
-        color = if (isSelected) primaryColor else if (isDark) Color(0x18FFFFFF) else Color(0x0A000000),
-        border = BorderStroke(1.dp, if (isSelected) primaryColor else if (isDark) Color(0x22FFFFFF) else Color(0x18000000))
-    ) {
+        color = if (isSelected) primaryColor else MaterialTheme.colorScheme.surface) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -2359,9 +2235,9 @@ private fun LedgerTransactionRow(
     val isCashOut = tx.type == "CASH_OUT"
 
     val accentColor = when {
-        isTransfer -> Color(0xFF3B82F6)
-        isCashOut -> Color(0xFFEF4444)
-        else -> Color(0xFF10B981)
+        isTransfer -> SoftColors.info
+        isCashOut -> SoftColors.negative
+        else -> SoftColors.positive
     }
 
     val icon = when {
@@ -2372,15 +2248,12 @@ private fun LedgerTransactionRow(
 
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.US) }
 
-    Surface(
+    SoftSurface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, if (isDark) Color(0x1EFFFFFF) else Color(0x12000000), RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .testTag("transaction_row_${tx.id}"),
         shape = RoundedCornerShape(12.dp),
-        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface,
         shadowElevation = 1.dp
     ) {
         Column(
@@ -2401,8 +2274,7 @@ private fun LedgerTransactionRow(
                     Box(
                         modifier = Modifier
                             .size(38.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(accentColor.copy(alpha = 0.15f)),
+                            .softWell(RoundedCornerShape(10.dp), tint = accentColor),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -2429,10 +2301,8 @@ private fun LedgerTransactionRow(
                             if (isCashOut) {
                                 val isHome = tx.expenseScope == "HOME" || LedgerUnifiedDataManager.isHomeExpense(tx.category)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = if (isHome) Color(0x25F97316) else Color(0x25EF4444)
-                                ) {
+                                SoftSurface(
+                                    shape = RoundedCornerShape(4.dp)) {
                                     Row(
                                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
                                         verticalAlignment = Alignment.CenterVertically
@@ -2440,7 +2310,7 @@ private fun LedgerTransactionRow(
                                         Icon(
                                             imageVector = if (isHome) Icons.Default.Home else Icons.Default.Business,
                                             contentDescription = null,
-                                            tint = if (isHome) Color(0xFFF97316) else Color(0xFFEF4444),
+                                            tint = if (isHome) SoftColors.orange else SoftColors.negative,
                                             modifier = Modifier.size(9.dp)
                                         )
                                         Spacer(modifier = Modifier.width(2.dp))
@@ -2448,7 +2318,7 @@ private fun LedgerTransactionRow(
                                             text = if (isHome) "Home" else "Biz",
                                             fontSize = 9.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (isHome) Color(0xFFF97316) else Color(0xFFEF4444)
+                                            color = if (isHome) SoftColors.orange else SoftColors.negative
                                         )
                                     }
                                 }
@@ -2497,12 +2367,12 @@ private fun LedgerTransactionRow(
                         }
                     }
 
-                    IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
+                    SoftIconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
                         Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(15.dp))
                     }
 
-                    IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
-                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFEF4444), modifier = Modifier.size(15.dp))
+                    SoftIconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
+                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = SoftColors.negative, modifier = Modifier.size(15.dp))
                     }
                 }
             }
@@ -2510,7 +2380,7 @@ private fun LedgerTransactionRow(
             // Bank Statement Running Balance Effect Strip
             if (statement != null) {
                 Spacer(modifier = Modifier.height(8.dp))
-                HorizontalDivider(thickness = 0.7.dp, color = if (isDark) Color(0x18FFFFFF) else Color(0x10000000))
+                SoftDivider()
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Row(
@@ -2525,7 +2395,7 @@ private fun LedgerTransactionRow(
                         Icon(
                             imageVector = Icons.Default.AccountBalanceWallet,
                             contentDescription = null,
-                            tint = Color(0xFF64748B),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(12.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -2533,7 +2403,7 @@ private fun LedgerTransactionRow(
                             text = "Balance: ",
                             fontSize = 10.5.sp,
                             fontFamily = DigitalMonospaceFont,
-                            color = Color(0xFF64748B)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "${statement.formattedBalanceBefore} ➔",
@@ -2543,10 +2413,8 @@ private fun LedgerTransactionRow(
                         )
                     }
 
-                    Surface(
-                        shape = RoundedCornerShape(5.dp),
-                        color = if (statement.balanceAfter >= 0) Color(0x1810B981) else Color(0x18EF4444)
-                    ) {
+                    SoftSurface(
+                        shape = RoundedCornerShape(5.dp)) {
                         Row(
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -2556,7 +2424,7 @@ private fun LedgerTransactionRow(
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = DigitalMonospaceFont,
-                                color = if (statement.balanceAfter >= 0) Color(0xFF10B981) else Color(0xFFEF4444)
+                                color = if (statement.balanceAfter >= 0) SoftColors.positive else SoftColors.negative
                             )
                         }
                     }
@@ -2584,13 +2452,13 @@ private fun LedgerDetailDialog(
     val isTransfer = tx.type == "TRANSFER" || tx.type == "CASH_TRANSFER"
     val isCashOut = tx.type == "CASH_OUT"
     val accentColor = when {
-        isTransfer -> Color(0xFF3B82F6)
-        isCashOut -> Color(0xFFEF4444)
-        else -> Color(0xFF10B981)
+        isTransfer -> SoftColors.info
+        isCashOut -> SoftColors.negative
+        else -> SoftColors.positive
     }
     val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy, HH:mm", Locale.US) }
 
-    AlertDialog(
+    SoftAlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(
@@ -2604,7 +2472,7 @@ private fun LedgerDetailDialog(
                     fontWeight = FontWeight.Bold,
                     fontFamily = DigitalMonospaceFont
                 )
-                IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
+                SoftIconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
                     Icon(imageVector = Icons.Default.ContentCopy, contentDescription = "Copy Voucher", tint = primaryColor)
                 }
             }
@@ -2617,10 +2485,9 @@ private fun LedgerDetailDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Big Amount Display
-                Surface(
+                SoftSurface(
                     shape = RoundedCornerShape(12.dp),
                     color = accentColor.copy(alpha = 0.12f),
-                    border = BorderStroke(1.dp, accentColor.copy(alpha = 0.35f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -2647,10 +2514,8 @@ private fun LedgerDetailDialog(
 
                 // Bank Statement Running Progression Box
                 if (statement != null) {
-                    Surface(
+                    SoftSurface(
                         shape = RoundedCornerShape(10.dp),
-                        color = if (isDark) Color(0x22FFFFFF) else Color(0x0A000000),
-                        border = BorderStroke(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x18000000)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -2703,20 +2568,20 @@ private fun LedgerDetailDialog(
         },
         confirmButton = {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                TextButton(onClick = onEdit) {
+                SoftButton(onClick = onEdit) {
                     Icon(imageVector = Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Edit")
                 }
-                TextButton(onClick = onDelete) {
-                    Icon(imageVector = Icons.Default.Delete, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(16.dp))
+                SoftButton(onClick = onDelete) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = null, tint = SoftColors.negative, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Delete", color = Color(0xFFEF4444))
+                    Text("Delete", color = SoftColors.negative)
                 }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            SoftButton(onClick = onDismiss) {
                 Text("Close")
             }
         }

@@ -129,7 +129,7 @@ fun CurrencySearchBottomSheet(
                     )
                 }
 
-                IconButton(
+                SoftIconButton(
                     onClick = onDismissRequest,
                     modifier = Modifier.testTag("close_currency_search_button")
                 ) {
@@ -171,7 +171,7 @@ fun CurrencySearchBottomSheet(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider(color = if (isDark) Color(0x18FFFFFF) else Color(0x18000000))
+            SoftDivider()
             Spacer(modifier = Modifier.height(4.dp))
 
             // Filtered Currency List (Search and Click)
@@ -201,16 +201,9 @@ fun CurrencySearchBottomSheet(
                 ) {
                     items(filteredCurrencies, key = { it.code }) { currency ->
                         val isSelected = currency.code == selectedCurrencyCode
-                        Surface(
+                        SoftSurface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .border(
-                                    1.dp,
-                                    if (isSelected) primaryColor.copy(alpha = 0.8f)
-                                    else if (isDark) Color(0x18FFFFFF) else Color(0x10000000),
-                                    RoundedCornerShape(12.dp)
-                                )
                                 .clickable {
                                     onSelectCurrency(currency)
                                 }
@@ -234,8 +227,7 @@ fun CurrencySearchBottomSheet(
                                     Box(
                                         modifier = Modifier
                                             .size(40.dp)
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .background(if (isSelected) primaryColor.copy(alpha = 0.2f) else if (isDark) Color(0x22FFFFFF) else Color(0x10000000)),
+                                            .softWell(RoundedCornerShape(10.dp), tint = if (isSelected) primaryColor else null),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
@@ -257,10 +249,8 @@ fun CurrencySearchBottomSheet(
                                                 color = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurface
                                             )
                                             Spacer(modifier = Modifier.width(6.dp))
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = if (isDark) Color(0x20FFFFFF) else Color(0x15000000)
-                                            ) {
+                                            SoftSurface(
+                                                shape = RoundedCornerShape(4.dp)) {
                                                 Text(
                                                     text = currency.symbol,
                                                     fontSize = 11.sp,

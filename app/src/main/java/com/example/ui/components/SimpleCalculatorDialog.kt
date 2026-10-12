@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.SoftColors
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -182,14 +183,11 @@ fun SimpleCalculatorDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Surface(
+        SoftSurface(
             modifier = modifier
                 .fillMaxWidth(0.92f)
                 .widthIn(max = 380.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .border(1.dp, cardBorder, RoundedCornerShape(24.dp))
                 .testTag("simple_calculator_dialog"),
-            color = dialogBg,
             shape = RoundedCornerShape(24.dp),
             tonalElevation = 6.dp
         ) {
@@ -207,8 +205,7 @@ fun SimpleCalculatorDialog(
                     Box(
                         modifier = Modifier
                             .size(32.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(primaryColor.copy(alpha = 0.15f)),
+                            .softWell(RoundedCornerShape(8.dp), tint = primaryColor),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -231,15 +228,9 @@ fun SimpleCalculatorDialog(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 // Display Area
-                Surface(
+                SoftSurface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .border(
-                            1.dp,
-                            if (isDark) Color(0x30FFFFFF) else Color(0x18000000),
-                            RoundedCornerShape(14.dp)
-                        )
                         .clickable {
                             val activeVal = resultText ?: expression
                             if (activeVal.isNotBlank()) {
@@ -247,7 +238,6 @@ fun SimpleCalculatorDialog(
                                 Toast.makeText(context, "Copied $activeVal", Toast.LENGTH_SHORT).show()
                             }
                         },
-                    color = if (isDark) Color(0xFF13161C) else Color(0xFFEAEFF5),
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Column(
@@ -358,9 +348,9 @@ private fun MiniCalcButton(
 ) {
     val (bg, textColor, borderC) = when (type) {
         DialogCalcKeyType.DIGIT -> Triple(
-            if (isDark) Color(0x1CFFFFFF) else Color(0x0D000000),
+            MaterialTheme.colorScheme.surface,
             MaterialTheme.colorScheme.onSurface,
-            if (isDark) Color(0x22FFFFFF) else Color(0x14000000)
+            Color.Transparent
         )
         DialogCalcKeyType.OPERATOR -> Triple(
             primaryColor.copy(alpha = 0.15f),
@@ -368,9 +358,9 @@ private fun MiniCalcButton(
             primaryColor.copy(alpha = 0.35f)
         )
         DialogCalcKeyType.ACTION -> Triple(
-            if (isDark) Color(0x28EF4444).copy(alpha = 0.15f) else Color(0x18EF4444),
-            Color(0xFFEF4444),
-            Color(0xFFEF4444).copy(alpha = 0.3f)
+            SoftColors.negative.copy(alpha = 0.15f),
+            SoftColors.negative,
+            SoftColors.negative.copy(alpha = 0.3f)
         )
         DialogCalcKeyType.EQUALS -> Triple(
             primaryColor,
@@ -379,11 +369,9 @@ private fun MiniCalcButton(
         )
     }
 
-    Surface(
+    SoftSurface(
         modifier = modifier
             .height(44.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .border(1.dp, borderC, RoundedCornerShape(10.dp))
             .clickable { onClick() }
             .testTag("mini_calc_key_$label"),
         shape = RoundedCornerShape(10.dp),

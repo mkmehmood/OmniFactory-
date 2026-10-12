@@ -100,8 +100,7 @@ fun AppNavigationDrawer(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(CircleShape)
-                        .background(primaryColor.copy(alpha = 0.2f)),
+                        .softWell(CircleShape, tint = primaryColor),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -129,9 +128,7 @@ fun AppNavigationDrawer(
                 }
             }
 
-            HorizontalDivider(
-                thickness = 1.dp,
-                color = currentSkin.outline.copy(alpha = if (isDark) 0.30f else 0.20f),
+            SoftDivider(
                 modifier = Modifier.padding(vertical = 12.dp)
             )
 
@@ -242,9 +239,7 @@ fun AppNavigationDrawer(
                 }
 
                 item {
-                    HorizontalDivider(
-                        thickness = 1.dp,
-                        color = if (isDark) Color(0x22FFFFFF) else Color(0x22000000),
+                    SoftDivider(
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
                 }
@@ -267,17 +262,10 @@ fun AppNavigationDrawer(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Footer Panel - Mahmood khan anchored at the bottom of the sidebar
-            Surface(
+            SoftSurface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                .border(
-                    1.dp,
-                    currentSkin.outline.copy(alpha = if (isDark) 0.35f else 0.20f),
-                    RoundedCornerShape(16.dp)
-                )
                 .testTag("sidebar_footer_mahmood_khan"),
-                color = currentSkin.surfaceVariant.copy(alpha = if (isDark) 0.5f else 0.6f),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Row(
@@ -327,16 +315,12 @@ private fun DrawerNavItem(
         currentSkin.outline.copy(alpha = if (isDark) 0.25f else 0.15f)
     }
 
-    Surface(
+    SoftSurface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .testTag(testTag),
-        shape = RoundedCornerShape(12.dp),
-        color = containerBg
-    ) {
+        shape = RoundedCornerShape(12.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -351,8 +335,7 @@ private fun DrawerNavItem(
                 Box(
                     modifier = Modifier
                         .size(32.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (isSelected) primaryColor.copy(alpha = 0.25f) else (if (isDark) Color(0x18FFFFFF) else Color(0x12000000))),
+                        .softWell(RoundedCornerShape(8.dp), tint = if (isSelected) primaryColor else null),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(

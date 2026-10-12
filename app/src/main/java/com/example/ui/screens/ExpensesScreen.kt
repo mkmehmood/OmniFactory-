@@ -1,5 +1,14 @@
 package com.example.ui.screens
 
+import com.example.ui.components.SoftAlertDialog
+import com.example.ui.components.SoftButton
+import com.example.ui.components.SoftIconButton
+import com.example.ui.components.softWell
+import com.example.ui.components.softToggle
+import com.example.ui.components.SoftDivider
+import com.example.ui.components.SoftSurface
+import com.example.ui.components.SoftCard
+import com.example.ui.theme.SoftColors
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -137,7 +146,7 @@ fun ExpensesScreen(
 
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val primaryColor = MaterialTheme.colorScheme.primary
-    val expenseAccent = Color(0xFFEF4444)
+    val expenseAccent = SoftColors.negative
 
     var expenseToDelete by remember { mutableStateOf<LedgerTransactionEntity?>(null) }
 
@@ -295,7 +304,7 @@ fun ExpensesScreen(
             ModalBottomSheet(
                 onDismissRequest = { viewModel.closeAddSheet() },
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
                 ExpenseAddEditSheetContent(
@@ -339,7 +348,7 @@ fun ExpensesScreen(
             val exp = uiState.selectedExpenseForDetail!!
             val statement = uiState.statementMap[exp.id]
             val dateFormat = remember { SimpleDateFormat("dd MMMM yyyy, hh:mm a", Locale.US) }
-            AlertDialog(
+            SoftAlertDialog(
                 onDismissRequest = { viewModel.closeDetail() },
                 title = {
                     Row(
@@ -353,7 +362,7 @@ fun ExpensesScreen(
                             fontFamily = DigitalMonospaceFont
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = {
+                            SoftIconButton(onClick = {
                                 val voucher = viewModel.buildSingleExpenseReport(exp)
                                 val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                                 clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Expense Voucher", voucher))
@@ -361,7 +370,7 @@ fun ExpensesScreen(
                             }, modifier = Modifier.size(28.dp)) {
                                 Icon(imageVector = Icons.Default.ContentCopy, contentDescription = "Copy Voucher", tint = primaryColor, modifier = Modifier.size(16.dp))
                             }
-                            IconButton(onClick = { viewModel.closeDetail() }, modifier = Modifier.size(28.dp)) {
+                            SoftIconButton(onClick = { viewModel.closeDetail() }, modifier = Modifier.size(28.dp)) {
                                 Icon(imageVector = Icons.Default.Close, contentDescription = "Close", modifier = Modifier.size(18.dp))
                             }
                         }
@@ -374,12 +383,10 @@ fun ExpensesScreen(
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Surface(
+                        SoftSurface(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
-                            color = expenseAccent.copy(alpha = 0.12f),
-                            border = BorderStroke(1.dp, expenseAccent.copy(alpha = 0.35f))
-                        ) {
+                            color = expenseAccent.copy(alpha = 0.12f)) {
                             Column(
                                 modifier = Modifier.padding(14.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
@@ -402,10 +409,8 @@ fun ExpensesScreen(
 
                         // Statement Effect Box
                         if (statement != null) {
-                            Surface(
+                            SoftSurface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = if (isDark) Color(0x22FFFFFF) else Color(0x0A000000),
-                                border = BorderStroke(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x18000000)),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -434,13 +439,13 @@ fun ExpensesScreen(
                 },
                 confirmButton = {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = {
+                        SoftButton(onClick = {
                             viewModel.closeDetail()
                             viewModel.openEditExpense(exp)
                         }) {
                             Text("Edit")
                         }
-                        TextButton(onClick = {
+                        SoftButton(onClick = {
                             viewModel.closeDetail()
                             expenseToDelete = exp
                         }) {
@@ -456,14 +461,14 @@ fun ExpensesScreen(
         // ==========================================
         if (expenseToDelete != null) {
             val exp = expenseToDelete!!
-            AlertDialog(
+            SoftAlertDialog(
                 onDismissRequest = { expenseToDelete = null },
                 title = { Text("Delete Expense Record?") },
                 text = {
                     Text("Are you sure you want to delete this expense of ${PkrNumberFormatter.formatPkrAmount(exp.amount, decimals = 2)} (${exp.category})?")
                 },
                 confirmButton = {
-                    TextButton(
+                    SoftButton(
                         onClick = {
                             viewModel.deleteExpense(exp)
                             expenseToDelete = null
@@ -473,7 +478,7 @@ fun ExpensesScreen(
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { expenseToDelete = null }) {
+                    SoftButton(onClick = { expenseToDelete = null }) {
                         Text("Cancel")
                     }
                 }
@@ -551,16 +556,10 @@ private fun ExpenseScopeTabItem(
     modifier: Modifier = Modifier
 ) {
     val dottedColor = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.45f else 0.25f)
-    Surface(
+    SoftSurface(
         onClick = onClick,
         modifier = modifier
-            .height(40.dp)
-            .straightDottedLine(
-                color = dottedColor,
-                strokeWidth = if (isSelected) 2.dp else 1.2.dp,
-                dotLength = 4.dp,
-                spaceLength = 3.dp
-            ),
+            .height(40.dp),
         shape = RectangleShape,
         color = Color.Transparent
     ) {
@@ -601,13 +600,10 @@ private fun ExpenseHeroSummaryCard(
     expenseAccent: Color,
     isDark: Boolean
 ) {
-    Surface(
+    SoftSurface(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(20.dp)),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface,
         shadowElevation = if (isDark) 0.dp else 4.dp
     ) {
         Column(
@@ -626,8 +622,7 @@ private fun ExpenseHeroSummaryCard(
                     Box(
                         modifier = Modifier
                             .size(28.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(expenseAccent.copy(alpha = 0.15f)),
+                            .softWell(RoundedCornerShape(8.dp), tint = expenseAccent),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -647,7 +642,7 @@ private fun ExpenseHeroSummaryCard(
                     )
                 }
 
-                IconButton(
+                SoftIconButton(
                     onClick = onCopyAuditReport,
                     modifier = Modifier.size(28.dp)
                 ) {
@@ -690,17 +685,11 @@ private fun ExpenseHeroSummaryCard(
                 ExpenseTimeFilter.values().forEach { filter ->
                     val isSelected = selectedTimeFilter == filter
                     val dottedColor = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.45f else 0.25f)
-                    Surface(
+                    SoftSurface(
                         onClick = { onSelectTimeFilter(filter) },
                         modifier = Modifier
                             .weight(1f)
-                            .height(32.dp)
-                            .straightDottedLine(
-                                color = dottedColor,
-                                strokeWidth = if (isSelected) 2.dp else 1.2.dp,
-                                dotLength = 4.dp,
-                                spaceLength = 3.dp
-                            ),
+                            .height(32.dp),
                         shape = RectangleShape,
                         color = Color.Transparent
                     ) {
@@ -725,7 +714,7 @@ private fun ExpenseHeroSummaryCard(
                     title = "TODAY'S EXPENSE",
                     amount = summary.formattedToday,
                     icon = Icons.Default.Today,
-                    color = Color(0xFFF59E0B),
+                    color = SoftColors.warning,
                     isDark = isDark,
                     modifier = Modifier.weight(1f)
                 )
@@ -734,7 +723,7 @@ private fun ExpenseHeroSummaryCard(
                     title = "THIS MONTH",
                     amount = summary.formattedMonth,
                     icon = Icons.Default.CalendarMonth,
-                    color = Color(0xFF3B82F6),
+                    color = SoftColors.info,
                     isDark = isDark,
                     modifier = Modifier.weight(1f)
                 )
@@ -752,13 +741,9 @@ private fun MetricSubCard(
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.25f else 0.12f), RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-    ) {
+    SoftSurface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp)) {
         Column(
             modifier = Modifier.padding(10.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -818,16 +803,12 @@ private fun ExpenseSearchBarAndAction(
         )
 
         // Quick Calculator Button
-        Surface(
+        SoftSurface(
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .border(1.dp, if (isDark) Color(0x33FFFFFF) else Color(0x28000000), RoundedCornerShape(12.dp))
                 .clickable { onOpenCalc() }
                 .testTag("expense_quick_calc_button"),
-            shape = RoundedCornerShape(12.dp),
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-        ) {
+            shape = RoundedCornerShape(12.dp)) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = Icons.Default.Calculate,
@@ -850,14 +831,10 @@ private fun ExpenseCategorySummaryCard(
     primaryColor: Color,
     isDark: Boolean
 ) {
-    Surface(
+    SoftSurface(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(14.dp)),
-        shape = RoundedCornerShape(14.dp),
-        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-    ) {
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp)) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -897,7 +874,7 @@ private fun ExpenseCategorySummaryCard(
                             fontSize = 12.5.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = DigitalMonospaceFont,
-                            color = Color(0xFFEF4444)
+                            color = SoftColors.negative
                         )
                     }
                 }
@@ -920,18 +897,14 @@ private fun ExpenseRowItem(
     isDark: Boolean
 ) {
     val dateFormat = remember { SimpleDateFormat("dd MMM, hh:mm a", Locale.US) }
-    val accentColor = Color(0xFFEF4444)
+    val accentColor = SoftColors.negative
 
-    Surface(
+    SoftSurface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .testTag("expense_row_${expense.id}"),
-        shape = RoundedCornerShape(12.dp),
-        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-    ) {
+        shape = RoundedCornerShape(12.dp)) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -949,8 +922,7 @@ private fun ExpenseRowItem(
                     Box(
                         modifier = Modifier
                             .size(36.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(accentColor.copy(alpha = 0.18f)),
+                            .softWell(RoundedCornerShape(10.dp), tint = accentColor),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -1023,7 +995,7 @@ private fun ExpenseRowItem(
                     )
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = onEdit, modifier = Modifier.size(26.dp)) {
+                        SoftIconButton(onClick = onEdit, modifier = Modifier.size(26.dp)) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Edit",
@@ -1031,7 +1003,7 @@ private fun ExpenseRowItem(
                                 modifier = Modifier.size(13.dp)
                             )
                         }
-                        IconButton(onClick = onDelete, modifier = Modifier.size(26.dp)) {
+                        SoftIconButton(onClick = onDelete, modifier = Modifier.size(26.dp)) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
                                 contentDescription = "Delete",
@@ -1046,7 +1018,7 @@ private fun ExpenseRowItem(
             // Bank Statement Cumulative Running Expense Strip
             if (statement != null) {
                 Spacer(modifier = Modifier.height(8.dp))
-                HorizontalDivider(thickness = 0.7.dp, color = if (isDark) Color(0x18FFFFFF) else Color(0x10000000))
+                SoftDivider()
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Row(
@@ -1061,7 +1033,7 @@ private fun ExpenseRowItem(
                         Icon(
                             imageVector = Icons.Default.TrendingDown,
                             contentDescription = null,
-                            tint = Color(0xFF64748B),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(12.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -1069,7 +1041,7 @@ private fun ExpenseRowItem(
                             text = "Cumulative: ",
                             fontSize = 10.5.sp,
                             fontFamily = DigitalMonospaceFont,
-                            color = Color(0xFF64748B)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "${statement.formattedCumulativeBefore} ➔",
@@ -1079,16 +1051,14 @@ private fun ExpenseRowItem(
                         )
                     }
 
-                    Surface(
-                        shape = RoundedCornerShape(5.dp),
-                        color = Color(0x18EF4444)
-                    ) {
+                    SoftSurface(
+                        shape = RoundedCornerShape(5.dp)) {
                         Text(
                             text = "Total Spent: ${statement.formattedCumulativeAfter}",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = DigitalMonospaceFont,
-                            color = Color(0xFFEF4444),
+                            color = SoftColors.negative,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
@@ -1109,14 +1079,10 @@ private fun ExpenseEmptyStateCard(
     primaryColor: Color,
     isDark: Boolean
 ) {
-    Surface(
+    SoftSurface(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .border(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x18000000), RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
-        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-    ) {
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1127,14 +1093,13 @@ private fun ExpenseEmptyStateCard(
             Box(
                 modifier = Modifier
                     .size(54.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFFEF4444).copy(alpha = 0.15f)),
+                    .softWell(RoundedCornerShape(16.dp), tint = SoftColors.negative),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.ShoppingCart,
                     contentDescription = null,
-                    tint = Color(0xFFEF4444),
+                    tint = SoftColors.negative,
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -1154,14 +1119,9 @@ private fun ExpenseEmptyStateCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Button(
+            SoftButton(
                 onClick = onAddExpense,
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFEF4444),
-                    contentColor = Color.White
-                )
-            ) {
+                shape = RoundedCornerShape(10.dp), accentColor = SoftColors.negative, filled = true) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(text = "Log ${scope.shortName} Expense", fontWeight = FontWeight.Bold)
@@ -1247,20 +1207,16 @@ private fun ExpenseAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            IconButton(onClick = onCancel, modifier = Modifier.size(32.dp)) {
+            SoftIconButton(onClick = onCancel, modifier = Modifier.size(32.dp)) {
                 Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
             }
         }
 
         // Scope Switcher: Business vs Home
-        Surface(
+        SoftSurface(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .border(1.dp, if (isDark) Color(0x28FFFFFF) else Color(0x18000000), RoundedCornerShape(12.dp)),
-            shape = RoundedCornerShape(12.dp),
-            color = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
-        ) {
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1273,8 +1229,7 @@ private fun ExpenseAddEditSheetContent(
                     modifier = Modifier
                         .weight(1f)
                         .height(42.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (isBiz) primaryColor else Color.Transparent)
+                        .softToggle(RoundedCornerShape(8.dp), selected = isBiz, tint = primaryColor)
                         .clickable { onScopeChange(ExpenseScope.BUSINESS) }
                         .testTag("form_scope_business"),
                     contentAlignment = Alignment.Center
@@ -1302,8 +1257,7 @@ private fun ExpenseAddEditSheetContent(
                     modifier = Modifier
                         .weight(1f)
                         .height(42.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (isHome) Color(0xFFF97316) else Color.Transparent)
+                        .softToggle(RoundedCornerShape(8.dp), selected = isHome, tint = SoftColors.orange)
                         .clickable { onScopeChange(ExpenseScope.HOME) }
                         .testTag("form_scope_home"),
                     contentAlignment = Alignment.Center
@@ -1348,11 +1302,11 @@ private fun ExpenseAddEditSheetContent(
                     trailingIcon = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (uiState.formAmountText.isNotEmpty()) {
-                                IconButton(onClick = onClearAmount, modifier = Modifier.size(28.dp)) {
+                                SoftIconButton(onClick = onClearAmount, modifier = Modifier.size(28.dp)) {
                                     Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
                                 }
                             }
-                            IconButton(
+                            SoftIconButton(
                                 onClick = onOpenCalculator,
                                 modifier = Modifier.size(28.dp).testTag("form_calc_icon_button")
                             ) {
@@ -1367,12 +1321,12 @@ private fun ExpenseAddEditSheetContent(
                     },
                     suffix = {
                         if (isDialpadOpen) {
-                            BlinkingCursorPointer(color = Color(0xFFEF4444))
+                            BlinkingCursorPointer(color = SoftColors.negative)
                         }
                     },
                     singleLine = true,
                     forceFocused = isDialpadOpen,
-                    accentColor = Color(0xFFEF4444),
+                    accentColor = SoftColors.negative,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("form_expense_amount_input")
@@ -1428,7 +1382,7 @@ private fun ExpenseAddEditSheetContent(
                 },
                 trailingIcon = {
                     if (uiState.formCategory.isNotEmpty()) {
-                        IconButton(onClick = { onCategoryChange("") }) {
+                        SoftIconButton(onClick = { onCategoryChange("") }) {
                             Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
                         }
                     }
@@ -1464,16 +1418,10 @@ private fun ExpenseAddEditSheetContent(
                 ) {
                     if (isCustomCat) {
                         item {
-                            Surface(
+                            SoftSurface(
                                 shape = RectangleShape,
                                 color = Color.Transparent,
                                 modifier = Modifier
-                                    .straightDottedLine(
-                                        color = Color(0xFF10B981),
-                                        strokeWidth = 1.3.dp,
-                                        dotLength = 4.dp,
-                                        spaceLength = 3.dp
-                                    )
                                     .clickable { onCategoryChange(inputCat) }
                             ) {
                                 Row(
@@ -1483,7 +1431,7 @@ private fun ExpenseAddEditSheetContent(
                                     Icon(
                                         imageVector = Icons.Default.Add,
                                         contentDescription = null,
-                                        tint = Color(0xFF10B981),
+                                        tint = SoftColors.positive,
                                         modifier = Modifier.size(13.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
@@ -1491,7 +1439,7 @@ private fun ExpenseAddEditSheetContent(
                                         text = "Create \"$inputCat\"",
                                         fontSize = 11.5.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF10B981)
+                                        color = SoftColors.positive
                                     )
                                 }
                             }
@@ -1499,16 +1447,10 @@ private fun ExpenseAddEditSheetContent(
                     }
 
                     items(matchingCategories) { cat ->
-                        Surface(
+                        SoftSurface(
                             shape = RectangleShape,
                             color = Color.Transparent,
                             modifier = Modifier
-                                .straightDottedLine(
-                                    color = primaryColor.copy(alpha = 0.45f),
-                                    strokeWidth = 1.2.dp,
-                                    dotLength = 4.dp,
-                                    spaceLength = 3.dp
-                                )
                                 .clickable { onCategoryChange(cat) }
                         ) {
                             Row(
@@ -1559,7 +1501,7 @@ private fun ExpenseAddEditSheetContent(
                 },
                 trailingIcon = {
                     if (uiState.formPaymentMode.isNotEmpty()) {
-                        IconButton(onClick = { onPaymentModeChange("") }) {
+                        SoftIconButton(onClick = { onPaymentModeChange("") }) {
                             Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear", modifier = Modifier.size(16.dp))
                         }
                     }
@@ -1595,16 +1537,10 @@ private fun ExpenseAddEditSheetContent(
                 ) {
                     if (isCustomMode) {
                         item {
-                            Surface(
+                            SoftSurface(
                                 shape = RectangleShape,
                                 color = Color.Transparent,
                                 modifier = Modifier
-                                    .straightDottedLine(
-                                        color = Color(0xFF10B981),
-                                        strokeWidth = 1.3.dp,
-                                        dotLength = 4.dp,
-                                        spaceLength = 3.dp
-                                    )
                                     .clickable { onPaymentModeChange(inputMode) }
                             ) {
                                 Row(
@@ -1614,7 +1550,7 @@ private fun ExpenseAddEditSheetContent(
                                     Icon(
                                         imageVector = Icons.Default.Add,
                                         contentDescription = null,
-                                        tint = Color(0xFF10B981),
+                                        tint = SoftColors.positive,
                                         modifier = Modifier.size(13.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
@@ -1622,7 +1558,7 @@ private fun ExpenseAddEditSheetContent(
                                         text = "Create Mode \"$inputMode\"",
                                         fontSize = 11.5.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF10B981)
+                                        color = SoftColors.positive
                                     )
                                 }
                             }
@@ -1630,16 +1566,10 @@ private fun ExpenseAddEditSheetContent(
                     }
 
                     items(matchingModes) { mode ->
-                        Surface(
+                        SoftSurface(
                             shape = RectangleShape,
                             color = Color.Transparent,
                             modifier = Modifier
-                                .straightDottedLine(
-                                    color = primaryColor.copy(alpha = 0.45f),
-                                    strokeWidth = 1.2.dp,
-                                    dotLength = 4.dp,
-                                    spaceLength = 3.dp
-                                )
                                 .clickable { onPaymentModeChange(mode) }
                         ) {
                             Row(
@@ -1676,16 +1606,10 @@ private fun ExpenseAddEditSheetContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Surface(
+            SoftSurface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
-                    .straightDottedLine(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f),
-                        strokeWidth = 1.3.dp,
-                        dotLength = 4.dp,
-                        spaceLength = 3.dp
-                    )
                     .clickable { showDatePicker = true },
                 shape = RectangleShape,
                 color = Color.Transparent
@@ -1800,17 +1724,11 @@ private fun ExpenseAddEditSheetContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Surface(
+            SoftSurface(
                 onClick = onCancel,
                 modifier = Modifier
                     .weight(1f)
-                    .height(46.dp)
-                    .straightDottedLine(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f),
-                        strokeWidth = 1.3.dp,
-                        dotLength = 4.dp,
-                        spaceLength = 3.dp
-                    ),
+                    .height(46.dp),
                 shape = RectangleShape,
                 color = Color.Transparent
             ) {
@@ -1819,18 +1737,12 @@ private fun ExpenseAddEditSheetContent(
                 }
             }
 
-            Surface(
+            SoftSurface(
                 onClick = onSave,
                 enabled = !uiState.isSubmitting && uiState.formAmountText.isNotBlank(),
                 modifier = Modifier
                     .weight(1.5f)
                     .height(46.dp)
-                    .straightDottedLine(
-                        color = Color(0xFFEF4444),
-                        strokeWidth = 1.8.dp,
-                        dotLength = 4.dp,
-                        spaceLength = 3.dp
-                    )
                     .testTag("form_save_expense_btn"),
                 shape = RectangleShape,
                 color = Color.Transparent
@@ -1839,13 +1751,13 @@ private fun ExpenseAddEditSheetContent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(18.dp))
+                    Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null, tint = SoftColors.negative, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = if (isEditing) "Update Expense" else "Save Expense",
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
-                        color = Color(0xFFEF4444)
+                        color = SoftColors.negative
                     )
                 }
             }
@@ -1861,10 +1773,8 @@ private fun ExpenseAddEditSheetContent(
         exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
         modifier = Modifier.align(Alignment.BottomCenter)
     ) {
-        Surface(
+        SoftSurface(
             shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f)),
             shadowElevation = 16.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -1889,7 +1799,7 @@ private fun ExpenseAddEditSheetContent(
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(onClick = {
+                SoftButton(onClick = {
                     datePickerState.selectedDateMillis?.let { onDateChange(it) }
                     showDatePicker = false
                 }) {
@@ -1897,7 +1807,7 @@ private fun ExpenseAddEditSheetContent(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
+                SoftButton(onClick = { showDatePicker = false }) {
                     Text("Cancel")
                 }
             }

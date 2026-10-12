@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.SoftColors
 import android.view.View
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
@@ -113,7 +114,7 @@ val APP_SECTION_ITEMS = listOf(
         shortTitle = "Calculator",
         subtitle = "Sequential math & tape history",
         categoryTag = "CORE MATH",
-        suiteAccent = Color(0xFFFF9F0A),
+        suiteAccent = SoftColors.warning,
         icon = Icons.Default.Calculate,
         testTag = "drawer_item_calculator"
     ),
@@ -123,7 +124,7 @@ val APP_SECTION_ITEMS = listOf(
         shortTitle = "Daily Ledger",
         subtitle = "Cash in hand, cash in & out audit",
         categoryTag = "FINANCE",
-        suiteAccent = Color(0xFFFF9F0A),
+        suiteAccent = SoftColors.warning,
         icon = Icons.Default.AccountBalanceWallet,
         testTag = "drawer_item_ledger"
     ),
@@ -133,7 +134,7 @@ val APP_SECTION_ITEMS = listOf(
         shortTitle = "Expenses",
         subtitle = "Everyday business & home expense manager",
         categoryTag = "BUDGET",
-        suiteAccent = Color(0xFFFF9F0A),
+        suiteAccent = SoftColors.warning,
         icon = Icons.Default.Receipt,
         testTag = "drawer_item_expenses"
     ),
@@ -143,7 +144,7 @@ val APP_SECTION_ITEMS = listOf(
         shortTitle = "Units Converter",
         subtitle = "11 dedicated conversion suites",
         categoryTag = "UNITS",
-        suiteAccent = Color(0xFFFF9F0A),
+        suiteAccent = SoftColors.warning,
         icon = Icons.Default.SwapHoriz,
         testTag = "drawer_item_converter"
     ),
@@ -153,7 +154,7 @@ val APP_SECTION_ITEMS = listOf(
         shortTitle = "Sales Audit",
         subtitle = "Reconciliation & commission audit",
         categoryTag = "AUDIT",
-        suiteAccent = Color(0xFFFF9F0A),
+        suiteAccent = SoftColors.warning,
         icon = Icons.Default.ReceiptLong,
         testTag = "drawer_item_sales"
     ),
@@ -163,7 +164,7 @@ val APP_SECTION_ITEMS = listOf(
         shortTitle = "Mixture Calc",
         subtitle = "Recalibrate, scale & batch",
         categoryTag = "CHEM/LAB",
-        suiteAccent = Color(0xFFFF9F0A),
+        suiteAccent = SoftColors.warning,
         icon = Icons.Default.Science,
         testTag = "drawer_item_mixture_calculator"
     ),
@@ -173,7 +174,7 @@ val APP_SECTION_ITEMS = listOf(
         shortTitle = "Settings",
         subtitle = "Palettes, shapes, sounds & haptics",
         categoryTag = "SYSTEM",
-        suiteAccent = Color(0xFFFF9F0A),
+        suiteAccent = SoftColors.warning,
         icon = Icons.Default.Settings,
         testTag = "drawer_item_settings"
     )
@@ -245,7 +246,7 @@ fun TopSectionCapsule(
         end = Offset(300f, 300f)
     )
 
-    Surface(
+    SoftSurface(
         onClick = {
             HapticFeedbackHelper.performKeypadTap(context, view, HapticIntensity.LIGHT)
             SoundFeedbackHelper.playClickSound(context, view, SoundIntensity.SOFT)
@@ -260,10 +261,6 @@ fun TopSectionCapsule(
         } else {
             currentSkin.surface.copy(alpha = 0.90f)
         },
-        border = BorderStroke(
-            width = if (isExpanded) 1.6.dp else 1.2.dp,
-            brush = specularBorderBrush
-        ),
         shadowElevation = if (isExpanded) 10.dp else 5.dp,
         modifier = modifier
             .graphicsLayer {
@@ -282,20 +279,7 @@ fun TopSectionCapsule(
             Box(
                 modifier = Modifier
                     .size(26.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.radialGradient(
-                            listOf(
-                                primaryColor.copy(alpha = if (isExpanded) 0.50f else 0.30f),
-                                primaryColor.copy(alpha = 0.10f)
-                            )
-                        )
-                    )
-                    .border(
-                        1.dp,
-                        primaryColor.copy(alpha = if (isExpanded) 0.8f else 0.4f),
-                        CircleShape
-                    ),
+                    .softWell(CircleShape, tint = primaryColor),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -323,11 +307,9 @@ fun TopSectionCapsule(
             Spacer(modifier = Modifier.width(6.dp))
 
             // Mini live badge pill "HUB"
-            Surface(
+            SoftSurface(
                 shape = RoundedCornerShape(percent = 50),
-                color = primaryColor.copy(alpha = if (isExpanded) 0.35f else 0.16f),
-                border = BorderStroke(0.8.dp, primaryColor.copy(alpha = 0.45f))
-            ) {
+                color = primaryColor.copy(alpha = if (isExpanded) 0.35f else 0.16f)) {
                 Row(
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -336,8 +318,7 @@ fun TopSectionCapsule(
                     Box(
                         modifier = Modifier
                             .size(5.dp)
-                            .clip(CircleShape)
-                            .background(primaryColor)
+                            .softPlate(CircleShape)
                     )
                     Spacer(modifier = Modifier.width(3.dp))
                     Text(
@@ -456,20 +437,8 @@ fun SectionCapsuleDropdownMenu(
             contentAlignment = Alignment.TopCenter
         ) {
             // Spatial Glass Floating Hub Panel
-            Surface(
+            SoftSurface(
                 shape = RoundedCornerShape(32.dp),
-                color = currentSkin.surface.copy(alpha = if (isDark) 0.92f else 0.96f),
-                border = BorderStroke(
-                    width = 1.4.dp,
-                    brush = Brush.verticalGradient(
-                        listOf(
-                            Color.White.copy(alpha = if (isDark) 0.65f else 0.90f),
-                            primaryColor.copy(alpha = 0.75f),
-                            currentSkin.outline.copy(alpha = if (isDark) 0.35f else 0.20f),
-                            primaryColor.copy(alpha = 0.30f)
-                        )
-                    )
-                ),
                 shadowElevation = 24.dp,
                 modifier = Modifier
                     .padding(horizontal = 12.dp, vertical = 6.dp)
@@ -590,11 +559,9 @@ private fun SpatialNavigationHubHeader(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         // Navigation Hub Title Pill
-        Surface(
+        SoftSurface(
             shape = RoundedCornerShape(percent = 50),
-            color = primaryColor.copy(alpha = 0.14f),
-            border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.40f))
-        ) {
+            color = primaryColor.copy(alpha = 0.14f)) {
             Row(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -603,8 +570,7 @@ private fun SpatialNavigationHubHeader(
                 Box(
                     modifier = Modifier
                         .size(7.dp)
-                        .clip(CircleShape)
-                        .background(primaryColor)
+                        .softPlate(CircleShape)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
@@ -619,13 +585,10 @@ private fun SpatialNavigationHubHeader(
         }
 
         // Close button with circular frosted glass
-        IconButton(
+        SoftIconButton(
             onClick = onDismiss,
             modifier = Modifier
                 .size(32.dp)
-                .clip(CircleShape)
-                .background(currentSkin.surfaceVariant.copy(alpha = 0.45f))
-                .border(1.dp, currentSkin.outline.copy(alpha = 0.35f), CircleShape)
                 .testTag("close_dropdown_button")
         ) {
             Icon(
@@ -658,18 +621,12 @@ private fun FilterChipsRow(
         CapsuleFilterGroup.values().forEach { group ->
             val isSelected = selectedGroup == group
             val dottedColor = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.40f else 0.25f)
-            Surface(
+            SoftSurface(
                 onClick = { onSelectGroup(group) },
                 shape = RectangleShape,
                 color = Color.Transparent,
                 modifier = Modifier
                     .weight(1f)
-                    .straightDottedLine(
-                        color = dottedColor,
-                        strokeWidth = if (isSelected) 2.dp else 1.2.dp,
-                        dotLength = 4.dp,
-                        spaceLength = 3.dp
-                    )
             ) {
                 Box(
                     modifier = Modifier.padding(vertical = 6.dp),
@@ -779,7 +736,7 @@ private fun SpecialUiCapsuleItem(
 
     val capsuleShape = RoundedCornerShape(percent = 50)
 
-    Surface(
+    SoftSurface(
         onClick = {
             HapticFeedbackHelper.performKeypadTap(context, view, HapticIntensity.MEDIUM)
             SoundFeedbackHelper.playClickSound(context, view, SoundIntensity.STANDARD)
@@ -788,7 +745,6 @@ private fun SpecialUiCapsuleItem(
         interactionSource = interactionSource,
         shape = capsuleShape,
         color = Color.Transparent,
-        border = BorderStroke(if (isSelected) 1.5.dp else 1.0.dp, borderBrush),
         shadowElevation = elevation,
         modifier = Modifier
             .fillMaxWidth(fraction = widthFraction)
@@ -797,7 +753,6 @@ private fun SpecialUiCapsuleItem(
                 scaleX = pressScale
                 scaleY = pressScale
             }
-            .background(backgroundBrush, capsuleShape)
             .testTag(item.testTag)
     ) {
         Row(
@@ -816,20 +771,7 @@ private fun SpecialUiCapsuleItem(
                 Box(
                     modifier = Modifier
                         .size(iconBoxSize)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                listOf(
-                                    item.suiteAccent.copy(alpha = if (isSelected) 0.50f else 0.28f),
-                                    item.suiteAccent.copy(alpha = 0.08f)
-                                )
-                            )
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = item.suiteAccent.copy(alpha = if (isSelected) 0.85f else 0.40f),
-                            shape = CircleShape
-                        ),
+                        .softWell(CircleShape, tint = item.suiteAccent),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -862,11 +804,9 @@ private fun SpecialUiCapsuleItem(
                         )
 
                         // Mini Category Pill Tag
-                        Surface(
+                        SoftSurface(
                             shape = RoundedCornerShape(percent = 50),
-                            color = item.suiteAccent.copy(alpha = 0.15f),
-                            border = BorderStroke(0.6.dp, item.suiteAccent.copy(alpha = 0.35f))
-                        ) {
+                            color = item.suiteAccent.copy(alpha = 0.15f)) {
                             Text(
                                 text = item.categoryTag,
                                 fontSize = 8.sp,
@@ -892,10 +832,9 @@ private fun SpecialUiCapsuleItem(
 
             // Right block: Dynamic Status Pill (ACTIVE vs Arrow Jump)
             if (isSelected) {
-                Surface(
+                SoftSurface(
                     shape = RoundedCornerShape(percent = 50),
                     color = item.suiteAccent,
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.60f)),
                     shadowElevation = 4.dp
                 ) {
                     Row(
@@ -923,9 +862,7 @@ private fun SpecialUiCapsuleItem(
                 Box(
                     modifier = Modifier
                         .size(26.dp)
-                        .clip(CircleShape)
-                        .background(currentSkin.surfaceVariant.copy(alpha = 0.40f))
-                        .border(0.8.dp, currentSkin.outline.copy(alpha = 0.25f), CircleShape),
+                        .softPlate(CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -954,19 +891,17 @@ private fun SpecialUiMahmoodKhanFooterCapsule(
 
     val iridescentBrush = Brush.linearGradient(
         colors = listOf(
-            Color(0xFFFFD700), // Gold
-            Color(0xFF00E5FF), // Cyan
-            Color(0xFFA855F7), // Purple
-            Color(0xFFFFD700)  // Gold
+            SoftColors.gold, // Gold
+            SoftColors.sky,
+            SoftColors.violet,
+            SoftColors.gold  // Gold
         ),
         start = Offset(0f, 0f),
         end = Offset(600f, 200f)
     )
 
-    Surface(
+    SoftSurface(
         shape = capsuleShape,
-        color = currentSkin.surfaceVariant.copy(alpha = if (isDark) 0.65f else 0.75f),
-        border = BorderStroke(1.3.dp, iridescentBrush),
         shadowElevation = 8.dp,
         modifier = Modifier
             .fillMaxWidth(1.0f)
@@ -983,22 +918,13 @@ private fun SpecialUiMahmoodKhanFooterCapsule(
             Box(
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.radialGradient(
-                            listOf(
-                                Color(0xFFFFD700).copy(alpha = 0.35f),
-                                primaryColor.copy(alpha = 0.15f)
-                            )
-                        )
-                    )
-                    .border(1.2.dp, Color(0xFFFFD700).copy(alpha = 0.75f), CircleShape),
+                    .softWell(CircleShape, tint = SoftColors.gold),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Diamond,
                     contentDescription = null,
-                    tint = Color(0xFFFFD700),
+                    tint = SoftColors.gold,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -1019,17 +945,15 @@ private fun SpecialUiMahmoodKhanFooterCapsule(
                     )
 
                     // PRO Tag
-                    Surface(
+                    SoftSurface(
                         shape = RoundedCornerShape(percent = 50),
-                        color = Color(0xFFFFD700).copy(alpha = 0.20f),
-                        border = BorderStroke(0.8.dp, Color(0xFFFFD700).copy(alpha = 0.60f))
-                    ) {
+                        color = SoftColors.gold.copy(alpha = 0.20f)) {
                         Text(
                             text = "MASTER EDITION",
                             fontSize = 8.5.sp,
                             fontWeight = FontWeight.ExtraBold,
                             fontFamily = DigitalMonospaceFont,
-                            color = Color(0xFFFFD700),
+                            color = SoftColors.gold,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }

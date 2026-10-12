@@ -1,5 +1,13 @@
 package com.example.ui.screens
 
+import com.example.ui.components.DottedFilterChip
+import com.example.ui.components.SoftAlertDialog
+import com.example.ui.components.SoftButton
+import com.example.ui.components.SoftIconButton
+import com.example.ui.components.softWell
+import com.example.ui.components.SoftSurface
+import com.example.ui.components.SoftCard
+import com.example.ui.theme.SoftColors
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -92,8 +100,8 @@ fun MixtureHistoryScreen(
     val context = LocalContext.current
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val primaryColor = MaterialTheme.colorScheme.primary
-    val surfaceBg = if (isDark) Color(0x14FFFFFF) else Color(0x0C000000)
-    val cardBorderColor = if (isDark) Color(0x22FFFFFF) else Color(0x22000000)
+    val surfaceBg = MaterialTheme.colorScheme.surface
+    val cardBorderColor = MaterialTheme.colorScheme.outline
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("ALL") }
@@ -135,7 +143,7 @@ fun MixtureHistoryScreen(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
+                SoftIconButton(
                     onClick = onNavigateBack,
                     modifier = Modifier.testTag("mixture_history_back_btn")
                 ) {
@@ -163,7 +171,7 @@ fun MixtureHistoryScreen(
             }
 
             if (recipes.isNotEmpty()) {
-                TextButton(
+                SoftButton(
                     onClick = { showClearAllDialog = true },
                     modifier = Modifier.testTag("mixture_history_clear_all_btn")
                 ) {
@@ -198,7 +206,7 @@ fun MixtureHistoryScreen(
             },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { searchQuery = "" }) {
+                    SoftIconButton(onClick = { searchQuery = "" }) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Clear search",
@@ -224,33 +232,21 @@ fun MixtureHistoryScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            FilterChip(
+            DottedFilterChip(
                 selected = showOnlyFavorites,
                 onClick = { showOnlyFavorites = !showOnlyFavorites },
-                label = { Text("Starred", fontSize = 11.5.sp) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = if (showOnlyFavorites) Icons.Default.Bookmark else Icons.Outlined.BookmarkBorder,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp)
-                    )
-                },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = Color(0xFFF59E0B).copy(alpha = 0.2f),
-                    selectedLabelColor = Color(0xFFF59E0B)
-                )
+                label = "Starred",
+                leadingIcon = if (showOnlyFavorites) Icons.Default.Bookmark else Icons.Outlined.BookmarkBorder,
+                accentColor = SoftColors.warning
             )
 
             categories.forEach { cat ->
                 val isSelected = selectedCategory.equals(cat, ignoreCase = true)
-                FilterChip(
+                DottedFilterChip(
                     selected = isSelected,
                     onClick = { selectedCategory = cat },
-                    label = { Text(cat, fontSize = 11.5.sp) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = primaryColor.copy(alpha = 0.18f),
-                        selectedLabelColor = primaryColor
-                    )
+                    label = cat,
+                    accentColor = primaryColor
                 )
             }
         }
@@ -271,8 +267,7 @@ fun MixtureHistoryScreen(
                     Box(
                         modifier = Modifier
                             .size(64.dp)
-                            .clip(CircleShape)
-                            .background(primaryColor.copy(alpha = 0.12f)),
+                            .softWell(CircleShape, tint = primaryColor),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -336,7 +331,7 @@ fun MixtureHistoryScreen(
         var editCategory by remember { mutableStateOf(target.category) }
         var editDescription by remember { mutableStateOf(target.description) }
 
-        AlertDialog(
+        SoftAlertDialog(
             onDismissRequest = { itemToEdit = null },
             title = {
                 Text("Edit Formulation", fontWeight = FontWeight.Bold, fontFamily = DigitalMonospaceFont)
@@ -370,18 +365,16 @@ fun MixtureHistoryScreen(
                 }
             },
             confirmButton = {
-                Button(
+                SoftButton(
                     onClick = {
                         viewModel.updateRecipeInDb(target, editTitle, editCategory, editDescription)
                         itemToEdit = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
-                ) {
+                    }, accentColor = primaryColor, filled = true) {
                     Text("Save Changes")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { itemToEdit = null }) {
+                SoftButton(onClick = { itemToEdit = null }) {
                     Text("Cancel")
                 }
             }
@@ -391,23 +384,21 @@ fun MixtureHistoryScreen(
     // Delete Single Confirmation Dialog
     if (itemToDelete != null) {
         val target = itemToDelete!!
-        AlertDialog(
+        SoftAlertDialog(
             onDismissRequest = { itemToDelete = null },
             title = { Text("Delete Formulation?", fontWeight = FontWeight.Bold) },
             text = { Text("Are you sure you want to delete '${target.title}' from your history?") },
             confirmButton = {
-                Button(
+                SoftButton(
                     onClick = {
                         viewModel.deleteRecipeFromDb(target)
                         itemToDelete = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
+                    }, accentColor = MaterialTheme.colorScheme.error, filled = true) {
                     Text("Delete")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { itemToDelete = null }) {
+                SoftButton(onClick = { itemToDelete = null }) {
                     Text("Cancel")
                 }
             }
@@ -416,23 +407,21 @@ fun MixtureHistoryScreen(
 
     // Clear All Confirmation Dialog
     if (showClearAllDialog) {
-        AlertDialog(
+        SoftAlertDialog(
             onDismissRequest = { showClearAllDialog = false },
             title = { Text("Clear All Mixture History?", fontWeight = FontWeight.Bold) },
             text = { Text("This will permanently remove all saved mixture formulations from the database. Note: You can also restore backups from the Settings screen.") },
             confirmButton = {
-                Button(
+                SoftButton(
                     onClick = {
                         viewModel.clearAllRecipes()
                         showClearAllDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
+                    }, accentColor = MaterialTheme.colorScheme.error, filled = true) {
                     Text("Clear All")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showClearAllDialog = false }) {
+                SoftButton(onClick = { showClearAllDialog = false }) {
                     Text("Cancel")
                 }
             }
@@ -476,15 +465,11 @@ private fun MixtureHistoryCard(
         list
     }
 
-    Card(
+    SoftCard(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .border(1.dp, borderColor, RoundedCornerShape(14.dp))
             .testTag("mixture_history_card_${recipe.id}"),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = surfaceBg)
-    ) {
+        shape = RoundedCornerShape(14.dp)) {
         Column(modifier = Modifier.padding(14.dp)) {
             // Card Top Row: Title, Favorite & Actions
             Row(
@@ -505,7 +490,7 @@ private fun MixtureHistoryCard(
                             modifier = Modifier.weight(1f, fill = false)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Surface(
+                        SoftSurface(
                             shape = RoundedCornerShape(6.dp),
                             color = primaryColor.copy(alpha = 0.14f)
                         ) {
@@ -528,19 +513,19 @@ private fun MixtureHistoryCard(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
+                    SoftIconButton(
                         onClick = onToggleFavorite,
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = if (recipe.isFavorite) Icons.Default.Bookmark else Icons.Outlined.BookmarkBorder,
                             contentDescription = if (recipe.isFavorite) "Starred" else "Star",
-                            tint = if (recipe.isFavorite) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = if (recipe.isFavorite) SoftColors.warning else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
                         )
                     }
 
-                    IconButton(
+                    SoftIconButton(
                         onClick = onEdit,
                         modifier = Modifier.size(32.dp)
                     ) {
@@ -552,7 +537,7 @@ private fun MixtureHistoryCard(
                         )
                     }
 
-                    IconButton(
+                    SoftIconButton(
                         onClick = onDelete,
                         modifier = Modifier.size(32.dp)
                     ) {
@@ -583,8 +568,7 @@ private fun MixtureHistoryCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(if (isDark) Color(0x18FFFFFF) else Color(0x0A000000))
+                    .softWell(RoundedCornerShape(8.dp))
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -603,7 +587,7 @@ private fun MixtureHistoryCard(
                         text = "${String.format(Locale.US, "%.1f", recipe.totalTargetWeight)} ${recipe.unit}",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF10B981)
+                        color = SoftColors.positive
                     )
                 }
             }
@@ -660,15 +644,13 @@ private fun MixtureHistoryCard(
             Spacer(modifier = Modifier.height(10.dp))
 
             // Action: Load into Calculator
-            Button(
+            SoftButton(
                 onClick = onLoad,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(40.dp)
                     .testTag("load_mixture_recipe_${recipe.id}"),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
-            ) {
+                shape = RoundedCornerShape(10.dp), accentColor = primaryColor, filled = true) {
                 Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(text = "Load into Mixture Calculator", fontSize = 12.5.sp, fontWeight = FontWeight.Bold)

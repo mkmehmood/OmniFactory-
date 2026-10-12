@@ -1,5 +1,12 @@
 package com.example.ui.screens
 
+import com.example.ui.components.SoftIconButton
+import com.example.ui.components.softWell
+import com.example.ui.components.SoftDivider
+import com.example.ui.components.softTrackColor
+import com.example.ui.components.SoftSurface
+import com.example.ui.components.SoftCard
+import com.example.ui.theme.SoftColors
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
@@ -344,15 +351,12 @@ fun ConverterCategoriesHub(
                     MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f)
                 }
 
-                Surface(
+                SoftSurface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(cardShape)
-                        .border(1.dp, borderClr, cardShape)
                         .clickable { onSelectCategory(category) }
                         .testTag("grid_item_${category.name}"),
                     shape = cardShape,
-                    color = cardBg,
                     shadowElevation = if (isDark) 0.dp else 1.dp
                 ) {
                     Column(
@@ -397,21 +401,14 @@ fun ConverterCategoriesHub(
             // Quick Hub summary item
             item {
                 val infoColor = primaryColor
-                Surface(
+                SoftSurface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(cardShape)
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f),
-                            cardShape
-                        )
                         .clickable {
                             onSelectCategory(ConverterCategory.CURRENCY)
                         }
                         .testTag("grid_item_all_suites"),
                     shape = cardShape,
-                    color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface,
                     shadowElevation = if (isDark) 0.dp else 1.dp
                 ) {
                     Column(
@@ -424,8 +421,7 @@ fun ConverterCategoriesHub(
                         Box(
                             modifier = Modifier
                                 .size(46.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(infoColor.copy(alpha = 0.14f)),
+                                .softWell(RoundedCornerShape(14.dp), tint = infoColor),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -466,14 +462,11 @@ fun ConverterActiveHeader(
     val cardShape = shapeStructureStyle.toCardShape()
     val primaryColor = MaterialTheme.colorScheme.primary
 
-    Surface(
+    SoftSurface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(cardShape)
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.20f), cardShape)
             .testTag("converter_active_header"),
         shape = cardShape,
-        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface,
         shadowElevation = if (isDark) 0.dp else 2.dp
     ) {
         Row(
@@ -487,8 +480,7 @@ fun ConverterActiveHeader(
                 Box(
                     modifier = Modifier
                         .size(38.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(primaryColor.copy(alpha = 0.15f)),
+                        .softWell(RoundedCornerShape(10.dp), tint = primaryColor),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -519,16 +511,13 @@ fun ConverterActiveHeader(
             }
 
             // Back to Categories Hub Button (Icon only - categories text removed)
-            Surface(
+            SoftSurface(
                 modifier = Modifier
                     .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
                     .clickable { onBackToGrid() }
                     .testTag("back_to_grid_button"),
                 shape = RoundedCornerShape(10.dp),
-                color = primaryColor.copy(alpha = 0.15f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.45f))
-            ) {
+                color = primaryColor.copy(alpha = 0.15f)) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.Category,
@@ -598,14 +587,10 @@ private fun CurrencyConverterModule(
 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         // Status & Refresh Bar
-        Surface(
+        SoftSurface(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(cardShape)
-                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f), cardShape),
-            shape = cardShape,
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-        ) {
+                .fillMaxWidth(),
+            shape = cardShape) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -618,7 +603,7 @@ private fun CurrencyConverterModule(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(if (ratesState.isLiveOnline) Color(0xFF10B981) else Color(0xFFF59E0B))
+                            .background(if (ratesState.isLiveOnline) SoftColors.positive else SoftColors.warning)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
@@ -629,7 +614,7 @@ private fun CurrencyConverterModule(
                     )
                 }
 
-                IconButton(
+                SoftIconButton(
                     onClick = { viewModel.fetchLiveCurrencyRates() },
                     modifier = Modifier
                         .size(32.dp)
@@ -650,18 +635,10 @@ private fun CurrencyConverterModule(
         }
 
         // FROM CURRENCY CARD
-        Surface(
+        SoftSurface(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(cardShape)
-                .border(
-                    1.dp,
-                    if (isAmountFocused) primaryColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f),
-                    cardShape
-                ),
-            shape = cardShape,
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-        ) {
+                .fillMaxWidth(),
+            shape = cardShape) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "FROM (SOURCE)",
@@ -678,14 +655,8 @@ private fun CurrencyConverterModule(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     // Search & Click Picker Button (Frameless with straight dotted underline)
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier
-                            .straightDottedLine(
-                                color = primaryColor,
-                                strokeWidth = 1.5.dp,
-                                dotLength = 4.dp,
-                                spaceLength = 3.dp
-                            )
                             .clickable { showFromSearchSheet = true }
                             .testTag("currency_from_picker"),
                         shape = RectangleShape,
@@ -726,15 +697,9 @@ private fun CurrencyConverterModule(
 
                     // Smart Data-Entry Amount Input Box with Straight Dotted Line (Frameless)
                     val currencyDotColor = if (isAmountFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier
                             .width(170.dp)
-                            .straightDottedLine(
-                                color = currencyDotColor,
-                                strokeWidth = if (isAmountFocused) 2.dp else 1.3.dp,
-                                dotLength = 4.dp,
-                                spaceLength = 3.dp
-                            )
                             .clickable {
                                 onFieldClicked("currency_amount", "Amount in ${fromCurrency.code}")
                             }
@@ -780,15 +745,9 @@ private fun CurrencyConverterModule(
                         val clean = preset.replace(",", "")
                         val isPresetSelected = uiState.currencyAmount == clean
                         val presetDotColor = if (isPresetSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.40f else 0.25f)
-                        Surface(
+                        SoftSurface(
                             modifier = Modifier
                                 .weight(1f)
-                                .straightDottedLine(
-                                    color = presetDotColor,
-                                    strokeWidth = if (isPresetSelected) 2.dp else 1.2.dp,
-                                    dotLength = 4.dp,
-                                    spaceLength = 3.dp
-                                )
                                 .clickable {
                                     viewModel.setCurrencyAmount(clean)
                                     onFieldClicked("currency_amount", "Amount in ${fromCurrency.code}")
@@ -815,14 +774,8 @@ private fun CurrencyConverterModule(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
-            Surface(
+            SoftSurface(
                 modifier = Modifier
-                    .straightDottedLine(
-                        color = primaryColor,
-                        strokeWidth = 1.5.dp,
-                        dotLength = 4.dp,
-                        spaceLength = 3.dp
-                    )
                     .clickable { viewModel.swapCurrency() }
                     .testTag("currency_swap_button"),
                 shape = RectangleShape,
@@ -851,14 +804,10 @@ private fun CurrencyConverterModule(
         }
 
         // TO (TARGET) CURRENCY CARD
-        Surface(
+        SoftSurface(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(cardShape)
-                .border(1.dp, primaryColor.copy(alpha = 0.35f), cardShape),
-            shape = cardShape,
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-        ) {
+                .fillMaxWidth(),
+            shape = cardShape) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "TO (CONVERTED RESULT)",
@@ -875,14 +824,8 @@ private fun CurrencyConverterModule(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     // Search & Click Picker Button (Frameless with straight dotted line)
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier
-                            .straightDottedLine(
-                                color = primaryColor,
-                                strokeWidth = 1.5.dp,
-                                dotLength = 4.dp,
-                                spaceLength = 3.dp
-                            )
                             .clickable { showToSearchSheet = true }
                             .testTag("currency_to_picker"),
                         shape = RectangleShape,
@@ -931,7 +874,7 @@ private fun CurrencyConverterModule(
                             color = primaryColor,
                             modifier = Modifier.testTag("currency_result_text")
                         )
-                        IconButton(
+                        SoftIconButton(
                             onClick = { onCopyToClipboard(convertedAmount, "Converted Currency") },
                             modifier = Modifier.testTag("copy_currency_result_button")
                         ) {
@@ -946,7 +889,7 @@ private fun CurrencyConverterModule(
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
-                HorizontalDivider(color = if (isDark) Color(0x18FFFFFF) else Color(0x18000000))
+                SoftDivider()
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
@@ -999,15 +942,9 @@ private fun BmiConverterModule(
         ) {
             val isMetric = uiState.bmiUnitSystem == BmiUnitSystem.METRIC
             val metricDotColor = if (isMetric) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.40f else 0.25f)
-            Surface(
+            SoftSurface(
                 modifier = Modifier
                     .weight(1f)
-                    .straightDottedLine(
-                        color = metricDotColor,
-                        strokeWidth = if (isMetric) 2.dp else 1.2.dp,
-                        dotLength = 4.dp,
-                        spaceLength = 3.dp
-                    )
                     .clickable { viewModel.setBmiUnitSystem(BmiUnitSystem.METRIC) }
                     .testTag("bmi_toggle_metric"),
                 shape = RectangleShape,
@@ -1024,15 +961,9 @@ private fun BmiConverterModule(
 
             val isImperial = uiState.bmiUnitSystem == BmiUnitSystem.IMPERIAL
             val imperialDotColor = if (isImperial) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.40f else 0.25f)
-            Surface(
+            SoftSurface(
                 modifier = Modifier
                     .weight(1f)
-                    .straightDottedLine(
-                        color = imperialDotColor,
-                        strokeWidth = if (isImperial) 2.dp else 1.2.dp,
-                        dotLength = 4.dp,
-                        spaceLength = 3.dp
-                    )
                     .clickable { viewModel.setBmiUnitSystem(BmiUnitSystem.IMPERIAL) }
                     .testTag("bmi_toggle_imperial"),
                 shape = RectangleShape,
@@ -1049,14 +980,10 @@ private fun BmiConverterModule(
         }
 
         // Smart Input Fields
-        Surface(
+        SoftSurface(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(cardShape)
-                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f), cardShape),
-            shape = cardShape,
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-        ) {
+                .fillMaxWidth(),
+            shape = cardShape) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (uiState.bmiUnitSystem == BmiUnitSystem.METRIC) {
                     Row(
@@ -1068,15 +995,9 @@ private fun BmiConverterModule(
 
                         // Weight Metric
                         val weightDotColor = if (isWeightFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
-                        Surface(
+                        SoftSurface(
                             modifier = Modifier
                                 .weight(1f)
-                                .straightDottedLine(
-                                    color = weightDotColor,
-                                    strokeWidth = if (isWeightFocused) 2.dp else 1.3.dp,
-                                    dotLength = 4.dp,
-                                    spaceLength = 3.dp
-                                )
                                 .clickable { onFieldClicked("bmi_weight_metric", "Weight (kg)") }
                                 .testTag("bmi_input_weight_metric"),
                             shape = RectangleShape,
@@ -1096,15 +1017,9 @@ private fun BmiConverterModule(
 
                         // Height Metric
                         val heightDotColor = if (isHeightFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
-                        Surface(
+                        SoftSurface(
                             modifier = Modifier
                                 .weight(1f)
-                                .straightDottedLine(
-                                    color = heightDotColor,
-                                    strokeWidth = if (isHeightFocused) 2.dp else 1.3.dp,
-                                    dotLength = 4.dp,
-                                    spaceLength = 3.dp
-                                )
                                 .clickable { onFieldClicked("bmi_height_metric", "Height (cm)") }
                                 .testTag("bmi_input_height_metric"),
                             shape = RectangleShape,
@@ -1128,15 +1043,9 @@ private fun BmiConverterModule(
                     val isInchesFocused = focusedFieldId == "bmi_inches_imperial"
 
                     val impWeightDotColor = if (isImpWeightFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .straightDottedLine(
-                                color = impWeightDotColor,
-                                strokeWidth = if (isImpWeightFocused) 2.dp else 1.3.dp,
-                                dotLength = 4.dp,
-                                spaceLength = 3.dp
-                            )
                             .clickable { onFieldClicked("bmi_weight_imperial", "Weight (lbs)") }
                             .testTag("bmi_input_weight_imperial"),
                         shape = RectangleShape,
@@ -1159,15 +1068,9 @@ private fun BmiConverterModule(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         val feetDotColor = if (isFeetFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
-                        Surface(
+                        SoftSurface(
                             modifier = Modifier
                                 .weight(1f)
-                                .straightDottedLine(
-                                    color = feetDotColor,
-                                    strokeWidth = if (isFeetFocused) 2.dp else 1.3.dp,
-                                    dotLength = 4.dp,
-                                    spaceLength = 3.dp
-                                )
                                 .clickable { onFieldClicked("bmi_feet_imperial", "Height (Feet)") }
                                 .testTag("bmi_input_feet"),
                             shape = RectangleShape,
@@ -1186,15 +1089,9 @@ private fun BmiConverterModule(
                         }
 
                         val inchesDotColor = if (isInchesFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
-                        Surface(
+                        SoftSurface(
                             modifier = Modifier
                                 .weight(1f)
-                                .straightDottedLine(
-                                    color = inchesDotColor,
-                                    strokeWidth = if (isInchesFocused) 2.dp else 1.3.dp,
-                                    dotLength = 4.dp,
-                                    spaceLength = 3.dp
-                                )
                                 .clickable { onFieldClicked("bmi_inches_imperial", "Inches (0-11)") }
                                 .testTag("bmi_input_inches"),
                             shape = RectangleShape,
@@ -1218,14 +1115,10 @@ private fun BmiConverterModule(
 
         // BMI GAUGE & RESULT CARD
         val categoryColor = Color(bmiResult.category.colorHex)
-        Surface(
+        SoftSurface(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(cardShape)
-                .border(1.dp, categoryColor.copy(alpha = 0.5f), cardShape),
-            shape = cardShape,
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-        ) {
+                .fillMaxWidth(),
+            shape = cardShape) {
             Column(modifier = Modifier.padding(18.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1259,11 +1152,8 @@ private fun BmiConverterModule(
                         }
                     }
 
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = categoryColor.copy(alpha = 0.16f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, categoryColor.copy(alpha = 0.4f))
-                    ) {
+                    SoftSurface(
+                        shape = RoundedCornerShape(12.dp)) {
                         Text(
                             text = bmiResult.category.label,
                             color = categoryColor,
@@ -1285,11 +1175,11 @@ private fun BmiConverterModule(
                         .height(10.dp)
                         .clip(RoundedCornerShape(5.dp)),
                     color = categoryColor,
-                    trackColor = if (isDark) Color(0x22FFFFFF) else Color(0x18000000)
+                    trackColor = softTrackColor()
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
-                HorizontalDivider(color = if (isDark) Color(0x18FFFFFF) else Color(0x18000000))
+                SoftDivider()
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Row(
@@ -1359,18 +1249,10 @@ private fun StandardUnitsConverterModule(
 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         // FROM CARD
-        Surface(
+        SoftSurface(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(cardShape)
-                .border(
-                    1.dp,
-                    if (isInputFocused) primaryColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f),
-                    cardShape
-                ),
-            shape = cardShape,
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-        ) {
+                .fillMaxWidth(),
+            shape = cardShape) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "FROM UNIT",
@@ -1388,14 +1270,8 @@ private fun StandardUnitsConverterModule(
                 ) {
                     // Unit selector dropdown (Frameless with straight dotted line)
                     Box {
-                        Surface(
+                        SoftSurface(
                             modifier = Modifier
-                                .straightDottedLine(
-                                    color = primaryColor,
-                                    strokeWidth = 1.5.dp,
-                                    dotLength = 4.dp,
-                                    spaceLength = 3.dp
-                                )
                                 .clickable { showFromMenu = true }
                                 .testTag("standard_from_picker"),
                             shape = RectangleShape,
@@ -1431,15 +1307,9 @@ private fun StandardUnitsConverterModule(
 
                     // Value input box (smart keypad trigger) with straight dotted line (Frameless)
                     val stdDotColor = if (isInputFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier
                             .width(160.dp)
-                            .straightDottedLine(
-                                color = stdDotColor,
-                                strokeWidth = if (isInputFocused) 2.dp else 1.3.dp,
-                                dotLength = 4.dp,
-                                spaceLength = 3.dp
-                            )
                             .clickable {
                                 onFieldClicked("standard_input", "${fromUnit.name} (${fromUnit.symbol})")
                             }
@@ -1482,14 +1352,8 @@ private fun StandardUnitsConverterModule(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
-            Surface(
+            SoftSurface(
                 modifier = Modifier
-                    .straightDottedLine(
-                        color = primaryColor,
-                        strokeWidth = 1.5.dp,
-                        dotLength = 4.dp,
-                        spaceLength = 3.dp
-                    )
                     .clickable { viewModel.swapStandardUnits() }
                     .testTag("standard_swap_button"),
                 shape = RectangleShape,
@@ -1518,14 +1382,10 @@ private fun StandardUnitsConverterModule(
         }
 
         // TO CARD
-        Surface(
+        SoftSurface(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(cardShape)
-                .border(1.dp, primaryColor.copy(alpha = 0.35f), cardShape),
-            shape = cardShape,
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-        ) {
+                .fillMaxWidth(),
+            shape = cardShape) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "TO (CONVERTED VALUE)",
@@ -1542,14 +1402,8 @@ private fun StandardUnitsConverterModule(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Box {
-                        Surface(
+                        SoftSurface(
                             modifier = Modifier
-                                .straightDottedLine(
-                                    color = primaryColor,
-                                    strokeWidth = 1.5.dp,
-                                    dotLength = 4.dp,
-                                    spaceLength = 3.dp
-                                )
                                 .clickable { showToMenu = true }
                                 .testTag("standard_to_picker"),
                             shape = RectangleShape,
@@ -1592,7 +1446,7 @@ private fun StandardUnitsConverterModule(
                             color = primaryColor,
                             modifier = Modifier.testTag("standard_result_text")
                         )
-                        IconButton(
+                        SoftIconButton(
                             onClick = { onCopyToClipboard(convertedResult, "${uiState.activeCategory.shortName} Result") },
                             modifier = Modifier.testTag("copy_standard_result")
                         ) {
@@ -1609,14 +1463,10 @@ private fun StandardUnitsConverterModule(
         }
 
         // ALL UNITS MATRIX OVERVIEW
-        Surface(
+        SoftSurface(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(cardShape)
-                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f), cardShape),
-            shape = cardShape,
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-        ) {
+                .fillMaxWidth(),
+            shape = cardShape) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "ALL CONVERTED UNITS BREAKDOWN",
@@ -1649,7 +1499,7 @@ private fun StandardUnitsConverterModule(
                         )
                     }
                     if (idx < allMatrix.size - 1) {
-                        HorizontalDivider(color = if (isDark) Color(0x0CFFFFFF) else Color(0x0A000000))
+                        SoftDivider()
                     }
                 }
             }
@@ -1684,18 +1534,10 @@ private fun TemperatureConverterModule(
 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         // Temperature Input Card
-        Surface(
+        SoftSurface(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(cardShape)
-                .border(
-                    1.dp,
-                    if (isTempFocused) primaryColor.copy(alpha = 0.8f) else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f),
-                    cardShape
-                ),
-            shape = cardShape,
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-        ) {
+                .fillMaxWidth(),
+            shape = cardShape) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "FROM TEMPERATURE",
@@ -1712,14 +1554,8 @@ private fun TemperatureConverterModule(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Box {
-                        Surface(
+                        SoftSurface(
                             modifier = Modifier
-                                .straightDottedLine(
-                                    color = primaryColor,
-                                    strokeWidth = 1.5.dp,
-                                    dotLength = 4.dp,
-                                    spaceLength = 3.dp
-                                )
                                 .clickable { showFromMenu = true }
                                 .testTag("temp_from_picker"),
                             shape = RectangleShape,
@@ -1751,15 +1587,9 @@ private fun TemperatureConverterModule(
 
                     // Smart Input Field with straight dotted line (Frameless)
                     val tempDotColor = if (isTempFocused) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier
                             .width(160.dp)
-                            .straightDottedLine(
-                                color = tempDotColor,
-                                strokeWidth = if (isTempFocused) 2.dp else 1.3.dp,
-                                dotLength = 4.dp,
-                                spaceLength = 3.dp
-                            )
                             .clickable {
                                 onFieldClicked("temp_input", "Temperature (${uiState.tempFromUnit.symbol})")
                             }
@@ -1802,14 +1632,8 @@ private fun TemperatureConverterModule(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
-            Surface(
+            SoftSurface(
                 modifier = Modifier
-                    .straightDottedLine(
-                        color = primaryColor,
-                        strokeWidth = 1.5.dp,
-                        dotLength = 4.dp,
-                        spaceLength = 3.dp
-                    )
                     .clickable { viewModel.swapTempUnits() }
                     .testTag("temp_swap_button"),
                 shape = RectangleShape,
@@ -1838,14 +1662,10 @@ private fun TemperatureConverterModule(
         }
 
         // Temperature Converted Result
-        Surface(
+        SoftSurface(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(cardShape)
-                .border(1.dp, primaryColor.copy(alpha = 0.35f), cardShape),
-            shape = cardShape,
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-        ) {
+                .fillMaxWidth(),
+            shape = cardShape) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "CONVERTED TEMPERATURE",
@@ -1862,14 +1682,8 @@ private fun TemperatureConverterModule(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Box {
-                        Surface(
+                        SoftSurface(
                             modifier = Modifier
-                                .straightDottedLine(
-                                    color = primaryColor,
-                                    strokeWidth = 1.5.dp,
-                                    dotLength = 4.dp,
-                                    spaceLength = 3.dp
-                                )
                                 .clickable { showToMenu = true }
                                 .testTag("temp_to_picker"),
                             shape = RectangleShape,
@@ -1908,7 +1722,7 @@ private fun TemperatureConverterModule(
                             color = primaryColor,
                             modifier = Modifier.testTag("temp_result_text")
                         )
-                        IconButton(
+                        SoftIconButton(
                             onClick = { onCopyToClipboard(tempResult, "Temperature Result") },
                             modifier = Modifier.testTag("copy_temp_result")
                         ) {
@@ -1923,7 +1737,7 @@ private fun TemperatureConverterModule(
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.25f else 0.15f))
+                SoftDivider()
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = formula,
@@ -1935,14 +1749,10 @@ private fun TemperatureConverterModule(
         }
 
         // All Temperatures Matrix
-        Surface(
+        SoftSurface(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(cardShape)
-                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f), cardShape),
-            shape = cardShape,
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-        ) {
+                .fillMaxWidth(),
+            shape = cardShape) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "ALL TEMPERATURE SCALES",
@@ -1975,7 +1785,7 @@ private fun TemperatureConverterModule(
                         )
                     }
                     if (idx < matrix.size - 1) {
-                        HorizontalDivider(color = if (isDark) Color(0x0CFFFFFF) else Color(0x0A000000))
+                        SoftDivider()
                     }
                 }
             }
@@ -2063,14 +1873,10 @@ private fun NumberSystemConverterModule(
 
         // Quick Bit Breakdown & ASCII
         val decLong = uiState.numDecimal.toLongOrNull() ?: 0L
-        Surface(
+        SoftSurface(
             modifier = Modifier
-                .fillMaxWidth()
-                .clip(cardShape)
-                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f), cardShape),
-            shape = cardShape,
-            color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
-        ) {
+                .fillMaxWidth(),
+            shape = cardShape) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "BITWISE & ASCII DECODE",
@@ -2091,7 +1897,7 @@ private fun NumberSystemConverterModule(
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
-                HorizontalDivider(color = if (isDark) Color(0x0CFFFFFF) else Color(0x0A000000))
+                SoftDivider()
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Row(
@@ -2103,7 +1909,7 @@ private fun NumberSystemConverterModule(
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
-                HorizontalDivider(color = if (isDark) Color(0x0CFFFFFF) else Color(0x0A000000))
+                SoftDivider()
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Row(
@@ -2133,7 +1939,7 @@ private fun SmartNumberBaseCard(
     isDark: Boolean,
     testTag: String
 ) {
-    Surface(
+    SoftSurface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onCardClicked() },
@@ -2154,7 +1960,7 @@ private fun SmartNumberBaseCard(
                     color = accentColor
                 )
 
-                IconButton(
+                SoftIconButton(
                     onClick = onCopy,
                     modifier = Modifier.size(24.dp)
                 ) {
@@ -2170,15 +1976,9 @@ private fun SmartNumberBaseCard(
             Spacer(modifier = Modifier.height(4.dp))
 
             val numDotColor = if (isFocused) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
-            Surface(
+            SoftSurface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .straightDottedLine(
-                        color = numDotColor,
-                        strokeWidth = if (isFocused) 2.dp else 1.3.dp,
-                        dotLength = 4.dp,
-                        spaceLength = 3.dp
-                    )
                     .testTag(testTag),
                 shape = RectangleShape,
                 color = Color.Transparent

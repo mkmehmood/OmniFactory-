@@ -1,5 +1,16 @@
 package com.example.ui.screens
 
+import com.example.ui.components.SoftCheckbox
+import com.example.ui.components.SoftRadioButton
+import com.example.ui.components.SoftAlertDialog
+import com.example.ui.components.SoftButton
+import com.example.ui.components.SoftIconButton
+import com.example.ui.components.SoftSwitch
+import com.example.ui.components.softWell
+import com.example.ui.components.SoftDivider
+import com.example.ui.components.SoftSurface
+import com.example.ui.components.SoftCard
+import com.example.ui.theme.SoftColors
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -217,16 +228,6 @@ fun SettingsScreen(
 
     val currentSkin = currentAppThemeSkin
     val isSuperAmoled = currentSkin == AppThemeSkin.DARK_CHARCOAL
-    val titleBg = when {
-        isSuperAmoled -> Color(0xFF0D0D0E)
-        !isDark -> Color(0xFFF2F2F7)
-        else -> currentSkin.surfaceVariant.copy(alpha = 0.55f)
-    }
-    val titleBorder = when {
-        isSuperAmoled -> Color(0x38FFFFFF)
-        !isDark -> Color(0x22000000)
-        else -> currentSkin.outline.copy(alpha = 0.35f)
-    }
 
     Scaffold(
         modifier = modifier.fillMaxSize().testTag("settings_screen"),
@@ -236,11 +237,9 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.size(40.dp))
                 },
                 title = {
-                    Surface(
+                    SoftSurface(
                         onClick = onOpenSidebar,
                         shape = RoundedCornerShape(22.dp),
-                        color = titleBg,
-                        border = BorderStroke(1.dp, titleBorder),
                         shadowElevation = if (!isDark && !isSuperAmoled) 1.5.dp else 0.dp,
                         modifier = Modifier.testTag("topbar_title_button")
                     ) {
@@ -305,11 +304,9 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Surface(
+                    SoftSurface(
                         shape = RoundedCornerShape(8.dp),
-                        color = primaryColor.copy(alpha = 0.15f),
-                        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
-                    ) {
+                        color = primaryColor.copy(alpha = 0.15f)) {
                         Text(
                             text = "APPEARANCE",
                             fontSize = 9.5.sp,
@@ -382,7 +379,7 @@ fun SettingsScreen(
                 }
             }
 
-            HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
+            SoftDivider()
 
             // ==========================================
             // SECTION 2: Keypad & Shapes Dropdown
@@ -468,7 +465,7 @@ fun SettingsScreen(
                 }
             }
 
-            HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
+            SoftDivider()
 
             // ==========================================
             // SECTION 4: Component & Button Sizing Dropdown
@@ -551,7 +548,7 @@ fun SettingsScreen(
                 }
             }
 
-            HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
+            SoftDivider()
 
             // ==========================================
             // SECTION 4: Custom Begonia Font (Applied Everywhere)
@@ -574,11 +571,9 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Surface(
+                    SoftSurface(
                         shape = RoundedCornerShape(8.dp),
-                        color = primaryColor.copy(alpha = 0.15f),
-                        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
-                    ) {
+                        color = primaryColor.copy(alpha = 0.15f)) {
                         Text(
                             text = "BEGONIA FONT",
                             fontSize = 9.5.sp,
@@ -590,10 +585,8 @@ fun SettingsScreen(
                     }
                 }
 
-                Surface(
+                SoftSurface(
                     shape = shapeStructure.toCardShape(),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
                     modifier = Modifier.fillMaxWidth().testTag("begonia_font_card")
                 ) {
                     Column(
@@ -607,8 +600,7 @@ fun SettingsScreen(
                             Box(
                                 modifier = Modifier
                                     .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(primaryColor.copy(alpha = 0.18f)),
+                                    .softWell(CircleShape, tint = primaryColor),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -634,10 +626,8 @@ fun SettingsScreen(
                             }
                         }
 
-                        Surface(
+                        SoftSurface(
                             shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.background.copy(alpha = 0.8f),
-                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
@@ -653,7 +643,7 @@ fun SettingsScreen(
                 }
             }
 
-            HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
+            SoftDivider()
 
             // ==========================================
             // SECTION 5: Intensity Controllers (Physics, Haptics, Audio)
@@ -758,15 +748,12 @@ fun SettingsScreen(
                         )
                     }
 
-                    OutlinedButton(
+                    SoftButton(
                         onClick = {
                             HapticFeedbackHelper.performKeypadTap(context, view, currentHapticIntensity)
                         },
                         shape = shapeStructure.toSmallShape(),
-                        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.5f)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = primaryColor),
-                        modifier = Modifier.testTag("test_haptic_button")
-                    ) {
+                        modifier = Modifier.testTag("test_haptic_button"), accentColor = primaryColor) {
                         Icon(imageVector = Icons.Default.TouchApp, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Test", fontSize = 12.sp)
@@ -852,15 +839,12 @@ fun SettingsScreen(
                         )
                     }
 
-                    OutlinedButton(
+                    SoftButton(
                         onClick = {
                             SoundFeedbackHelper.playClickSound(context, view, currentSoundIntensity)
                         },
                         shape = shapeStructure.toSmallShape(),
-                        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.5f)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = primaryColor),
-                        modifier = Modifier.testTag("test_sound_button")
-                    ) {
+                        modifier = Modifier.testTag("test_sound_button"), accentColor = primaryColor) {
                         Icon(imageVector = Icons.Default.GraphicEq, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Play", fontSize = 12.sp)
@@ -928,7 +912,7 @@ fun SettingsScreen(
                 }
             }
 
-            HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
+            SoftDivider()
 
             // ==========================================
             // SECTION 6: Keypad Extra Options
@@ -939,17 +923,9 @@ fun SettingsScreen(
                 fontWeight = FontWeight.SemiBold
             )
 
-            Card(
+            SoftCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = shapeStructure.toCardShape(),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isDark) Color(0x18FFFFFF) else Color(0x0A000000)
-                ),
-                border = BorderStroke(
-                    1.dp,
-                    if (isDark) Color(0x28FFFFFF) else Color(0x18000000)
-                )
-            ) {
+                shape = shapeStructure.toCardShape()) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -968,17 +944,16 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(
+                        SoftSwitch(
                             checked = showDoubleZeroKey,
                             onCheckedChange = onToggleDoubleZero,
-                            colors = SwitchDefaults.colors(checkedThumbColor = primaryColor),
                             modifier = Modifier.testTag("double_zero_switch")
                         )
                     }
                 }
             }
 
-            HorizontalDivider(color = primaryColor.copy(alpha = 0.2f))
+            SoftDivider()
 
             // ==========================================
             // SECTION 7: Complete App Database Backup & Restore
@@ -1001,7 +976,7 @@ fun SettingsScreen(
                     )
                 }
 
-                IconButton(
+                SoftIconButton(
                     onClick = { settingsViewModel.refreshStats() },
                     modifier = Modifier.size(36.dp).testTag("refresh_db_stats_button")
                 ) {
@@ -1014,17 +989,9 @@ fun SettingsScreen(
                 }
             }
 
-            Card(
+            SoftCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = shapeStructure.toCardShape(),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isDark) Color(0x1CFFFFFF) else Color(0x0C000000)
-                ),
-                border = BorderStroke(
-                    1.dp,
-                    if (isDark) Color(0x2EFFFFFF) else Color(0x1C000000)
-                )
-            ) {
+                shape = shapeStructure.toCardShape()) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -1105,11 +1072,9 @@ fun SettingsScreen(
                             )
                         }
 
-                        Surface(
+                        SoftSurface(
                             shape = RoundedCornerShape(8.dp),
-                            color = primaryColor.copy(alpha = 0.15f),
-                            border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f))
-                        ) {
+                            color = primaryColor.copy(alpha = 0.15f)) {
                             Text(
                                 text = "${settingsUiState.stats.totalRecords} Total Records",
                                 fontSize = 11.sp,
@@ -1121,7 +1086,7 @@ fun SettingsScreen(
                         }
                     }
 
-                    HorizontalDivider(color = primaryColor.copy(alpha = 0.15f))
+                    SoftDivider()
 
                     // Action buttons
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1130,7 +1095,7 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Button(
+                            SoftButton(
                                 onClick = {
                                     saveFileLauncher.launch(settingsViewModel.getDefaultBackupFileName())
                                 },
@@ -1138,9 +1103,7 @@ fun SettingsScreen(
                                     .weight(1f)
                                     .height(48.dp)
                                     .testTag("download_backup_button"),
-                                shape = shapeStructure.toInputShape(),
-                                colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
-                            ) {
+                                shape = shapeStructure.toInputShape(), accentColor = primaryColor, filled = true) {
                                 Icon(
                                     imageVector = Icons.Default.Download,
                                     contentDescription = null,
@@ -1163,7 +1126,7 @@ fun SettingsScreen(
                                 }
                             }
 
-                            Button(
+                            SoftButton(
                                 onClick = {
                                     pickFileLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/*", "*/*"))
                                 },
@@ -1171,9 +1134,7 @@ fun SettingsScreen(
                                     .weight(1f)
                                     .height(48.dp)
                                     .testTag("pick_file_restore_button"),
-                                shape = shapeStructure.toInputShape(),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
-                            ) {
+                                shape = shapeStructure.toInputShape(), accentColor = SoftColors.positive, filled = true) {
                                 Icon(
                                     imageVector = Icons.Default.Upload,
                                     contentDescription = null,
@@ -1200,22 +1161,17 @@ fun SettingsScreen(
                         }
 
                         // 2. Reset / Wipe Database Option
-                        OutlinedButton(
+                        SoftButton(
                             onClick = { settingsViewModel.openDialog(BackupDialogType.RESET_DATABASE) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(36.dp)
                                 .testTag("reset_db_button"),
-                            shape = shapeStructure.toInputShape(),
-                            border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.4f)),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color(0xFFEF4444)
-                            )
-                        ) {
+                            shape = shapeStructure.toInputShape(), accentColor = SoftColors.negative) {
                             Icon(
                                 imageVector = Icons.Default.DeleteSweep,
                                 contentDescription = null,
-                                tint = Color(0xFFEF4444),
+                                tint = SoftColors.negative,
                                 modifier = Modifier.size(15.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -1223,7 +1179,7 @@ fun SettingsScreen(
                                 text = "Database Maintenance & Reset Tables...",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = Color(0xFFEF4444)
+                                color = SoftColors.negative
                             )
                         }
                     }
@@ -1243,14 +1199,14 @@ fun SettingsScreen(
         var inputJson by remember { mutableStateOf(settingsUiState.pendingJson) }
         val validation = settingsUiState.validationResult
 
-        AlertDialog(
+        SoftAlertDialog(
             onDismissRequest = { settingsViewModel.closeDialog() },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Restore,
                         contentDescription = null,
-                        tint = Color(0xFF10B981),
+                        tint = SoftColors.positive,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -1265,16 +1221,14 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     // HERO ACTION: Pick File from Device
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .border(1.dp, Color(0xFF10B981).copy(alpha = 0.6f), RoundedCornerShape(8.dp))
                             .clickable {
                                 pickFileLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/*", "*/*"))
                             },
                         shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFF10B981).copy(alpha = 0.14f)
+                        color = SoftColors.positive.copy(alpha = 0.14f)
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
@@ -1284,7 +1238,7 @@ fun SettingsScreen(
                                 modifier = Modifier
                                     .size(36.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF10B981)),
+                                    .background(SoftColors.positive),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -1300,7 +1254,7 @@ fun SettingsScreen(
                                     text = "Pick Backup File from Device",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 12.5.sp,
-                                    color = Color(0xFF10B981)
+                                    color = SoftColors.positive
                                 )
                                 Text(
                                     text = "Choose any .json file from Downloads, Drive or Storage",
@@ -1323,7 +1277,7 @@ fun SettingsScreen(
                             fontWeight = FontWeight.SemiBold
                         )
 
-                        TextButton(
+                        SoftButton(
                             onClick = {
                                 val clipText = clipboardManager.getText()?.text ?: ""
                                 if (clipText.isNotBlank()) {
@@ -1364,18 +1318,16 @@ fun SettingsScreen(
                     // Validation Card
                     if (validation != null) {
                         if (validation.isValid) {
-                            Surface(
+                            SoftSurface(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFF10B981).copy(alpha = 0.14f),
-                                border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.6f))
-                            ) {
+                                color = SoftColors.positive.copy(alpha = 0.14f)) {
                                 Column(modifier = Modifier.padding(10.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(
                                             imageVector = Icons.Default.CheckCircle,
                                             contentDescription = null,
-                                            tint = Color(0xFF10B981),
+                                            tint = SoftColors.positive,
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
@@ -1383,7 +1335,7 @@ fun SettingsScreen(
                                             text = "Valid Backup Payload Detected",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 12.sp,
-                                            color = Color(0xFF10B981)
+                                            color = SoftColors.positive
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
@@ -1399,12 +1351,10 @@ fun SettingsScreen(
                                 }
                             }
                         } else {
-                            Surface(
+                            SoftSurface(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFFEF4444).copy(alpha = 0.12f),
-                                border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.5f))
-                            ) {
+                                color = SoftColors.negative.copy(alpha = 0.12f)) {
                                 Row(
                                     modifier = Modifier.padding(10.dp),
                                     verticalAlignment = Alignment.CenterVertically
@@ -1412,13 +1362,13 @@ fun SettingsScreen(
                                     Icon(
                                         imageVector = Icons.Default.Warning,
                                         contentDescription = null,
-                                        tint = Color(0xFFEF4444),
+                                        tint = SoftColors.negative,
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = validation.errorMessage ?: "Invalid backup JSON format.",
-                                        color = Color(0xFFEF4444),
+                                        color = SoftColors.negative,
                                         fontSize = 11.5.sp
                                     )
                                 }
@@ -1440,11 +1390,9 @@ fun SettingsScreen(
                                 .fillMaxWidth()
                                 .clickable { settingsViewModel.setRestoreMode(RestoreMode.OVERWRITE) }
                         ) {
-                            RadioButton(
+                            SoftRadioButton(
                                 selected = settingsUiState.restoreMode == RestoreMode.OVERWRITE,
-                                onClick = { settingsViewModel.setRestoreMode(RestoreMode.OVERWRITE) },
-                                colors = RadioButtonDefaults.colors(selectedColor = primaryColor)
-                            )
+                                onClick = { settingsViewModel.setRestoreMode(RestoreMode.OVERWRITE) })
                             Spacer(modifier = Modifier.width(6.dp))
                             Column {
                                 Text("Clean Overwrite (Recommended)", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
@@ -1458,11 +1406,9 @@ fun SettingsScreen(
                                 .fillMaxWidth()
                                 .clickable { settingsViewModel.setRestoreMode(RestoreMode.MERGE) }
                         ) {
-                            RadioButton(
+                            SoftRadioButton(
                                 selected = settingsUiState.restoreMode == RestoreMode.MERGE,
-                                onClick = { settingsViewModel.setRestoreMode(RestoreMode.MERGE) },
-                                colors = RadioButtonDefaults.colors(selectedColor = primaryColor)
-                            )
+                                onClick = { settingsViewModel.setRestoreMode(RestoreMode.MERGE) })
                             Spacer(modifier = Modifier.width(6.dp))
                             Column {
                                 Text("Merge & Append", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
@@ -1478,11 +1424,9 @@ fun SettingsScreen(
                             .fillMaxWidth()
                             .clickable { settingsViewModel.setRestoreSettingsOption(!settingsUiState.restoreSettingsOption) }
                     ) {
-                        Checkbox(
+                        SoftCheckbox(
                             checked = settingsUiState.restoreSettingsOption,
-                            onCheckedChange = { settingsViewModel.setRestoreSettingsOption(it) },
-                            colors = CheckboxDefaults.colors(checkedColor = primaryColor)
-                        )
+                            onCheckedChange = { settingsViewModel.setRestoreSettingsOption(it) })
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Apply themes, styles & sound settings from backup",
@@ -1492,14 +1436,12 @@ fun SettingsScreen(
                 }
             },
             confirmButton = {
-                Button(
+                SoftButton(
                     onClick = {
                         settingsViewModel.performRestore(onPreferencesReload)
                     },
                     enabled = validation?.isValid == true && !settingsUiState.isBusy,
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
-                ) {
+                    shape = RoundedCornerShape(8.dp), accentColor = SoftColors.positive, filled = true) {
                     if (settingsUiState.isBusy) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                         Spacer(modifier = Modifier.width(6.dp))
@@ -1508,7 +1450,7 @@ fun SettingsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { settingsViewModel.closeDialog() }) {
+                SoftButton(onClick = { settingsViewModel.closeDialog() }) {
                     Text("Cancel")
                 }
             }
@@ -1517,14 +1459,14 @@ fun SettingsScreen(
 
     // 3. Reset Database Confirmation Dialog
     if (settingsUiState.activeDialog == BackupDialogType.RESET_DATABASE) {
-        AlertDialog(
+        SoftAlertDialog(
             onDismissRequest = { settingsViewModel.closeDialog() },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.DeleteSweep,
                         contentDescription = null,
-                        tint = Color(0xFFEF4444),
+                        tint = SoftColors.negative,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -1539,12 +1481,10 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFEF4444).copy(alpha = 0.1f),
-                        border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.4f))
-                    ) {
+                        color = SoftColors.negative.copy(alpha = 0.1f)) {
                         Column(modifier = Modifier.padding(10.dp)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -1552,11 +1492,9 @@ fun SettingsScreen(
                                     .fillMaxWidth()
                                     .clickable { settingsViewModel.setClearCalculationsOption(!settingsUiState.clearCalculationsOption) }
                             ) {
-                                Checkbox(
+                                SoftCheckbox(
                                     checked = settingsUiState.clearCalculationsOption,
-                                    onCheckedChange = { settingsViewModel.setClearCalculationsOption(it) },
-                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFFEF4444))
-                                )
+                                    onCheckedChange = { settingsViewModel.setClearCalculationsOption(it) })
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text("Calculation History (${settingsUiState.stats.calculationsCount} items)", fontSize = 12.sp)
                             }
@@ -1567,11 +1505,9 @@ fun SettingsScreen(
                                     .fillMaxWidth()
                                     .clickable { settingsViewModel.setClearLedgerOption(!settingsUiState.clearLedgerOption) }
                             ) {
-                                Checkbox(
+                                SoftCheckbox(
                                     checked = settingsUiState.clearLedgerOption,
-                                    onCheckedChange = { settingsViewModel.setClearLedgerOption(it) },
-                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFFEF4444))
-                                )
+                                    onCheckedChange = { settingsViewModel.setClearLedgerOption(it) })
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text("Cashbook / Ledger (${settingsUiState.stats.ledgerTransactionsCount} records)", fontSize = 12.sp)
                             }
@@ -1582,11 +1518,9 @@ fun SettingsScreen(
                                     .fillMaxWidth()
                                     .clickable { settingsViewModel.setClearSalesOption(!settingsUiState.clearSalesOption) }
                             ) {
-                                Checkbox(
+                                SoftCheckbox(
                                     checked = settingsUiState.clearSalesOption,
-                                    onCheckedChange = { settingsViewModel.setClearSalesOption(it) },
-                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFFEF4444))
-                                )
+                                    onCheckedChange = { settingsViewModel.setClearSalesOption(it) })
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text("Sales Reconciliation Audits (${settingsUiState.stats.salesTransactionsCount} audits)", fontSize = 12.sp)
                             }
@@ -1597,11 +1531,9 @@ fun SettingsScreen(
                                     .fillMaxWidth()
                                     .clickable { settingsViewModel.setClearMixturesOption(!settingsUiState.clearMixturesOption) }
                             ) {
-                                Checkbox(
+                                SoftCheckbox(
                                     checked = settingsUiState.clearMixturesOption,
-                                    onCheckedChange = { settingsViewModel.setClearMixturesOption(it) },
-                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFFEF4444))
-                                )
+                                    onCheckedChange = { settingsViewModel.setClearMixturesOption(it) })
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text("Mixture Wizard Recipes + Calculator data (${settingsUiState.stats.mixtureRecipesCount} recipes, ${settingsUiState.stats.calculatorFormulasCount} formulas, ${settingsUiState.stats.calculatorNamesCount} names)", fontSize = 12.sp)
                             }
@@ -1612,11 +1544,9 @@ fun SettingsScreen(
                                     .fillMaxWidth()
                                     .clickable { settingsViewModel.setClearBatchScalingOption(!settingsUiState.clearBatchScalingOption) }
                             ) {
-                                Checkbox(
+                                SoftCheckbox(
                                     checked = settingsUiState.clearBatchScalingOption,
-                                    onCheckedChange = { settingsViewModel.setClearBatchScalingOption(it) },
-                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFFEF4444))
-                                )
+                                    onCheckedChange = { settingsViewModel.setClearBatchScalingOption(it) })
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text("Batch Scaler History (${settingsUiState.stats.batchScalingCount} recipes)", fontSize = 12.sp)
                             }
@@ -1625,16 +1555,14 @@ fun SettingsScreen(
                 }
             },
             confirmButton = {
-                Button(
+                SoftButton(
                     onClick = { settingsViewModel.performResetDatabase(onPreferencesReload) },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
+                    shape = RoundedCornerShape(8.dp), accentColor = SoftColors.negative, filled = true) {
                     Text("Purge Selected Tables", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { settingsViewModel.closeDialog() }) {
+                SoftButton(onClick = { settingsViewModel.closeDialog() }) {
                     Text("Cancel")
                 }
             }
@@ -1655,20 +1583,12 @@ private fun GlassDropdownTrigger(
     val primaryColor = MaterialTheme.colorScheme.primary
     val shapeStructure = LocalShapeStructure.current
 
-    Surface(
+    SoftSurface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(shapeStructure.toInputShape())
-            .border(
-                width = if (isExpanded) 1.5.dp else 1.dp,
-                color = if (isExpanded) primaryColor else (if (isDark) Color(0x33FFFFFF) else Color(0x20000000)),
-                shape = shapeStructure.toInputShape()
-            )
             .clickable { onClick() }
             .testTag(testTag),
-        shape = shapeStructure.toInputShape(),
-        color = if (isDark) Color(0x1CFFFFFF) else Color(0x0C000000)
-    ) {
+        shape = shapeStructure.toInputShape()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1723,14 +1643,11 @@ private fun GlassExpandablePanel(
         enter = expandVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
         exit = shrinkVertically(animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut()
     ) {
-        Surface(
+        SoftSurface(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp)
-                .clip(shapeStructure.toCardShape())
-                .border(1.dp, primaryColor.copy(alpha = 0.35f), shapeStructure.toCardShape()),
+                .padding(top = 8.dp),
             shape = shapeStructure.toCardShape(),
-            color = if (isDark) Color(0xFF161F30).copy(alpha = 0.95f) else Color(0xFFF8FAFC).copy(alpha = 0.98f),
             shadowElevation = 3.dp
         ) {
             val scrollState = rememberScrollState()
@@ -1752,7 +1669,7 @@ private fun GlassDropdownItem(
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit
 ) {
-    Surface(
+    SoftSurface(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
@@ -1824,7 +1741,7 @@ private fun LiquidThemeCard(
     val shape = LocalShapeStructure.current.toCardShape()
 
     val skin = com.example.ui.theme.LocalAppThemeSkin.current
-    Surface(
+    SoftSurface(
         modifier = modifier
             .skeuoRaised(
                 shape = shape,
@@ -1872,12 +1789,9 @@ private fun DbStatPill(
     val isDark = MaterialTheme.colorScheme.background.red < 0.2f
     val primaryColor = MaterialTheme.colorScheme.primary
 
-    Surface(
+    SoftSurface(
         modifier = modifier,
-        shape = RoundedCornerShape(10.dp),
-        color = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000),
-        border = BorderStroke(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x15000000))
-    ) {
+        shape = RoundedCornerShape(10.dp)) {
         Column(
             modifier = Modifier.padding(vertical = 8.dp, horizontal = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

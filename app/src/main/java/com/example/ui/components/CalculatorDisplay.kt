@@ -225,9 +225,7 @@ fun CalculatorDisplay(
         Spacer(modifier = Modifier.height(12.dp))
 
         // Clean Hairline Glass Divider
-        HorizontalDivider(
-            thickness = 1.dp,
-            color = currentSkin.outline.copy(alpha = if (isDark) 0.30f else 0.20f),
+        SoftDivider(
             modifier = Modifier.fillMaxWidth()
         )
     }

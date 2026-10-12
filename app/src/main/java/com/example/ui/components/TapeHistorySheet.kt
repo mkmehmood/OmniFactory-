@@ -161,8 +161,7 @@ fun TapeHistorySheet(
                     Box(
                         modifier = Modifier
                             .size(38.dp)
-                            .clip(CircleShape)
-                            .background(primaryColor.copy(alpha = 0.2f)),
+                            .softWell(CircleShape, tint = primaryColor),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -190,7 +189,7 @@ fun TapeHistorySheet(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (filteredList.isNotEmpty()) {
-                        IconButton(
+                        SoftIconButton(
                             onClick = {
                                 val tapeText = filteredList.joinToString("\n") {
                                     "${it.expression} = ${it.result} ${if (it.note.isNotBlank()) "(${it.note})" else ""}"
@@ -206,7 +205,7 @@ fun TapeHistorySheet(
                             )
                         }
 
-                        IconButton(
+                        SoftIconButton(
                             onClick = { showClearDialog = true },
                             modifier = Modifier.testTag("clear_tape_button")
                         ) {
@@ -218,7 +217,7 @@ fun TapeHistorySheet(
                         }
                     }
 
-                    IconButton(onClick = onDismiss) {
+                    SoftIconButton(onClick = onDismiss) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
@@ -262,12 +261,10 @@ fun TapeHistorySheet(
 
             // Running Sum of Multi-Selected Calculations
             AnimatedVisibility(visible = selectedIds.isNotEmpty()) {
-                Surface(
+                SoftSurface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 12.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .border(1.dp, primaryColor.copy(alpha = 0.5f), RoundedCornerShape(20.dp)),
+                        .padding(bottom = 12.dp),
                     color = primaryColor.copy(alpha = 0.15f),
                     shape = RoundedCornerShape(20.dp)
                 ) {
@@ -292,7 +289,7 @@ fun TapeHistorySheet(
                                 color = primaryColor
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            IconButton(
+                            SoftIconButton(
                                 onClick = { selectedIds = emptySet() },
                                 modifier = Modifier.size(24.dp)
                             ) {
@@ -365,7 +362,7 @@ fun TapeHistorySheet(
     editingEntity?.let { entity ->
         var noteText by remember { mutableStateOf(entity.note) }
 
-        AlertDialog(
+        SoftAlertDialog(
             onDismissRequest = { editingEntity = null },
             shape = RoundedCornerShape(24.dp),
             title = { Text("Edit Note", fontWeight = FontWeight.Bold) },
@@ -388,18 +385,12 @@ fun TapeHistorySheet(
                 }
             },
             confirmButton = {
-                Surface(
+                SoftSurface(
                     onClick = {
                         onUpdateNote(entity, noteText)
                         editingEntity = null
                     },
-                    modifier = Modifier
-                        .straightDottedLine(
-                            color = primaryColor,
-                            strokeWidth = 1.3.dp,
-                            dotLength = 4.dp,
-                            spaceLength = 3.dp
-                        ),
+                    modifier = Modifier,
                     shape = RectangleShape,
                     color = Color.Transparent
                 ) {
@@ -412,7 +403,7 @@ fun TapeHistorySheet(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { editingEntity = null }) {
+                SoftButton(onClick = { editingEntity = null }) {
                     Text("Cancel")
                 }
             }
@@ -421,25 +412,23 @@ fun TapeHistorySheet(
 
     // Clear All Confirmation
     if (showClearDialog) {
-        AlertDialog(
+        SoftAlertDialog(
             onDismissRequest = { showClearDialog = false },
             shape = RoundedCornerShape(24.dp),
             title = { Text("Clear Entire History?") },
             text = { Text("All saved calculations will be permanently deleted.") },
             confirmButton = {
-                Button(
+                SoftButton(
                     onClick = {
                         onClearAll()
                         showClearDialog = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                    shape = CircleShape
-                ) {
+                    shape = CircleShape, accentColor = MaterialTheme.colorScheme.error, filled = true) {
                     Text("Clear All")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showClearDialog = false }) {
+                SoftButton(onClick = { showClearDialog = false }) {
                     Text("Cancel")
                 }
             }
@@ -461,20 +450,9 @@ private fun TapeItemCard(
     onTogglePin: () -> Unit,
     onEditNote: () -> Unit
 ) {
-    Surface(
+    SoftSurface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .border(
-                width = 1.dp,
-                brush = Brush.verticalGradient(
-                    listOf(
-                        if (isSelected) primaryColor else (if (isDark) Color.White else primaryColor).copy(alpha = 0.2f),
-                        Color.Transparent
-                    )
-                ),
-                shape = RoundedCornerShape(20.dp)
-            )
             .clickable { onToggleSelect() }
             .testTag("tape_item_${entity.id}"),
         color = if (isSelected) {
@@ -502,7 +480,7 @@ private fun TapeItemCard(
                 )
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
+                    SoftIconButton(
                         onClick = onTogglePin,
                         modifier = Modifier.size(28.dp)
                     ) {
@@ -513,7 +491,7 @@ private fun TapeItemCard(
                             modifier = Modifier.size(18.dp)
                         )
                     }
-                    IconButton(
+                    SoftIconButton(
                         onClick = onEditNote,
                         modifier = Modifier.size(28.dp)
                     ) {
@@ -524,7 +502,7 @@ private fun TapeItemCard(
                             modifier = Modifier.size(16.dp)
                         )
                     }
-                    IconButton(
+                    SoftIconButton(
                         onClick = onDelete,
                         modifier = Modifier.size(28.dp)
                     ) {
@@ -562,11 +540,9 @@ private fun TapeItemCard(
                 )
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier
-                            .clip(CircleShape)
                             .clickable { onReuseExpr() }
-                            .border(1.dp, primaryColor.copy(alpha = 0.5f), CircleShape)
                             .testTag("reuse_expr_btn_${entity.id}"),
                         shape = CircleShape,
                         color = primaryColor.copy(alpha = 0.15f)
@@ -580,15 +556,13 @@ private fun TapeItemCard(
                         )
                     }
 
-                    Button(
+                    SoftButton(
                         onClick = onRestore,
                         shape = CircleShape,
-                        colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                         modifier = Modifier
                             .height(32.dp)
-                            .testTag("reuse_result_btn_${entity.id}")
-                    ) {
+                            .testTag("reuse_result_btn_${entity.id}"), accentColor = primaryColor, filled = true) {
                         Text(
                             "+ Result",
                             fontSize = 11.sp,

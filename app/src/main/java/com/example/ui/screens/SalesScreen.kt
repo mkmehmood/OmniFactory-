@@ -1,5 +1,13 @@
 package com.example.ui.screens
 
+import com.example.ui.components.SoftAlertDialog
+import com.example.ui.components.SoftButton
+import com.example.ui.components.SoftIconButton
+import com.example.ui.components.SoftRadioButton
+import com.example.ui.components.softWell
+import com.example.ui.components.SoftSurface
+import com.example.ui.components.SoftCard
+import com.example.ui.theme.SoftColors
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -224,8 +232,8 @@ fun SalesScreen(
 
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val primaryColor = MaterialTheme.colorScheme.primary
-    val surfaceBg = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
-    val cardBorderColor = if (isDark) Color(0x28FFFFFF) else Color(0x1E000000)
+    val surfaceBg = MaterialTheme.colorScheme.surface
+    val cardBorderColor = MaterialTheme.colorScheme.outline
 
     Box(
         modifier = modifier
@@ -325,19 +333,13 @@ fun SalesScreen(
 
             // 4. Save Record Button
             val buttonShape = LocalShapeStructure.current.toButtonShape()
-            Button(
+            SoftButton(
                 onClick = onSaveTransaction,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
                     .testTag("save_transaction_button"),
-                shape = buttonShape,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = primaryColor,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp, pressedElevation = 4.dp)
-            ) {
+                shape = buttonShape, accentColor = primaryColor, filled = true) {
                 Icon(
                     imageVector = Icons.Default.ReceiptLong,
                     contentDescription = null,
@@ -414,7 +416,7 @@ fun SalesScreen(
         DatePickerDialog(
             onDismissRequest = { showDatePickerDialog = false },
             confirmButton = {
-                TextButton(
+                SoftButton(
                     onClick = {
                         datePickerState.selectedDateMillis?.let {
                             onSetDateMillis(it)
@@ -427,7 +429,7 @@ fun SalesScreen(
                 }
             },
             dismissButton = {
-                TextButton(
+                SoftButton(
                     onClick = { showDatePickerDialog = false }
                 ) {
                     Text("Cancel")
@@ -441,7 +443,7 @@ fun SalesScreen(
     // Custom Representative Dialog
     if (showCustomRepDialog) {
         var customRepInput by remember { mutableStateOf("") }
-        AlertDialog(
+        SoftAlertDialog(
             onDismissRequest = { showCustomRepDialog = false },
             title = { Text("Add Representative", fontWeight = FontWeight.Bold) },
             text = {
@@ -455,20 +457,19 @@ fun SalesScreen(
                 )
             },
             confirmButton = {
-                Button(
+                SoftButton(
                     onClick = {
                         if (customRepInput.isNotBlank()) {
                             onAddCustomSalesRep(customRepInput)
                             showCustomRepDialog = false
                         }
                     },
-                    modifier = Modifier.testTag("custom_rep_confirm_button")
-                ) {
+                    modifier = Modifier.testTag("custom_rep_confirm_button"), accentColor = MaterialTheme.colorScheme.primary, filled = true) {
                     Text("Add")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showCustomRepDialog = false }) {
+                SoftButton(onClick = { showCustomRepDialog = false }) {
                     Text("Cancel")
                 }
             }
@@ -518,9 +519,8 @@ private fun SalesScreenHeader(
             )
         }
 
-        Surface(
+        SoftSurface(
             modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
                 .clickable { onClearAll() }
                 .testTag("clear_sales_inputs_button"),
             shape = RoundedCornerShape(10.dp),
@@ -565,12 +565,9 @@ private fun SalesRepAndDateCard(
     val dateFormat = remember { SimpleDateFormat("EEE, MMM dd, yyyy", Locale.US) }
     val formattedDate = remember(dateMillis) { dateFormat.format(Date(dateMillis)) }
 
-    Card(
+    SoftCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = surfaceBg),
-        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
-    ) {
+        shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
                 text = "REPRESENTATIVE & DATE",
@@ -588,16 +585,10 @@ private fun SalesRepAndDateCard(
             ) {
                 // Sales Rep Selector Box (Frameless with straight dotted line)
                 Box(modifier = Modifier.weight(1.2f)) {
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp)
-                            .straightDottedLine(
-                                color = if (dropdownExpanded) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f),
-                                strokeWidth = if (dropdownExpanded) 2.dp else 1.3.dp,
-                                dotLength = 4.dp,
-                                spaceLength = 3.dp
-                            )
                             .clickable { dropdownExpanded = true }
                             .testTag("sales_rep_dropdown_selector"),
                         shape = RectangleShape,
@@ -684,16 +675,10 @@ private fun SalesRepAndDateCard(
                 }
 
                 // Date Selector Box (Frameless with straight dotted line)
-                Surface(
+                SoftSurface(
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp)
-                        .straightDottedLine(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f),
-                            strokeWidth = 1.3.dp,
-                            dotLength = 4.dp,
-                            spaceLength = 3.dp
-                        )
                         .clickable { onOpenDatePicker() }
                         .testTag("sales_date_picker_button"),
                     shape = RectangleShape,
@@ -760,12 +745,9 @@ private fun SalesInputFormCard(
     borderColor: Color,
     isDark: Boolean
 ) {
-    Card(
+    SoftCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = surfaceBg),
-        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
-    ) {
+        shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(14.dp)) {
             // Header
             Row(
@@ -781,16 +763,10 @@ private fun SalesInputFormCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 0.8.sp
                 )
-                Surface(
+                SoftSurface(
                     shape = RectangleShape,
                     color = Color.Transparent,
                     modifier = Modifier
-                        .straightDottedLine(
-                            color = primaryColor,
-                            strokeWidth = 1.3.dp,
-                            dotLength = 4.dp,
-                            spaceLength = 3.dp
-                        )
                         .clickable { onOpenCalculator() }
                         .testTag("sales_form_calc_button")
                 ) {
@@ -948,7 +924,7 @@ private fun SalesInputFormCard(
                 text = "• Paid commission deducts directly from expected cash in hand to be remitted",
                 fontSize = 10.sp,
                 fontFamily = DigitalMonospaceFont,
-                color = Color(0xFFF59E0B)
+                color = SoftColors.warning
             )
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -1100,14 +1076,11 @@ private fun SettlementResultPanel(
 ) {
     val result = uiState.reconciliationResult
 
-    Card(
+    SoftCard(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("calculated_reconciliation_result_panel"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = surfaceBg),
-        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
-    ) {
+        shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1123,7 +1096,7 @@ private fun SettlementResultPanel(
                     letterSpacing = 0.8.sp
                 )
 
-                IconButton(
+                SoftIconButton(
                     onClick = onCopySummary,
                     modifier = Modifier.size(28.dp).testTag("copy_reconciliation_button")
                 ) {
@@ -1140,20 +1113,16 @@ private fun SettlementResultPanel(
 
             // Deficit Warning Indicator & Shift Deficit Radio Button
             if (result.deficitAmount > 0.0) {
-                val alertBg = Color(0xFFEF4444).copy(alpha = 0.12f)
-                val alertBorder = Color(0xFFEF4444).copy(alpha = 0.75f)
-                val alertFg = Color(0xFFEF4444)
+                val alertBg = SoftColors.negative.copy(alpha = 0.12f)
+                val alertBorder = SoftColors.negative.copy(alpha = 0.75f)
+                val alertFg = SoftColors.negative
                 val alertIcon = Icons.Default.TrendingDown
 
-                Surface(
+                SoftSurface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .border(1.5.dp, alertBorder, RoundedCornerShape(12.dp))
                         .testTag("deficit_warning_indicator_banner"),
-                    shape = RoundedCornerShape(12.dp),
-                    color = alertBg
-                ) {
+                    shape = RoundedCornerShape(12.dp)) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -1162,8 +1131,7 @@ private fun SettlementResultPanel(
                             Box(
                                 modifier = Modifier
                                     .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(alertFg.copy(alpha = 0.25f)),
+                                    .softWell(CircleShape, tint = alertFg),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -1194,19 +1162,13 @@ private fun SettlementResultPanel(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         // Radio button to shift deficit into commission paid
-                        Surface(
+                        SoftSurface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .border(
-                                    1.dp,
-                                    Color(0xFF10B981).copy(alpha = 0.6f),
-                                    RoundedCornerShape(10.dp)
-                                )
                                 .clickable { onShiftDeficitToCommissionPaid() }
                                 .testTag("shift_deficit_radio_button_container"),
                             shape = RoundedCornerShape(10.dp),
-                            color = Color(0xFF10B981).copy(alpha = 0.12f)
+                            color = SoftColors.positive.copy(alpha = 0.12f)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -1214,13 +1176,9 @@ private fun SettlementResultPanel(
                                     .padding(horizontal = 10.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                RadioButton(
+                                SoftRadioButton(
                                     selected = false,
                                     onClick = { onShiftDeficitToCommissionPaid() },
-                                    colors = RadioButtonDefaults.colors(
-                                        selectedColor = Color(0xFF10B981),
-                                        unselectedColor = Color(0xFF10B981)
-                                    ),
                                     modifier = Modifier.testTag("shift_deficit_radio_button")
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -1229,7 +1187,7 @@ private fun SettlementResultPanel(
                                         text = "Shift deficit into commission paid",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF10B981),
+                                        color = SoftColors.positive,
                                         fontFamily = DigitalMonospaceFont
                                     )
                                     Text(
@@ -1248,15 +1206,9 @@ private fun SettlementResultPanel(
             }
 
             // Hero Net Expected Cash Remittance Card with Exact Cash in Hand Breakdown
-            Surface(
+            SoftSurface(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .border(
-                        1.dp,
-                        primaryColor.copy(alpha = 0.4f),
-                        RoundedCornerShape(14.dp)
-                    ),
+                    .fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 color = primaryColor.copy(alpha = 0.10f)
             ) {
@@ -1275,15 +1227,15 @@ private fun SettlementResultPanel(
                             fontFamily = DigitalMonospaceFont,
                             color = primaryColor
                         )
-                        Surface(
+                        SoftSurface(
                             shape = RoundedCornerShape(4.dp),
-                            color = if (result.commissionPaid > 0) Color(0xFFF59E0B).copy(alpha = 0.2f) else primaryColor.copy(alpha = 0.18f)
+                            color = if (result.commissionPaid > 0) SoftColors.warning.copy(alpha = 0.2f) else primaryColor.copy(alpha = 0.18f)
                         ) {
                             Text(
                                 text = if (result.commissionPaid > 0) "After Comm. Deduction" else "No Comm. Deducted",
                                 fontSize = 9.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (result.commissionPaid > 0) Color(0xFFF59E0B) else primaryColor,
+                                color = if (result.commissionPaid > 0) SoftColors.warning else primaryColor,
                                 fontFamily = DigitalMonospaceFont,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
@@ -1304,12 +1256,9 @@ private fun SettlementResultPanel(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     // Dedicated EXACT CASH IN HAND AUDIT BOX (Without Commission Deduction)
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f))
-                    ) {
+                        shape = RoundedCornerShape(10.dp)) {
                         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -1328,7 +1277,7 @@ private fun SettlementResultPanel(
                                     fontSize = 11.5.sp,
                                     fontFamily = DigitalMonospaceFont,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF38BDF8)
+                                    color = SoftColors.sky
                                 )
                             }
                             Text(
@@ -1350,14 +1299,14 @@ private fun SettlementResultPanel(
                                         fontSize = 10.5.sp,
                                         fontFamily = DigitalMonospaceFont,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFFF59E0B)
+                                        color = SoftColors.warning
                                     )
                                     Text(
                                         text = "− ${result.formattedCommissionPaid}",
                                         fontSize = 11.5.sp,
                                         fontFamily = DigitalMonospaceFont,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFFF59E0B)
+                                        color = SoftColors.warning
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(2.dp))
@@ -1401,17 +1350,11 @@ private fun SettlementResultPanel(
             Spacer(modifier = Modifier.height(10.dp))
 
             // Commission Payable & Paid Dedicated Audit Panel
-            Surface(
+            SoftSurface(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .border(
-                        1.dp,
-                        Color(0xFFF59E0B).copy(alpha = 0.35f),
-                        RoundedCornerShape(12.dp)
-                    ),
+                    .fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFF59E0B).copy(alpha = 0.08f)
+                color = SoftColors.warning.copy(alpha = 0.08f)
             ) {
                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
                     Text(
@@ -1419,7 +1362,7 @@ private fun SettlementResultPanel(
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = DigitalMonospaceFont,
-                        color = Color(0xFFF59E0B),
+                        color = SoftColors.warning,
                         letterSpacing = 0.5.sp
                     )
 
@@ -1432,19 +1375,19 @@ private fun SettlementResultPanel(
                         CommissionMiniBox(
                             label = "Gross Earned",
                             value = result.formattedGrossCommission,
-                            color = Color(0xFF38BDF8),
+                            color = SoftColors.sky,
                             modifier = Modifier.weight(1f)
                         )
                         CommissionMiniBox(
                             label = "Paid (Deducted)",
                             value = result.formattedCommissionPaid,
-                            color = Color(0xFFF59E0B),
+                            color = SoftColors.warning,
                             modifier = Modifier.weight(1.1f)
                         )
                         CommissionMiniBox(
                             label = "Net Payable",
                             value = result.formattedCommissionPayable,
-                            color = Color(0xFF10B981),
+                            color = SoftColors.positive,
                             modifier = Modifier.weight(1.1f)
                         )
                     }
@@ -1474,7 +1417,7 @@ private fun SettlementResultPanel(
                 SummaryStatBox(
                     label = "Net Units",
                     value = result.formattedNetSold,
-                    tintColor = Color(0xFF38BDF8),
+                    tintColor = SoftColors.sky,
                     modifier = Modifier.weight(1f),
                     testTag = "stat_net_sold_units"
                 )
@@ -1482,7 +1425,7 @@ private fun SettlementResultPanel(
                 SummaryStatBox(
                     label = "Cash Qty",
                     value = result.formattedCashQty,
-                    tintColor = Color(0xFF10B981),
+                    tintColor = SoftColors.positive,
                     modifier = Modifier.weight(1f),
                     testTag = "stat_cash_qty_units"
                 )
@@ -1490,7 +1433,7 @@ private fun SettlementResultPanel(
                 SummaryStatBox(
                     label = "Gross Comm",
                     value = result.formattedGrossCommission,
-                    tintColor = Color(0xFF8B5CF6),
+                    tintColor = SoftColors.violet,
                     modifier = Modifier.weight(1f),
                     testTag = "stat_gross_commission"
                 )
@@ -1498,7 +1441,7 @@ private fun SettlementResultPanel(
                 SummaryStatBox(
                     label = "Comm Payable",
                     value = result.formattedCommissionPayable,
-                    tintColor = Color(0xFFF59E0B),
+                    tintColor = SoftColors.warning,
                     modifier = Modifier.weight(1f),
                     testTag = "stat_commission_rate"
                 )
@@ -1514,7 +1457,7 @@ private fun SettlementResultPanel(
                 SummaryStatBox(
                     label = "Exact Cash (No Comm)",
                     value = result.formattedExactCashBeforeCommission,
-                    tintColor = Color(0xFF0284C7),
+                    tintColor = SoftColors.sky,
                     modifier = Modifier.weight(1.2f),
                     testTag = "stat_exact_cash_before_comm"
                 )
@@ -1522,7 +1465,7 @@ private fun SettlementResultPanel(
                 SummaryStatBox(
                     label = "Comm Paid",
                     value = if (result.commissionPaid > 0) "−${result.formattedCommissionPaid}" else result.formattedCommissionPaid,
-                    tintColor = Color(0xFFF59E0B),
+                    tintColor = SoftColors.warning,
                     modifier = Modifier.weight(1f),
                     testTag = "stat_commission_paid_deduction"
                 )
@@ -1530,7 +1473,7 @@ private fun SettlementResultPanel(
                 SummaryStatBox(
                     label = "Net Expected",
                     value = result.formattedExpectedCash,
-                    tintColor = Color(0xFF10B981),
+                    tintColor = SoftColors.positive,
                     modifier = Modifier.weight(1.1f),
                     testTag = "stat_net_expected_cash"
                 )
@@ -1554,13 +1497,9 @@ private fun CommissionMiniBox(
     color: Color,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(8.dp)),
-        shape = RoundedCornerShape(8.dp),
-        color = color.copy(alpha = 0.08f)
-    ) {
+    SoftSurface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp)) {
         Column(
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -1605,9 +1544,9 @@ private fun SettlementStatusBadge(
                 "Cash received ($physicalCashFormatted) matches exact cash in hand ($expectedCashFormatted)"
             }
             Tuple6(
-                Color(0xFF10B981).copy(alpha = 0.14f),
-                Color(0xFF10B981).copy(alpha = 0.45f),
-                Color(0xFF10B981),
+                SoftColors.positive.copy(alpha = 0.14f),
+                SoftColors.positive.copy(alpha = 0.45f),
+                SoftColors.positive,
                 "SETTLED (BALANCED)",
                 sub,
                 Icons.Default.CheckCircle
@@ -1615,9 +1554,9 @@ private fun SettlementStatusBadge(
         }
         ReconciliationStatus.OVER -> {
             Tuple6(
-                Color(0xFF0284C7).copy(alpha = 0.14f),
-                Color(0xFF0284C7).copy(alpha = 0.45f),
-                Color(0xFF38BDF8),
+                SoftColors.sky.copy(alpha = 0.14f),
+                SoftColors.sky.copy(alpha = 0.45f),
+                SoftColors.sky,
                 "SURPLUS (+)",
                 "Cash received exceeds net expected cash by $discrepancyFormatted (Exact Cash without comm: $exactCashFormatted)",
                 Icons.Default.TrendingUp
@@ -1625,9 +1564,9 @@ private fun SettlementStatusBadge(
         }
         ReconciliationStatus.SHORT -> {
             Tuple6(
-                Color(0xFFEF4444).copy(alpha = 0.14f),
-                Color(0xFFEF4444).copy(alpha = 0.45f),
-                Color(0xFFF87171),
+                SoftColors.negative.copy(alpha = 0.14f),
+                SoftColors.negative.copy(alpha = 0.45f),
+                SoftColors.negative,
                 "SHORTAGE (−)",
                 "Cash received is short of net expected cash by $discrepancyFormatted (Exact Cash without comm: $exactCashFormatted)",
                 Icons.Default.TrendingDown
@@ -1635,15 +1574,11 @@ private fun SettlementStatusBadge(
         }
     }
 
-    Surface(
+    SoftSurface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, badgeBorderColor, RoundedCornerShape(12.dp))
             .testTag("reconciliation_status_badge"),
-        shape = RoundedCornerShape(12.dp),
-        color = badgeBgColor
-    ) {
+        shape = RoundedCornerShape(12.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1653,8 +1588,7 @@ private fun SettlementStatusBadge(
             Box(
                 modifier = Modifier
                     .size(32.dp)
-                    .clip(CircleShape)
-                    .background(contentColor.copy(alpha = 0.2f)),
+                    .softWell(CircleShape, tint = contentColor),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -1693,14 +1627,8 @@ private fun SummaryStatBox(
     modifier: Modifier = Modifier,
     testTag: String
 ) {
-    Surface(
+    SoftSurface(
         modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
-            .border(
-                1.dp,
-                tintColor.copy(alpha = 0.25f),
-                RoundedCornerShape(10.dp)
-            )
             .testTag(testTag),
         shape = RoundedCornerShape(10.dp),
         color = tintColor.copy(alpha = 0.08f)
@@ -1772,7 +1700,7 @@ private fun SavedTransactionsBottomSheet(
                 )
             }
 
-            TextButton(onClick = onClose) {
+            SoftButton(onClick = onClose) {
                 Text("Close")
             }
         }
@@ -1785,14 +1713,11 @@ private fun SavedTransactionsBottomSheet(
             val totalExpected = transactions.sumOf { it.expectedCash }
             val totalPhysical = transactions.sumOf { it.physicalCashInHand }
 
-            Surface(
+            SoftSurface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 10.dp),
-                shape = RoundedCornerShape(12.dp),
-                color = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f))
-            ) {
+                shape = RoundedCornerShape(12.dp)) {
                 Column(modifier = Modifier.padding(10.dp)) {
                     Text(
                         text = "SAVED RECORDS CASH IN HAND AUDIT SUMMARY",
@@ -1809,21 +1734,21 @@ private fun SavedTransactionsBottomSheet(
                         GridKeyValueBox(
                             label = "Exact Cash (No Comm)",
                             value = PkrNumberFormatter.formatPkrAmount(totalExactCash, decimals = 2),
-                            highlightColor = Color(0xFF38BDF8),
+                            highlightColor = SoftColors.sky,
                             isDark = isDark,
                             modifier = Modifier.weight(1.2f)
                         )
                         GridKeyValueBox(
                             label = "Total Comm Paid",
                             value = "−${PkrNumberFormatter.formatPkrAmount(totalCommPaid, decimals = 2)}",
-                            highlightColor = Color(0xFFF59E0B),
+                            highlightColor = SoftColors.warning,
                             isDark = isDark,
                             modifier = Modifier.weight(1f)
                         )
                         GridKeyValueBox(
                             label = "Net Expected",
                             value = PkrNumberFormatter.formatPkrAmount(totalExpected, decimals = 2),
-                            highlightColor = Color(0xFF10B981),
+                            highlightColor = SoftColors.positive,
                             isDark = isDark,
                             modifier = Modifier.weight(1.1f)
                         )
@@ -1903,44 +1828,35 @@ private fun SalesRecordCard(
     val (statusBg, statusFg, statusText, statusIcon) = when {
         tx.status == "BALANCED" || kotlin.math.abs(discrepancy) < 0.005 -> {
             Tuple4(
-                Color(0xFF10B981),
-                Color(0xFFFFFFFF),
+                SoftColors.positive,
+                Color.White,
                 "BALANCED",
                 Icons.Default.CheckCircle
             )
         }
         tx.status == "OVER" || discrepancy > 0.005 -> {
             Tuple4(
-                Color(0xFF0284C7),
-                Color(0xFFFFFFFF),
+                SoftColors.sky,
+                Color.White,
                 "SURPLUS +${PkrNumberFormatter.formatPkrAmount(discrepancy, decimals = 2)}",
                 Icons.Default.TrendingUp
             )
         }
         else -> {
             Tuple4(
-                Color(0xFFEF4444),
-                Color(0xFFFFFFFF),
+                SoftColors.negative,
+                Color.White,
                 "SHORTAGE −${PkrNumberFormatter.formatPkrAmount(kotlin.math.abs(discrepancy), decimals = 2)}",
                 Icons.Default.TrendingDown
             )
         }
     }
 
-    Card(
+    SoftCard(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.18f),
-                RoundedCornerShape(14.dp)
-            )
             .testTag("sales_record_card_${tx.id}"),
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surface
-        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -1956,7 +1872,7 @@ private fun SalesRecordCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Surface(
+                    SoftSurface(
                         shape = RoundedCornerShape(6.dp),
                         color = primaryColor.copy(alpha = 0.15f)
                     ) {
@@ -1982,7 +1898,7 @@ private fun SalesRecordCard(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
+                    SoftIconButton(
                         onClick = {
                             val auditReport = buildSingleTransactionAuditText(tx)
                             clipboardManager.setText(AnnotatedString(auditReport))
@@ -1998,7 +1914,7 @@ private fun SalesRecordCard(
                         )
                     }
 
-                    IconButton(
+                    SoftIconButton(
                         onClick = onDelete,
                         modifier = Modifier.size(28.dp).testTag("delete_transaction_button_${tx.id}")
                     ) {
@@ -2041,28 +1957,28 @@ private fun SalesRecordCard(
                     GridKeyValueBox(
                         label = "Returned",
                         value = IndianNumberFormatter.formatIndianDouble(tx.returnedQty, 0),
-                        highlightColor = if (tx.returnedQty > 0) Color(0xFFF59E0B) else null,
+                        highlightColor = if (tx.returnedQty > 0) SoftColors.warning else null,
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
                     )
                     GridKeyValueBox(
                         label = "Expired",
                         value = IndianNumberFormatter.formatIndianDouble(tx.expiredQty, 0),
-                        highlightColor = if (tx.expiredQty > 0) Color(0xFFEF4444) else null,
+                        highlightColor = if (tx.expiredQty > 0) SoftColors.negative else null,
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
                     )
                     GridKeyValueBox(
                         label = "Shared",
                         value = IndianNumberFormatter.formatIndianDouble(tx.sharedQty, 0),
-                        highlightColor = if (tx.sharedQty > 0) Color(0xFF8B5CF6) else null,
+                        highlightColor = if (tx.sharedQty > 0) SoftColors.violet else null,
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
                     )
                     GridKeyValueBox(
                         label = "Credit Qty",
                         value = IndianNumberFormatter.formatIndianDouble(tx.creditSalesQty, 0),
-                        highlightColor = if (tx.creditSalesQty > 0) Color(0xFF38BDF8) else null,
+                        highlightColor = if (tx.creditSalesQty > 0) SoftColors.sky else null,
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
                     )
@@ -2096,14 +2012,14 @@ private fun SalesRecordCard(
                     GridKeyValueBox(
                         label = "Comm Paid",
                         value = PkrNumberFormatter.formatPkrAmount(tx.commissionPaid, decimals = 2),
-                        highlightColor = if (tx.commissionPaid > 0) Color(0xFFF59E0B) else null,
+                        highlightColor = if (tx.commissionPaid > 0) SoftColors.warning else null,
                         isDark = isDark,
                         modifier = Modifier.weight(1.1f)
                     )
                     GridKeyValueBox(
                         label = "Net Comm",
                         value = PkrNumberFormatter.formatPkrAmount(tx.totalCommission, decimals = 2),
-                        highlightColor = Color(0xFF10B981),
+                        highlightColor = SoftColors.positive,
                         isDark = isDark,
                         modifier = Modifier.weight(1.1f)
                     )
@@ -2125,28 +2041,28 @@ private fun SalesRecordCard(
                     GridKeyValueBox(
                         label = "Recovered Cr",
                         value = PkrNumberFormatter.formatPkrAmount(tx.recoveredCredit, decimals = 2),
-                        highlightColor = if (tx.recoveredCredit > 0) Color(0xFF10B981) else null,
+                        highlightColor = if (tx.recoveredCredit > 0) SoftColors.positive else null,
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
                     )
                     GridKeyValueBox(
                         label = "Field Exp",
                         value = PkrNumberFormatter.formatPkrAmount(tx.expense, decimals = 2),
-                        highlightColor = if (tx.expense > 0) Color(0xFFEF4444) else null,
+                        highlightColor = if (tx.expense > 0) SoftColors.negative else null,
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
                     )
                     GridKeyValueBox(
                         label = "Exact Cash (No Comm)",
                         value = PkrNumberFormatter.formatPkrAmount(tx.exactCashBeforeCommission, decimals = 2),
-                        highlightColor = Color(0xFF38BDF8),
+                        highlightColor = SoftColors.sky,
                         isDark = isDark,
                         modifier = Modifier.weight(1.2f)
                     )
                     GridKeyValueBox(
                         label = "Comm Paid",
                         value = if (tx.commissionPaid > 0) "−${PkrNumberFormatter.formatPkrAmount(tx.commissionPaid, decimals = 2)}" else "0.00",
-                        highlightColor = if (tx.commissionPaid > 0) Color(0xFFF59E0B) else null,
+                        highlightColor = if (tx.commissionPaid > 0) SoftColors.warning else null,
                         isDark = isDark,
                         modifier = Modifier.weight(1f)
                     )
@@ -2159,7 +2075,7 @@ private fun SalesRecordCard(
                     GridKeyValueBox(
                         label = "Net Expected Cash",
                         value = PkrNumberFormatter.formatPkrAmount(tx.expectedCash, decimals = 2),
-                        highlightColor = Color(0xFF10B981),
+                        highlightColor = SoftColors.positive,
                         isDark = isDark,
                         modifier = Modifier.weight(1.2f)
                     )
@@ -2173,16 +2089,16 @@ private fun SalesRecordCard(
                 }
 
                 if (tx.commissionPaid > 0.0) {
-                    Surface(
+                    SoftSurface(
                         shape = RoundedCornerShape(6.dp),
-                        color = Color(0xFFF59E0B).copy(alpha = 0.12f),
+                        color = SoftColors.warning.copy(alpha = 0.12f),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             text = "• Paid Comm of ${PkrNumberFormatter.formatPkrAmount(tx.commissionPaid, decimals = 2)} deducted from Cash in Hand. Exact cash before comm was ${PkrNumberFormatter.formatPkrAmount(tx.exactCashBeforeCommission, decimals = 2)}.",
                             fontSize = 9.5.sp,
                             fontFamily = DigitalMonospaceFont,
-                            color = Color(0xFFF59E0B),
+                            color = SoftColors.warning,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
@@ -2206,7 +2122,7 @@ private fun SalesRecordCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                TextButton(
+                SoftButton(
                     onClick = onLoad,
                     modifier = Modifier.height(30.dp)
                 ) {
@@ -2227,7 +2143,7 @@ private fun SalesRecordCard(
             }
 
             // Status Banner
-            Surface(
+            SoftSurface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("status_banner_${tx.id}"),
@@ -2313,17 +2229,9 @@ private fun GridKeyValueBox(
     modifier: Modifier = Modifier,
     highlightColor: Color? = null
 ) {
-    Surface(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .border(
-                1.dp,
-                highlightColor?.copy(alpha = 0.4f) ?: if (isDark) Color(0x1CFFFFFF) else Color(0x14000000),
-                RoundedCornerShape(8.dp)
-            ),
-        shape = RoundedCornerShape(8.dp),
-        color = highlightColor?.copy(alpha = 0.08f) ?: if (isDark) Color(0x10FFFFFF) else Color(0x06000000)
-    ) {
+    SoftSurface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp)) {
         Column(
             modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp)
         ) {

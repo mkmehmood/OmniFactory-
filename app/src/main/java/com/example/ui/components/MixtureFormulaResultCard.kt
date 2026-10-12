@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.SoftColors
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,12 +32,9 @@ fun FormulaResultCard(
     borderColor: Color,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    SoftSurface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = surfaceBg,
-        border = BorderStroke(1.dp, borderColor)
-    ) {
+        shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
                 text = "${summary.method.label} formulation",
@@ -68,9 +66,9 @@ fun FormulaResultCard(
                         )
                         if (summary.hasInTub) {
                             val (text, color) = when {
-                                line.excess > 1e-6 -> "In tub ${EquationFormat.withUnit(line.inTubQty, summary.unit)}  |  remove ${EquationFormat.withUnit(line.excess, summary.unit)}" to Color(0xFFEF4444)
-                                line.stillNeeded > 1e-6 -> "In tub ${EquationFormat.withUnit(line.inTubQty, summary.unit)}  |  add ${EquationFormat.withUnit(line.stillNeeded, summary.unit)}" to Color(0xFFF59E0B)
-                                else -> "In tub ${EquationFormat.withUnit(line.inTubQty, summary.unit)}  |  complete" to Color(0xFF10B981)
+                                line.excess > 1e-6 -> "In tub ${EquationFormat.withUnit(line.inTubQty, summary.unit)}  |  remove ${EquationFormat.withUnit(line.excess, summary.unit)}" to SoftColors.negative
+                                line.stillNeeded > 1e-6 -> "In tub ${EquationFormat.withUnit(line.inTubQty, summary.unit)}  |  add ${EquationFormat.withUnit(line.stillNeeded, summary.unit)}" to SoftColors.warning
+                                else -> "In tub ${EquationFormat.withUnit(line.inTubQty, summary.unit)}  |  complete" to SoftColors.positive
                             }
                             Text(text, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = color)
                         }
@@ -91,14 +89,14 @@ fun FormulaResultCard(
                 }
             }
 
-            HorizontalDivider(color = borderColor, modifier = Modifier.padding(vertical = 6.dp))
+            SoftDivider( modifier = Modifier.padding(vertical = 6.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Total", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = primaryColor)
                 Text(
                     EquationFormat.withUnit(summary.totalFinal, summary.unit),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF10B981)
+                    color = SoftColors.positive
                 )
             }
 
@@ -110,7 +108,7 @@ fun FormulaResultCard(
                         EquationFormat.withUnit(summary.totalStillNeeded, summary.unit),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFF59E0B)
+                        color = SoftColors.warning
                     )
                 }
                 if (summary.totalExcess > 1e-6) {
@@ -120,7 +118,7 @@ fun FormulaResultCard(
                             EquationFormat.withUnit(summary.totalExcess, summary.unit),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFEF4444)
+                            color = SoftColors.negative
                         )
                     }
                 }
@@ -128,7 +126,7 @@ fun FormulaResultCard(
 
             summary.warnings.forEach {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(it, fontSize = 11.sp, color = Color(0xFFF59E0B))
+                Text(it, fontSize = 11.sp, color = SoftColors.warning)
             }
             if (summary.steps.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))

@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.SoftColors
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -294,14 +295,11 @@ fun SalesRepresentativesMatrixCard(
     val fleetTotalRecovered = remember(repSummaries) { repSummaries.sumOf { it.totalRecoveredCredit } }
     val fleetVariance = fleetTotalPhysicalCash - fleetTotalExpectedCash
 
-    Card(
+    SoftCard(
         modifier = modifier
             .fillMaxWidth()
             .testTag("sales_representatives_matrix_card"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = surfaceBg),
-        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor)
-    ) {
+        shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(14.dp)) {
             // Header Row
             Row(
@@ -313,8 +311,7 @@ fun SalesRepresentativesMatrixCard(
                     Box(
                         modifier = Modifier
                             .size(32.dp)
-                            .clip(CircleShape)
-                            .background(primaryColor.copy(alpha = 0.15f)),
+                            .softWell(CircleShape, tint = primaryColor),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -342,7 +339,7 @@ fun SalesRepresentativesMatrixCard(
                     }
                 }
 
-                IconButton(
+                SoftIconButton(
                     onClick = {
                         val report = buildMatrixExecutiveReport(
                             repSummaries = repSummaries,
@@ -469,20 +466,12 @@ fun SalesRepresentativesMatrixCard(
 
                 // Sort selector trigger
                 Box {
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier
                             .height(44.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .border(
-                                1.dp,
-                                if (isDark) Color(0x22FFFFFF) else Color(0x1E000000),
-                                RoundedCornerShape(10.dp)
-                            )
                             .clickable { isSortMenuExpanded = true }
                             .testTag("matrix_sort_menu_button"),
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (isDark) Color(0x15FFFFFF) else Color(0x08000000)
-                    ) {
+                        shape = RoundedCornerShape(10.dp)) {
                         Row(
                             modifier = Modifier.padding(horizontal = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -635,9 +624,9 @@ private fun FleetSummaryKpiBanner(
     isDark: Boolean
 ) {
     val varianceColor = when {
-        kotlin.math.abs(fleetVariance) < 0.01 -> Color(0xFF10B981)
-        fleetVariance > 0 -> Color(0xFF38BDF8)
-        else -> Color(0xFFEF4444)
+        kotlin.math.abs(fleetVariance) < 0.01 -> SoftColors.positive
+        fleetVariance > 0 -> SoftColors.sky
+        else -> SoftColors.negative
     }
 
     val varianceLabel = when {
@@ -646,15 +635,9 @@ private fun FleetSummaryKpiBanner(
         else -> "−${PkrNumberFormatter.formatPkrAmount(kotlin.math.abs(fleetVariance), decimals = 2)} Shortage"
     }
 
-    Surface(
+    SoftSurface(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .border(
-                1.dp,
-                primaryColor.copy(alpha = 0.35f),
-                RoundedCornerShape(12.dp)
-            ),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         color = primaryColor.copy(alpha = 0.08f)
     ) {
@@ -672,10 +655,8 @@ private fun FleetSummaryKpiBanner(
                     color = primaryColor
                 )
 
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = varianceColor.copy(alpha = 0.18f)
-                ) {
+                SoftSurface(
+                    shape = RoundedCornerShape(6.dp)) {
                     Text(
                         text = varianceLabel,
                         fontSize = 10.5.sp,
@@ -696,13 +677,13 @@ private fun FleetSummaryKpiBanner(
                 MatrixStatBox(
                     label = "Exact Cash (No Comm)",
                     value = IndianNumberFormatter.formatIndianCurrency(totalExactCash),
-                    tintColor = Color(0xFF38BDF8),
+                    tintColor = SoftColors.sky,
                     modifier = Modifier.weight(1.1f)
                 )
                 MatrixStatBox(
                     label = "Comm Paid",
                     value = "−" + IndianNumberFormatter.formatIndianCurrency(totalCommissionPaid),
-                    tintColor = Color(0xFFF59E0B),
+                    tintColor = SoftColors.warning,
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
@@ -714,7 +695,7 @@ private fun FleetSummaryKpiBanner(
                 MatrixStatBox(
                     label = "Cash Collected",
                     value = IndianNumberFormatter.formatIndianCurrency(totalPhysicalCash),
-                    tintColor = Color(0xFF10B981),
+                    tintColor = SoftColors.positive,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -734,37 +715,27 @@ private fun RepLeaderboardRow(
     isDark: Boolean
 ) {
     val rankBadgeColor = when (rank) {
-        1 -> Color(0xFFF59E0B)
-        2 -> Color(0xFF94A3B8)
-        3 -> Color(0xFFB45309)
+        1 -> SoftColors.warning
+        2 -> SoftColors.silver
+        3 -> SoftColors.bronze
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     val varianceColor = when (summary.status) {
-        ReconciliationStatus.BALANCED -> Color(0xFF10B981)
-        ReconciliationStatus.OVER -> Color(0xFF38BDF8)
-        ReconciliationStatus.SHORT -> Color(0xFFEF4444)
+        ReconciliationStatus.BALANCED -> SoftColors.positive
+        ReconciliationStatus.OVER -> SoftColors.sky
+        ReconciliationStatus.SHORT -> SoftColors.negative
     }
 
     val progressFraction = if (summary.totalExpectedCash > 0.0) {
         (summary.totalPhysicalCash / summary.totalExpectedCash).toFloat().coerceIn(0f, 1.5f)
     } else 1f
 
-    Card(
+    SoftCard(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .border(
-                1.dp,
-                if (isExpanded) primaryColor.copy(alpha = 0.5f) else if (isDark) Color(0x22FFFFFF) else Color(0x1A000000),
-                RoundedCornerShape(12.dp)
-            )
             .clickable { onToggleExpand() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDark) Color(0xFF121B2D) else Color(0xFFF9FAFB)
-        )
-    ) {
+        shape = RoundedCornerShape(12.dp)) {
         Column(modifier = Modifier.padding(10.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -776,11 +747,9 @@ private fun RepLeaderboardRow(
                     modifier = Modifier.weight(1f)
                 ) {
                     // Rank badge
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier.size(24.dp),
-                        shape = CircleShape,
-                        color = rankBadgeColor.copy(alpha = 0.18f)
-                    ) {
+                        shape = CircleShape) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
                                 text = "#$rank",
@@ -806,16 +775,16 @@ private fun RepLeaderboardRow(
                             )
                             if (summary.totalSharedUnits > 0.0) {
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Surface(
+                                SoftSurface(
                                     shape = RoundedCornerShape(4.dp),
-                                    color = Color(0xFF8B5CF6).copy(alpha = 0.18f)
+                                    color = SoftColors.violet.copy(alpha = 0.18f)
                                 ) {
                                     Text(
                                         text = "${summary.formattedShared} shared",
                                         fontSize = 9.sp,
                                         fontWeight = FontWeight.Bold,
                                         fontFamily = DigitalMonospaceFont,
-                                        color = Color(0xFF8B5CF6),
+                                        color = SoftColors.violet,
                                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                                     )
                                 }
@@ -837,10 +806,8 @@ private fun RepLeaderboardRow(
                         fontFamily = DigitalMonospaceFont,
                         color = primaryColor
                     )
-                    Surface(
-                        shape = RoundedCornerShape(4.dp),
-                        color = varianceColor.copy(alpha = 0.15f)
-                    ) {
+                    SoftSurface(
+                        shape = RoundedCornerShape(4.dp)) {
                         Text(
                             text = summary.formattedDiscrepancy,
                             fontSize = 10.sp,
@@ -864,8 +831,8 @@ private fun RepLeaderboardRow(
                 LinearProgressIndicator(
                     progress = { progressFraction.coerceAtMost(1f) },
                     modifier = Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)),
-                    color = if (progressFraction >= 1f) Color(0xFF10B981) else Color(0xFFF59E0B),
-                    trackColor = if (isDark) Color(0x33FFFFFF) else Color(0x1F000000),
+                    color = if (progressFraction >= 1f) SoftColors.positive else SoftColors.warning,
+                    trackColor = softTrackColor(),
                 )
                 Text(
                     text = "${String.format(Locale.US, "%.1f", summary.collectionRate)}%",
@@ -904,25 +871,25 @@ private fun RepLeaderboardRow(
                         MatrixStatBox(
                             label = "Returned",
                             value = summary.formattedReturned,
-                            tintColor = if (summary.totalReturnedUnits > 0) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tintColor = if (summary.totalReturnedUnits > 0) SoftColors.warning else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f)
                         )
                         MatrixStatBox(
                             label = "Expired",
                             value = summary.formattedExpired,
-                            tintColor = if (summary.totalExpiredUnits > 0) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tintColor = if (summary.totalExpiredUnits > 0) SoftColors.negative else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f)
                         )
                         MatrixStatBox(
                             label = "Shared",
                             value = summary.formattedShared,
-                            tintColor = if (summary.totalSharedUnits > 0) Color(0xFF8B5CF6) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tintColor = if (summary.totalSharedUnits > 0) SoftColors.violet else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f)
                         )
                         MatrixStatBox(
                             label = "Credit Qty",
                             value = summary.formattedCreditQty,
-                            tintColor = if (summary.totalCreditSalesQty > 0) Color(0xFF38BDF8) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tintColor = if (summary.totalCreditSalesQty > 0) SoftColors.sky else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -944,31 +911,31 @@ private fun RepLeaderboardRow(
                         MatrixStatBox(
                             label = "Cash Sales",
                             value = summary.formattedProductCashSales,
-                            tintColor = Color(0xFF38BDF8),
+                            tintColor = SoftColors.sky,
                             modifier = Modifier.weight(1f)
                         )
                         MatrixStatBox(
                             label = "Recovered",
                             value = summary.formattedRecoveredCredit,
-                            tintColor = Color(0xFF10B981),
+                            tintColor = SoftColors.positive,
                             modifier = Modifier.weight(1f)
                         )
                         MatrixStatBox(
                             label = "Comm Paid",
                             value = summary.formattedCommissionPaid,
-                            tintColor = if (summary.totalCommissionPaid > 0) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tintColor = if (summary.totalCommissionPaid > 0) SoftColors.warning else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f)
                         )
                         MatrixStatBox(
                             label = "Net Comm",
                             value = summary.formattedTotalCommission,
-                            tintColor = Color(0xFF10B981),
+                            tintColor = SoftColors.positive,
                             modifier = Modifier.weight(1f)
                         )
                         MatrixStatBox(
                             label = "Expenses",
                             value = summary.formattedTotalExpense,
-                            tintColor = Color(0xFFEF4444),
+                            tintColor = SoftColors.negative,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -980,7 +947,7 @@ private fun RepLeaderboardRow(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        TextButton(
+                        SoftButton(
                             onClick = { onSelectRep(summary.repName) },
                             modifier = Modifier.height(32.dp)
                         ) {
@@ -993,7 +960,7 @@ private fun RepLeaderboardRow(
                         }
 
                         if (summary.transactions.isNotEmpty()) {
-                            TextButton(
+                            SoftButton(
                                 onClick = { onLoadTransaction(summary.transactions.first()) },
                                 modifier = Modifier.height(32.dp)
                             ) {
@@ -1001,7 +968,7 @@ private fun RepLeaderboardRow(
                                     text = "Load Latest Audit",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF10B981)
+                                    color = SoftColors.positive
                                 )
                             }
                         }
@@ -1020,25 +987,15 @@ private fun RepCashSalesAuditCard(
     isDark: Boolean
 ) {
     val varianceColor = when (summary.status) {
-        ReconciliationStatus.BALANCED -> Color(0xFF10B981)
-        ReconciliationStatus.OVER -> Color(0xFF38BDF8)
-        ReconciliationStatus.SHORT -> Color(0xFFEF4444)
+        ReconciliationStatus.BALANCED -> SoftColors.positive
+        ReconciliationStatus.OVER -> SoftColors.sky
+        ReconciliationStatus.SHORT -> SoftColors.negative
     }
 
-    Card(
+    SoftCard(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .border(
-                1.dp,
-                if (isDark) Color(0x22FFFFFF) else Color(0x1A000000),
-                RoundedCornerShape(12.dp)
-            ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDark) Color(0xFF121B2D) else Color(0xFFF9FAFB)
-        )
-    ) {
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)) {
         Column(modifier = Modifier.padding(10.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1051,10 +1008,8 @@ private fun RepCashSalesAuditCard(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = varianceColor.copy(alpha = 0.18f)
-                ) {
+                SoftSurface(
+                    shape = RoundedCornerShape(6.dp)) {
                     Text(
                         text = summary.status.name,
                         fontSize = 10.sp,
@@ -1082,7 +1037,7 @@ private fun RepCashSalesAuditCard(
                     text = "Paid Comm of ${summary.formattedCommissionPaid} deducted from Cash in Hand → Net Expected: ${summary.formattedExpectedCash}",
                     fontSize = 9.5.sp,
                     fontFamily = DigitalMonospaceFont,
-                    color = Color(0xFFF59E0B),
+                    color = SoftColors.warning,
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -1102,7 +1057,7 @@ private fun RepCashSalesAuditCard(
                 MatrixStatBox(
                     label = "Handover Cash",
                     value = summary.formattedPhysicalCash,
-                    tintColor = Color(0xFF10B981),
+                    tintColor = SoftColors.positive,
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
@@ -1123,20 +1078,10 @@ private fun RepLossReturnsCard(
     primaryColor: Color,
     isDark: Boolean
 ) {
-    Card(
+    SoftCard(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .border(
-                1.dp,
-                if (isDark) Color(0x22FFFFFF) else Color(0x1A000000),
-                RoundedCornerShape(12.dp)
-            ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDark) Color(0xFF121B2D) else Color(0xFFF9FAFB)
-        )
-    ) {
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)) {
         Column(modifier = Modifier.padding(10.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1149,16 +1094,16 @@ private fun RepLossReturnsCard(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Surface(
+                SoftSurface(
                     shape = RoundedCornerShape(6.dp),
-                    color = if (summary.lossRatePercent > 10.0) Color(0xFFEF4444).copy(alpha = 0.15f) else Color(0xFF10B981).copy(alpha = 0.15f)
+                    color = if (summary.lossRatePercent > 10.0) SoftColors.negative.copy(alpha = 0.15f) else SoftColors.positive.copy(alpha = 0.15f)
                 ) {
                     Text(
                         text = "Loss: ${String.format(Locale.US, "%.1f", summary.lossRatePercent)}%",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = DigitalMonospaceFont,
-                        color = if (summary.lossRatePercent > 10.0) Color(0xFFEF4444) else Color(0xFF10B981),
+                        color = if (summary.lossRatePercent > 10.0) SoftColors.negative else SoftColors.positive,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
@@ -1179,25 +1124,25 @@ private fun RepLossReturnsCard(
                 MatrixStatBox(
                     label = "Returned",
                     value = summary.formattedReturned,
-                    tintColor = Color(0xFFF59E0B),
+                    tintColor = SoftColors.warning,
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
                     label = "Expired",
                     value = summary.formattedExpired,
-                    tintColor = Color(0xFFEF4444),
+                    tintColor = SoftColors.negative,
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
                     label = "Shared",
                     value = summary.formattedShared,
-                    tintColor = Color(0xFF8B5CF6),
+                    tintColor = SoftColors.violet,
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
                     label = "Net Sold",
                     value = summary.formattedNetSold,
-                    tintColor = Color(0xFF10B981),
+                    tintColor = SoftColors.positive,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -1219,25 +1164,15 @@ private fun RepProfileDetailCard(
     }
 
     val varianceColor = when (summary.status) {
-        ReconciliationStatus.BALANCED -> Color(0xFF10B981)
-        ReconciliationStatus.OVER -> Color(0xFF38BDF8)
-        ReconciliationStatus.SHORT -> Color(0xFFEF4444)
+        ReconciliationStatus.BALANCED -> SoftColors.positive
+        ReconciliationStatus.OVER -> SoftColors.sky
+        ReconciliationStatus.SHORT -> SoftColors.negative
     }
 
-    Card(
+    SoftCard(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .border(
-                1.dp,
-                if (isDark) Color(0x22FFFFFF) else Color(0x1A000000),
-                RoundedCornerShape(14.dp)
-            ),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDark) Color(0xFF121B2D) else Color(0xFFF9FAFB)
-        )
-    ) {
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp)) {
         Column(modifier = Modifier.padding(12.dp)) {
             // Header
             Row(
@@ -1268,10 +1203,8 @@ private fun RepProfileDetailCard(
                     }
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = varianceColor.copy(alpha = 0.18f)
-                ) {
+                SoftSurface(
+                    shape = RoundedCornerShape(6.dp)) {
                     Text(
                         text = summary.formattedDiscrepancy,
                         fontSize = 10.5.sp,
@@ -1308,25 +1241,25 @@ private fun RepProfileDetailCard(
                 MatrixStatBox(
                     label = "Returned",
                     value = summary.formattedReturned,
-                    tintColor = if (summary.totalReturnedUnits > 0) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tintColor = if (summary.totalReturnedUnits > 0) SoftColors.warning else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
                     label = "Expired",
                     value = summary.formattedExpired,
-                    tintColor = if (summary.totalExpiredUnits > 0) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tintColor = if (summary.totalExpiredUnits > 0) SoftColors.negative else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
                     label = "Shared",
                     value = summary.formattedShared,
-                    tintColor = if (summary.totalSharedUnits > 0) Color(0xFF8B5CF6) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tintColor = if (summary.totalSharedUnits > 0) SoftColors.violet else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
                     label = "Credit Qty",
                     value = summary.formattedCreditQty,
-                    tintColor = if (summary.totalCreditSalesQty > 0) Color(0xFF38BDF8) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tintColor = if (summary.totalCreditSalesQty > 0) SoftColors.sky else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -1349,25 +1282,25 @@ private fun RepProfileDetailCard(
                 MatrixStatBox(
                     label = "Net Sold Units",
                     value = summary.formattedNetSold,
-                    tintColor = Color(0xFF10B981),
+                    tintColor = SoftColors.positive,
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
                     label = "Gross Comm",
                     value = summary.formattedGrossCommission,
-                    tintColor = Color(0xFFF59E0B),
+                    tintColor = SoftColors.warning,
                     modifier = Modifier.weight(1.1f)
                 )
                 MatrixStatBox(
                     label = "Comm Paid",
                     value = summary.formattedCommissionPaid,
-                    tintColor = if (summary.totalCommissionPaid > 0) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tintColor = if (summary.totalCommissionPaid > 0) SoftColors.warning else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1.1f)
                 )
                 MatrixStatBox(
                     label = "Net Comm",
                     value = summary.formattedTotalCommission,
-                    tintColor = Color(0xFF10B981),
+                    tintColor = SoftColors.positive,
                     modifier = Modifier.weight(1.1f)
                 )
             }
@@ -1390,13 +1323,13 @@ private fun RepProfileDetailCard(
                 MatrixStatBox(
                     label = "Recovered Cr",
                     value = summary.formattedRecoveredCredit,
-                    tintColor = Color(0xFF10B981),
+                    tintColor = SoftColors.positive,
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
                     label = "Field Exp",
                     value = summary.formattedTotalExpense,
-                    tintColor = if (summary.totalExpense > 0) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tintColor = if (summary.totalExpense > 0) SoftColors.negative else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
                 MatrixStatBox(
@@ -1429,14 +1362,14 @@ private fun RepProfileDetailCard(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (summary.transactions.isNotEmpty()) {
-                        TextButton(
+                        SoftButton(
                             onClick = { onLoadTransaction(summary.transactions.first()) },
                             modifier = Modifier.height(30.dp)
                         ) {
-                            Text("Load Latest", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                            Text("Load Latest", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SoftColors.positive)
                         }
                     }
-                    TextButton(
+                    SoftButton(
                         onClick = { onSelectRep(summary.repName) },
                         modifier = Modifier.height(30.dp)
                     ) {
@@ -1455,14 +1388,8 @@ private fun MatrixStatBox(
     tintColor: Color,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .border(
-                1.dp,
-                tintColor.copy(alpha = 0.25f),
-                RoundedCornerShape(8.dp)
-            ),
+    SoftSurface(
+        modifier = modifier,
         shape = RoundedCornerShape(8.dp),
         color = tintColor.copy(alpha = 0.07f)
     ) {

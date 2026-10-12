@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.SoftColors
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -119,8 +120,8 @@ fun MixtureHistorySheet(
     val clipboardManager = LocalClipboardManager.current
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val primaryColor = MaterialTheme.colorScheme.primary
-    val surfaceBg = if (isDark) Color(0x18FFFFFF) else Color(0x0C000000)
-    val borderColor = if (isDark) Color(0x28FFFFFF) else Color(0x1E000000)
+    val surfaceBg = MaterialTheme.colorScheme.surface
+    val borderColor = MaterialTheme.colorScheme.outline
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("ALL") }
@@ -176,11 +177,9 @@ fun MixtureHistorySheet(
                         fontFamily = DigitalMonospaceFont
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Surface(
+                    SoftSurface(
                         shape = RoundedCornerShape(8.dp),
-                        color = primaryColor.copy(alpha = 0.15f),
-                        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.35f))
-                    ) {
+                        color = primaryColor.copy(alpha = 0.15f)) {
                         Text(
                             text = "${recipes.size}",
                             fontSize = 11.sp,
@@ -194,7 +193,7 @@ fun MixtureHistorySheet(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // Backup / Restore button
-                    IconButton(
+                    SoftIconButton(
                         onClick = { showBackupRestoreModal = true },
                         modifier = Modifier.size(36.dp).testTag("mixture_backup_restore_btn")
                     ) {
@@ -207,7 +206,7 @@ fun MixtureHistorySheet(
                     }
 
                     if (recipes.isNotEmpty()) {
-                        IconButton(
+                        SoftIconButton(
                             onClick = { showClearConfirm = true },
                             modifier = Modifier.size(36.dp).testTag("mixture_clear_all_btn")
                         ) {
@@ -220,7 +219,7 @@ fun MixtureHistorySheet(
                         }
                     }
 
-                    IconButton(
+                    SoftIconButton(
                         onClick = onDismiss,
                         modifier = Modifier.size(36.dp).testTag("close_mixture_history_btn")
                     ) {
@@ -345,7 +344,7 @@ fun MixtureHistorySheet(
         var editCategory by remember(entity) { mutableStateOf(entity.category) }
         var editDescription by remember(entity) { mutableStateOf(entity.description) }
 
-        AlertDialog(
+        SoftAlertDialog(
             onDismissRequest = { editingEntity = null },
             title = {
                 Text(
@@ -386,18 +385,16 @@ fun MixtureHistorySheet(
                 }
             },
             confirmButton = {
-                Button(
+                SoftButton(
                     onClick = {
                         onEditRecipe(entity, editTitle, editCategory, editDescription)
                         editingEntity = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
-                ) {
+                    }, accentColor = primaryColor, filled = true) {
                     Text("Save Changes")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { editingEntity = null }) {
+                SoftButton(onClick = { editingEntity = null }) {
                     Text("Cancel")
                 }
             }
@@ -406,23 +403,21 @@ fun MixtureHistorySheet(
 
     // Clear All Confirmation Dialog
     if (showClearConfirm) {
-        AlertDialog(
+        SoftAlertDialog(
             onDismissRequest = { showClearConfirm = false },
             title = { Text("Clear All Formulations?") },
             text = { Text("This will permanently remove all saved mixture formulations from the database. This action cannot be undone unless you have a backup.") },
             confirmButton = {
-                Button(
+                SoftButton(
                     onClick = {
                         onClearAll()
                         showClearConfirm = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
+                    }, accentColor = MaterialTheme.colorScheme.error, filled = true) {
                     Text("Clear All")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showClearConfirm = false }) {
+                SoftButton(onClick = { showClearConfirm = false }) {
                     Text("Cancel")
                 }
             }
@@ -465,15 +460,11 @@ private fun MixtureHistoryCard(
         sdf.format(Date(recipe.timestamp))
     }
 
-    Card(
+    SoftCard(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
             .testTag("mixture_card_${recipe.id}"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = surfaceBg)
-    ) {
+        shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(14.dp)) {
             // Header Row: Title, Favorite, Category
             Row(
@@ -500,11 +491,9 @@ private fun MixtureHistoryCard(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
+                    SoftSurface(
                         shape = RoundedCornerShape(6.dp),
-                        color = primaryColor.copy(alpha = 0.15f),
-                        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
-                    ) {
+                        color = primaryColor.copy(alpha = 0.15f)) {
                         Text(
                             text = recipe.category.uppercase(),
                             fontSize = 9.sp,
@@ -515,14 +504,14 @@ private fun MixtureHistoryCard(
                         )
                     }
 
-                    IconButton(
+                    SoftIconButton(
                         onClick = onToggleFavorite,
                         modifier = Modifier.size(32.dp).testTag("fav_btn_${recipe.id}")
                     ) {
                         Icon(
                             imageVector = if (recipe.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                             contentDescription = if (recipe.isFavorite) "Favorite" else "Not favorite",
-                            tint = if (recipe.isFavorite) Color(0xFFF59E0B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = if (recipe.isFavorite) SoftColors.warning else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -535,7 +524,7 @@ private fun MixtureHistoryCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0x0A000000), RoundedCornerShape(8.dp))
+                    .softWell(RoundedCornerShape(8.dp))
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -593,14 +582,13 @@ private fun MixtureHistoryCard(
                 val calc = remember(recipe) { getOrComputeMixtureCalculation(recipe) }
 
                 Column(modifier = Modifier.padding(top = 8.dp)) {
-                    HorizontalDivider(color = borderColor.copy(alpha = 0.5f))
+                    SoftDivider()
                     Spacer(modifier = Modifier.height(8.dp))
 
                     // Step 2 & 3: Simplified Ratio & Calibration Card
-                    Surface(
+                    SoftSurface(
                         shape = RoundedCornerShape(12.dp),
                         color = primaryColor.copy(alpha = 0.08f),
-                        border = BorderStroke(1.dp, primaryColor.copy(alpha = 0.25f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
@@ -649,7 +637,7 @@ private fun MixtureHistoryCard(
                                     fontFamily = DigitalMonospaceFont,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                Surface(
+                                SoftSurface(
                                     shape = RoundedCornerShape(4.dp),
                                     color = primaryColor.copy(alpha = 0.15f)
                                 ) {
@@ -690,10 +678,8 @@ private fun MixtureHistoryCard(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     calc.proportions.forEach { prop ->
-                        Surface(
+                        SoftSurface(
                             shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                            border = BorderStroke(1.dp, borderColor.copy(alpha = 0.4f)),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 3.dp)
@@ -713,7 +699,7 @@ private fun MixtureHistoryCard(
                                         )
                                         if (prop.isAnchor) {
                                             Spacer(modifier = Modifier.width(4.dp))
-                                            Surface(
+                                            SoftSurface(
                                                 shape = RoundedCornerShape(4.dp),
                                                 color = primaryColor.copy(alpha = 0.15f)
                                             ) {
@@ -753,31 +739,29 @@ private fun MixtureHistoryCard(
                                     )
 
                                     if (prop.stillNeeded > 0.001) {
-                                        Surface(
+                                        SoftSurface(
                                             shape = RoundedCornerShape(4.dp),
-                                            color = Color(0xFFF59E0B).copy(alpha = 0.2f),
-                                            border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.5f))
-                                        ) {
+                                            color = SoftColors.warning.copy(alpha = 0.2f)) {
                                             Text(
                                                 text = "+${formatDouble(prop.stillNeeded)} ${prop.unit} needed",
                                                 fontSize = 9.5.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 fontFamily = DigitalMonospaceFont,
-                                                color = Color(0xFFF59E0B),
+                                                color = SoftColors.warning,
                                                 modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
                                             )
                                         }
                                     } else {
-                                        Surface(
+                                        SoftSurface(
                                             shape = RoundedCornerShape(4.dp),
-                                            color = Color(0xFF10B981).copy(alpha = 0.15f)
+                                            color = SoftColors.positive.copy(alpha = 0.15f)
                                         ) {
                                             Text(
                                                 text = "COMPLETED",
                                                 fontSize = 9.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 fontFamily = DigitalMonospaceFont,
-                                                color = Color(0xFF10B981),
+                                                color = SoftColors.positive,
                                                 modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
                                             )
                                         }
@@ -858,7 +842,7 @@ private fun MixtureHistoryCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
+                    SoftIconButton(
                         onClick = onCopy,
                         modifier = Modifier.size(32.dp).testTag("copy_mixture_${recipe.id}")
                     ) {
@@ -870,7 +854,7 @@ private fun MixtureHistoryCard(
                         )
                     }
 
-                    IconButton(
+                    SoftIconButton(
                         onClick = onEdit,
                         modifier = Modifier.size(32.dp).testTag("edit_mixture_${recipe.id}")
                     ) {
@@ -882,7 +866,7 @@ private fun MixtureHistoryCard(
                         )
                     }
 
-                    IconButton(
+                    SoftIconButton(
                         onClick = onDelete,
                         modifier = Modifier.size(32.dp).testTag("delete_mixture_${recipe.id}")
                     ) {
@@ -894,13 +878,11 @@ private fun MixtureHistoryCard(
                         )
                     }
 
-                    Button(
+                    SoftButton(
                         onClick = onLoad,
                         shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                        modifier = Modifier.height(34.dp).testTag("load_mixture_${recipe.id}")
-                    ) {
+                        modifier = Modifier.height(34.dp).testTag("load_mixture_${recipe.id}"), accentColor = primaryColor, filled = true) {
                         Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Load", fontSize = 11.sp, fontWeight = FontWeight.Bold)
@@ -924,7 +906,7 @@ fun MixtureSaveDialog(
 
     val predefinedCategories = listOf("Structural", "Chemical", "Culinary", "Industrial", "Custom")
 
-    AlertDialog(
+    SoftAlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -964,10 +946,9 @@ fun MixtureSaveDialog(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     predefinedCategories.take(3).forEach { cat ->
-                        Surface(
+                        SoftSurface(
                             shape = RoundedCornerShape(6.dp),
                             color = if (category == cat) primaryColor.copy(alpha = 0.2f) else Color.Transparent,
-                            border = BorderStroke(1.dp, if (category == cat) primaryColor else Color(0x30FFFFFF)),
                             modifier = Modifier
                                 .clickable { category = cat }
                                 .padding(2.dp)
@@ -994,16 +975,14 @@ fun MixtureSaveDialog(
             }
         },
         confirmButton = {
-            Button(
+            SoftButton(
                 onClick = { onSave(title, category, description) },
-                colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
-                modifier = Modifier.testTag("confirm_save_mixture_btn")
-            ) {
+                modifier = Modifier.testTag("confirm_save_mixture_btn"), accentColor = primaryColor, filled = true) {
                 Text("Save to History", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            SoftButton(onClick = onDismiss) {
                 Text("Cancel")
             }
         }
@@ -1039,7 +1018,7 @@ fun MixtureBackupRestoreDialog(
         if (uri != null) onLoadFromUri(uri, restoreMode)
     }
 
-    AlertDialog(
+    SoftAlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1059,14 +1038,13 @@ fun MixtureBackupRestoreDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0x12FFFFFF), RoundedCornerShape(10.dp))
+                        .softWell(RoundedCornerShape(10.dp))
                         .padding(3.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(8.dp))
                             .clickable { activeTab = 0 },
                         shape = RoundedCornerShape(8.dp),
                         color = if (activeTab == 0) primaryColor else Color.Transparent
@@ -1082,10 +1060,9 @@ fun MixtureBackupRestoreDialog(
                         )
                     }
 
-                    Surface(
+                    SoftSurface(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(8.dp))
                             .clickable { activeTab = 1 },
                         shape = RoundedCornerShape(8.dp),
                         color = if (activeTab == 1) primaryColor else Color.Transparent
@@ -1109,21 +1086,19 @@ fun MixtureBackupRestoreDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Button(
+                    SoftButton(
                         onClick = {
                             val dateStr = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
                             fileSaveLauncher.launch("mixture_formulations_backup_$dateStr.json")
                         },
                         modifier = Modifier.fillMaxWidth().height(44.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
-                    ) {
+                        shape = RoundedCornerShape(10.dp), accentColor = primaryColor, filled = true) {
                         Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Download Backup JSON File", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
 
-                    OutlinedButton(
+                    SoftButton(
                         onClick = {
                             scope.launch {
                                 isExporting = true
@@ -1156,7 +1131,7 @@ fun MixtureBackupRestoreDialog(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.clickable { restoreMode = RestoreMode.MERGE }
                         ) {
-                            RadioButton(
+                            SoftRadioButton(
                                 selected = restoreMode == RestoreMode.MERGE,
                                 onClick = { restoreMode = RestoreMode.MERGE }
                             )
@@ -1167,7 +1142,7 @@ fun MixtureBackupRestoreDialog(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.clickable { restoreMode = RestoreMode.OVERWRITE }
                         ) {
-                            RadioButton(
+                            SoftRadioButton(
                                 selected = restoreMode == RestoreMode.OVERWRITE,
                                 onClick = { restoreMode = RestoreMode.OVERWRITE }
                             )
@@ -1175,12 +1150,10 @@ fun MixtureBackupRestoreDialog(
                         }
                     }
 
-                    Button(
+                    SoftButton(
                         onClick = { filePickLauncher.launch(arrayOf("application/json", "*/*")) },
                         modifier = Modifier.fillMaxWidth().height(44.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
-                    ) {
+                        shape = RoundedCornerShape(10.dp), accentColor = primaryColor, filled = true) {
                         Icon(Icons.Default.Upload, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Select Backup File (.json)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -1196,12 +1169,10 @@ fun MixtureBackupRestoreDialog(
                     )
 
                     if (pastedJson.isNotBlank()) {
-                        Button(
+                        SoftButton(
                             onClick = { onRestoreJson(pastedJson, restoreMode) },
                             modifier = Modifier.fillMaxWidth().height(42.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
-                        ) {
+                            shape = RoundedCornerShape(10.dp), accentColor = SoftColors.positive, filled = true) {
                             Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("Restore from Pasted JSON", fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -1212,7 +1183,7 @@ fun MixtureBackupRestoreDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            SoftButton(onClick = onDismiss) {
                 Text("Close")
             }
         }

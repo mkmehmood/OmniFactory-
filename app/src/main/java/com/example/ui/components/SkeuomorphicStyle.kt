@@ -46,8 +46,8 @@ internal fun Color.darken(fraction: Float): Color = lerp(this, Color.Black, frac
 /** Opaque colour of a key / button cap for this skin (legacy skins use translucent variants). */
 internal fun AppThemeSkin.plate(): Color = surfaceVariant.compositeOver(surface)
 
-private fun softDark(isDark: Boolean) = if (isDark) Color(0xCC0C0E12) else Color(0xB3A3B1CA)
-private fun softLight(isDark: Boolean) = if (isDark) Color(0x663C4452) else Color(0xFFFFFFFF)
+internal fun softDark(isDark: Boolean) = if (isDark) Color(0xCC0C0E12) else Color(0xB3A3B1CA)
+internal fun softLight(isDark: Boolean) = if (isDark) Color(0x663C4452) else Color(0xFFFFFFFF)
 
 private fun DrawScope.shapePath(shape: Shape): Path {
     val outline = shape.createOutline(size, layoutDirection, this)
@@ -97,7 +97,8 @@ fun Modifier.skeuoRaised(
     sheen: Float = 1f
 ): Modifier = this.drawBehind {
     val path = shapePath(shape)
-    val d = (elevation.toPx() * 0.85f).coerceAtLeast(2f)
+    // Scale the shadow to the part so small pills don't get huge halos
+    val d = minOf(elevation.toPx() * 0.85f, size.minDimension * 0.11f).coerceAtLeast(1.5f)
     val blur = d * 2f
 
     if (pressed) {

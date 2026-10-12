@@ -1,5 +1,9 @@
 package com.example
 
+import com.example.ui.components.SoftIconButton
+import com.example.ui.components.softPlate
+import com.example.ui.components.SoftSurface
+import com.example.ui.components.SoftCard
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -586,11 +590,6 @@ private fun LiquidGlassTopBar(
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val isSuperAmoled = currentSkin == com.example.ui.theme.AppThemeSkin.DARK_CHARCOAL
 
-    val iconButtonBg = if (isSuperAmoled && isDark) Color(0xFF0D0D0E) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.5f else 0.7f)
-    val iconButtonBorder = if (isSuperAmoled && isDark) Color(0x38FFFFFF) else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.20f)
-    val titleBg = if (isSuperAmoled && isDark) Color(0xFF0D0D0E) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.55f else 0.75f)
-    val titleBorder = if (isSuperAmoled && isDark) Color(0x38FFFFFF) else MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.20f)
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -602,11 +601,9 @@ private fun LiquidGlassTopBar(
                 Spacer(modifier = Modifier.size(40.dp))
             },
             title = {
-                Surface(
+                SoftSurface(
                     onClick = onOpenSidebar,
                     shape = RoundedCornerShape(22.dp),
-                    color = titleBg,
-                    border = BorderStroke(1.dp, titleBorder),
                     shadowElevation = if (!isDark && !isSuperAmoled) 1.5.dp else 0.dp,
                     modifier = Modifier.testTag("topbar_title_button")
                 ) {
@@ -633,14 +630,13 @@ private fun LiquidGlassTopBar(
                 }
             },
             actions = {
-                IconButton(
+                SoftIconButton(
                     onClick = onActionClick,
                     modifier = Modifier
                         .padding(end = 4.dp)
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(iconButtonBg)
-                        .border(BorderStroke(1.dp, iconButtonBorder), CircleShape)
+                        .softPlate(CircleShape)
                         .testTag("topbar_action_button")
                 ) {
                     Icon(

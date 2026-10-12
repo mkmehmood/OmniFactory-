@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.SoftColors
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,9 +37,9 @@ import com.example.domain.mixture.ReferenceRole
 import com.example.domain.mixture.TargetIngredient
 import com.example.domain.mixture.TargetTotalResult
 
-private val ErrorRed = Color(0xFFEF4444)
-private val WarnAmber = Color(0xFFF59E0B)
-private val OkGreen = Color(0xFF10B981)
+private val ErrorRed = SoftColors.negative
+private val WarnAmber = SoftColors.warning
+private val OkGreen = SoftColors.positive
 
 /**
  * Solver controls for the non-anchor formulation methods. Part of Step 3; results flow into Step 4+.
@@ -92,12 +93,9 @@ fun MixtureEquationSolverCard(
     borderColor: Color,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    SoftSurface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = surfaceBg,
-        border = BorderStroke(1.dp, borderColor)
-    ) {
+        shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
                 text = mode.hint,
@@ -231,7 +229,7 @@ private fun InTubBlock(
         }
     }
     Spacer(modifier = Modifier.height(12.dp))
-    HorizontalDivider(color = borderColor)
+    SoftDivider()
     Spacer(modifier = Modifier.height(12.dp))
 }
 
@@ -310,7 +308,7 @@ private fun TargetTotalSection(
     ingredients.forEach { item ->
         val role = roles[item.id] ?: ComponentRole.SCALE
         Spacer(modifier = Modifier.height(10.dp))
-        HorizontalDivider(color = borderColor)
+        SoftDivider()
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "${item.name}  (recipe: ${formatQty(item.targetQuantity)} ${item.unit})",
@@ -396,7 +394,7 @@ private fun TargetResultView(
             }
         }
     }
-    HorizontalDivider(color = borderColor, modifier = Modifier.padding(vertical = 6.dp))
+    SoftDivider( modifier = Modifier.padding(vertical = 6.dp))
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text("Total", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = primaryColor)
         Text(result.formattedAchieved, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = OkGreen)
@@ -467,7 +465,7 @@ private fun PerReferenceSection(
     ingredients.forEach { item ->
         val role = roles[item.id] ?: ReferenceRole.MAIN
         Spacer(modifier = Modifier.height(10.dp))
-        HorizontalDivider(color = borderColor)
+        SoftDivider()
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "${item.name}  (${formatQty(item.targetQuantity)} ${item.unit})",
@@ -596,7 +594,7 @@ private fun BaseBatchSection(
     ingredients.forEach { item ->
         val role = roles[item.id] ?: BatchRole.PROPORTIONAL
         Spacer(modifier = Modifier.height(10.dp))
-        HorizontalDivider(color = borderColor)
+        SoftDivider()
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "${item.name}  (${formatQty(item.targetQuantity)} ${item.unit})",
@@ -662,7 +660,7 @@ private fun BaseBatchSection(
             }
         }
     }
-    HorizontalDivider(color = borderColor, modifier = Modifier.padding(vertical = 6.dp))
+    SoftDivider( modifier = Modifier.padding(vertical = 6.dp))
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text("Unscaled total", fontSize = 12.sp, color = primaryColor)
         Text(result.formattedUnscaledTotal, fontSize = 12.sp, color = primaryColor)
@@ -692,12 +690,10 @@ private fun Chip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    SoftSurface(
         modifier = modifier.clickable { onClick() },
         shape = RoundedCornerShape(10.dp),
-        color = if (selected) color.copy(alpha = 0.18f) else Color.Transparent,
-        border = BorderStroke(1.dp, if (selected) color else color.copy(alpha = 0.35f))
-    ) {
+        color = if (selected) color.copy(alpha = 0.18f) else Color.Transparent) {
         Text(
             text = label,
             fontSize = 12.sp,
