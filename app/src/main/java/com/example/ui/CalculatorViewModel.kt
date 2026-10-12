@@ -34,7 +34,7 @@ data class CalculatorUiState(
     val isEvaluated: Boolean = false,
     val memory: BigDecimal = BigDecimal.ZERO,
     val showDoubleZeroKey: Boolean = true,
-    val appThemeSkin: AppThemeSkin = AppThemeSkin.DARK_CHARCOAL,
+    val appThemeSkin: AppThemeSkin = AppThemeSkin.SKEUO_BAKELITE,
     val fontStyle: AppFontStyle = AppFontStyle.SYSTEM,
     val animationIntensity: AnimationIntensity = AnimationIntensity.BALANCED,
     val hapticIntensity: HapticIntensity = HapticIntensity.MEDIUM,

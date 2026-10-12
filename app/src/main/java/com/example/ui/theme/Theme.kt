@@ -69,6 +69,46 @@ enum class AppThemeSkin(
     val ornamentalTintColor: Color = Color.Transparent
 ) {
     // ==========================================
+    // SKEUOMORPHIC INSTRUMENT SKINS (default)
+    // ==========================================
+    SKEUO_BAKELITE(
+        displayName = "Bakelite & Brass",
+        categoryTag = "Skeuomorphic",
+        description = "Moulded bakelite casing with brass-capped keys, an inset display well and engraved legends",
+        isDark = true,
+        background = Color(0xFF1E1A17),
+        surface = Color(0xFF2A2420),
+        surfaceVariant = Color(0xFF3A322C),
+        surfacePressed = Color(0xFF1A1512),
+        outline = Color(0xFF4A3F37),
+        textPrimary = Color(0xFFF2E8D5),
+        textSecondary = Color(0xFFB8A88E),
+        defaultAccent = Color(0xFFD4A24A),
+        previewColors = listOf(Color(0xFF1E1A17), Color(0xFF4A4038), Color(0xFFD4A24A)),
+        badgeLabel = "BAKELITE",
+        ornamentalPattern = OrnamentalPatternStyle.NONE,
+        ornamentalTintColor = Color.Transparent
+    ),
+    SKEUO_IVORY(
+        displayName = "Ivory & Enamel",
+        categoryTag = "Skeuomorphic",
+        description = "Ivory-keyed desk calculator with graphite operators, a recessed display and an enamel orange equals key",
+        isDark = false,
+        background = Color(0xFFD9D2C5),
+        surface = Color(0xFFEDE7DA),
+        surfaceVariant = Color(0xFFE2DBCB),
+        surfacePressed = Color(0xFFCFC7B6),
+        outline = Color(0xFFA89F8C),
+        textPrimary = Color(0xFF2B2620),
+        textSecondary = Color(0xFF6B6354),
+        defaultAccent = Color(0xFFE0651F),
+        previewColors = listOf(Color(0xFFD9D2C5), Color(0xFFF6F1E4), Color(0xFFE0651F)),
+        badgeLabel = "IVORY",
+        ornamentalPattern = OrnamentalPatternStyle.NONE,
+        ornamentalTintColor = Color.Transparent
+    ),
+
+    // ==========================================
     // THEMES: SUPER AMOLED & PURE LIGHT
     // ==========================================
     DARK_CHARCOAL(
@@ -769,11 +809,11 @@ enum class SoundIntensity(
 val LocalShapeStructure = staticCompositionLocalOf { ShapeStructureStyle.ROUNDED }
 val LocalComponentSizing = staticCompositionLocalOf { ComponentSizeStyle.STANDARD }
 val LocalAnimationIntensity = staticCompositionLocalOf { AnimationIntensity.BALANCED }
-val LocalAppThemeSkin = staticCompositionLocalOf { AppThemeSkin.DARK_CHARCOAL }
+val LocalAppThemeSkin = staticCompositionLocalOf { AppThemeSkin.SKEUO_BAKELITE }
 
 @Composable
 fun MyApplicationTheme(
-    appThemeSkin: AppThemeSkin = AppThemeSkin.DARK_CHARCOAL,
+    appThemeSkin: AppThemeSkin = AppThemeSkin.SKEUO_BAKELITE,
     themeMode: ThemeMode = ThemeMode.DARK,
     shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     componentSizeStyle: ComponentSizeStyle = ComponentSizeStyle.STANDARD,

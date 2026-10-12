@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import com.example.ui.components.skeuoInset
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,6 +50,8 @@ fun BasicCalculatorScreen(
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         // Transparent Frosted Glass Display Area with tap-to-show Copy/Paste Bubble
+        val skin = com.example.ui.theme.LocalAppThemeSkin.current
+        val isDark = androidx.compose.material3.MaterialTheme.colorScheme.background.luminance() < 0.5f
         CalculatorDisplay(
             expression = expression,
             liveResult = liveResult,
@@ -55,6 +61,14 @@ fun BasicCalculatorScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .skeuoInset(
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+                    base = skin.surface,
+                    isDark = isDark,
+                    accent = androidx.compose.material3.MaterialTheme.colorScheme.primary
+                )
+                .padding(horizontal = 6.dp)
         )
 
         // Transparent Liquid Glass Keypad

@@ -51,6 +51,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -419,7 +422,30 @@ private fun LiquidGlassKey(
     val isCharcoalTheme = currentSkin == AppThemeSkin.DARK_CHARCOAL
     val isPureLightTheme = currentSkin == AppThemeSkin.PURE_LIGHT
 
+    val isSkeuoDark = currentSkin == AppThemeSkin.SKEUO_BAKELITE
+    val isSkeuoLight = currentSkin == AppThemeSkin.SKEUO_IVORY
+
     val (keyBg, contentColor, borderColor) = when {
+        isSkeuoDark -> when (type) {
+            KeyType.NUMBER, KeyType.DOUBLE_ZERO ->
+                Triple(if (isPressed) Color(0xFF3A322C) else Color(0xFF4A4038), Color(0xFFF2E8D5), Color.Transparent)
+            KeyType.ACTION ->
+                Triple(if (isPressed) Color(0xFF211C19) else Color(0xFF2B2521), Color(0xFFD9C7A3), Color.Transparent)
+            KeyType.OPERATOR ->
+                Triple(if (isPressed) Color(0xFFB38235) else Color(0xFFC8963E), Color(0xFF2A1D0A), Color.Transparent)
+            KeyType.EQUALS ->
+                Triple(if (isPressed) Color(0xFFB8471F) else Color(0xFFD4552A), Color(0xFFFFFFFF), Color.Transparent)
+        }
+        isSkeuoLight -> when (type) {
+            KeyType.NUMBER, KeyType.DOUBLE_ZERO ->
+                Triple(if (isPressed) Color(0xFFE8E1D0) else Color(0xFFF6F1E4), Color(0xFF2B2620), Color.Transparent)
+            KeyType.ACTION ->
+                Triple(if (isPressed) Color(0xFFB8B09E) else Color(0xFFC7BFAE), Color(0xFF2B2620), Color.Transparent)
+            KeyType.OPERATOR ->
+                Triple(if (isPressed) Color(0xFF2C2924) else Color(0xFF3B3731), Color(0xFFF6F1E4), Color.Transparent)
+            KeyType.EQUALS ->
+                Triple(if (isPressed) Color(0xFFC9561A) else Color(0xFFE0651F), Color(0xFFFFFFFF), Color.Transparent)
+        }
         isCharcoalTheme -> when (type) {
             KeyType.NUMBER, KeyType.DOUBLE_ZERO -> {
                 val bg = if (isPressed) Color(0xFF1C1C1F) else Color(0xFF060606)
@@ -506,61 +532,57 @@ private fun LiquidGlassKey(
 
     val shape = shapeStructureStyle.toButtonShape()
     val fontScale = componentSizeStyle.keyFontScale
-    val elevation = if (!isDark && !isCharcoalTheme) {
-        if (isPressed) 1.dp else 2.5.dp
-    } else 0.dp
 
-    val rippleColor = when (type) {
-        KeyType.OPERATOR, KeyType.EQUALS -> Color.White.copy(alpha = 0.4f)
-        else -> if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.15f)
-    }
+    // Engraved legend: a 1px counter-light under the glyph makes it look cut into the cap
+    val legendShadow = Shadow(
+        color = if (contentColor.luminance() > 0.5f) Color.Black.copy(alpha = 0.55f) else Color.White.copy(alpha = 0.65f),
+        offset = Offset(0f, 1.5f),
+        blurRadius = 1f
+    )
 
-    Surface(
+    Box(
         modifier = modifier
             .aspectRatio(1.1f)
-            .clip(shape)
+            .graphicsLayer { translationY = if (isPressed) 2.dp.toPx() else 0f }
+            .skeuoRaised(
+                shape = shape,
+                base = keyBg.compositeOver(currentSkin.surface),
+                isDark = isDark,
+                elevation = 7.dp,
+                pressed = isPressed
+            )
             .clickable(
                 interactionSource = interactionSource,
-                indication = ripple(
-                    bounded = true,
-                    color = rippleColor
-                ),
+                indication = null,
                 onClick = onClick
             )
             .testTag(testTag),
-        shape = shape,
-        color = keyBg,
-        shadowElevation = elevation,
-        border = BorderStroke(1.dp, borderColor)
+        contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            if (icon != null) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = iconContentDescription,
-                    tint = contentColor,
-                    modifier = Modifier.size(componentSizeStyle.iconSize)
-                )
-            } else if (text != null) {
-                val baseFontSize = when {
-                    type == KeyType.EQUALS || type == KeyType.OPERATOR -> 28f
-                    type == KeyType.DOUBLE_ZERO -> 22f
-                    text.length > 2 -> 16f
-                    else -> 25f
-                }
-
-                Text(
-                    text = text,
-                    color = contentColor,
-                    fontSize = (baseFontSize * fontScale).sp,
-                    fontWeight = if (type == KeyType.EQUALS || type == KeyType.OPERATOR || type == KeyType.ACTION) FontWeight.SemiBold else FontWeight.Medium,
-                    fontFamily = DigitalMonospaceFont,
-                    fontStyle = LocalAppFontStyle.current.defaultFontStyle
-                )
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = iconContentDescription,
+                tint = contentColor,
+                modifier = Modifier.size(componentSizeStyle.iconSize)
+            )
+        } else if (text != null) {
+            val baseFontSize = when {
+                type == KeyType.EQUALS || type == KeyType.OPERATOR -> 28f
+                type == KeyType.DOUBLE_ZERO -> 22f
+                text.length > 2 -> 16f
+                else -> 25f
             }
+
+            Text(
+                text = text,
+                color = contentColor,
+                fontSize = (baseFontSize * fontScale).sp,
+                fontWeight = if (type == KeyType.EQUALS || type == KeyType.OPERATOR || type == KeyType.ACTION) FontWeight.SemiBold else FontWeight.Medium,
+                fontFamily = DigitalMonospaceFont,
+                fontStyle = LocalAppFontStyle.current.defaultFontStyle,
+                style = androidx.compose.ui.text.TextStyle(shadow = legendShadow)
+            )
         }
     }
 }
@@ -608,16 +630,16 @@ fun SmartStationKeypad(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(cardShape)
-            .border(
-                1.dp,
-                currentSkin.outline.copy(alpha = if (isDark) 0.35f else 0.25f),
-                cardShape
+            .skeuoRaised(
+                shape = cardShape,
+                base = currentSkin.surface.compositeOver(currentSkin.background),
+                isDark = isDark,
+                elevation = 8.dp
             )
             .testTag("smart_station_keypad"),
         shape = cardShape,
-        color = currentSkin.surface,
-        shadowElevation = if (isDark) 0.dp else 4.dp
+        color = Color.Transparent,
+        shadowElevation = 0.dp
     ) {
         Column(
             modifier = Modifier
@@ -636,9 +658,9 @@ fun SmartStationKeypad(
                 ) {
                     if (activeFieldLabel != null) {
                         Surface(
+                            modifier = Modifier.skeuoInset(RoundedCornerShape(8.dp), currentSkin.surface, isDark, accent = primaryColor),
                             shape = RoundedCornerShape(8.dp),
-                            color = primaryColor.copy(alpha = 0.12f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, primaryColor.copy(alpha = 0.3f))
+                            color = Color.Transparent
                         ) {
                             Text(
                                 text = "⌨️ $activeFieldLabel",
@@ -655,14 +677,14 @@ fun SmartStationKeypad(
                     if (onDone != null) {
                         Surface(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .skeuoRaised(RoundedCornerShape(8.dp), currentSkin.plate(), isDark, elevation = 3.dp)
                                 .clickable {
                                     triggerFeedback()
                                     onDone()
                                 }
                                 .testTag("smart_keypad_done_button"),
                             shape = RoundedCornerShape(8.dp),
-                            color = if (isDark) Color(0x20FFFFFF) else Color(0x15000000)
+                            color = Color.Transparent
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),

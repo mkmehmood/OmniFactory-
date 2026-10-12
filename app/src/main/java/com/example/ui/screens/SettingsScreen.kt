@@ -140,6 +140,9 @@ import com.example.domain.util.HapticFeedbackHelper
 import com.example.domain.util.SoundFeedbackHelper
 import com.example.ui.BackupDialogType
 import com.example.ui.SettingsViewModel
+import com.example.ui.components.skeuoRaised
+import com.example.ui.components.plate
+import com.example.ui.components.skeuoInset
 import com.example.ui.theme.AnimationIntensity
 import com.example.ui.theme.AppFontStyle
 import com.example.ui.theme.AppThemeSkin
@@ -157,7 +160,7 @@ import com.example.ui.theme.toSmallShape
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    currentAppThemeSkin: AppThemeSkin = AppThemeSkin.DARK_CHARCOAL,
+    currentAppThemeSkin: AppThemeSkin = AppThemeSkin.SKEUO_BAKELITE,
     currentThemeMode: ThemeMode,
     currentShapeStructure: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     currentComponentSize: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
@@ -317,6 +320,33 @@ fun SettingsScreen(
                         )
                     }
                 }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    LiquidThemeCard(
+                        title = "Bakelite & Brass",
+                        icon = Icons.Default.DarkMode,
+                        isSelected = currentSkin == AppThemeSkin.SKEUO_BAKELITE,
+                        onClick = {
+                            onThemeModeChange(ThemeMode.DARK)
+                            onAppThemeSkinChange(AppThemeSkin.SKEUO_BAKELITE)
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    LiquidThemeCard(
+                        title = "Ivory & Enamel",
+                        icon = Icons.Default.LightMode,
+                        isSelected = currentSkin == AppThemeSkin.SKEUO_IVORY,
+                        onClick = {
+                            onThemeModeChange(ThemeMode.LIGHT)
+                            onAppThemeSkinChange(AppThemeSkin.SKEUO_IVORY)
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1793,23 +1823,21 @@ private fun LiquidThemeCard(
     val isDark = MaterialTheme.colorScheme.background.red < 0.2f
     val shape = LocalShapeStructure.current.toCardShape()
 
+    val skin = com.example.ui.theme.LocalAppThemeSkin.current
     Surface(
         modifier = modifier
-            .clip(shape)
-            .clickable { onClick() }
-            .border(
-                width = if (isSelected) 1.5.dp else 1.dp,
-                brush = Brush.verticalGradient(
-                    listOf(
-                        if (isSelected) primaryColor else (if (isDark) Color.White else Color.Black).copy(alpha = 0.2f),
-                        Color.Transparent
-                    )
-                ),
-                shape = shape
+            .skeuoRaised(
+                shape = shape,
+                base = skin.plate(),
+                isDark = isDark,
+                elevation = 5.dp,
+                pressed = isSelected,
+                accent = if (isSelected) primaryColor else null
             )
+            .clickable { onClick() }
             .testTag("theme_card_${title.lowercase().replace(" ", "_")}"),
         shape = shape,
-        color = if (isSelected) primaryColor.copy(alpha = 0.2f) else if (isDark) Color(0x26FFFFFF) else Color(0x33000000)
+        color = Color.Transparent
     ) {
         Column(
             modifier = Modifier

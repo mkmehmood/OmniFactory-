@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -97,20 +98,10 @@ fun CalculatorDisplay(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 10.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .border(
-                        width = 1.dp,
-                        brush = Brush.horizontalGradient(
-                            listOf(
-                                primaryColor.copy(alpha = 0.6f),
-                                primaryColor.copy(alpha = 0.2f)
-                            )
-                        ),
-                        shape = RoundedCornerShape(20.dp)
-                    )
+                    .skeuoRaised(RoundedCornerShape(20.dp), currentSkin.surface.compositeOver(currentSkin.background), isDark, elevation = 8.dp)
                     .testTag("clipboard_popup_bubble"),
                 shape = RoundedCornerShape(20.dp),
-                color = currentSkin.surface.copy(alpha = if (isDark) 0.92f else 0.95f)
+                color = Color.Transparent
             ) {
                 Row(
                     modifier = Modifier
@@ -250,17 +241,14 @@ private fun ClipboardSectionButton(
     testTag: String,
     primaryColor: Color
 ) {
+    val skin = LocalAppThemeSkin.current
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     Surface(
         modifier = Modifier
-            .straightDottedLine(
-                color = primaryColor.copy(alpha = 0.5f),
-                strokeWidth = 1.3.dp,
-                dotLength = 4.dp,
-                spaceLength = 3.dp
-            )
+            .skeuoRaised(RoundedCornerShape(10.dp), skin.plate(), isDark, elevation = 3.dp)
             .clickable { onClick() }
             .testTag(testTag),
-        shape = RectangleShape,
+        shape = RoundedCornerShape(10.dp),
         color = Color.Transparent
     ) {
         Row(

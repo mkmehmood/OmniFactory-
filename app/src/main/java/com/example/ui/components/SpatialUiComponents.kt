@@ -83,12 +83,14 @@ import com.example.ui.theme.LocalAppThemeSkin
 import com.example.ui.theme.LocalShapeStructure
 import com.example.ui.theme.SoundIntensity
 import com.example.ui.theme.toInputShape
+import com.example.ui.theme.toChipShape
+import androidx.compose.ui.graphics.compositeOver
 import kotlinx.coroutines.launch
 
 /**
- * Authentic Liquid Glass surface modifier matching fluid glass mockups:
- * Translucent frosted glass body, realistic top specular reflection curve,
- * glowing crystalline rim gradient, and soft floating elevation.
+ * Skeuomorphic raised plate (name kept for call-site compatibility).
+ * A physical panel lit from above: bevelled rim, moulded sheen and a real cast shadow.
+ * When focused it picks up an accent lamp tint.
  */
 fun Modifier.liquidGlassSurface(
     shape: Shape = RoundedCornerShape(18.dp),
@@ -98,96 +100,17 @@ fun Modifier.liquidGlassSurface(
     accentColor: Color = Color(0xFFFF9F0A),
     containerBaseColor: Color? = null,
     highlightIntensity: Float = 1.0f
-): Modifier = this
-    .shadow(
-        elevation = if (isFocused) (elevation + 3.dp) else elevation,
+): Modifier {
+    val base = (containerBaseColor ?: if (isDark) Color(0xFF332B26) else Color(0xFFEDE7DA)).copy(alpha = 1f)
+    return this.skeuoRaised(
         shape = shape,
-        ambientColor = if (isFocused) accentColor.copy(alpha = 0.28f) else (if (isDark) Color(0x35000000) else Color(0x10000000)),
-        spotColor = if (isFocused) accentColor.copy(alpha = 0.38f) else (if (isDark) Color(0x45000000) else Color(0x18000000))
+        base = base,
+        isDark = isDark,
+        elevation = if (isFocused) elevation + 2.dp else elevation,
+        accent = if (isFocused) accentColor else null,
+        sheen = highlightIntensity
     )
-    .clip(shape)
-    .drawBehind {
-        // 1. Frosted translucent liquid glass body matching photo theme cards & tactile keys
-        val bodyBrush = if (containerBaseColor != null) {
-            val baseAlpha = if (isDark) 0.82f else 0.94f
-            Brush.verticalGradient(
-                listOf(
-                    containerBaseColor.copy(alpha = baseAlpha),
-                    containerBaseColor.copy(alpha = (baseAlpha - 0.08f).coerceAtLeast(0.40f))
-                )
-            )
-        } else {
-            Brush.verticalGradient(
-                if (isDark) {
-                    // Super AMOLED true black OLED canvas (#0A0A0C / #000000)
-                    listOf(
-                        Color(0xFF0C0C0E).copy(alpha = 0.94f),
-                        Color(0xFF000000).copy(alpha = 0.98f)
-                    )
-                } else {
-                    // Pure Light crisp white & soft silver (#FFFFFF / #F2F2F7)
-                    listOf(
-                        Color.White.copy(alpha = 0.96f),
-                        Color(0xFFF2F2F7).copy(alpha = 0.92f)
-                    )
-                }
-            )
-        }
-        drawRect(bodyBrush)
-
-        // 2. Focused subtle radiant tint wash
-        if (isFocused) {
-            drawRect(
-                Brush.linearGradient(
-                    listOf(
-                        accentColor.copy(alpha = if (isDark) 0.12f else 0.08f),
-                        accentColor.copy(alpha = 0.03f)
-                    )
-                )
-            )
-        }
-
-        // 3. Liquid Glass Specular Curve / Top Rim Glow (matching the curved light sheen in photos)
-        val glossAlpha = ((if (isFocused) (if (isDark) 0.28f else 0.40f) else (if (isDark) 0.16f else 0.26f)) * highlightIntensity).coerceIn(0f, 1f)
-        val specularHeight = (size.height * 0.48f).coerceAtLeast(14f)
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    Color.White.copy(alpha = glossAlpha),
-                    Color.White.copy(alpha = glossAlpha * 0.28f),
-                    Color.Transparent
-                ),
-                startY = 0f,
-                endY = specularHeight
-            )
-        )
-    }
-    .border(
-        width = if (isFocused) 1.5.dp else 1.0.dp,
-        brush = if (isFocused) {
-            Brush.linearGradient(
-                colors = listOf(
-                    if (isDark) Color.White.copy(alpha = 0.70f) else accentColor.copy(alpha = 0.80f),
-                    accentColor,
-                    accentColor.copy(alpha = 0.85f),
-                    if (isDark) Color.White.copy(alpha = 0.25f) else accentColor.copy(alpha = 0.40f)
-                ),
-                start = Offset(0f, 0f),
-                end = Offset(400f, 400f)
-            )
-        } else {
-            Brush.linearGradient(
-                colors = listOf(
-                    if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.14f),
-                    if (isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f),
-                    if (isDark) Color.White.copy(alpha = 0.04f) else Color.Black.copy(alpha = 0.03f)
-                ),
-                start = Offset(0f, 0f),
-                end = Offset(300f, 300f)
-            )
-        },
-        shape = shape
-    )
+}
 
 /**
  * Modifier that draws a crisp, straight dotted line at the bottom of the component.
@@ -213,9 +136,8 @@ fun Modifier.straightDottedLine(
 }
 
 /**
- * Standardized Input Field with straight dotted line underline across the entire application.
- * Replaces bulky boxed borders with a clean, straight dotted line baseline for compact app use
- * and an appealing, modern look.
+ * Standardized input field: a recessed well cut into the panel, with an engraved lip.
+ * Focus lights the rim in the accent colour.
  */
 @Composable
 fun LiquidGlassTextField(
@@ -252,21 +174,16 @@ fun LiquidGlassTextField(
     val isFocusedInternal by interactionSource.collectIsFocusedAsState()
     val isFieldFocused = forceFocused || isFocusedInternal
 
-    val dottedLineColor = when {
-        isError -> MaterialTheme.colorScheme.error
-        isFieldFocused -> accentColor
-        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f)
-    }
-    val dottedLineWidth = if (isFieldFocused) 2.0.dp else 1.3.dp
-    val dotLength = if (isFieldFocused) 4.5.dp else 3.5.dp
-    val spaceLength = if (isFieldFocused) 2.5.dp else 3.0.dp
-
+    val wellShape: Shape = shape ?: LocalShapeStructure.current.toInputShape()
     val fieldModifier = modifier
-        .straightDottedLine(
-            color = dottedLineColor,
-            strokeWidth = dottedLineWidth,
-            dotLength = dotLength,
-            spaceLength = spaceLength
+        .skeuoInset(
+            shape = wellShape,
+            base = containerBaseColor ?: skin.surface,
+            isDark = isDark,
+            focused = isFieldFocused,
+            accent = accentColor,
+            error = isError,
+            errorColor = MaterialTheme.colorScheme.error
         )
         .let { if (testTag != null) it.testTag(testTag) else it }
 
@@ -292,7 +209,7 @@ fun LiquidGlassTextField(
         maxLines = maxLines,
         minLines = minLines,
         interactionSource = interactionSource,
-        shape = RectangleShape,
+        shape = wellShape,
         colors = TextFieldDefaults.colors(
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
@@ -318,8 +235,9 @@ fun LiquidGlassTextField(
 }
 
 /**
- * Button styled identically to the input fields:
- * Frameless, with NO outer box covering, resting cleanly on a straight dotted underline.
+ * Skeuomorphic push button (name kept for call-site compatibility).
+ * A raised key that physically travels down when pressed. [isSelected] latches it
+ * in the pressed position with a lit accent rim, like a mechanical toggle key.
  */
 @Composable
 fun DottedLineButton(
@@ -329,27 +247,38 @@ fun DottedLineButton(
     isSelected: Boolean = false,
     accentColor: Color = MaterialTheme.colorScheme.primary,
     testTag: String? = null,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
     content: @Composable RowScope.() -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val dottedLineColor = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.40f)
-    val dottedLineWidth = if (isSelected) 2.0.dp else 1.3.dp
-    val dotLength = if (isSelected) 4.5.dp else 3.5.dp
-    val spaceLength = if (isSelected) 2.5.dp else 3.0.dp
+    val skin = LocalAppThemeSkin.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val down = isPressed || isSelected
+    val shape = LocalShapeStructure.current.toInputShape()
 
-    Surface(
+    Box(
         modifier = modifier
-            .straightDottedLine(
-                color = dottedLineColor,
-                strokeWidth = dottedLineWidth,
-                dotLength = dotLength,
-                spaceLength = spaceLength
+            .graphicsLayer {
+                translationY = if (down) 1.5.dp.toPx() else 0f
+                alpha = if (enabled) 1f else 0.5f
+            }
+            .skeuoRaised(
+                shape = shape,
+                base = skin.plate(),
+                isDark = isDark,
+                elevation = 4.dp,
+                pressed = down,
+                accent = if (isSelected) accentColor else null
             )
-            .clickable(enabled = enabled, onClick = onClick)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick
+            )
             .let { if (testTag != null) it.testTag(testTag) else it },
-        color = Color.Transparent,
-        shape = RectangleShape
+        contentAlignment = Alignment.Center
     ) {
         Row(
             modifier = Modifier.padding(contentPadding),
@@ -361,7 +290,7 @@ fun DottedLineButton(
 }
 
 /**
- * Filter chip / tag with NO outer box covering, resting on a straight dotted baseline underline.
+ * Filter chip styled as a small rocker key: raised when off, latched down with a lit rim when on.
  */
 @Composable
 fun DottedFilterChip(
@@ -374,23 +303,26 @@ fun DottedFilterChip(
     testTag: String? = null
 ) {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val dottedColor = if (selected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.45f else 0.35f)
+    val skin = LocalAppThemeSkin.current
+    val shape = LocalShapeStructure.current.toChipShape()
 
-    Surface(
+    Box(
         modifier = modifier
-            .straightDottedLine(
-                color = dottedColor,
-                strokeWidth = if (selected) 2.dp else 1.2.dp,
-                dotLength = 4.dp,
-                spaceLength = 3.dp
+            .graphicsLayer { translationY = if (selected) 1.dp.toPx() else 0f }
+            .skeuoRaised(
+                shape = shape,
+                base = skin.plate(),
+                isDark = isDark,
+                elevation = 3.dp,
+                pressed = selected,
+                accent = if (selected) accentColor else null
             )
             .clickable(onClick = onClick)
-            .let { if (testTag != null) it.testTag(testTag) else it },
-        color = Color.Transparent,
-        shape = RectangleShape
+            .let { if (testTag != null) it.testTag(testTag) else it }
+            .padding(horizontal = 12.dp, vertical = 7.dp),
+        contentAlignment = Alignment.Center
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
@@ -472,8 +404,7 @@ fun LiquidGlassSearchField(
 }
 
 /**
- * Modifier that applies Vision-inspired 3D spatial glass depth,
- * dynamic drop shadow elevation, and subtle specular rim highlighting.
+ * Raised panel modifier (name kept for call-site compatibility).
  */
 fun Modifier.spatialGlass(
     shape: Shape = RoundedCornerShape(20.dp),
@@ -482,50 +413,13 @@ fun Modifier.spatialGlass(
     specularHighlight: Boolean = true,
     isDark: Boolean = true,
     accentColor: Color = Color(0xFF00E5FF)
-): Modifier = this
-    .shadow(
-        elevation = elevation,
-        shape = shape,
-        ambientColor = if (isDark) accentColor.copy(alpha = 0.25f) else Color(0x20000000),
-        spotColor = if (isDark) accentColor.copy(alpha = 0.35f) else Color(0x30000000)
-    )
-    .clip(shape)
-    .drawBehind {
-        if (specularHighlight) {
-            val glossAlpha = if (isDark) 0.16f else 0.28f
-            drawRect(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = glossAlpha),
-                        Color.White.copy(alpha = glossAlpha * 0.25f),
-                        Color.Transparent
-                    ),
-                    startY = 0f,
-                    endY = (size.height * 0.48f).coerceAtLeast(14f)
-                )
-            )
-        }
-    }
-    .border(
-        width = 1.2.dp,
-        brush = if (specularHighlight) {
-            Brush.linearGradient(
-                colors = listOf(
-                    if (isDark) Color.White.copy(alpha = 0.45f) else Color.White.copy(alpha = 0.85f),
-                    accentColor.copy(alpha = borderAlpha),
-                    accentColor.copy(alpha = borderAlpha * 0.4f),
-                    if (isDark) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.05f)
-                ),
-                start = Offset(0f, 0f),
-                end = Offset(400f, 400f)
-            )
-        } else {
-            Brush.linearGradient(
-                listOf(accentColor.copy(alpha = borderAlpha), accentColor.copy(alpha = borderAlpha * 0.5f))
-            )
-        },
-        shape = shape
-    )
+): Modifier = this.skeuoRaised(
+    shape = shape,
+    base = if (isDark) Color(0xFF332B26) else Color(0xFFEDE7DA),
+    isDark = isDark,
+    elevation = elevation,
+    sheen = if (specularHighlight) 1f else 0f
+)
 
 /**
  * Spatial Glass Card container with layered optical depth and floating elevation.
@@ -543,33 +437,14 @@ fun SpatialGlassCard(
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val accent = MaterialTheme.colorScheme.primary
 
-    val backgroundBrush = containerColor?.let {
-        Brush.linearGradient(listOf(it, it))
-    } ?: Brush.verticalGradient(
-        colors = if (isDark) {
-            listOf(
-                skin.surfaceVariant.copy(alpha = 0.55f),
-                skin.surface.copy(alpha = 0.85f)
-            )
-        } else {
-            listOf(
-                skin.surface.copy(alpha = 0.90f),
-                skin.surfaceVariant.copy(alpha = 0.65f)
-            )
-        }
-    )
-
     Box(
         modifier = modifier
-            .spatialGlass(
+            .skeuoRaised(
                 shape = shape,
-                elevation = elevation,
-                borderAlpha = if (isDark) 0.40f else 0.25f,
-                specularHighlight = true,
+                base = (containerColor ?: skin.surface).compositeOver(skin.surface),
                 isDark = isDark,
-                accentColor = accent
+                elevation = if (elevation > 8.dp) 8.dp else elevation
             )
-            .background(backgroundBrush)
             .testTag(testTag),
         content = content
     )
@@ -602,19 +477,20 @@ fun SpatialFloatingPill(
         label = "spatial_pill_scale"
     )
 
-    val dottedColor = if (isSelected) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (isDark) 0.50f else 0.35f)
-
     Box(
         modifier = modifier
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
+                translationY = if (isSelected) 1.dp.toPx() else 0f
             }
-            .straightDottedLine(
-                color = dottedColor,
-                strokeWidth = if (isSelected) 2.dp else 1.2.dp,
-                dotLength = 4.dp,
-                spaceLength = 3.dp
+            .skeuoRaised(
+                shape = CircleShape,
+                base = skin.plate(),
+                isDark = isDark,
+                elevation = 3.dp,
+                pressed = isSelected || isPressed,
+                accent = if (isSelected) primaryColor else null
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -624,7 +500,7 @@ fun SpatialFloatingPill(
                 SoundFeedbackHelper.playClickSound(context, view, SoundIntensity.STANDARD)
                 onClick()
             }
-            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
             .testTag(testTag),
         contentAlignment = Alignment.Center
     ) {
@@ -687,9 +563,8 @@ fun SpatialGlassStatCard(
                     if (icon != null) {
                         Box(
                             modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(accentColor.copy(alpha = 0.18f)),
+                                .size(26.dp)
+                                .skeuoInset(CircleShape, skin.surface, isDark, accent = accentColor),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -711,14 +586,8 @@ fun SpatialGlassStatCard(
                     )
                 }
 
-                // Glowing indicator dot
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(accentColor)
-                        .shadow(4.dp, CircleShape, ambientColor = accentColor, spotColor = accentColor)
-                )
+                // Jewel lamp
+                SkeuoLed(color = accentColor, size = 10.dp)
             }
 
             Text(
@@ -777,9 +646,9 @@ fun SpatialFloatingDock(
                     shape = CircleShape,
                     elevation = 10.dp,
                     isDark = isDark,
-                    isFocused = true,
+                    isFocused = false,
                     accentColor = primaryColor,
-                    containerBaseColor = skin.surface.copy(alpha = if (isDark) 0.85f else 0.92f)
+                    containerBaseColor = skin.surface
                 )
                 .padding(horizontal = 8.dp, vertical = 5.dp)
                 .testTag("spatial_floating_dock"),
@@ -795,8 +664,7 @@ fun SpatialFloatingDock(
                 },
                 modifier = Modifier
                     .size(38.dp)
-                    .clip(CircleShape)
-                    .background(if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f))
+                    .skeuoRaised(CircleShape, skin.plate(), isDark, elevation = 3.dp)
                     .testTag("spatial_dock_menu_button")
             ) {
                 Icon(
@@ -819,33 +687,13 @@ fun SpatialFloatingDock(
                 )
 
                 val itemModifier = if (isSelected) {
-                    Modifier
-                        .clip(CircleShape)
-                        .background(
-                            Brush.verticalGradient(
-                                if (isDark) {
-                                    listOf(
-                                        Color.White.copy(alpha = 0.16f),
-                                        primaryColor.copy(alpha = 0.24f)
-                                    )
-                                } else {
-                                    listOf(
-                                        primaryColor.copy(alpha = 0.22f),
-                                        primaryColor.copy(alpha = 0.12f)
-                                    )
-                                }
-                            )
-                        )
-                        .border(
-                            width = 1.dp,
-                            brush = Brush.verticalGradient(
-                                listOf(
-                                    Color.White.copy(alpha = if (isDark) 0.40f else 0.70f),
-                                    primaryColor.copy(alpha = 0.30f)
-                                )
-                            ),
-                            shape = CircleShape
-                        )
+                    Modifier.skeuoInset(
+                        shape = CircleShape,
+                        base = skin.surface,
+                        isDark = isDark,
+                        focused = true,
+                        accent = primaryColor
+                    )
                 } else {
                     Modifier.clip(CircleShape)
                 }
