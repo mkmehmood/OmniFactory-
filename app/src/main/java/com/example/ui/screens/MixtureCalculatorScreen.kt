@@ -851,7 +851,7 @@ private fun SectionCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         elevation = 4.dp,
-        testTag = "calc_section_${title.lowercase().replace(' ', '_').replace('&', 'and')}"
+        testTag = "calc_section_${title.lowercase().replace(" ", "_").replace("&", "and")}"
     ) {
         Column(
             modifier = Modifier
