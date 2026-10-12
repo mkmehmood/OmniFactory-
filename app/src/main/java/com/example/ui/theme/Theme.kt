@@ -72,38 +72,38 @@ enum class AppThemeSkin(
     // SKEUOMORPHIC INSTRUMENT SKINS (default)
     // ==========================================
     SKEUO_BAKELITE(
-        displayName = "Bakelite & Brass",
-        categoryTag = "Skeuomorphic",
-        description = "Moulded bakelite casing with brass-capped keys, an inset display well and engraved legends",
+        displayName = "Soft Slate",
+        categoryTag = "Soft UI",
+        description = "Dark soft-UI: slate surfaces moulded from one material, inset fields and orange-pink accents",
         isDark = true,
-        background = Color(0xFF1E1A17),
-        surface = Color(0xFF2A2420),
-        surfaceVariant = Color(0xFF3A322C),
-        surfacePressed = Color(0xFF1A1512),
-        outline = Color(0xFF4A3F37),
-        textPrimary = Color(0xFFF2E8D5),
-        textSecondary = Color(0xFFB8A88E),
-        defaultAccent = Color(0xFFD4A24A),
-        previewColors = listOf(Color(0xFF1E1A17), Color(0xFF4A4038), Color(0xFFD4A24A)),
-        badgeLabel = "BAKELITE",
+        background = Color(0xFF242932),
+        surface = Color(0xFF282D37),
+        surfaceVariant = Color(0xFF242932),
+        surfacePressed = Color(0xFF1F232B),
+        outline = Color(0xFF3A4150),
+        textPrimary = Color(0xFFE6EBF5),
+        textSecondary = Color(0xFF8E9AB5),
+        defaultAccent = Color(0xFFFF7A59),
+        previewColors = listOf(Color(0xFF242932), Color(0xFF2E343F), Color(0xFFFF7A59)),
+        badgeLabel = "SOFT SLATE",
         ornamentalPattern = OrnamentalPatternStyle.NONE,
         ornamentalTintColor = Color.Transparent
     ),
     SKEUO_IVORY(
-        displayName = "Ivory & Enamel",
-        categoryTag = "Skeuomorphic",
-        description = "Ivory-keyed desk calculator with graphite operators, a recessed display and an enamel orange equals key",
+        displayName = "Soft Cloud",
+        categoryTag = "Soft UI",
+        description = "Light soft-UI: pale blue-grey surfaces, raised keys, inset fields and a coral-to-pink accent",
         isDark = false,
-        background = Color(0xFFD9D2C5),
-        surface = Color(0xFFEDE7DA),
-        surfaceVariant = Color(0xFFE2DBCB),
-        surfacePressed = Color(0xFFCFC7B6),
-        outline = Color(0xFFA89F8C),
-        textPrimary = Color(0xFF2B2620),
-        textSecondary = Color(0xFF6B6354),
-        defaultAccent = Color(0xFFE0651F),
-        previewColors = listOf(Color(0xFFD9D2C5), Color(0xFFF6F1E4), Color(0xFFE0651F)),
-        badgeLabel = "IVORY",
+        background = Color(0xFFE3E9F2),
+        surface = Color(0xFFE8EEF7),
+        surfaceVariant = Color(0xFFE3E9F2),
+        surfacePressed = Color(0xFFD6DEEB),
+        outline = Color(0xFFC3CDE0),
+        textPrimary = Color(0xFF2A3350),
+        textSecondary = Color(0xFF7F8CA8),
+        defaultAccent = Color(0xFFFF7A59),
+        previewColors = listOf(Color(0xFFE3E9F2), Color(0xFFF4F7FC), Color(0xFFF0629F)),
+        badgeLabel = "SOFT CLOUD",
         ornamentalPattern = OrnamentalPatternStyle.NONE,
         ornamentalTintColor = Color.Transparent
     ),
@@ -809,12 +809,12 @@ enum class SoundIntensity(
 val LocalShapeStructure = staticCompositionLocalOf { ShapeStructureStyle.ROUNDED }
 val LocalComponentSizing = staticCompositionLocalOf { ComponentSizeStyle.STANDARD }
 val LocalAnimationIntensity = staticCompositionLocalOf { AnimationIntensity.BALANCED }
-val LocalAppThemeSkin = staticCompositionLocalOf { AppThemeSkin.SKEUO_BAKELITE }
+val LocalAppThemeSkin = staticCompositionLocalOf { AppThemeSkin.SKEUO_IVORY }
 
 @Composable
 fun MyApplicationTheme(
-    appThemeSkin: AppThemeSkin = AppThemeSkin.SKEUO_BAKELITE,
-    themeMode: ThemeMode = ThemeMode.DARK,
+    appThemeSkin: AppThemeSkin = AppThemeSkin.SKEUO_IVORY,
+    themeMode: ThemeMode = ThemeMode.LIGHT,
     shapeStructureStyle: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     componentSizeStyle: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
     animationIntensity: AnimationIntensity = AnimationIntensity.OFF,

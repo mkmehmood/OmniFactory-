@@ -12,20 +12,32 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.addOutline
+import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.lerp
-import com.example.ui.theme.AppThemeSkin
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.ui.theme.AppThemeSkin
 
 /**
- * Skeuomorphic design primitives.
+ * Soft-UI (neumorphic) primitives.
  *
- * The whole app is built from three physical materials:
- *  - a RAISED plate (keys, buttons, panels): lit from the top-left, casts a shadow, has a bevelled rim
- *  - an INSET well (text fields, display window): recessed into the body, shadow falls inside from the top
- *  - an LED (status lamp): glowing jewel with a specular dot
+ * Everything is moulded from one material that matches the screen colour:
+ *  - RAISED: a white highlight falls to the top-left, a soft tinted shadow to the bottom-right
+ *  - INSET:  the same two shadows fall *inside* the shape, so it reads as pressed into the surface
+ *  - LED:    a small glowing lamp
+ *
+ * The shadows use Paint.setShadowLayer, which renders on all API levels in software
+ * and on API 28+ with hardware acceleration.
  */
 
 internal fun Color.lighten(fraction: Float): Color = lerp(this, Color.White, fraction.coerceIn(0f, 1f))
@@ -34,8 +46,46 @@ internal fun Color.darken(fraction: Float): Color = lerp(this, Color.Black, frac
 /** Opaque colour of a key / button cap for this skin (legacy skins use translucent variants). */
 internal fun AppThemeSkin.plate(): Color = surfaceVariant.compositeOver(surface)
 
+private fun softDark(isDark: Boolean) = if (isDark) Color(0xCC0C0E12) else Color(0xB3A3B1CA)
+private fun softLight(isDark: Boolean) = if (isDark) Color(0x663C4452) else Color(0xFFFFFFFF)
+
+private fun DrawScope.shapePath(shape: Shape): Path {
+    val outline = shape.createOutline(size, layoutDirection, this)
+    return Path().apply { addOutline(outline) }
+}
+
+private fun DrawScope.drawShapeShadow(path: Path, fill: Color, shadow: Color, dx: Float, dy: Float, blur: Float) {
+    drawIntoCanvas { canvas ->
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = fill.toArgb()
+            setShadowLayer(blur, dx, dy, shadow.toArgb())
+        }
+        canvas.nativeCanvas.drawPath(path.asAndroidPath(), paint)
+    }
+}
+
+private fun DrawScope.drawInnerShadow(path: Path, shadow: Color, dx: Float, dy: Float, blur: Float) {
+    clipPath(path) {
+        drawIntoCanvas { canvas ->
+            val ring = android.graphics.Path().apply {
+                fillType = android.graphics.Path.FillType.EVEN_ODD
+                addRect(
+                    -size.width, -size.height, size.width * 2f, size.height * 2f,
+                    android.graphics.Path.Direction.CW
+                )
+                addPath(path.asAndroidPath())
+            }
+            val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                color = android.graphics.Color.BLACK
+                setShadowLayer(blur, dx, dy, shadow.toArgb())
+            }
+            canvas.nativeCanvas.drawPath(ring, paint)
+        }
+    }
+}
+
 /**
- * Raised plate. [pressed] collapses the shadow and inverts the light so the part looks pushed down.
+ * Raised soft plate. [pressed] flips it into an inset so the part looks pushed into the surface.
  */
 fun Modifier.skeuoRaised(
     shape: Shape,
@@ -45,64 +95,31 @@ fun Modifier.skeuoRaised(
     pressed: Boolean = false,
     accent: Color? = null,
     sheen: Float = 1f
-): Modifier = this
-    .shadow(
-        elevation = if (pressed) 1.dp else elevation,
-        shape = shape,
-        ambientColor = Color.Black.copy(alpha = if (isDark) 0.65f else 0.28f),
-        spotColor = Color.Black.copy(alpha = if (isDark) 0.80f else 0.38f)
-    )
-    .clip(shape)
-    .drawBehind {
-        val top = if (pressed) base.darken(0.10f) else base.lighten(if (isDark) 0.10f else 0.35f)
-        val bottom = if (pressed) base.darken(0.02f) else base.darken(if (isDark) 0.22f else 0.10f)
-        drawRect(Brush.verticalGradient(listOf(top, bottom)))
+): Modifier = this.drawBehind {
+    val path = shapePath(shape)
+    val d = (elevation.toPx() * 0.85f).coerceAtLeast(2f)
+    val blur = d * 2f
 
-        // Soft overhead sheen on the upper half, like a moulded plastic or enamel surface
-        if (!pressed && sheen > 0f) {
-            drawRect(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = (if (isDark) 0.10f else 0.35f) * sheen),
-                        Color.Transparent
-                    ),
-                    startY = 0f,
-                    endY = size.height * 0.55f
-                )
+    if (pressed) {
+        drawPath(path, base.darken(if (isDark) 0.10f else 0.03f))
+        drawInnerShadow(path, softDark(isDark), d * 0.6f, d * 0.6f, blur * 0.7f)
+        drawInnerShadow(path, softLight(isDark), -d * 0.6f, -d * 0.6f, blur * 0.7f)
+    } else {
+        drawShapeShadow(path, base, softLight(isDark), -d, -d, blur)
+        drawShapeShadow(path, base, softDark(isDark), d, d, blur)
+        drawPath(
+            path,
+            Brush.linearGradient(
+                colors = listOf(base.lighten((if (isDark) 0.05f else 0.18f) * sheen), base.darken(if (isDark) 0.06f else 0.03f)),
+                start = Offset.Zero,
+                end = Offset(size.width, size.height)
             )
-        }
-
-        // Pressed parts pick up the shade cast by the rim above them
-        if (pressed) {
-            drawRect(
-                brush = Brush.verticalGradient(
-                    colors = listOf(Color.Black.copy(alpha = if (isDark) 0.45f else 0.18f), Color.Transparent),
-                    startY = 0f,
-                    endY = size.height * 0.35f
-                )
-            )
-        }
-
-        if (accent != null) {
-            drawRect(accent.copy(alpha = if (isDark) 0.14f else 0.10f))
-        }
+        )
     }
-    .border(
-        width = 1.dp,
-        brush = Brush.linearGradient(
-            colors = if (pressed) {
-                listOf(Color.Black.copy(alpha = 0.45f), Color.White.copy(alpha = if (isDark) 0.10f else 0.45f))
-            } else {
-                listOf(
-                    Color.White.copy(alpha = if (isDark) 0.28f else 0.85f),
-                    Color.Black.copy(alpha = if (isDark) 0.65f else 0.30f)
-                )
-            },
-            start = Offset(0f, 0f),
-            end = Offset(0f, 200f)
-        ),
-        shape = shape
-    )
+    if (accent != null) {
+        drawPath(path, accent.copy(alpha = if (isDark) 0.16f else 0.12f))
+    }
+}
 
 /**
  * Inset well for text fields, the calculator window and any recessed slot.
@@ -112,45 +129,24 @@ fun Modifier.skeuoInset(
     base: Color,
     isDark: Boolean,
     focused: Boolean = false,
-    accent: Color = Color(0xFFFF9F0A),
+    accent: Color = Color(0xFFFF7A59),
     error: Boolean = false,
     errorColor: Color = Color(0xFFB3261E)
 ): Modifier = this
-    .clip(shape)
     .drawBehind {
-        drawRect(
-            Brush.verticalGradient(
-                listOf(base.darken(if (isDark) 0.45f else 0.14f), base.darken(if (isDark) 0.25f else 0.04f))
-            )
-        )
-        // Shadow cast into the well by the upper lip
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(Color.Black.copy(alpha = if (isDark) 0.60f else 0.24f), Color.Transparent),
-                startY = 0f,
-                endY = size.height.coerceAtMost(14.dp.toPx())
-            )
-        )
-        if (focused) {
-            drawRect(accent.copy(alpha = if (isDark) 0.10f else 0.08f))
-        }
+        val path = shapePath(shape)
+        val d = 3.dp.toPx()
+        drawPath(path, base.darken(if (isDark) 0.10f else 0.025f))
+        drawInnerShadow(path, softDark(isDark), d, d, d * 2.2f)
+        drawInnerShadow(path, softLight(isDark), -d, -d, d * 2.2f)
+        if (focused) drawPath(path, accent.copy(alpha = 0.07f))
     }
-    .border(
-        width = if (focused || error) 1.5.dp else 1.dp,
-        brush = when {
-            error -> Brush.linearGradient(listOf(errorColor, errorColor))
-            focused -> Brush.linearGradient(listOf(accent, accent.lighten(0.25f)))
-            else -> Brush.verticalGradient(
-                listOf(
-                    Color.Black.copy(alpha = if (isDark) 0.70f else 0.35f),
-                    Color.White.copy(alpha = if (isDark) 0.18f else 0.90f)
-                )
-            )
-        },
-        shape = shape
-    )
+    .clip(shape)
+    .let {
+        if (focused || error) it.border(1.5.dp, if (error) errorColor else accent, shape) else it
+    }
 
-/** Glowing jewel lamp used as a status indicator. */
+/** Soft glowing lamp used as a status indicator. */
 @Composable
 fun SkeuoLed(
     color: Color,
@@ -158,7 +154,7 @@ fun SkeuoLed(
     size: Dp = 10.dp,
     lit: Boolean = true
 ) {
-    val lamp = if (lit) color else color.darken(0.65f)
+    val lamp = if (lit) color else color.darken(0.55f)
     Box(
         modifier = modifier
             .size(size)
@@ -172,12 +168,11 @@ fun SkeuoLed(
             .drawBehind {
                 drawRect(
                     Brush.radialGradient(
-                        colors = listOf(lamp.lighten(0.55f), lamp, lamp.darken(0.45f)),
+                        colors = listOf(lamp.lighten(0.5f), lamp),
                         center = Offset(this.size.width * 0.38f, this.size.height * 0.32f),
                         radius = this.size.width * 0.85f
                     )
                 )
             }
-            .border(1.dp, Color.Black.copy(alpha = 0.45f), CircleShape)
     )
 }

@@ -21,12 +21,12 @@ class UserPreferencesManager(context: Context) {
 
     var appThemeSkin: AppThemeSkin
         get() {
-            val name = prefs.getString(KEY_APP_THEME_SKIN, AppThemeSkin.SKEUO_BAKELITE.name)
-                ?: AppThemeSkin.SKEUO_BAKELITE.name
+            val name = prefs.getString(KEY_APP_THEME_SKIN, AppThemeSkin.SKEUO_IVORY.name)
+                ?: AppThemeSkin.SKEUO_IVORY.name
             return try {
                 AppThemeSkin.valueOf(name)
             } catch (e: Exception) {
-                AppThemeSkin.SKEUO_BAKELITE
+                AppThemeSkin.SKEUO_IVORY
             }
         }
         set(value) {
@@ -77,7 +77,7 @@ class UserPreferencesManager(context: Context) {
 
     var themeMode: ThemeMode
         get() {
-            val name = prefs.getString(KEY_THEME_MODE, ThemeMode.DARK.name) ?: ThemeMode.DARK.name
+            val name = prefs.getString(KEY_THEME_MODE, ThemeMode.LIGHT.name) ?: ThemeMode.LIGHT.name
             return try {
                 ThemeMode.valueOf(name)
             } catch (e: Exception) {

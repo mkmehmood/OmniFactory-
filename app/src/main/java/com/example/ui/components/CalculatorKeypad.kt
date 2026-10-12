@@ -428,23 +428,23 @@ private fun LiquidGlassKey(
     val (keyBg, contentColor, borderColor) = when {
         isSkeuoDark -> when (type) {
             KeyType.NUMBER, KeyType.DOUBLE_ZERO ->
-                Triple(if (isPressed) Color(0xFF3A322C) else Color(0xFF4A4038), Color(0xFFF2E8D5), Color.Transparent)
+                Triple(if (isPressed) Color(0xFF21262E) else Color(0xFF282D37), Color(0xFFE6EBF5), Color.Transparent)
             KeyType.ACTION ->
-                Triple(if (isPressed) Color(0xFF211C19) else Color(0xFF2B2521), Color(0xFFD9C7A3), Color.Transparent)
+                Triple(if (isPressed) Color(0xFF21262E) else Color(0xFF282D37), Color(0xFF8E9AB5), Color.Transparent)
             KeyType.OPERATOR ->
-                Triple(if (isPressed) Color(0xFFB38235) else Color(0xFFC8963E), Color(0xFF2A1D0A), Color.Transparent)
+                Triple(if (isPressed) Color(0xFFE56A4B) else Color(0xFFFF7A59), Color(0xFFFFFFFF), Color.Transparent)
             KeyType.EQUALS ->
-                Triple(if (isPressed) Color(0xFFB8471F) else Color(0xFFD4552A), Color(0xFFFFFFFF), Color.Transparent)
+                Triple(if (isPressed) Color(0xFFD9548C) else Color(0xFFF0629F), Color(0xFFFFFFFF), Color.Transparent)
         }
         isSkeuoLight -> when (type) {
             KeyType.NUMBER, KeyType.DOUBLE_ZERO ->
-                Triple(if (isPressed) Color(0xFFE8E1D0) else Color(0xFFF6F1E4), Color(0xFF2B2620), Color.Transparent)
+                Triple(if (isPressed) Color(0xFFD6DEEB) else Color(0xFFE8EEF7), Color(0xFF2A3350), Color.Transparent)
             KeyType.ACTION ->
-                Triple(if (isPressed) Color(0xFFB8B09E) else Color(0xFFC7BFAE), Color(0xFF2B2620), Color.Transparent)
+                Triple(if (isPressed) Color(0xFFD6DEEB) else Color(0xFFE8EEF7), Color(0xFF7F8CA8), Color.Transparent)
             KeyType.OPERATOR ->
-                Triple(if (isPressed) Color(0xFF2C2924) else Color(0xFF3B3731), Color(0xFFF6F1E4), Color.Transparent)
+                Triple(if (isPressed) Color(0xFFE56A4B) else Color(0xFFFF8A65), Color(0xFFFFFFFF), Color.Transparent)
             KeyType.EQUALS ->
-                Triple(if (isPressed) Color(0xFFC9561A) else Color(0xFFE0651F), Color(0xFFFFFFFF), Color.Transparent)
+                Triple(if (isPressed) Color(0xFFD9548C) else Color(0xFFF0629F), Color(0xFFFFFFFF), Color.Transparent)
         }
         isCharcoalTheme -> when (type) {
             KeyType.NUMBER, KeyType.DOUBLE_ZERO -> {
@@ -534,21 +534,16 @@ private fun LiquidGlassKey(
     val fontScale = componentSizeStyle.keyFontScale
 
     // Engraved legend: a 1px counter-light under the glyph makes it look cut into the cap
-    val legendShadow = Shadow(
-        color = if (contentColor.luminance() > 0.5f) Color.Black.copy(alpha = 0.55f) else Color.White.copy(alpha = 0.65f),
-        offset = Offset(0f, 1.5f),
-        blurRadius = 1f
-    )
+    val legendShadow = Shadow(color = Color.Transparent, offset = Offset(0f, 0f), blurRadius = 0f)
 
     Box(
         modifier = modifier
             .aspectRatio(1.1f)
-            .graphicsLayer { translationY = if (isPressed) 2.dp.toPx() else 0f }
             .skeuoRaised(
                 shape = shape,
                 base = keyBg.compositeOver(currentSkin.surface),
                 isDark = isDark,
-                elevation = 7.dp,
+                elevation = 5.dp,
                 pressed = isPressed
             )
             .clickable(

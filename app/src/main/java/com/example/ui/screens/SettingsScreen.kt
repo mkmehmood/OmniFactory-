@@ -160,7 +160,7 @@ import com.example.ui.theme.toSmallShape
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    currentAppThemeSkin: AppThemeSkin = AppThemeSkin.SKEUO_BAKELITE,
+    currentAppThemeSkin: AppThemeSkin = AppThemeSkin.SKEUO_IVORY,
     currentThemeMode: ThemeMode,
     currentShapeStructure: ShapeStructureStyle = ShapeStructureStyle.ROUNDED,
     currentComponentSize: ComponentSizeStyle = ComponentSizeStyle.STANDARD,
@@ -326,7 +326,7 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     LiquidThemeCard(
-                        title = "Bakelite & Brass",
+                        title = "Soft Slate",
                         icon = Icons.Default.DarkMode,
                         isSelected = currentSkin == AppThemeSkin.SKEUO_BAKELITE,
                         onClick = {
@@ -336,7 +336,7 @@ fun SettingsScreen(
                         modifier = Modifier.weight(1f)
                     )
                     LiquidThemeCard(
-                        title = "Ivory & Enamel",
+                        title = "Soft Cloud",
                         icon = Icons.Default.LightMode,
                         isSelected = currentSkin == AppThemeSkin.SKEUO_IVORY,
                         onClick = {
