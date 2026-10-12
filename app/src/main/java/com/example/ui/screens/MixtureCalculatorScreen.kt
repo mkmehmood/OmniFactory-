@@ -1,8 +1,6 @@
 package com.example.ui.screens
 
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,14 +30,12 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -73,6 +70,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.domain.mixture.CalcCorrectionRow
 import com.example.domain.mixture.CalcIngType
 import com.example.domain.mixture.CalcMode
+import com.example.domain.mixture.CalcSavedFormula
 import com.example.domain.mixture.CalcUnit
 import com.example.domain.mixture.FormulaCalcEngine
 import com.example.ui.CalcTab
@@ -92,12 +90,12 @@ private val DangerColor = Color(0xFFEF4444)
 /**
  * Mixture Calculator (native Compose).
  *
- * Step 1 "Formula": batch settings, ingredients (saved names, Fixed / Additive), scaled results, saved formulas, backup.
+ * Step 1 "Formula": batch settings, ingredients (saved names, Fixed / Additive), scaled results; the header Save button stores formulas.
  * Step 2 "Re-balance": batch correction against an editable target formula.
  * Step 3 "Report": comparison of formula, scaled batch and correction, with copyable reports.
  *
- * State lives in [MixtureCalculatorViewModel]; storage, backup and restore go through
- * MixtureCalculatorStore (so the Settings backup carries the calculator data as well).
+ * State lives in [MixtureCalculatorViewModel]; storage goes through
+ * MixtureCalculatorStore, so saved formulas travel with the app's Settings backup & restore.
  */
 @Composable
 fun MixtureCalculatorScreen(
@@ -108,6 +106,7 @@ fun MixtureCalculatorScreen(
     val vm = calcViewModel
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    var showSaveDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(vm) {
         vm.messages.collect { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
@@ -123,9 +122,11 @@ fun MixtureCalculatorScreen(
             unit = vm.inputs.unit,
             tab = vm.tab,
             onToggleUnit = vm::toggleUnit,
+            onSave = { showSaveDialog = true },
             onReset = vm::resetAll,
             onSelectTab = vm::selectTab
         )
+        if (showSaveDialog) SaveFormulaDialog(vm) { showSaveDialog = false }
 
         Column(
             modifier = Modifier
@@ -152,6 +153,7 @@ private fun CalcHeader(
     unit: CalcUnit,
     tab: CalcTab,
     onToggleUnit: () -> Unit,
+    onSave: () -> Unit,
     onReset: () -> Unit,
     onSelectTab: (CalcTab) -> Unit
 ) {
@@ -200,6 +202,7 @@ private fun CalcHeader(
                     color = primary
                 )
             }
+            ActionButton("Save", Icons.Default.Bookmark, onSave, testTag = "calc_save")
             IconButton(onClick = onReset, modifier = Modifier.testTag("calc_reset")) {
                 Icon(
                     Icons.Default.RestartAlt,
@@ -450,8 +453,10 @@ private fun FormulaTab(vm: MixtureCalculatorViewModel, onNavigateToHistory: () -
         }
     }
 
-    // ---- saved formulas & backup
-    SavedFormulasAndBackup(vm, onNavigateToHistory)
+    ActionButton(
+        "Mixture Recipes & Backups", Icons.Default.Science, onNavigateToHistory,
+        Modifier.fillMaxWidth(), testTag = "calc_open_recipes"
+    )
 }
 
 @Composable
@@ -488,133 +493,96 @@ private fun SavedNamesManager(vm: MixtureCalculatorViewModel) {
 }
 
 @Composable
-private fun SavedFormulasAndBackup(vm: MixtureCalculatorViewModel, onNavigateToHistory: () -> Unit) {
-    var pendingConfirm by remember { mutableStateOf<(() -> Unit)?>(null) }
-    var fileReplace by remember { mutableStateOf(false) }
+private fun SaveFormulaDialog(vm: MixtureCalculatorViewModel, onDismiss: () -> Unit) {
+    var name by remember { mutableStateOf(vm.lastFormulaName) }
+    var pendingDelete by remember { mutableStateOf<CalcSavedFormula?>(null) }
+    val sorted = remember(vm.formulas) { vm.formulas.sortedByDescending { it.savedAt } }
 
-    val saveLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri -> if (uri != null) vm.exportToUri(uri) }
-    val openLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri -> if (uri != null) vm.importFromUri(uri, fileReplace) }
-
-    SectionCard(title = "Saved Formulas & Backup") {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.Bottom
-        ) {
-            LiquidGlassTextField(
-                value = vm.formulaNameInput,
-                onValueChange = vm::onFormulaNameChange,
-                label = { Text("Formula name", fontSize = 11.sp) },
-                singleLine = true,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("calc_formula_name")
-            )
-            ActionButton("Save", Icons.Default.Bookmark, vm::saveFormula, testTag = "calc_formula_save")
-        }
-
-        val countLabel = "— Saved formulas (${vm.formulas.size}) —"
-        DropdownField(
-            valueText = vm.formulas.firstOrNull { it.id == vm.selectedFormulaId }?.name ?: "",
-            emptyText = countLabel,
-            options = listOf(DropdownOption("", countLabel)) + vm.formulas.map { DropdownOption(it.id.toString(), it.name) },
-            onSelect = { vm.selectFormula(it.toLongOrNull()) },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            ActionButton("Load", Icons.Default.Restore, vm::loadFormula, Modifier.weight(1f), testTag = "calc_formula_load")
-            ActionButton("Delete", Icons.Default.Delete, vm::deleteFormula, Modifier.weight(1f), accent = DangerColor, testTag = "calc_formula_delete")
-        }
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f))
-
-        Text(
-            "Backup includes saved names, saved formulas and your current work. The app's Settings backup includes it automatically.",
-            fontSize = 11.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        LiquidGlassTextField(
-            value = vm.restoreText,
-            onValueChange = vm::onRestoreTextChange,
-            label = { Text("Paste a backup here to restore", fontSize = 11.sp) },
-            singleLine = false,
-            minLines = 3,
-            maxLines = 6,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("calc_restore_text")
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            ActionButton("Copy Backup", Icons.Default.ContentCopy, vm::copyBackup, Modifier.weight(1f), testTag = "calc_backup_copy")
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            ActionButton("Restore: Merge", Icons.Default.Upload, { vm.restoreFromText(false) }, Modifier.weight(1f), testTag = "calc_restore_merge")
-            ActionButton(
-                "Restore: Replace", Icons.Default.Upload,
-                {
-                    pendingConfirm = { vm.restoreFromText(true) }
-                },
-                Modifier.weight(1f), accent = AmberColor, testTag = "calc_restore_replace"
-            )
-        }
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f))
-
-        Text("Backup file", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            ActionButton(
-                "Save File", Icons.Default.Download,
-                { saveLauncher.launch("mixture_calculator_backup.json") },
-                Modifier.weight(1f), testTag = "calc_file_save"
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            ActionButton(
-                "Import: Merge", Icons.Default.Upload,
-                {
-                    fileReplace = false
-                    openLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
-                },
-                Modifier.weight(1f), testTag = "calc_file_merge"
-            )
-            ActionButton(
-                "Import: Replace", Icons.Default.Upload,
-                {
-                    pendingConfirm = {
-                        fileReplace = true
-                        openLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Save Formula", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                LiquidGlassTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Formula name", fontSize = 11.sp) },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("calc_formula_name")
+                )
+                Text(
+                    "Saved formulas are included in the app's Settings backup & restore.",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (sorted.isNotEmpty()) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f))
+                    Text(
+                        "Saved formulas (${sorted.size}) — tap to load or use the name",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Column(
+                        modifier = Modifier
+                            .heightIn(max = 220.dp)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        sorted.forEach { f ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { name = f.name },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    f.name,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(vertical = 8.dp),
+                                    fontSize = 13.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                IconButton(onClick = {
+                                    vm.loadFormula(f.id)
+                                    onDismiss()
+                                }) {
+                                    Icon(Icons.Default.Restore, contentDescription = "Load ${f.name}", tint = MaterialTheme.colorScheme.primary)
+                                }
+                                IconButton(onClick = { pendingDelete = f }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete ${f.name}", tint = DangerColor)
+                                }
+                            }
+                        }
                     }
-                },
-                Modifier.weight(1f), accent = AmberColor, testTag = "calc_file_replace"
-            )
-        }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { if (vm.saveFormula(name)) onDismiss() },
+                modifier = Modifier.testTag("calc_formula_save")
+            ) { Text("Save", fontWeight = FontWeight.Bold) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 
-        ActionButton(
-            "Mixture Recipes & Backups", Icons.Default.Science, onNavigateToHistory,
-            Modifier.fillMaxWidth(), testTag = "calc_open_recipes"
-        )
-    }
-
-    pendingConfirm?.let { action ->
+    pendingDelete?.let { f ->
         AlertDialog(
-            onDismissRequest = { pendingConfirm = null },
-            title = { Text("Replace calculator data?") },
-            text = {
-                Text("This replaces your saved formulas and current work with the backup. Saved names stay unless the backup has its own. Merge keeps what you have instead.")
-            },
+            onDismissRequest = { pendingDelete = null },
+            title = { Text("Delete formula?") },
+            text = { Text("\"${f.name}\" will be removed from your saved formulas.") },
             confirmButton = {
                 TextButton(onClick = {
-                    pendingConfirm = null
-                    action()
-                }) { Text("Replace", color = DangerColor) }
+                    vm.deleteFormula(f.id)
+                    pendingDelete = null
+                }) { Text("Delete", color = DangerColor) }
             },
-            dismissButton = {
-                TextButton(onClick = { pendingConfirm = null }) { Text("Cancel") }
-            }
+            dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text("Cancel") } }
         )
     }
 }

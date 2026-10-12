@@ -4,13 +4,11 @@ import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.data.db.DatabaseBackupManager
 import com.example.data.preferences.MixtureCalculatorStore
 import com.example.domain.mixture.CalcDerived
 import com.example.domain.mixture.CalcIngType
@@ -70,16 +68,6 @@ class MixtureCalculatorViewModel(application: Application) : AndroidViewModel(ap
     var selectedName by mutableStateOf("")
         private set
     var newNameInput by mutableStateOf("")
-        private set
-
-    // Saved-formulas manager
-    var formulaNameInput by mutableStateOf("")
-        private set
-    var selectedFormulaId by mutableStateOf<Long?>(null)
-        private set
-
-    // Backup text box
-    var restoreText by mutableStateOf("")
         private set
 
     private var nextId = 2
@@ -293,24 +281,24 @@ class MixtureCalculatorViewModel(application: Application) : AndroidViewModel(ap
 
     // ================================================================== saved formulas
 
-    fun onFormulaNameChange(text: String) {
-        formulaNameInput = text
-    }
+    /** Name suggested in the Save dialog (the last saved / loaded formula, if any). */
+    var lastFormulaName by mutableStateOf("")
+        private set
 
-    fun selectFormula(id: Long?) {
-        selectedFormulaId = id
-    }
-
-    fun saveFormula() {
-        val name = formulaNameInput.trim()
+    /**
+     * Saves the current formula under [rawName] (same name = update) and writes it to storage right
+     * away, so the app's Settings backup always carries it. Returns true when it was saved.
+     */
+    fun saveFormula(rawName: String): Boolean {
+        val name = rawName.trim()
         if (name.isEmpty()) {
             toast("Type a formula name first")
-            return
+            return false
         }
         val ings = derived.effective.filter { !it.isBlank }.map { CalcSavedIngredient(it.name, it.type, it.valueKg) }
         if (ings.isEmpty()) {
             toast("Add at least one ingredient first")
-            return
+            return false
         }
         val f = inputs.unit.factor
         val existing = formulas.indexOfFirst { it.name == name }
@@ -326,22 +314,23 @@ class MixtureCalculatorViewModel(application: Application) : AndroidViewModel(ap
             ingredients = ings
         )
         formulas = if (existing >= 0) formulas.toMutableList().also { it[existing] = formula } else formulas + formula
-        selectedFormulaId = formula.id
-        formulaNameInput = ""
-        queueSave()
+        lastFormulaName = name
+        persistNow()
         toast(if (existing >= 0) "Formula updated" else "Formula saved")
+        return true
     }
 
-    fun loadFormula() {
-        val f = formulas.firstOrNull { it.id == selectedFormulaId }
+    fun loadFormula(id: Long) {
+        val f = formulas.firstOrNull { it.id == id }
         if (f == null) {
-            toast("Pick a saved formula first")
+            toast("Formula not found")
             return
         }
         val unit = inputs.unit
         var rows = f.ingredients.map { CalcRow(newId(), it.name, it.type, FormulaCalcEngine.toDisp(it.valueKg, unit)) }
         if (rows.isEmpty()) rows = listOf(CalcRow(newId()))
         manualScale = null
+        lastFormulaName = f.name
         update {
             it.copy(
                 mode = f.mode,
@@ -356,16 +345,20 @@ class MixtureCalculatorViewModel(application: Application) : AndroidViewModel(ap
         toast("Formula loaded")
     }
 
-    fun deleteFormula() {
-        val idx = formulas.indexOfFirst { it.id == selectedFormulaId }
-        if (idx < 0) {
-            toast("Pick a saved formula first")
-            return
-        }
+    fun deleteFormula(id: Long) {
+        val idx = formulas.indexOfFirst { it.id == id }
+        if (idx < 0) return
         formulas = formulas.toMutableList().also { it.removeAt(idx) }
-        selectedFormulaId = null
-        queueSave()
+        persistNow()
         toast("Formula deleted")
+    }
+
+    /** Writes the stored data in the background without the usual 300 ms debounce. */
+    private fun persistNow() {
+        saveJob?.cancel()
+        dirty = false
+        val state = buildState()
+        viewModelScope.launch(Dispatchers.IO) { MixtureCalculatorStore.save(appContext, state) }
     }
 
     // ================================================================== reports / clipboard
@@ -385,56 +378,6 @@ class MixtureCalculatorViewModel(application: Application) : AndroidViewModel(ap
             toast("Copied to clipboard")
         } catch (e: Exception) {
             toast("Could not copy")
-        }
-    }
-
-    // ================================================================== backup / restore
-
-    fun onRestoreTextChange(text: String) {
-        restoreText = text
-    }
-
-    fun copyBackup() {
-        saveNowBlocking()
-        copyText("Mixture Calculator backup", MixtureCalculatorStore.exportText(appContext))
-    }
-
-    /** Restore from the pasted text. A full-app backup pasted here works too. */
-    fun restoreFromText(replace: Boolean) {
-        val raw = restoreText
-        viewModelScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                saveNowBlocking()
-                MixtureCalculatorStore.importText(appContext, raw, replace)
-            }
-            if (result.ok) restoreText = ""
-            toast(result.message)
-        }
-    }
-
-    fun exportToUri(uri: Uri) {
-        viewModelScope.launch {
-            val text = withContext(Dispatchers.IO) {
-                saveNowBlocking()
-                MixtureCalculatorStore.exportText(appContext)
-            }
-            val ok = DatabaseBackupManager(appContext).writeBackupToUri(appContext, uri, text)
-            toast(if (ok) "Backup file saved" else "Failed to save backup file")
-        }
-    }
-
-    fun importFromUri(uri: Uri, replace: Boolean) {
-        viewModelScope.launch {
-            val content = DatabaseBackupManager(appContext).readBackupFromUri(appContext, uri)
-            if (content.isNullOrBlank()) {
-                toast("Failed to read backup file")
-                return@launch
-            }
-            val result = withContext(Dispatchers.IO) {
-                saveNowBlocking()
-                MixtureCalculatorStore.importText(appContext, content, replace)
-            }
-            toast(result.message)
         }
     }
 
@@ -493,7 +436,6 @@ class MixtureCalculatorViewModel(application: Application) : AndroidViewModel(ap
         savedNames = s.savedNames
         formulas = s.formulas
         if (selectedName.isNotEmpty() && !savedNames.contains(selectedName)) selectedName = ""
-        if (selectedFormulaId != null && formulas.none { it.id == selectedFormulaId }) selectedFormulaId = null
         manualScale = null
         knownSignature = null
         applySession(s.session)
