@@ -66,7 +66,20 @@ jobs:
       # --no-configuration-cache / --no-build-cache: force Gradle to resolve
       # everything fresh, avoiding stale cached dependency resolution.
       - name: Build debug APK
-        run: gradle assembleDebug --stacktrace --no-configuration-cache --no-build-cache --refresh-dependencies
+        run: |
+          set -o pipefail
+          gradle assembleDebug --stacktrace --no-configuration-cache --no-build-cache --refresh-dependencies 2>&1 | tee build.log
+
+      # On failure, surface the real compiler / Gradle errors as a single annotation so the cause
+      # is visible on the run page (and via the API) without opening the raw log.
+      - name: Report build errors
+        if: failure()
+        run: |
+          errs=$(grep -E '^e: |^w: .*error|FAILURE: Build failed|What went wrong|Execution failed for task|Unresolved reference|Type mismatch' -A2 build.log | grep -v '^--$' | head -60 || true)
+          errs="${errs//'%'/'%25'}"
+          errs="${errs//$'\r'/'%0D'}"
+          errs="${errs//$'\n'/'%0A'}"
+          echo "::error title=Gradle build errors::${errs:-no error lines found in build.log}"
 
       # Copies the freshly built APK straight into the repo root and pushes
       # it, so it's a normal file in the Code tab (app-debug.apk) — no need
