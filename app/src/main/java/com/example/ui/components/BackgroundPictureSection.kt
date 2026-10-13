@@ -133,15 +133,6 @@ fun BackgroundPictureSection(modifier: Modifier = Modifier) {
 
         if (state.hasImage) {
             SliderRow("Blur", "${state.blur.roundToInt()}", state.blur, 0f..25f) { state.updateBlur(it) }
-            SliderRow("Display zoom", "${"%.1f".format(state.displayZoom)}x", state.displayZoom, 1f..4f) {
-                state.updateDisplayView(it, state.displayPanX, state.displayPanY)
-            }
-            SliderRow("Display left / right", "${(state.displayPanX * 100).roundToInt()}", state.displayPanX, -1f..1f) {
-                state.updateDisplayView(state.displayZoom, it, state.displayPanY)
-            }
-            SliderRow("Display up / down", "${(state.displayPanY * 100).roundToInt()}", state.displayPanY, -1f..1f) {
-                state.updateDisplayView(state.displayZoom, state.displayPanX, it)
-            }
             SoftButton(onClick = { state.resetDisplayView() }, modifier = Modifier.fillMaxWidth()) {
                 Text("Reset calculator box view", fontSize = 13.sp)
             }
