@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.lazy.LazyItemScope
 import com.example.ui.components.SoftAlertDialog
 import com.example.ui.components.SoftButton
 import com.example.ui.components.SoftIconButton
@@ -2167,6 +2168,7 @@ private fun LedgerHistoryPanelSheetContent(
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
                 items(uiState.filteredTransactions, key = { it.id }) { tx ->
+                    androidx.compose.foundation.layout.Box(modifier = Modifier.animateItem()) {
                     LedgerTransactionRow(
                         tx = tx,
                         statement = uiState.statementMap[tx.id],
@@ -2175,6 +2177,8 @@ private fun LedgerHistoryPanelSheetContent(
                         onDelete = { onDeleteTx(tx) },
                         isDark = isDark
                     )
+                
+                    }
                 }
             }
         }

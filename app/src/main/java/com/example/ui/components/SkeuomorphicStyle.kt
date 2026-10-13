@@ -1,10 +1,16 @@
 package com.example.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.composed
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -54,11 +60,12 @@ private fun DrawScope.shapePath(shape: Shape): Path {
     return Path().apply { addOutline(outline) }
 }
 
-private fun DrawScope.drawShapeShadow(path: Path, fill: Color, shadow: Color, dx: Float, dy: Float, blur: Float) {
+private fun DrawScope.drawShapeShadow(path: Path, fill: Color, shadow: Color, dx: Float, dy: Float, blur: Float, alpha: Float = 1f) {
     drawIntoCanvas { canvas ->
         val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
             color = fill.toArgb()
             setShadowLayer(blur, dx, dy, shadow.toArgb())
+            this.alpha = (alpha.coerceIn(0f, 1f) * 255f).roundToInt()
         }
         canvas.nativeCanvas.drawPath(path.asAndroidPath(), paint)
     }
@@ -95,30 +102,54 @@ fun Modifier.skeuoRaised(
     pressed: Boolean = false,
     accent: Color? = null,
     sheen: Float = 1f
-): Modifier = this.drawBehind {
-    val path = shapePath(shape)
-    // Scale the shadow to the part so small pills don't get huge halos
-    val d = minOf(elevation.toPx() * 0.85f, size.minDimension * 0.11f).coerceAtLeast(1.5f)
-    val blur = d * 2f
+): Modifier = composed {
+    // Press and selection ease in and out instead of snapping, which is what makes keys feel physical
+    val press by animateFloatAsState(
+        targetValue = if (pressed) 1f else 0f,
+        animationSpec = tween(durationMillis = 110, easing = FastOutSlowInEasing),
+        label = "soft_press"
+    )
+    val tint by animateFloatAsState(
+        targetValue = if (accent != null) 1f else 0f,
+        animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
+        label = "soft_tint"
+    )
+    val lastAccent = remember { arrayOf(accent ?: Color.Transparent) }
+    if (accent != null) lastAccent[0] = accent
 
-    if (pressed) {
-        drawPath(path, base.darken(if (isDark) 0.10f else 0.03f))
-        drawInnerShadow(path, softDark(isDark), d * 0.6f, d * 0.6f, blur * 0.7f)
-        drawInnerShadow(path, softLight(isDark), -d * 0.6f, -d * 0.6f, blur * 0.7f)
-    } else {
-        drawShapeShadow(path, base, softLight(isDark), -d, -d, blur)
-        drawShapeShadow(path, base, softDark(isDark), d, d, blur)
-        drawPath(
-            path,
-            Brush.linearGradient(
-                colors = listOf(base.lighten((if (isDark) 0.05f else 0.18f) * sheen), base.darken(if (isDark) 0.06f else 0.03f)),
-                start = Offset.Zero,
-                end = Offset(size.width, size.height)
+    this.drawBehind {
+        val p = press
+        val r = 1f - p
+        val path = shapePath(shape)
+        // Scale the shadow to the part so small pills don't get huge halos
+        val d = minOf(elevation.toPx() * 0.85f, size.minDimension * 0.11f).coerceAtLeast(1.5f)
+        val blur = d * 2f
+
+        if (r > 0.01f) {
+            val reach = 0.4f + 0.6f * r
+            drawShapeShadow(path, base, softLight(isDark), -d * reach, -d * reach, blur, r)
+            drawShapeShadow(path, base, softDark(isDark), d * reach, d * reach, blur, r)
+            drawPath(
+                path,
+                Brush.linearGradient(
+                    colors = listOf(
+                        base.lighten((if (isDark) 0.05f else 0.18f) * sheen),
+                        base.darken(if (isDark) 0.06f else 0.03f)
+                    ),
+                    start = Offset.Zero,
+                    end = Offset(size.width, size.height)
+                ),
+                alpha = r
             )
-        )
-    }
-    if (accent != null) {
-        drawPath(path, accent.copy(alpha = if (isDark) 0.16f else 0.12f))
+        }
+        if (p > 0.01f) {
+            drawPath(path, base.darken(if (isDark) 0.10f else 0.03f), alpha = p)
+            drawInnerShadow(path, softDark(isDark).let { it.copy(alpha = it.alpha * p) }, d * 0.6f, d * 0.6f, blur * 0.7f)
+            drawInnerShadow(path, softLight(isDark).let { it.copy(alpha = it.alpha * p) }, -d * 0.6f, -d * 0.6f, blur * 0.7f)
+        }
+        if (tint > 0.01f) {
+            drawPath(path, lastAccent[0].copy(alpha = (if (isDark) 0.16f else 0.12f) * tint))
+        }
     }
 }
 

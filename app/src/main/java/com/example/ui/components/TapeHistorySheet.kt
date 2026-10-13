@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -327,6 +328,7 @@ fun TapeHistorySheet(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(filteredList, key = { it.id }) { item ->
+                    androidx.compose.foundation.layout.Box(modifier = Modifier.animateItem()) {
                         val isSelected = item.id in selectedIds
                         val dateFormat = SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault())
                         val timeStr = dateFormat.format(Date(item.timestamp))
@@ -352,7 +354,9 @@ fun TapeHistorySheet(
                             onTogglePin = { onTogglePin(item) },
                             onEditNote = { editingEntity = item }
                         )
+                    
                     }
+                }
                 }
             }
         }

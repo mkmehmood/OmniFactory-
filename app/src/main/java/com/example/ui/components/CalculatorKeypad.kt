@@ -536,9 +536,19 @@ private fun LiquidGlassKey(
     // Engraved legend: a 1px counter-light under the glyph makes it look cut into the cap
     val legendShadow = Shadow(color = Color.Transparent, offset = Offset(0f, 0f), blurRadius = 0f)
 
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) animationIntensity.scaleFactor.coerceAtLeast(0.94f) else 1f,
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow),
+        label = "key_press_scale"
+    )
+
     Box(
         modifier = modifier
             .aspectRatio(1.1f)
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            }
             .skeuoRaised(
                 shape = shape,
                 base = keyBg.compositeOver(currentSkin.surface),

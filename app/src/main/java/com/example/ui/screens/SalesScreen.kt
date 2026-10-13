@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.lazy.LazyItemScope
 import com.example.ui.components.SoftAlertDialog
 import com.example.ui.components.SoftButton
 import com.example.ui.components.SoftIconButton
@@ -1794,6 +1795,7 @@ private fun SavedTransactionsBottomSheet(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(transactions.size, key = { transactions[it].id }) { index ->
+                    androidx.compose.foundation.layout.Box(modifier = Modifier.animateItem()) {
                     val tx = transactions[index]
                     SalesRecordCard(
                         tx = tx,
@@ -1803,6 +1805,8 @@ private fun SavedTransactionsBottomSheet(
                         primaryColor = primaryColor,
                         isDark = isDark
                     )
+                
+                    }
                 }
             }
         }

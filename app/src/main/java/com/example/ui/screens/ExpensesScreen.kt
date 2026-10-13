@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.lazy.LazyItemScope
 import com.example.ui.components.SoftAlertDialog
 import com.example.ui.components.SoftButton
 import com.example.ui.components.SoftIconButton
@@ -257,6 +258,7 @@ fun ExpensesScreen(
                 }
             } else {
                 items(uiState.filteredExpenses, key = { it.id }) { expense ->
+                    androidx.compose.foundation.layout.Box(modifier = Modifier.animateItem()) {
                     ExpenseRowItem(
                         expense = expense,
                         statement = uiState.statementMap[expense.id],
@@ -265,6 +267,8 @@ fun ExpensesScreen(
                         onDelete = { expenseToDelete = expense },
                         isDark = isDark
                     )
+                
+                    }
                 }
             }
         }

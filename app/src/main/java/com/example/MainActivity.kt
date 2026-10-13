@@ -227,9 +227,11 @@ class MainActivity : ComponentActivity() {
                             currentDestination = currentDestination,
                             activeConverterCategory = null,
                             onSelectDestination = { destination ->
-                                currentDestination = destination
-                                scope.launch { drawerState.close() }
                                 calculatorViewModel.setTapeOpen(false)
+                                scope.launch {
+                                    drawerState.close()
+                                    currentDestination = destination
+                                }
                             },
                             onOpenConverterGrid = {
                                 converterViewModel.showCategoryGrid()
@@ -361,8 +363,40 @@ class MainActivity : ComponentActivity() {
                                     .fillMaxSize()
                                     .padding(innerPadding)
                             ) {
-                                Crossfade(
+                                androidx.compose.animation.AnimatedContent(
                                     targetState = currentDestination,
+                                    modifier = Modifier.fillMaxSize(),
+                                    transitionSpec = {
+                                        val base = if (uiState.animationIntensity == com.example.ui.theme.AnimationIntensity.OFF) {
+                                            androidx.compose.animation.EnterTransition.None togetherWith
+                                                androidx.compose.animation.ExitTransition.None
+                                        } else {
+                                            // Short, direction-aware slide + fade: the incoming screen eases in
+                                            // from the side it logically lives on while the old one fades out fast,
+                                            // so both heavy screens overlap for as little time as possible.
+                                            val dir = if (targetState.ordinal >= initialState.ordinal) 1 else -1
+                                            (androidx.compose.animation.fadeIn(
+                                                androidx.compose.animation.core.tween(
+                                                    170, delayMillis = 50,
+                                                    easing = androidx.compose.animation.core.LinearOutSlowInEasing
+                                                )
+                                            ) + androidx.compose.animation.slideInHorizontally(
+                                                androidx.compose.animation.core.tween(
+                                                    260, easing = androidx.compose.animation.core.FastOutSlowInEasing
+                                                )
+                                            ) { dir * (it / 14) }) togetherWith
+                                                (androidx.compose.animation.fadeOut(
+                                                    androidx.compose.animation.core.tween(90)
+                                                ) + androidx.compose.animation.slideOutHorizontally(
+                                                    androidx.compose.animation.core.tween(
+                                                        200, easing = androidx.compose.animation.core.FastOutSlowInEasing
+                                                    )
+                                                ) { -dir * (it / 14) })
+                                        }
+                                        base.using(androidx.compose.animation.SizeTransform(clip = false) { _, _ ->
+                                            androidx.compose.animation.core.snap()
+                                        })
+                                    },
                                     label = "ScreenTransition"
                                 ) { destination ->
                                     when (destination) {

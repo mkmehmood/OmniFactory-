@@ -187,8 +187,8 @@ fun MixtureCalculatorScreen(
 
         AnimatedVisibility(
             visible = keypad.activeKey != null,
-            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+            enter = slideInVertically(androidx.compose.animation.core.tween(200, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it } + fadeIn(androidx.compose.animation.core.tween(150)),
+            exit = slideOutVertically(androidx.compose.animation.core.tween(160, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it } + fadeOut(androidx.compose.animation.core.tween(120))
         ) {
             SmartStationKeypad(
                 activeFieldLabel = keypad.activeLabel,

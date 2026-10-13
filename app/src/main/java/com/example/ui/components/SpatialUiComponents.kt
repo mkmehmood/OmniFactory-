@@ -255,12 +255,13 @@ fun DottedLineButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val down = isPressed || isSelected
+    val nudge by androidx.compose.animation.core.animateFloatAsState(if (down) 1f else 0f, androidx.compose.animation.core.tween(110), label = "button_nudge")
     val shape = LocalShapeStructure.current.toInputShape()
 
     Box(
         modifier = modifier
             .graphicsLayer {
-                translationY = if (down) 1.5.dp.toPx() else 0f
+                translationY = nudge * 1.5.dp.toPx()
                 alpha = if (enabled) 1f else 0.5f
             }
             .skeuoRaised(

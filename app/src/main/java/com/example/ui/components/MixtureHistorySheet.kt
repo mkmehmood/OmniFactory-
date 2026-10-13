@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.lazy.LazyItemScope
 import com.example.ui.theme.SoftColors
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -295,6 +296,7 @@ fun MixtureHistorySheet(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(filteredRecipes, key = { it.id }) { recipe ->
+                    androidx.compose.foundation.layout.Box(modifier = Modifier.animateItem()) {
                         MixtureHistoryCard(
                             recipe = recipe,
                             onLoad = {
@@ -313,7 +315,9 @@ fun MixtureHistorySheet(
                             borderColor = borderColor,
                             primaryColor = primaryColor
                         )
+                    
                     }
+                }
                 }
             }
         }

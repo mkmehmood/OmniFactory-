@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.lazy.LazyItemScope
 import com.example.ui.components.DottedFilterChip
 import com.example.ui.components.SoftAlertDialog
 import com.example.ui.components.SoftButton
@@ -305,6 +306,7 @@ fun MixtureHistoryScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(filteredRecipes, key = { it.id }) { recipe ->
+                    androidx.compose.foundation.layout.Box(modifier = Modifier.animateItem()) {
                     MixtureHistoryCard(
                         recipe = recipe,
                         onLoad = { onLoadRecipe(recipe) },
@@ -316,6 +318,8 @@ fun MixtureHistoryScreen(
                         primaryColor = primaryColor,
                         isDark = isDark
                     )
+                
+                    }
                 }
                 item {
                     Spacer(modifier = Modifier.height(24.dp))
