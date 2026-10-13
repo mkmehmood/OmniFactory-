@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.ui.layout.onSizeChanged
 import com.example.ui.background.CalculatorDisplayPicture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,12 +55,16 @@ fun BasicCalculatorScreen(
     ) {
         // Transparent Frosted Glass Display Area with tap-to-show Copy/Paste Bubble
         val skin = com.example.ui.theme.LocalAppThemeSkin.current
+        val bgState = com.example.ui.background.LocalAppBackground.current
         val isDark = androidx.compose.material3.MaterialTheme.colorScheme.background.luminance() < 0.5f
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
                 .padding(horizontal = 14.dp, vertical = 10.dp)
+                .onSizeChanged { size ->
+                    if (size.height > 0) bgState?.reportDisplayAspect(size.width.toFloat() / size.height)
+                }
                 .skeuoInset(
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
                     base = skin.surface,

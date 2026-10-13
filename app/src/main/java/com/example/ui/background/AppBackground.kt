@@ -64,6 +64,38 @@ class AppBackgroundState(context: Context) {
         private set
     var showInDisplay by mutableStateOf(prefs.getBoolean(KEY_DISPLAY, true))
         private set
+
+    /** How the picture sits inside the calculator display box: zoom 1..4, pan -1..1 on each axis. */
+    var displayZoom by mutableFloatStateOf(prefs.getFloat(KEY_D_ZOOM, 1f))
+        private set
+    var displayPanX by mutableFloatStateOf(prefs.getFloat(KEY_D_PAN_X, 0f))
+        private set
+    var displayPanY by mutableFloatStateOf(prefs.getFloat(KEY_D_PAN_Y, 0f))
+        private set
+
+    /** Width / height of the real calculator display box on this device, so the preview matches it. */
+    var displayAspect by mutableFloatStateOf(prefs.getFloat(KEY_D_ASPECT, 1.8f))
+        private set
+
+    fun updateDisplayView(zoom: Float, panX: Float, panY: Float) {
+        displayZoom = zoom.coerceIn(1f, 4f)
+        displayPanX = panX.coerceIn(-1f, 1f)
+        displayPanY = panY.coerceIn(-1f, 1f)
+        prefs.edit()
+            .putFloat(KEY_D_ZOOM, displayZoom)
+            .putFloat(KEY_D_PAN_X, displayPanX)
+            .putFloat(KEY_D_PAN_Y, displayPanY)
+            .apply()
+    }
+
+    fun resetDisplayView() = updateDisplayView(1f, 0f, 0f)
+
+    fun reportDisplayAspect(aspect: Float) {
+        if (aspect.isFinite() && aspect > 0.2f && kotlin.math.abs(aspect - displayAspect) > 0.01f) {
+            displayAspect = aspect
+            prefs.edit().putFloat(KEY_D_ASPECT, aspect).apply()
+        }
+    }
     var showAsBackground by mutableStateOf(prefs.getBoolean(KEY_BACKGROUND, true))
         private set
 
@@ -181,6 +213,10 @@ class AppBackgroundState(context: Context) {
         const val KEY_FADE = "fade"
         const val KEY_DISPLAY = "display"
         const val KEY_BACKGROUND = "background"
+        const val KEY_D_ZOOM = "display_zoom"
+        const val KEY_D_PAN_X = "display_pan_x"
+        const val KEY_D_PAN_Y = "display_pan_y"
+        const val KEY_D_ASPECT = "display_aspect"
         const val MAX_ORIGINAL_SIDE = 2048
         const val BLUR_WORKING_SIDE = 360
     }
@@ -292,10 +328,11 @@ fun BoxScope.CalculatorDisplayPicture() {
     val state = LocalAppBackground.current ?: return
     if (!state.hasImage || !state.showInDisplay) return
     val bitmap = rememberBackgroundBitmap(state, maxSide = 1080) ?: return
-    Image(
+    PannedPicture(
         bitmap = bitmap,
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
+        zoom = state.displayZoom,
+        panX = state.displayPanX,
+        panY = state.displayPanY,
         modifier = Modifier.matchParentSize()
     )
     Box(
@@ -310,3 +347,36 @@ fun BoxScope.CalculatorDisplayPicture() {
             .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.28f), Color.Transparent), endY = 90f))
     )
 }
+
+/**
+ * Draws [bitmap] covering its box, then magnified by [zoom] and shifted by [panX]/[panY]
+ * (-1..1, where +-1 reaches the picture's own edge). Shared by the display and its preview.
+ */
+@Composable
+fun PannedPicture(
+    bitmap: ImageBitmap,
+    zoom: Float,
+    panX: Float,
+    panY: Float,
+    modifier: Modifier = Modifier
+) {
+    androidx.compose.foundation.Canvas(modifier = modifier.androidx_clipToBounds()) {
+        val s = max(size.width / bitmap.width, size.height / bitmap.height) * zoom
+        val dw = bitmap.width * s
+        val dh = bitmap.height * s
+        val ox = max(0f, (dw - size.width) / 2f)
+        val oy = max(0f, (dh - size.height) / 2f)
+        drawImage(
+            image = bitmap,
+            srcSize = androidx.compose.ui.unit.IntSize(bitmap.width, bitmap.height),
+            dstOffset = androidx.compose.ui.unit.IntOffset(
+                ((size.width - dw) / 2f + panX * ox).roundToInt(),
+                ((size.height - dh) / 2f + panY * oy).roundToInt()
+            ),
+            dstSize = androidx.compose.ui.unit.IntSize(dw.roundToInt(), dh.roundToInt()),
+            filterQuality = androidx.compose.ui.graphics.FilterQuality.Medium
+        )
+    }
+}
+
+private fun Modifier.androidx_clipToBounds(): Modifier = this.then(androidx.compose.ui.draw.clipToBounds())

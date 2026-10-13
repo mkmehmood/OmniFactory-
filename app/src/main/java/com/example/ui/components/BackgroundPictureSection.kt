@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -66,6 +67,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.ui.background.AppBackgroundState
 import com.example.ui.background.LocalAppBackground
+import com.example.ui.background.PannedPicture
 import com.example.ui.background.rememberBackgroundBitmap
 import com.example.ui.theme.DigitalMonospaceFont
 import kotlinx.coroutines.Dispatchers
@@ -131,6 +133,18 @@ fun BackgroundPictureSection(modifier: Modifier = Modifier) {
 
         if (state.hasImage) {
             SliderRow("Blur", "${state.blur.roundToInt()}", state.blur, 0f..25f) { state.updateBlur(it) }
+            SliderRow("Display zoom", "${"%.1f".format(state.displayZoom)}x", state.displayZoom, 1f..4f) {
+                state.updateDisplayView(it, state.displayPanX, state.displayPanY)
+            }
+            SliderRow("Display left / right", "${(state.displayPanX * 100).roundToInt()}", state.displayPanX, -1f..1f) {
+                state.updateDisplayView(state.displayZoom, it, state.displayPanY)
+            }
+            SliderRow("Display up / down", "${(state.displayPanY * 100).roundToInt()}", state.displayPanY, -1f..1f) {
+                state.updateDisplayView(state.displayZoom, state.displayPanX, it)
+            }
+            SoftButton(onClick = { state.resetDisplayView() }, modifier = Modifier.fillMaxWidth()) {
+                Text("Reset calculator box view", fontSize = 13.sp)
+            }
             SliderRow("Fade", "${(state.fade * 100).roundToInt()}%", state.fade, 0f..0.9f) { state.updateFade(it) }
             ToggleRow("Show in calculator display", state.showInDisplay) { state.updateShowInDisplay(it) }
             ToggleRow("Use as app background", state.showAsBackground) { state.updateShowAsBackground(it) }
@@ -142,39 +156,72 @@ fun BackgroundPictureSection(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Live copy of the calculator display box, at its real proportions. Drag to move the picture,
+ * pinch to zoom: exactly what the calculator will show.
+ */
 @Composable
 private fun BackgroundPreview(state: AppBackgroundState) {
-    val bitmap = if (state.hasImage) rememberBackgroundBitmap(state, maxSide = 720) else null
-    val shape = RoundedCornerShape(16.dp)
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(130.dp)
-            .softWell(shape),
-        contentAlignment = Alignment.Center
-    ) {
+    val bitmap = if (state.hasImage) rememberBackgroundBitmap(state, maxSide = 1080) else null
+    val shape = RoundedCornerShape(18.dp)
+    var boxSize by remember { mutableStateOf(IntSize.Zero) }
+    val current by rememberUpdatedState(state)
+    val bmp by rememberUpdatedState(bitmap)
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(state.displayAspect.coerceIn(0.6f, 3.5f))
+                .onSizeChanged { boxSize = it }
+                .softWell(shape)
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, pan, zoomChange, _ ->
+                        val b = bmp ?: return@detectTransformGestures
+                        val st = current
+                        val newZoom = (st.displayZoom * zoomChange).coerceIn(1f, 4f)
+                        val s = max(boxSize.width.toFloat() / b.width, boxSize.height.toFloat() / b.height) * newZoom
+                        val ox = max(0f, (b.width * s - boxSize.width) / 2f)
+                        val oy = max(0f, (b.height * s - boxSize.height) / 2f)
+                        val px = if (ox > 0f) st.displayPanX + pan.x / ox else 0f
+                        val py = if (oy > 0f) st.displayPanY + pan.y / oy else 0f
+                        st.updateDisplayView(newZoom, px, py)
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            if (bitmap != null) {
+                Box(modifier = Modifier.fillMaxSize().clip(shape)) {
+                    PannedPicture(
+                        bitmap = bitmap,
+                        zoom = state.displayZoom,
+                        panX = state.displayPanX,
+                        panY = state.displayPanY,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background.copy(alpha = max(state.fade, 0.3f)))
+                    )
+                }
+                Text(
+                    "12,345.67",
+                    fontFamily = DigitalMonospaceFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 28.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            } else {
+                Text("No picture selected", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
         if (bitmap != null) {
-            Image(
-                bitmap = bitmap,
-                contentDescription = "Background preview",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().clip(shape)
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(shape)
-                    .background(MaterialTheme.colorScheme.background.copy(alpha = state.fade))
-            )
             Text(
-                "12,345.67",
-                fontFamily = DigitalMonospaceFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 28.sp,
-                color = MaterialTheme.colorScheme.onSurface
+                "Calculator box preview: drag to move the picture, pinch to zoom.",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        } else {
-            Text("No picture selected", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
