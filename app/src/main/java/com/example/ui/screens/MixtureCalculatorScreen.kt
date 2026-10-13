@@ -170,10 +170,8 @@ fun MixtureCalculatorScreen(
         )
         if (showSaveDialog) SaveFormulaDialog(vm) { showSaveDialog = false }
 
-        // Live totals stay pinned while editing so the result is always visible.
-        if (vm.tab == CalcTab.FORMULA) {
-            FormulaLiveSummary(vm)
-        }
+        // Live key figures stay pinned on every step so the result is always visible.
+        StepSummaryBar(vm)
 
         Column(
             modifier = Modifier
@@ -189,6 +187,11 @@ fun MixtureCalculatorScreen(
                 CalcTab.REPORT -> ReportTab(vm)
             }
             Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        // Back / Next flow between the three steps (hidden while the keypad is open).
+        if (keypad.activeKey == null) {
+            StepFooter(vm.tab, vm::selectTab)
         }
 
         AnimatedVisibility(
@@ -279,7 +282,7 @@ private fun CalcHeader(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    "Batch & Correction",
+                    "Step ${tab.ordinal + 1} of ${CalcTab.values().size} · ${tab.title}",
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -338,7 +341,7 @@ private fun FormulaTab(vm: MixtureCalculatorViewModel, onNavigateToHistory: () -
     val batch = d.batch
     val unitLabel = unitLabelOf(inputs.baseText, unit)
 
-    // ---- batch setup (mode + settings in one card; totals are pinned above the scroll area)
+    // ---- 1. batch setup: mode + sizes in one card (totals are pinned above)
     SectionCard(title = "Batch Settings") {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             DottedFilterChip(
@@ -397,7 +400,7 @@ private fun FormulaTab(vm: MixtureCalculatorViewModel, onNavigateToHistory: () -
         }
     }
 
-    // ---- ingredients
+    // ---- 2. ingredients: rows first, Add button right under the last row
     SectionCard(title = "Formula Ingredients") {
         val nameOptions = remember(vm.savedNames) {
             listOf(DropdownOption("", "— None / Hide —")) + vm.savedNames.map { DropdownOption(it, it) }
@@ -465,17 +468,14 @@ private fun FormulaTab(vm: MixtureCalculatorViewModel, onNavigateToHistory: () -
             )
         }
 
-        // Add button sits right under the last row, within thumb reach.
         ActionButton(
             "Add Ingredient", Icons.Default.Add, vm::addRow,
             Modifier.fillMaxWidth(), testTag = "calc_add_ingredient"
         )
         TotalLine("Total (per base unit)", FormulaCalcEngine.fmt(batch.unitTotalKg, unit))
-        SoftDivider()
-        CollapsibleSavedNames(vm)
     }
 
-    // ---- results
+    // ---- 3. results: one compact row per ingredient with a share bar
     SectionCard(
         title = "Results",
         action = {
@@ -491,20 +491,48 @@ private fun FormulaTab(vm: MixtureCalculatorViewModel, onNavigateToHistory: () -
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
                         r.name.ifBlank { "–" },
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
-                    TypeBadge(r.type)
+                    Text(
+                        FormulaCalcEngine.fmt(r.finalKg, unit),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = primary
+                    )
                 }
-                LabelValue("Per Unit ($unitLabel)", FormulaCalcEngine.fmt(r.unitKg, unit))
-                LabelValue("Final Weight", FormulaCalcEngine.fmt(r.finalKg, unit), valueColor = primary, bold = true)
-                LabelValue("Share", String.format(java.util.Locale.US, "%.1f%%", share))
+                ShareBar((share / 100.0).toFloat(), primary)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TypeBadge(r.type)
+                    Text(
+                        "per $unitLabel: ${FormulaCalcEngine.fmt(r.unitKg, unit)}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        String.format(java.util.Locale.US, "%.1f%%", share),
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
         if (batch.rows.isNotEmpty()) {
@@ -518,19 +546,62 @@ private fun FormulaTab(vm: MixtureCalculatorViewModel, onNavigateToHistory: () -
         }
     }
 
+    // ---- 4. occasional tools, collapsed by default
+    CollapsibleCard(title = "Saved Names (${vm.savedNames.size})") {
+        SavedNamesManager(vm)
+    }
     ActionButton(
         "Mixture Recipes & Backups", Icons.Default.Science, onNavigateToHistory,
         Modifier.fillMaxWidth(), testTag = "calc_open_recipes"
     )
 }
 
-/** Compact totals bar pinned above the scrolling Formula tab. */
+// ---------------------------------------------------------------------- shared layout pieces
+
+private data class SummaryItem(
+    val label: String,
+    val value: String,
+    val color: Color,
+    val tag: String,
+    val weight: Float = 1f
+)
+
+/** Pinned key figures, different per step. */
 @Composable
-private fun FormulaLiveSummary(vm: MixtureCalculatorViewModel) {
+private fun StepSummaryBar(vm: MixtureCalculatorViewModel) {
     val unit = vm.inputs.unit
     val batch = vm.derived.batch
+    val c = vm.derived.correction
     val primary = MaterialTheme.colorScheme.primary
-    val unitLabel = unitLabelOf(vm.inputs.baseText, unit)
+    val items: List<SummaryItem> = when (vm.tab) {
+        CalcTab.FORMULA -> listOf(
+            SummaryItem(
+                "TOTAL BATCH",
+                FormulaCalcEngine.fmt(batch.grandTotalKg, unit),
+                primary, "calc_card_total", 1.6f
+            ),
+            SummaryItem(
+                "MULTIPLIER",
+                FormulaCalcEngine.fmtMultiplier(batch.multiplier),
+                AmberColor, "calc_card_multiplier"
+            ),
+            SummaryItem(
+                "UNITS (${unitLabelOf(vm.inputs.baseText, unit)})",
+                String.format(java.util.Locale.US, "%.2f", batch.unitsCount),
+                primary, "calc_card_units"
+            )
+        )
+        CalcTab.REBALANCE -> listOf(
+            SummaryItem("REMAINING", FormulaCalcEngine.fmt(c.remKg, unit), primary, "calc_card_remaining", 1.3f),
+            SummaryItem("NEW TOTAL", FormulaCalcEngine.fmt(c.newTotalKg, unit), primary, "calc_card_newtotal", 1.3f),
+            SummaryItem("TO ADD", FormulaCalcEngine.fmt(c.addTotalKg, unit), AmberColor, "calc_card_toadd", 1.3f)
+        )
+        CalcTab.REPORT -> listOf(
+            SummaryItem("BATCH", FormulaCalcEngine.fmt(batch.grandTotalKg, unit), primary, "calc_card_batch", 1.6f),
+            SummaryItem("ITEMS", batch.rows.size.toString(), primary, "calc_card_items"),
+            SummaryItem("TO ADD", FormulaCalcEngine.fmt(c.addTotalKg, unit), AmberColor, "calc_card_toadd", 1.3f)
+        )
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -540,103 +611,102 @@ private fun FormulaLiveSummary(vm: MixtureCalculatorViewModel) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(modifier = Modifier.weight(1.6f).testTag("calc_card_total")) {
-            Text(
-                "TOTAL BATCH",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.6.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                FormulaCalcEngine.fmt(batch.grandTotalKg, unit),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = DigitalMonospaceFont,
-                color = primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                (if (unit == CalcUnit.KG) "g" else "kg") + ": " + FormulaCalcEngine.fmtAlt(batch.grandTotalKg, unit),
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+        items.forEach { item ->
+            Column(modifier = Modifier.weight(item.weight).testTag(item.tag)) {
+                Text(
+                    item.label,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.6.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    item.value,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = DigitalMonospaceFont,
+                    color = item.color,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+/** Back / Next navigation between the three steps. */
+@Composable
+private fun StepFooter(tab: CalcTab, onSelectTab: (CalcTab) -> Unit) {
+    val all = CalcTab.values()
+    val i = tab.ordinal
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (i > 0) {
+            ActionButton(
+                "Back: ${all[i - 1].title}", null, { onSelectTab(all[i - 1]) },
+                Modifier.weight(1f),
+                accent = MaterialTheme.colorScheme.onSurfaceVariant,
+                testTag = "calc_step_back"
             )
         }
-        Column(modifier = Modifier.weight(1f).testTag("calc_card_multiplier")) {
-            Text(
-                "MULTIPLIER",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.6.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                FormulaCalcEngine.fmtMultiplier(batch.multiplier),
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = DigitalMonospaceFont,
-                color = AmberColor,
-                maxLines = 1
-            )
-        }
-        Column(modifier = Modifier.weight(1f).testTag("calc_card_units")) {
-            Text(
-                "UNITS ($unitLabel)",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.6.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                String.format(java.util.Locale.US, "%.2f", batch.unitsCount),
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = DigitalMonospaceFont,
-                color = primary,
-                maxLines = 1
+        if (i < all.size - 1) {
+            ActionButton(
+                "Next: ${all[i + 1].title}", null, { onSelectTab(all[i + 1]) },
+                Modifier.weight(1f),
+                testTag = "calc_step_next"
             )
         }
     }
 }
 
-/** Saved-name management is occasional, so it is tucked away and expands on demand. */
+/** Thin proportional bar used for ingredient shares. */
 @Composable
-private fun CollapsibleSavedNames(vm: MixtureCalculatorViewModel) {
-    var expanded by remember { mutableStateOf(false) }
-    Column(
+private fun ShareBar(fraction: Float, color: Color) {
+    val f = if (fraction.isNaN()) 0f else fraction.coerceIn(0f, 1f)
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .animateContentSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .height(4.dp)
+            .background(color.copy(alpha = 0.18f), RoundedCornerShape(50))
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = !expanded }
-                .padding(vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                "MANAGE SAVED NAMES (${vm.savedNames.size})",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Icon(
-                Icons.Default.ArrowDropDown,
-                contentDescription = if (expanded) "Collapse saved names" else "Expand saved names",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.rotate(if (expanded) 180f else 0f)
-            )
+                .fillMaxWidth(f)
+                .height(4.dp)
+                .background(color, RoundedCornerShape(50))
+        )
+    }
+}
+
+/** A section card whose body can be folded away; collapsed by default. */
+@Composable
+private fun CollapsibleCard(
+    title: String,
+    initiallyExpanded: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    var expanded by remember { mutableStateOf(initiallyExpanded) }
+    SectionCard(
+        title = title,
+        modifier = Modifier.animateContentSize(),
+        action = {
+            SoftIconButton(onClick = { expanded = !expanded }, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    Icons.Default.ArrowDropDown,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.rotate(if (expanded) 180f else 0f)
+                )
+            }
         }
-        if (expanded) SavedNamesManager(vm)
+    ) {
+        if (expanded) content()
     }
 }
 
@@ -807,43 +877,6 @@ private fun RebalanceTab(vm: MixtureCalculatorViewModel) {
     }
 
     SectionCard(
-        title = "Target Formula",
-        action = {
-            ActionButton("Reload", Icons.Default.Refresh, vm::syncTargetWithOriginal, testTag = "calc_target_reload")
-        }
-    ) {
-        val named = inputs.rows.filter { it.name.isNotBlank() }
-        if (named.isEmpty()) EmptyHint("No ingredients yet.")
-        named.forEach { row ->
-            RowCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        row.name,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f)
-                    )
-                    TypeBadge(row.type)
-                }
-                NumberField(
-                    label = "Target amount",
-                    value = vm.targetTextFor(row.id),
-                    onChange = { vm.setTarget(row.id, it) },
-                    suffix = unit.label,
-                    accent = AmberColor,
-                    modifier = Modifier.fillMaxWidth(),
-                    testTag = "calc_target_${row.id}"
-                )
-            }
-        }
-    }
-
-    SectionCard(
         title = "Required Additions",
         action = {
             Column(horizontalAlignment = Alignment.End) {
@@ -901,6 +934,44 @@ private fun RebalanceTab(vm: MixtureCalculatorViewModel) {
             TotalLine("Total to add", FormulaCalcEngine.fmt(c.addTotalKg, unit), valueColor = AmberColor)
         }
     }
+
+    CollapsibleCard(title = "Target Formula (advanced)") {
+        Text(
+            "Defaults to the original formula. Edit only if the corrected batch should use different amounts.",
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        ActionButton("Reload from formula", Icons.Default.Refresh, vm::syncTargetWithOriginal, Modifier.fillMaxWidth(), testTag = "calc_target_reload")
+        val named = inputs.rows.filter { it.name.isNotBlank() }
+        if (named.isEmpty()) EmptyHint("No ingredients yet.")
+        named.forEach { row ->
+            RowCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        row.name,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TypeBadge(row.type)
+                }
+                NumberField(
+                    label = "Target amount",
+                    value = vm.targetTextFor(row.id),
+                    onChange = { vm.setTarget(row.id, it) },
+                    suffix = unit.label,
+                    accent = AmberColor,
+                    modifier = Modifier.fillMaxWidth(),
+                    testTag = "calc_target_${row.id}"
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -944,26 +1015,55 @@ private fun ReportTab(vm: MixtureCalculatorViewModel) {
             ActionButton("Copy Full Report", Icons.Default.ContentCopy, vm::copyComparisonReport, testTag = "calc_copy_full")
         }
     ) {
-        if (batch.rows.isEmpty()) EmptyHint("Enter a formula on the Formula tab first.")
+        if (batch.rows.isEmpty()) EmptyHint("Enter a formula on the Formula step first.")
         var addTotal = 0.0
         batch.rows.forEach { r ->
             val add = d.correction.addFor(r.id)
             addTotal += add
             RowCard {
-                Text(
-                    r.name.ifBlank { "–" },
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                LabelValue("Per Unit ($unitLabel)", FormulaCalcEngine.fmt(r.unitKg, unit))
-                LabelValue("Scaled Batch", FormulaCalcEngine.fmt(r.finalKg, unit), valueColor = primary, bold = true)
-                LabelValue(
-                    "Correction Addition",
-                    if (add > 0) FormulaCalcEngine.fmt(add, unit) else "–",
-                    valueColor = if (add > 0) AmberColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                    bold = add > 0
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        r.name.ifBlank { "–" },
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        FormulaCalcEngine.fmt(r.finalKg, unit),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DigitalMonospaceFont,
+                        color = primary
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "per $unitLabel: ${FormulaCalcEngine.fmt(r.unitKg, unit)}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        if (add > 0) "+ ${FormulaCalcEngine.fmt(add, unit)}" else "no correction",
+                        fontSize = 11.5.sp,
+                        fontWeight = if (add > 0) FontWeight.Bold else FontWeight.Normal,
+                        fontFamily = DigitalMonospaceFont,
+                        color = if (add > 0) AmberColor else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
         if (batch.rows.isNotEmpty()) {
