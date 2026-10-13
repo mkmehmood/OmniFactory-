@@ -21,6 +21,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -360,7 +361,7 @@ fun PannedPicture(
     panY: Float,
     modifier: Modifier = Modifier
 ) {
-    androidx.compose.foundation.Canvas(modifier = modifier.androidx_clipToBounds()) {
+    androidx.compose.foundation.Canvas(modifier = modifier.clipToBounds()) {
         val s = max(size.width / bitmap.width, size.height / bitmap.height) * zoom
         val dw = bitmap.width * s
         val dh = bitmap.height * s
@@ -378,5 +379,3 @@ fun PannedPicture(
         )
     }
 }
-
-private fun Modifier.androidx_clipToBounds(): Modifier = this.then(androidx.compose.ui.draw.clipToBounds())
