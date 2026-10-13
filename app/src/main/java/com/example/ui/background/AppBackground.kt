@@ -67,22 +67,22 @@ class AppBackgroundState(context: Context) {
     var showAsBackground by mutableStateOf(prefs.getBoolean(KEY_BACKGROUND, true))
         private set
 
-    fun setBlur(value: Float) {
+    fun updateBlur(value: Float) {
         blur = value.coerceIn(0f, 25f)
         prefs.edit().putFloat(KEY_BLUR, blur).apply()
     }
 
-    fun setFade(value: Float) {
+    fun updateFade(value: Float) {
         fade = value.coerceIn(0f, 0.9f)
         prefs.edit().putFloat(KEY_FADE, fade).apply()
     }
 
-    fun setShowInDisplay(value: Boolean) {
+    fun updateShowInDisplay(value: Boolean) {
         showInDisplay = value
         prefs.edit().putBoolean(KEY_DISPLAY, value).apply()
     }
 
-    fun setShowAsBackground(value: Boolean) {
+    fun updateShowAsBackground(value: Boolean) {
         showAsBackground = value
         prefs.edit().putBoolean(KEY_BACKGROUND, value).apply()
     }

@@ -130,10 +130,10 @@ fun BackgroundPictureSection(modifier: Modifier = Modifier) {
         }
 
         if (state.hasImage) {
-            SliderRow("Blur", "${state.blur.roundToInt()}", state.blur, 0f..25f) { state.setBlur(it) }
-            SliderRow("Fade", "${(state.fade * 100).roundToInt()}%", state.fade, 0f..0.9f) { state.setFade(it) }
-            ToggleRow("Show in calculator display", state.showInDisplay) { state.setShowInDisplay(it) }
-            ToggleRow("Use as app background", state.showAsBackground) { state.setShowAsBackground(it) }
+            SliderRow("Blur", "${state.blur.roundToInt()}", state.blur, 0f..25f) { state.updateBlur(it) }
+            SliderRow("Fade", "${(state.fade * 100).roundToInt()}%", state.fade, 0f..0.9f) { state.updateFade(it) }
+            ToggleRow("Show in calculator display", state.showInDisplay) { state.updateShowInDisplay(it) }
+            ToggleRow("Use as app background", state.showAsBackground) { state.updateShowAsBackground(it) }
         }
     }
 
