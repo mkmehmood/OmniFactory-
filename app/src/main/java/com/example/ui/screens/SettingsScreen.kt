@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.BackgroundPictureSection
 import com.example.ui.components.SoftCheckbox
 import com.example.ui.components.SoftRadioButton
 import com.example.ui.components.SoftAlertDialog
@@ -378,6 +379,10 @@ fun SettingsScreen(
                     )
                 }
             }
+
+            SoftDivider()
+
+            BackgroundPictureSection()
 
             SoftDivider()
 
@@ -1037,12 +1042,6 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             DbStatPill(
-                                title = "Batch Scaler",
-                                value = "${settingsUiState.stats.batchScalingCount}",
-                                icon = Icons.Default.LinearScale,
-                                modifier = Modifier.weight(1f)
-                            )
-                            DbStatPill(
                                 title = "Calc Formulas",
                                 value = "${settingsUiState.stats.calculatorFormulasCount}",
                                 icon = Icons.Default.Science,
@@ -1535,20 +1534,7 @@ fun SettingsScreen(
                                     checked = settingsUiState.clearMixturesOption,
                                     onCheckedChange = { settingsViewModel.setClearMixturesOption(it) })
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Mixture Wizard Recipes + Calculator data (${settingsUiState.stats.mixtureRecipesCount} recipes, ${settingsUiState.stats.calculatorFormulasCount} formulas, ${settingsUiState.stats.calculatorNamesCount} names)", fontSize = 12.sp)
-                            }
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { settingsViewModel.setClearBatchScalingOption(!settingsUiState.clearBatchScalingOption) }
-                            ) {
-                                SoftCheckbox(
-                                    checked = settingsUiState.clearBatchScalingOption,
-                                    onCheckedChange = { settingsViewModel.setClearBatchScalingOption(it) })
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Batch Scaler History (${settingsUiState.stats.batchScalingCount} recipes)", fontSize = 12.sp)
+                                Text("Saved mixture recipes + Mixture Calculator data (${settingsUiState.stats.mixtureRecipesCount} recipes, ${settingsUiState.stats.calculatorFormulasCount} formulas, ${settingsUiState.stats.calculatorNamesCount} names)", fontSize = 12.sp)
                             }
                         }
                     }

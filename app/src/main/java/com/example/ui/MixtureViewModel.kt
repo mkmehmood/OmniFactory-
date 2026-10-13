@@ -74,7 +74,6 @@ data class MixtureUiState(
     val currentRecipeTitle: String = "Custom Formulation",
     val showDatabaseBrowserSheet: Boolean = false,
     val showSaveRecipeDialog: Boolean = false,
-    val showBackupRestoreDialog: Boolean = false,
     val historySearchQuery: String = "",
     val historyCategoryFilter: String = "ALL",
     val selectedAdjustmentMode: MixtureAdjustmentMode = MixtureAdjustmentMode.CONSTANT_TOTAL_WEIGHT,
@@ -162,10 +161,6 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
 
     fun setSaveRecipeDialogOpen(isOpen: Boolean) {
         _uiState.update { it.copy(showSaveRecipeDialog = isOpen) }
-    }
-
-    fun setBackupRestoreDialogOpen(isOpen: Boolean) {
-        _uiState.update { it.copy(showBackupRestoreDialog = isOpen) }
     }
 
     fun setHistorySearchQuery(query: String) {
@@ -433,45 +428,6 @@ class MixtureViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             mixtureDao.clearAll()
             _userMessage.emit("Cleared all mixture recipes")
-        }
-    }
-
-    suspend fun exportBackupJson(): String {
-        val backupManager = DatabaseBackupManager(getApplication())
-        return backupManager.exportMixtureBackupJson()
-    }
-
-    fun restoreBackupFromJson(json: String, mode: RestoreMode) {
-        viewModelScope.launch {
-            val backupManager = DatabaseBackupManager(getApplication())
-            val result = backupManager.restoreMixtureFromJson(json, mode)
-            _userMessage.emit(result.message)
-        }
-    }
-
-    fun saveBackupToUri(context: Context, uri: Uri) {
-        viewModelScope.launch {
-            val backupManager = DatabaseBackupManager(context)
-            val json = backupManager.exportMixtureBackupJson()
-            val ok = backupManager.writeBackupToUri(context, uri, json)
-            if (ok) {
-                _userMessage.emit("Mixture formulation backup saved successfully.")
-            } else {
-                _userMessage.emit("Failed to save mixture backup file.")
-            }
-        }
-    }
-
-    fun loadBackupFromUri(context: Context, uri: Uri, mode: RestoreMode) {
-        viewModelScope.launch {
-            val backupManager = DatabaseBackupManager(context)
-            val content = backupManager.readBackupFromUri(context, uri)
-            if (!content.isNullOrBlank()) {
-                val result = backupManager.restoreMixtureFromJson(content, mode)
-                _userMessage.emit(result.message)
-            } else {
-                _userMessage.emit("Failed to read mixture backup file.")
-            }
         }
     }
 

@@ -7,6 +7,25 @@ import com.example.ui.components.softWell
 import com.example.ui.components.SoftDivider
 import com.example.ui.theme.SoftColors
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.matchParentSize
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import com.example.ui.components.SmartStationKeypad
+import com.example.ui.theme.LocalShapeStructure
+import com.example.ui.theme.LocalAnimationIntensity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -119,6 +138,23 @@ fun MixtureCalculatorScreen(
     }
     LaunchedEffect(vm.tab) { scrollState.scrollTo(0) }
 
+    // The app's own digital keypad drives every numeric field on this screen.
+    val keypad = remember { MixtureKeypadController() }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    @OptIn(ExperimentalLayoutApi::class)
+    val isImeVisible = WindowInsets.isImeVisible
+    LaunchedEffect(isImeVisible) { if (isImeVisible) keypad.dismiss() }
+    LaunchedEffect(vm.tab) { keypad.dismiss() }
+    LaunchedEffect(scrollState.isScrollInProgress) { if (scrollState.isScrollInProgress) keypad.dismiss() }
+    LaunchedEffect(keypad.activeKey) {
+        if (keypad.activeKey != null) {
+            focusManager.clearFocus()
+            keyboardController?.hide()
+        }
+    }
+
+    CompositionLocalProvider(LocalMixtureKeypad provides keypad) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -149,8 +185,59 @@ fun MixtureCalculatorScreen(
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
+
+        AnimatedVisibility(
+            visible = keypad.activeKey != null,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+        ) {
+            SmartStationKeypad(
+                activeFieldLabel = keypad.activeLabel,
+                onDigit = { keypad.append(it) },
+                onDoubleZero = { keypad.append("00") },
+                onDecimal = { keypad.append(".") },
+                onBackspace = { keypad.backspace() },
+                onClear = { keypad.clear() },
+                onDone = { keypad.dismiss() },
+                shapeStructureStyle = LocalShapeStructure.current,
+                animationIntensity = LocalAnimationIntensity.current,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            )
+        }
+    }
     }
 }
+
+// ====================================================================== keypad host
+
+/** One numeric field the keypad can type into; refreshed on every recomposition of the field. */
+private class KeypadTarget(var value: String, var onChange: (String) -> Unit)
+
+@Stable
+private class MixtureKeypadController {
+    var activeKey by mutableStateOf<String?>(null)
+        private set
+    var activeLabel by mutableStateOf<String?>(null)
+        private set
+    private val targets = HashMap<String, KeypadTarget>()
+
+    fun register(key: String, value: String, onChange: (String) -> Unit) {
+        val t = targets[key]
+        if (t == null) targets[key] = KeypadTarget(value, onChange) else { t.value = value; t.onChange = onChange }
+    }
+
+    fun activate(key: String, label: String) { activeKey = key; activeLabel = label }
+    fun dismiss() { activeKey = null; activeLabel = null }
+
+    private fun current(): KeypadTarget? = activeKey?.let { targets[it] }
+    fun append(token: String) { current()?.let { it.onChange(it.value + token) } }
+    fun backspace() { current()?.let { it.onChange(it.value.dropLast(1)) } }
+    fun clear() { current()?.onChange("") }
+}
+
+private val LocalMixtureKeypad = staticCompositionLocalOf<MixtureKeypadController?> { null }
 
 // ====================================================================== header
 
@@ -731,11 +818,14 @@ private fun RebalanceTab(vm: MixtureCalculatorViewModel) {
 @Composable
 private fun AddAmountField(row: CalcCorrectionRow, unit: CalcUnit, onEdit: (String) -> Unit) {
     val derivedText = FormulaCalcEngine.addInputText(row.addKg, unit)
+    val keypad = LocalMixtureKeypad.current
+    val fieldKey = "calc_add_${row.id}"
+    val isActive = keypad?.activeKey == fieldKey
     var local by remember(row.id) { mutableStateOf<String?>(null) }
-    var focused by remember(row.id) { mutableStateOf(false) }
+    LaunchedEffect(isActive) { if (!isActive) local = null }
     NumberField(
         label = "Add (${unit.label})",
-        value = if (focused) (local ?: derivedText) else derivedText,
+        value = if (isActive) (local ?: derivedText) else derivedText,
         onChange = {
             val clean = FormulaCalcEngine.sanitizeNumeric(it)
             local = clean
@@ -744,13 +834,8 @@ private fun AddAmountField(row: CalcCorrectionRow, unit: CalcUnit, onEdit: (Stri
         suffix = unit.label,
         accent = AmberColor,
         textColor = if (row.addKg > 0) AmberColor else MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier
-            .fillMaxWidth()
-            .onFocusChanged {
-                focused = it.hasFocus
-                if (!it.hasFocus) local = null
-            },
-        testTag = "calc_add_${row.id}"
+        modifier = Modifier.fillMaxWidth(),
+        testTag = fieldKey
     )
 }
 
@@ -1011,34 +1096,54 @@ private fun NumberField(
     trailing: (@Composable () -> Unit)? = null,
     testTag: String? = null
 ) {
-    LiquidGlassTextField(
-        value = value,
-        onValueChange = onChange,
-        modifier = modifier,
-        textStyle = LocalTextStyle.current.copy(
-            fontFamily = DigitalMonospaceFont,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            color = textColor
-        ),
-        label = { Text(label, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        placeholder = {
-            Text(
-                placeholder,
+    val keypad = LocalMixtureKeypad.current
+    val fieldKey = testTag ?: label
+    SideEffect { keypad?.register(fieldKey, value, onChange) }
+    val isActive = keypad != null && keypad.activeKey == fieldKey
+
+    Box(modifier = modifier) {
+        LiquidGlassTextField(
+            value = value,
+            onValueChange = onChange,
+            modifier = Modifier.fillMaxWidth(),
+            readOnly = keypad != null,
+            forceFocused = isActive,
+            textStyle = LocalTextStyle.current.copy(
                 fontFamily = DigitalMonospaceFont,
-                fontWeight = if (placeholderColor != null) FontWeight.Bold else FontWeight.Normal,
-                color = placeholderColor ?: Color.Unspecified
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = textColor
+            ),
+            label = { Text(label, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            placeholder = {
+                Text(
+                    placeholder,
+                    fontFamily = DigitalMonospaceFont,
+                    fontWeight = if (placeholderColor != null) FontWeight.Bold else FontWeight.Normal,
+                    color = placeholderColor ?: Color.Unspecified
+                )
+            },
+            suffix = if (suffix != null) {
+                { Text(suffix, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            } else null,
+            trailingIcon = trailing,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            singleLine = true,
+            accentColor = accent,
+            testTag = testTag
+        )
+        if (keypad != null) {
+            // Catches the tap so the system keyboard never opens; the in-app keypad takes over instead.
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { keypad.activate(fieldKey, label) }
             )
-        },
-        suffix = if (suffix != null) {
-            { Text(suffix, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        } else null,
-        trailingIcon = trailing,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        singleLine = true,
-        accentColor = accent,
-        testTag = testTag
-    )
+        }
+    }
 }
 
 @Composable

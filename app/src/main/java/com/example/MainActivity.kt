@@ -466,18 +466,6 @@ class MainActivity : ComponentActivity() {
                                                     },
                                                     onClearAll = {
                                                         mixtureViewModel.clearAllRecipes()
-                                                    },
-                                                    onExportBackupJson = {
-                                                        mixtureViewModel.exportBackupJson()
-                                                    },
-                                                    onRestoreBackupJson = { json, mode ->
-                                                        mixtureViewModel.restoreBackupFromJson(json, mode)
-                                                    },
-                                                    onSaveToUri = { uri ->
-                                                        mixtureViewModel.saveBackupToUri(localContext, uri)
-                                                    },
-                                                    onLoadFromUri = { uri, mode ->
-                                                        mixtureViewModel.loadBackupFromUri(localContext, uri, mode)
                                                     }
                                                 )
                                             }

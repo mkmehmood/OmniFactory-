@@ -108,11 +108,7 @@ fun MixtureHistorySheet(
     onEditRecipe: (MixtureRecipeEntity, String, String, String) -> Unit,
     onDeleteRecipe: (MixtureRecipeEntity) -> Unit,
     onToggleFavorite: (MixtureRecipeEntity) -> Unit,
-    onClearAll: () -> Unit,
-    onExportBackupJson: suspend () -> String,
-    onRestoreBackupJson: (String, RestoreMode) -> Unit,
-    onSaveToUri: (android.net.Uri) -> Unit,
-    onLoadFromUri: (android.net.Uri, RestoreMode) -> Unit
+    onClearAll: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
@@ -127,7 +123,6 @@ fun MixtureHistorySheet(
     var selectedCategory by remember { mutableStateOf("ALL") }
     var editingEntity by remember { mutableStateOf<MixtureRecipeEntity?>(null) }
     var showClearConfirm by remember { mutableStateOf(false) }
-    var showBackupRestoreModal by remember { mutableStateOf(false) }
 
     val categories = listOf("ALL", "Structural", "Chemical", "Culinary", "Industrial", "Custom")
 
@@ -192,19 +187,6 @@ fun MixtureHistorySheet(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Backup / Restore button
-                    SoftIconButton(
-                        onClick = { showBackupRestoreModal = true },
-                        modifier = Modifier.size(36.dp).testTag("mixture_backup_restore_btn")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Download,
-                            contentDescription = "Backup & Restore Formulations",
-                            tint = primaryColor,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
                     if (recipes.isNotEmpty()) {
                         SoftIconButton(
                             onClick = { showClearConfirm = true },
@@ -420,23 +402,6 @@ fun MixtureHistorySheet(
                 SoftButton(onClick = { showClearConfirm = false }) {
                     Text("Cancel")
                 }
-            }
-        )
-    }
-
-    // Standalone Backup & Restore Modal for Mixtures
-    if (showBackupRestoreModal) {
-        MixtureBackupRestoreDialog(
-            onDismiss = { showBackupRestoreModal = false },
-            onExportJson = onExportBackupJson,
-            onRestoreJson = { json, mode ->
-                onRestoreBackupJson(json, mode)
-                showBackupRestoreModal = false
-            },
-            onSaveToUri = onSaveToUri,
-            onLoadFromUri = { uri, mode ->
-                onLoadFromUri(uri, mode)
-                showBackupRestoreModal = false
             }
         )
     }
@@ -984,207 +949,6 @@ fun MixtureSaveDialog(
         dismissButton = {
             SoftButton(onClick = onDismiss) {
                 Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun MixtureBackupRestoreDialog(
-    onDismiss: () -> Unit,
-    onExportJson: suspend () -> String,
-    onRestoreJson: (String, RestoreMode) -> Unit,
-    onSaveToUri: (android.net.Uri) -> Unit,
-    onLoadFromUri: (android.net.Uri, RestoreMode) -> Unit
-) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val clipboardManager = LocalClipboardManager.current
-    val primaryColor = MaterialTheme.colorScheme.primary
-    var activeTab by remember { mutableStateOf(0) } // 0: Export, 1: Import
-    var restoreMode by remember { mutableStateOf(RestoreMode.MERGE) }
-    var pastedJson by remember { mutableStateOf("") }
-    var isExporting by remember { mutableStateOf(false) }
-
-    val fileSaveLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        if (uri != null) onSaveToUri(uri)
-    }
-
-    val filePickLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) onLoadFromUri(uri, restoreMode)
-    }
-
-    SoftAlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = if (activeTab == 0) Icons.Default.Download else Icons.Default.Upload,
-                    contentDescription = null,
-                    tint = primaryColor,
-                    modifier = Modifier.size(22.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Mixture Backup & Restore", fontWeight = FontWeight.Bold, fontFamily = DigitalMonospaceFont)
-            }
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Tab switcher
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .softWell(RoundedCornerShape(10.dp))
-                        .padding(3.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    SoftSurface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { activeTab = 0 },
-                        shape = RoundedCornerShape(8.dp),
-                        color = if (activeTab == 0) primaryColor else Color.Transparent
-                    ) {
-                        Text(
-                            text = "Export Backup",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            color = if (activeTab == 0) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(vertical = 8.dp),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                    }
-
-                    SoftSurface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { activeTab = 1 },
-                        shape = RoundedCornerShape(8.dp),
-                        color = if (activeTab == 1) primaryColor else Color.Transparent
-                    ) {
-                        Text(
-                            text = "Restore / Import",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DigitalMonospaceFont,
-                            color = if (activeTab == 1) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(vertical = 8.dp),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                    }
-                }
-
-                if (activeTab == 0) {
-                    Text(
-                        text = "Export your saved mixture formulations as a standalone JSON backup file.",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    SoftButton(
-                        onClick = {
-                            val dateStr = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-                            fileSaveLauncher.launch("mixture_formulations_backup_$dateStr.json")
-                        },
-                        modifier = Modifier.fillMaxWidth().height(44.dp),
-                        shape = RoundedCornerShape(10.dp), accentColor = primaryColor, filled = true) {
-                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Download Backup JSON File", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    SoftButton(
-                        onClick = {
-                            scope.launch {
-                                isExporting = true
-                                val json = onExportJson()
-                                clipboardManager.setText(AnnotatedString(json))
-                                isExporting = false
-                                Toast.makeText(context, "Backup JSON copied to clipboard", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(44.dp),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Copy Backup JSON to Clipboard", fontSize = 12.sp)
-                    }
-                } else {
-                    Text(
-                        text = "Restore saved formulations from a backup file or paste JSON.",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    // Restore mode selector
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable { restoreMode = RestoreMode.MERGE }
-                        ) {
-                            SoftRadioButton(
-                                selected = restoreMode == RestoreMode.MERGE,
-                                onClick = { restoreMode = RestoreMode.MERGE }
-                            )
-                            Text("Merge", fontSize = 12.sp)
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable { restoreMode = RestoreMode.OVERWRITE }
-                        ) {
-                            SoftRadioButton(
-                                selected = restoreMode == RestoreMode.OVERWRITE,
-                                onClick = { restoreMode = RestoreMode.OVERWRITE }
-                            )
-                            Text("Overwrite Existing", fontSize = 12.sp)
-                        }
-                    }
-
-                    SoftButton(
-                        onClick = { filePickLauncher.launch(arrayOf("application/json", "*/*")) },
-                        modifier = Modifier.fillMaxWidth().height(44.dp),
-                        shape = RoundedCornerShape(10.dp), accentColor = primaryColor, filled = true) {
-                        Icon(Icons.Default.Upload, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Select Backup File (.json)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    LiquidGlassTextField(
-                        value = pastedJson,
-                        onValueChange = { pastedJson = it },
-                        placeholder = { Text("Or paste backup JSON here...") },
-                        singleLine = false,
-                        accentColor = primaryColor,
-                        modifier = Modifier.fillMaxWidth().height(100.dp)
-                    )
-
-                    if (pastedJson.isNotBlank()) {
-                        SoftButton(
-                            onClick = { onRestoreJson(pastedJson, restoreMode) },
-                            modifier = Modifier.fillMaxWidth().height(42.dp),
-                            shape = RoundedCornerShape(10.dp), accentColor = SoftColors.positive, filled = true) {
-                            Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Restore from Pasted JSON", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            SoftButton(onClick = onDismiss) {
-                Text("Close")
             }
         }
     )

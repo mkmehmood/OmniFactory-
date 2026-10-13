@@ -12,10 +12,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CalculationEntity::class,
         SalesTransactionEntity::class,
         MixtureRecipeEntity::class,
-        LedgerTransactionEntity::class,
-        BatchScalingEntity::class
+        LedgerTransactionEntity::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -23,13 +22,19 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun salesTransactionDao(): SalesTransactionDao
     abstract fun mixtureRecipeDao(): MixtureRecipeDao
     abstract fun ledgerTransactionDao(): LedgerTransactionDao
-    abstract fun batchScalingDao(): BatchScalingDao
 
     companion object {
         /** Adds the stored formulation method / solver inputs to saved mixture recipes without losing data. */
         private val MIGRATION_12_13 = object : Migration(12, 13) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE mixture_recipes ADD COLUMN formulaConfigJson TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
+        /** The standalone Batch Scaler was replaced by the Mixture Calculator's scale step; drop its table. */
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS batch_scaling_history")
             }
         }
 
@@ -43,7 +48,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "calculator_persistent_db"
                 )
-                .addMigrations(MIGRATION_12_13)
+                .addMigrations(MIGRATION_12_13, MIGRATION_13_14)
                 .fallbackToDestructiveMigration(dropAllTables = false)
                 .build()
                 INSTANCE = instance

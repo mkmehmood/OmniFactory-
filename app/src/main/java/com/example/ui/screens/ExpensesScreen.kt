@@ -159,7 +159,6 @@ fun ExpensesScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
             .testTag("expenses_screen")
     ) {
         LazyColumn(

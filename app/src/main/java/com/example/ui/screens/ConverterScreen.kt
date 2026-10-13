@@ -146,7 +146,6 @@ fun ConverterScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
             .testTag("converter_screen")
     ) {
         AnimatedContent(

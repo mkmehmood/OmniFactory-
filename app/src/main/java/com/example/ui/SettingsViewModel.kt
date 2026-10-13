@@ -38,8 +38,7 @@ data class SettingsUiState(
     val clearCalculationsOption: Boolean = true,
     val clearSalesOption: Boolean = true,
     val clearMixturesOption: Boolean = true,
-    val clearLedgerOption: Boolean = true,
-    val clearBatchScalingOption: Boolean = true
+    val clearLedgerOption: Boolean = true
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -102,10 +101,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setClearLedgerOption(enabled: Boolean) {
         _uiState.update { it.copy(clearLedgerOption = enabled) }
-    }
-
-    fun setClearBatchScalingOption(enabled: Boolean) {
-        _uiState.update { it.copy(clearBatchScalingOption = enabled) }
     }
 
     fun setPendingJson(json: String) {
@@ -231,8 +226,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 clearCalculations = current.clearCalculationsOption,
                 clearSales = current.clearSalesOption,
                 clearMixtures = current.clearMixturesOption,
-                clearLedger = current.clearLedgerOption,
-                clearBatchScaling = current.clearBatchScalingOption
+                clearLedger = current.clearLedgerOption
             )
             val stats = backupManager.getStats()
             _uiState.update {

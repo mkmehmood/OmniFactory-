@@ -27,14 +27,13 @@ data class DatabaseStats(
     val salesTransactionsCount: Int = 0,
     val mixtureRecipesCount: Int = 0,
     val ledgerTransactionsCount: Int = 0,
-    val batchScalingCount: Int = 0,
     val lastBackupTimestamp: Long = 0L,
     val hasLocalSnapshot: Boolean = false,
     val localSnapshotTimestamp: Long? = null,
     val calculatorFormulasCount: Int = 0,
     val calculatorNamesCount: Int = 0
 ) {
-    val totalRecords: Int get() = calculationsCount + salesTransactionsCount + mixtureRecipesCount + ledgerTransactionsCount + batchScalingCount + calculatorFormulasCount
+    val totalRecords: Int get() = calculationsCount + salesTransactionsCount + mixtureRecipesCount + ledgerTransactionsCount + calculatorFormulasCount
 
     val formattedLastBackup: String
         get() = if (lastBackupTimestamp > 0) {
@@ -53,14 +52,13 @@ data class BackupValidationResult(
     val salesTransactionsCount: Int = 0,
     val mixtureRecipesCount: Int = 0,
     val ledgerTransactionsCount: Int = 0,
-    val batchScalingCount: Int = 0,
     val hasPreferences: Boolean = false,
     val errorMessage: String? = null,
     val hasMixtureCalculator: Boolean = false,
     val calculatorFormulasCount: Int = 0,
     val calculatorNamesCount: Int = 0
 ) {
-    val totalItems: Int get() = calculationsCount + salesTransactionsCount + mixtureRecipesCount + ledgerTransactionsCount + batchScalingCount + calculatorFormulasCount
+    val totalItems: Int get() = calculationsCount + salesTransactionsCount + mixtureRecipesCount + ledgerTransactionsCount + calculatorFormulasCount
 
     val formattedBackupDate: String
         get() = if (timestamp > 0) {
@@ -82,7 +80,6 @@ data class RestoreSummary(
     val restoredSales: Int = 0,
     val restoredMixtures: Int = 0,
     val restoredLedger: Int = 0,
-    val restoredBatchScaling: Int = 0,
     val restoredSettings: Boolean = false,
     val message: String,
     val restoredCalculatorFormulas: Int = 0,
@@ -96,7 +93,6 @@ class DatabaseBackupManager(private val context: Context) {
     private val salesDao = db.salesTransactionDao()
     private val mixtureDao = db.mixtureRecipeDao()
     private val ledgerDao = db.ledgerTransactionDao()
-    private val batchScalingDao = db.batchScalingDao()
     private val prefs = UserPreferencesManager(context)
 
     private val snapshotFile: File
@@ -108,7 +104,6 @@ class DatabaseBackupManager(private val context: Context) {
             val sales = salesDao.getCount()
             val mixtures = mixtureDao.getCount()
             val ledgerCount = ledgerDao.getCount()
-            val batchCount = batchScalingDao.getCount()
             val lastBackup = prefs.lastBackupTimestamp
             val snapshotExists = snapshotFile.exists() && snapshotFile.length() > 10
             val snapshotTime = if (snapshotExists) snapshotFile.lastModified() else null
@@ -120,7 +115,6 @@ class DatabaseBackupManager(private val context: Context) {
                 salesTransactionsCount = sales,
                 mixtureRecipesCount = mixtures,
                 ledgerTransactionsCount = ledgerCount,
-                batchScalingCount = batchCount,
                 lastBackupTimestamp = lastBackup,
                 hasLocalSnapshot = snapshotExists,
                 localSnapshotTimestamp = snapshotTime,
@@ -239,35 +233,6 @@ class DatabaseBackupManager(private val context: Context) {
         }
         root.put("ledgerTransactions", ledgerArray)
 
-        // 6. Batch Scaling History
-        val batchList = batchScalingDao.getAllList()
-        val batchArray = JSONArray()
-        for (b in batchList) {
-            val obj = JSONObject().apply {
-                put("id", b.id)
-                put("title", b.title)
-                put("description", b.description)
-                put("scalingMode", b.scalingMode)
-                put("batchSubMode", b.batchSubMode)
-                put("targetTotalText", b.targetTotalText)
-                put("batchSizeText", b.batchSizeText)
-                put("batchCountText", b.batchCountText)
-                put("availableAmountText", b.availableAmountText)
-                put("roundingOption", b.roundingOption)
-                put("componentsJson", b.componentsJson)
-                put("originalGrandTotal", b.originalGrandTotal)
-                put("scaledGrandTotal", b.scaledGrandTotal)
-                put("scalingFactor", b.scalingFactor)
-                put("singleBatchGrandTotal", b.singleBatchGrandTotal)
-                put("componentsCount", b.componentsCount)
-                put("timestamp", b.timestamp)
-                put("isPinned", b.isPinned)
-                put("note", b.note)
-            }
-            batchArray.put(obj)
-        }
-        root.put("batchScaling", batchArray)
-
         // 6b. Mixture Calculator (saved names, saved formulas, last working session)
         val calculatorState = MixtureCalculatorStore.readJson(context)
         if (calculatorState != null) {
@@ -318,7 +283,6 @@ class DatabaseBackupManager(private val context: Context) {
             val salesArray = root.optJSONArray("salesTransactions")
             val mixtureArray = root.optJSONArray("mixtureRecipes")
             val ledgerArray = root.optJSONArray("ledgerTransactions")
-            val batchArray = root.optJSONArray("batchScaling")
             val settingsObj = root.optJSONObject("settings")
             val calculatorObj = root.optJSONObject("mixtureCalculator")
 
@@ -331,10 +295,9 @@ class DatabaseBackupManager(private val context: Context) {
             val salesCount = salesArray?.length() ?: 0
             val mixtureCount = mixtureArray?.length() ?: 0
             val ledgerCount = ledgerArray?.length() ?: 0
-            val batchCount = batchArray?.length() ?: 0
             val hasSettings = settingsObj != null
 
-            if (calcCount == 0 && salesCount == 0 && mixtureCount == 0 && ledgerCount == 0 && batchCount == 0 && !hasSettings && !hasCalculator) {
+            if (calcCount == 0 && salesCount == 0 && mixtureCount == 0 && ledgerCount == 0 && !hasSettings && !hasCalculator) {
                 BackupValidationResult(
                     isValid = false,
                     errorMessage = "No valid data tables or settings found in this backup JSON."
@@ -348,8 +311,7 @@ class DatabaseBackupManager(private val context: Context) {
                     salesTransactionsCount = salesCount,
                     mixtureRecipesCount = mixtureCount,
                     ledgerTransactionsCount = ledgerCount,
-                    batchScalingCount = batchCount,
-                    hasPreferences = hasSettings,
+                        hasPreferences = hasSettings,
                     hasMixtureCalculator = hasCalculator,
                     calculatorFormulasCount = calculatorFormulas,
                     calculatorNamesCount = calculatorNames
@@ -396,7 +358,6 @@ class DatabaseBackupManager(private val context: Context) {
                 salesDao.clearAllTransactions()
                 mixtureDao.clearAll()
                 ledgerDao.clearAllTransactions()
-                batchScalingDao.clearAll()
             }
 
             // 1. Calculations
@@ -517,41 +478,6 @@ class DatabaseBackupManager(private val context: Context) {
                 restoredLedger = list.size
             }
 
-            // 5. Batch Scaling History
-            var restoredBatch = 0
-            val batchArray = root.optJSONArray("batchScaling")
-            if (batchArray != null && batchArray.length() > 0) {
-                val list = mutableListOf<BatchScalingEntity>()
-                for (i in 0 until batchArray.length()) {
-                    val obj = batchArray.getJSONObject(i)
-                    list.add(
-                        BatchScalingEntity(
-                            id = if (mode == RestoreMode.OVERWRITE) obj.optLong("id", 0L) else 0L,
-                            title = obj.optString("title", "Batch Recipe"),
-                            description = obj.optString("description", ""),
-                            scalingMode = obj.optString("scalingMode", "TARGET_TOTAL"),
-                            batchSubMode = obj.optString("batchSubMode", "BY_BATCH_COUNT"),
-                            targetTotalText = obj.optString("targetTotalText", ""),
-                            batchSizeText = obj.optString("batchSizeText", ""),
-                            batchCountText = obj.optString("batchCountText", "1"),
-                            availableAmountText = obj.optString("availableAmountText", ""),
-                            roundingOption = obj.optString("roundingOption", "ONE_DECIMAL"),
-                            componentsJson = obj.optString("componentsJson", "[]"),
-                            originalGrandTotal = obj.optDouble("originalGrandTotal", 0.0),
-                            scaledGrandTotal = obj.optDouble("scaledGrandTotal", 0.0),
-                            scalingFactor = obj.optDouble("scalingFactor", 1.0),
-                            singleBatchGrandTotal = obj.optDouble("singleBatchGrandTotal", 0.0),
-                            componentsCount = obj.optInt("componentsCount", 0),
-                            timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
-                            isPinned = obj.optBoolean("isPinned", false),
-                            note = obj.optString("note", "")
-                        )
-                    )
-                }
-                batchScalingDao.insertAll(list)
-                restoredBatch = list.size
-            }
-
             // 5b. Mixture Calculator (names, formulas, session)
             var restoredCalculatorFormulas = 0
             var restoredCalculatorNames = 0
@@ -617,11 +543,10 @@ class DatabaseBackupManager(private val context: Context) {
                 restoredSales = restoredSales,
                 restoredMixtures = restoredMixtures,
                 restoredLedger = restoredLedger,
-                restoredBatchScaling = restoredBatch,
                 restoredSettings = restoredSettingsFlag,
                 restoredCalculatorFormulas = restoredCalculatorFormulas,
                 restoredCalculatorNames = restoredCalculatorNames,
-                message = "Database successfully $modeText: $restoredCalcs calculations, $restoredSales sales audits, $restoredMixtures mixtures, $restoredLedger ledger transactions, $restoredBatch batch recipes, $restoredCalculatorFormulas calculator formulas, $restoredCalculatorNames calculator names." +
+                message = "Database successfully $modeText: $restoredCalcs calculations, $restoredSales sales audits, $restoredMixtures mixtures, $restoredLedger ledger transactions, $restoredCalculatorFormulas calculator formulas, $restoredCalculatorNames calculator names." +
                     if (calculatorFailed) " Calculator data in the backup could not be restored." else ""
             )
         } catch (e: Exception) {
@@ -636,8 +561,7 @@ class DatabaseBackupManager(private val context: Context) {
         clearCalculations: Boolean = true,
         clearSales: Boolean = true,
         clearMixtures: Boolean = true,
-        clearLedger: Boolean = true,
-        clearBatchScaling: Boolean = true
+        clearLedger: Boolean = true
     ): Boolean = withContext(Dispatchers.IO) {
         try {
             if (clearCalculations) calculationDao.clearAllHistory()
@@ -647,232 +571,9 @@ class DatabaseBackupManager(private val context: Context) {
                 MixtureCalculatorStore.clear(context)
             }
             if (clearLedger) ledgerDao.clearAllTransactions()
-            if (clearBatchScaling) batchScalingDao.clearAll()
             true
         } catch (e: Exception) {
             false
-        }
-    }
-
-    // Standalone Mixture backup & restore
-    suspend fun exportMixtureBackupJson(): String = withContext(Dispatchers.IO) {
-        val root = JSONObject()
-        val meta = JSONObject().apply {
-            put("type", "MIXTURE_RECIPES_BACKUP")
-            put("version", 1)
-            put("exportedAt", System.currentTimeMillis())
-        }
-        root.put("metadata", meta)
-        val mixtures = mixtureDao.getAllList()
-        val mixtureArray = JSONArray()
-        for (m in mixtures) {
-            val obj = JSONObject().apply {
-                put("id", m.id)
-                put("title", m.title)
-                put("category", m.category)
-                put("description", m.description)
-                put("anchorIngredientName", m.anchorIngredientName)
-                put("scaleFactor", m.scaleFactor)
-                put("totalTargetWeight", m.totalTargetWeight)
-                put("unit", m.unit)
-                put("ingredientsJson", m.ingredientsJson)
-                put("batchCount", m.batchCount)
-                put("timestamp", m.timestamp)
-                put("isFavorite", m.isFavorite)
-                put("simplifiedRatioString", m.simplifiedRatioString)
-                put("anchorTargetQuantity", m.anchorTargetQuantity)
-                put("anchorActualAdded", m.anchorActualAdded)
-                put("scaleExplanation", m.scaleExplanation)
-                put("recalibratedProportionsJson", m.recalibratedProportionsJson)
-                put("totalNewMixtureWeight", m.totalNewMixtureWeight)
-                put("batchDivisionJson", m.batchDivisionJson)
-                put("totalWeightPerBatch", m.totalWeightPerBatch)
-                put("formulaConfigJson", m.formulaConfigJson)
-            }
-            mixtureArray.put(obj)
-        }
-        root.put("mixtureRecipes", mixtureArray)
-        val calculatorState = MixtureCalculatorStore.readJson(context)
-        if (calculatorState != null) {
-            root.put("mixtureCalculator", calculatorState)
-        }
-        root.toString(2)
-    }
-
-    suspend fun restoreMixtureFromJson(rawJson: String, mode: RestoreMode): RestoreSummary = withContext(Dispatchers.IO) {
-        try {
-            val root = JSONObject(rawJson)
-            val mixtureArray = root.optJSONArray("mixtureRecipes")
-            val calculatorObj = root.optJSONObject("mixtureCalculator")
-            val hasRecipes = mixtureArray != null && mixtureArray.length() > 0
-            if (!hasRecipes && calculatorObj == null) {
-                return@withContext RestoreSummary(success = false, message = "No mixture recipes or calculator data found in backup.")
-            }
-            var restoredCalculatorFormulas = 0
-            var restoredCalculatorNames = 0
-            var calculatorFailed = false
-            if (calculatorObj != null) {
-                val calcResult = MixtureCalculatorStore.importObject(context, calculatorObj, mode == RestoreMode.OVERWRITE)
-                if (calcResult.ok) {
-                    restoredCalculatorFormulas = calcResult.formulas
-                    restoredCalculatorNames = calcResult.names
-                } else {
-                    calculatorFailed = true
-                }
-            }
-            if (!hasRecipes && calculatorFailed) {
-                return@withContext RestoreSummary(success = false, message = "Calculator data in this backup is not valid.")
-            }
-            if (!hasRecipes || mixtureArray == null) {
-                return@withContext RestoreSummary(
-                    success = true,
-                    restoredCalculatorFormulas = restoredCalculatorFormulas,
-                    restoredCalculatorNames = restoredCalculatorNames,
-                    message = "Restored mixture calculator data ($restoredCalculatorFormulas saved formulas, $restoredCalculatorNames saved names)."
-                )
-            }
-            if (mode == RestoreMode.OVERWRITE) {
-                mixtureDao.clearAll()
-            }
-            val list = mutableListOf<MixtureRecipeEntity>()
-            for (i in 0 until mixtureArray.length()) {
-                val obj = mixtureArray.getJSONObject(i)
-                list.add(
-                    MixtureRecipeEntity(
-                        id = if (mode == RestoreMode.OVERWRITE) obj.optLong("id", 0L) else 0L,
-                        title = obj.optString("title", "Formulation"),
-                        category = obj.optString("category", "Structural"),
-                        description = obj.optString("description", ""),
-                        anchorIngredientName = obj.optString("anchorIngredientName", "Primary"),
-                        scaleFactor = obj.optDouble("scaleFactor", 1.0),
-                        totalTargetWeight = obj.optDouble("totalTargetWeight", 100.0),
-                        unit = obj.optString("unit", "kg"),
-                        ingredientsJson = obj.optString("ingredientsJson", "[]"),
-                        batchCount = obj.optInt("batchCount", 1),
-                        timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
-                        isFavorite = obj.optBoolean("isFavorite", false),
-                        simplifiedRatioString = obj.optString("simplifiedRatioString", ""),
-                        anchorTargetQuantity = obj.optDouble("anchorTargetQuantity", 0.0),
-                        anchorActualAdded = obj.optDouble("anchorActualAdded", 0.0),
-                        scaleExplanation = obj.optString("scaleExplanation", ""),
-                        recalibratedProportionsJson = obj.optString("recalibratedProportionsJson", "[]"),
-                        totalNewMixtureWeight = obj.optDouble("totalNewMixtureWeight", 0.0),
-                        batchDivisionJson = obj.optString("batchDivisionJson", "[]"),
-                        totalWeightPerBatch = obj.optDouble("totalWeightPerBatch", 0.0),
-                        formulaConfigJson = obj.optString("formulaConfigJson", "")
-                    )
-                )
-            }
-            mixtureDao.insertAll(list)
-            RestoreSummary(
-                success = true,
-                restoredMixtures = list.size,
-                restoredCalculatorFormulas = restoredCalculatorFormulas,
-                restoredCalculatorNames = restoredCalculatorNames,
-                message = "Successfully ${if (mode == RestoreMode.OVERWRITE) "restored" else "merged"} ${list.size} mixture formulations, $restoredCalculatorFormulas calculator formulas and $restoredCalculatorNames calculator names." +
-                    if (calculatorFailed) " Calculator data in the backup could not be restored." else ""
-            )
-        } catch (e: Exception) {
-            RestoreSummary(success = false, message = "Mixture restore failed: ${e.localizedMessage ?: "Invalid JSON"}")
-        }
-    }
-
-    // Standalone Batch Scaling backup & restore
-    suspend fun exportBatchScalingBackupJson(): String = withContext(Dispatchers.IO) {
-        val root = JSONObject()
-        val meta = JSONObject().apply {
-            put("type", "BATCH_SCALING_BACKUP")
-            put("version", 1)
-            put("exportedAt", System.currentTimeMillis())
-        }
-        root.put("metadata", meta)
-        val batchList = batchScalingDao.getAllList()
-        val batchArray = JSONArray()
-        for (b in batchList) {
-            val obj = JSONObject().apply {
-                put("id", b.id)
-                put("title", b.title)
-                put("description", b.description)
-                put("scalingMode", b.scalingMode)
-                put("batchSubMode", b.batchSubMode)
-                put("targetTotalText", b.targetTotalText)
-                put("batchSizeText", b.batchSizeText)
-                put("batchCountText", b.batchCountText)
-                put("availableAmountText", b.availableAmountText)
-                put("roundingOption", b.roundingOption)
-                put("componentsJson", b.componentsJson)
-                put("originalGrandTotal", b.originalGrandTotal)
-                put("scaledGrandTotal", b.scaledGrandTotal)
-                put("scalingFactor", b.scalingFactor)
-                put("singleBatchGrandTotal", b.singleBatchGrandTotal)
-                put("componentsCount", b.componentsCount)
-                put("timestamp", b.timestamp)
-                put("isPinned", b.isPinned)
-                put("note", b.note)
-                put("formulaStepsJson", b.formulaStepsJson)
-                put("arithmeticSummary", b.arithmeticSummary)
-                put("scaledComponentsJson", b.scaledComponentsJson)
-                put("lockedTotal", b.lockedTotal)
-                put("unlockedOriginalTotal", b.unlockedOriginalTotal)
-                put("unlockedScaledTotal", b.unlockedScaledTotal)
-            }
-            batchArray.put(obj)
-        }
-        root.put("batchScaling", batchArray)
-        root.toString(2)
-    }
-
-    suspend fun restoreBatchScalingFromJson(rawJson: String, mode: RestoreMode): RestoreSummary = withContext(Dispatchers.IO) {
-        try {
-            val root = JSONObject(rawJson)
-            val batchArray = root.optJSONArray("batchScaling")
-            if (batchArray == null || batchArray.length() == 0) {
-                return@withContext RestoreSummary(success = false, message = "No batch scaling entries found in backup.")
-            }
-            if (mode == RestoreMode.OVERWRITE) {
-                batchScalingDao.clearAll()
-            }
-            val list = mutableListOf<BatchScalingEntity>()
-            for (i in 0 until batchArray.length()) {
-                val obj = batchArray.getJSONObject(i)
-                list.add(
-                    BatchScalingEntity(
-                        id = if (mode == RestoreMode.OVERWRITE) obj.optLong("id", 0L) else 0L,
-                        title = obj.optString("title", "Batch Recipe"),
-                        description = obj.optString("description", ""),
-                        scalingMode = obj.optString("scalingMode", "TARGET_TOTAL"),
-                        batchSubMode = obj.optString("batchSubMode", "BY_BATCH_COUNT"),
-                        targetTotalText = obj.optString("targetTotalText", ""),
-                        batchSizeText = obj.optString("batchSizeText", ""),
-                        batchCountText = obj.optString("batchCountText", "1"),
-                        availableAmountText = obj.optString("availableAmountText", ""),
-                        roundingOption = obj.optString("roundingOption", "ONE_DECIMAL"),
-                        componentsJson = obj.optString("componentsJson", "[]"),
-                        originalGrandTotal = obj.optDouble("originalGrandTotal", 0.0),
-                        scaledGrandTotal = obj.optDouble("scaledGrandTotal", 0.0),
-                        scalingFactor = obj.optDouble("scalingFactor", 1.0),
-                        singleBatchGrandTotal = obj.optDouble("singleBatchGrandTotal", 0.0),
-                        componentsCount = obj.optInt("componentsCount", 0),
-                        timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
-                        isPinned = obj.optBoolean("isPinned", false),
-                        note = obj.optString("note", ""),
-                        formulaStepsJson = obj.optString("formulaStepsJson", "[]"),
-                        arithmeticSummary = obj.optString("arithmeticSummary", ""),
-                        scaledComponentsJson = obj.optString("scaledComponentsJson", "[]"),
-                        lockedTotal = obj.optDouble("lockedTotal", 0.0),
-                        unlockedOriginalTotal = obj.optDouble("unlockedOriginalTotal", 0.0),
-                        unlockedScaledTotal = obj.optDouble("unlockedScaledTotal", 0.0)
-                    )
-                )
-            }
-            batchScalingDao.insertAll(list)
-            RestoreSummary(
-                success = true,
-                restoredBatchScaling = list.size,
-                message = "Successfully ${if (mode == RestoreMode.OVERWRITE) "restored" else "merged"} ${list.size} batch recipes."
-            )
-        } catch (e: Exception) {
-            RestoreSummary(success = false, message = "Batch scaler restore failed: ${e.localizedMessage ?: "Invalid JSON"}")
         }
     }
 
