@@ -297,14 +297,6 @@ fun AppNavigationDrawer(
                     )
                 }
             }
-            if (locked) {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "Locked",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(15.dp)
-                )
-            }
         }
     }
 }
@@ -379,6 +371,14 @@ private fun DrawerNavItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+            if (locked) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Locked",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(15.dp)
+                )
             }
         }
     }
