@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -70,6 +71,7 @@ fun AppNavigationDrawer(
     currentDestination: DrawerDestination,
     activeConverterCategory: ConverterCategory? = null,
     onSelectDestination: (DrawerDestination) -> Unit,
+    lockedDestinations: Set<DrawerDestination> = emptySet(),
     onOpenConverterGrid: () -> Unit = {},
     onSelectConverterCategory: (ConverterCategory) -> Unit = {},
     onCloseDrawer: () -> Unit,
@@ -158,6 +160,7 @@ fun AppNavigationDrawer(
                         subtitle = "Standard math & history tape",
                         icon = Icons.Default.Calculate,
                         isSelected = currentDestination == DrawerDestination.CALCULATOR,
+                        locked = DrawerDestination.CALCULATOR in lockedDestinations,
                         onClick = { onSelectDestination(DrawerDestination.CALCULATOR) },
                         testTag = "drawer_item_calculator",
                         primaryColor = primaryColor,
@@ -172,6 +175,7 @@ fun AppNavigationDrawer(
                         subtitle = "Cash in hand, cash in & out audit",
                         icon = Icons.Default.AccountBalanceWallet,
                         isSelected = currentDestination == DrawerDestination.LEDGER,
+                        locked = DrawerDestination.LEDGER in lockedDestinations,
                         onClick = { onSelectDestination(DrawerDestination.LEDGER) },
                         testTag = "drawer_item_ledger",
                         primaryColor = primaryColor,
@@ -186,6 +190,7 @@ fun AppNavigationDrawer(
                         subtitle = "Everyday business & home expense manager",
                         icon = Icons.Default.Receipt,
                         isSelected = currentDestination == DrawerDestination.EXPENSES,
+                        locked = DrawerDestination.EXPENSES in lockedDestinations,
                         onClick = { onSelectDestination(DrawerDestination.EXPENSES) },
                         testTag = "drawer_item_expenses",
                         primaryColor = primaryColor,
@@ -200,6 +205,7 @@ fun AppNavigationDrawer(
                         subtitle = "11 dedicated conversion suites",
                         icon = Icons.Default.SwapHoriz,
                         isSelected = currentDestination == DrawerDestination.CONVERTER,
+                        locked = DrawerDestination.CONVERTER in lockedDestinations,
                         onClick = {
                             onOpenConverterGrid()
                             onSelectDestination(DrawerDestination.CONVERTER)
@@ -217,6 +223,7 @@ fun AppNavigationDrawer(
                         subtitle = "Reconciliation & commission audit",
                         icon = Icons.Default.ReceiptLong,
                         isSelected = currentDestination == DrawerDestination.SALES,
+                        locked = DrawerDestination.SALES in lockedDestinations,
                         onClick = { onSelectDestination(DrawerDestination.SALES) },
                         testTag = "drawer_item_sales",
                         primaryColor = primaryColor,
@@ -231,6 +238,7 @@ fun AppNavigationDrawer(
                         subtitle = "Recalibrate, scale & batch",
                         icon = Icons.Default.Science,
                         isSelected = currentDestination == DrawerDestination.MIXTURE_CALCULATOR,
+                        locked = DrawerDestination.MIXTURE_CALCULATOR in lockedDestinations,
                         onClick = { onSelectDestination(DrawerDestination.MIXTURE_CALCULATOR) },
                         testTag = "drawer_item_mixture_calculator",
                         primaryColor = primaryColor,
@@ -251,6 +259,7 @@ fun AppNavigationDrawer(
                         subtitle = "Palettes, shapes, sounds & haptics",
                         icon = Icons.Default.Settings,
                         isSelected = currentDestination == DrawerDestination.SETTINGS,
+                        locked = DrawerDestination.SETTINGS in lockedDestinations,
                         onClick = { onSelectDestination(DrawerDestination.SETTINGS) },
                         testTag = "drawer_item_settings",
                         primaryColor = primaryColor,
@@ -288,6 +297,14 @@ fun AppNavigationDrawer(
                     )
                 }
             }
+            if (locked) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Locked",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(15.dp)
+                )
+            }
         }
     }
 }
@@ -301,7 +318,8 @@ private fun DrawerNavItem(
     onClick: () -> Unit,
     testTag: String,
     primaryColor: Color,
-    isDark: Boolean
+    isDark: Boolean,
+    locked: Boolean = false
 ) {
     val currentSkin = LocalAppThemeSkin.current
     val containerBg = if (isSelected) {

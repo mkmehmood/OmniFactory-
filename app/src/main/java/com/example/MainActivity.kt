@@ -1,5 +1,6 @@
 package com.example
 
+import com.example.ui.components.lockKey
 import com.example.ui.components.SoftIconButton
 import com.example.ui.components.softPlate
 import com.example.ui.components.SoftSurface
@@ -123,6 +124,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val uiState by calculatorViewModel.uiState.collectAsStateWithLifecycle()
+            val appLock = remember { com.example.data.security.AppLockState.get(applicationContext) }
+            val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+            androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+                val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                    if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) appLock.onAppBackgrounded()
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+            }
             val snackbarHostState = remember { SnackbarHostState() }
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
@@ -227,6 +237,9 @@ class MainActivity : ComponentActivity() {
                         AppNavigationDrawer(
                             currentDestination = currentDestination,
                             activeConverterCategory = null,
+                            lockedDestinations = if (appLock.hasPin) {
+                                DrawerDestination.values().filter { it.lockKey() in appLock.lockedSections }.toSet()
+                            } else emptySet(),
                             onSelectDestination = { destination ->
                                 calculatorViewModel.setTapeOpen(false)
                                 scope.launch {
@@ -400,7 +413,20 @@ class MainActivity : ComponentActivity() {
                                     },
                                     label = "ScreenTransition"
                                 ) { destination ->
-                                    when (destination) {
+                                    if (appLock.isSectionLocked(destination.lockKey())) {
+                                        com.example.ui.components.AppLockScreen(
+                                            lock = appLock,
+                                            sectionLabel = when (destination) {
+                                                DrawerDestination.CALCULATOR -> "the calculator"
+                                                DrawerDestination.LEDGER -> "the ledger"
+                                                DrawerDestination.EXPENSES -> "expenses"
+                                                DrawerDestination.SALES -> "sales"
+                                                DrawerDestination.MIXTURE_CALCULATOR, DrawerDestination.MIXTURE_HISTORY -> "the mixture calculator"
+                                                DrawerDestination.CONVERTER -> "the converter"
+                                                DrawerDestination.SETTINGS -> "settings"
+                                            }
+                                        )
+                                    } else when (destination) {
                                         DrawerDestination.CALCULATOR -> {
                                             BasicCalculatorScreen(
                                                 expression = uiState.expression,

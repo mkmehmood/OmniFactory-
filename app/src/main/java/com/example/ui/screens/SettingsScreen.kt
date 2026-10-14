@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.AppLockSection
 import com.example.ui.components.BackgroundPictureSection
 import com.example.ui.components.SoftCheckbox
 import com.example.ui.components.SoftRadioButton
@@ -383,6 +384,10 @@ fun SettingsScreen(
             SoftDivider()
 
             BackgroundPictureSection()
+
+            SoftDivider()
+
+            AppLockSection()
 
             SoftDivider()
 
